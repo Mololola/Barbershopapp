@@ -8,42 +8,122 @@ void main() {
 
   test('unauthenticated user is sent to sign-in from any non-auth route', () {
     expect(
-      resolveRedirect(isAuthenticated: false, profile: null, location: '/customer'),
+      resolveRedirect(isAuthenticated: false, profile: null, hasBusiness: false, location: '/customer'),
       '/sign-in',
     );
   });
 
   test('unauthenticated user is left alone on sign-in/sign-up', () {
-    expect(resolveRedirect(isAuthenticated: false, profile: null, location: '/sign-in'), null);
-    expect(resolveRedirect(isAuthenticated: false, profile: null, location: '/sign-up'), null);
-  });
-
-  test('authenticated with no profile yet is kept on sign-up', () {
     expect(
-      resolveRedirect(isAuthenticated: true, profile: null, location: '/customer'),
-      '/sign-up',
-    );
-    expect(resolveRedirect(isAuthenticated: true, profile: null, location: '/sign-up'), null);
-  });
-
-  test('authenticated customer is routed to /customer', () {
-    expect(
-      resolveRedirect(isAuthenticated: true, profile: customerProfile, location: '/sign-in'),
-      '/customer',
+      resolveRedirect(isAuthenticated: false, profile: null, hasBusiness: false, location: '/sign-in'),
+      null,
     );
     expect(
-      resolveRedirect(isAuthenticated: true, profile: customerProfile, location: '/customer'),
+      resolveRedirect(isAuthenticated: false, profile: null, hasBusiness: false, location: '/sign-up'),
       null,
     );
   });
 
-  test('authenticated business is routed to /business', () {
+  test('authenticated with no profile yet is kept on sign-up', () {
     expect(
-      resolveRedirect(isAuthenticated: true, profile: businessProfile, location: '/sign-up'),
+      resolveRedirect(isAuthenticated: true, profile: null, hasBusiness: false, location: '/customer'),
+      '/sign-up',
+    );
+    expect(
+      resolveRedirect(isAuthenticated: true, profile: null, hasBusiness: false, location: '/sign-up'),
+      null,
+    );
+  });
+
+  test('authenticated customer is routed to /customer', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: customerProfile,
+        hasBusiness: false,
+        location: '/sign-in',
+      ),
+      '/customer',
+    );
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: customerProfile,
+        hasBusiness: false,
+        location: '/customer',
+      ),
+      null,
+    );
+  });
+
+  test('authenticated business with no business row yet is sent to business-setup', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: businessProfile,
+        hasBusiness: false,
+        location: '/sign-up',
+      ),
+      '/business-setup',
+    );
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: businessProfile,
+        hasBusiness: false,
+        location: '/business-setup',
+      ),
+      null,
+    );
+  });
+
+  test('authenticated business with a business row is routed to /business', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: businessProfile,
+        hasBusiness: true,
+        location: '/sign-up',
+      ),
       '/business',
     );
     expect(
-      resolveRedirect(isAuthenticated: true, profile: businessProfile, location: '/business'),
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: businessProfile,
+        hasBusiness: true,
+        location: '/business-setup',
+      ),
+      '/business',
+    );
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: businessProfile,
+        hasBusiness: true,
+        location: '/business',
+      ),
+      null,
+    );
+  });
+
+  test('business already set up is left alone on sub-routes like services/staff', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: businessProfile,
+        hasBusiness: true,
+        location: '/business/services',
+      ),
+      null,
+    );
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: businessProfile,
+        hasBusiness: true,
+        location: '/business/staff',
+      ),
       null,
     );
   });

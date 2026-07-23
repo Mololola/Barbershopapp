@@ -45,7 +45,9 @@ Not exhaustive — enough to unblock scaffolding. Extend as Phase 1 features are
 - `profiles` (1:1 with `auth.users`): role (`customer` | `business`), username (unique, case-insensitive — shown on rankings/posts, so collisions would be confusing), avatar
 - `businesses`: owner profile, name, locations, opening hours
 - `services`: business_id, name, price, duration
-- `workers`: business_id, profile_id (nullable — a worker may or may not have their own account), name
+- `workers`: business_id, profile_id (nullable — a worker may or may not have their own account), name; a profile can be active (`is_active`) staff at only one business at a time, enforced by a partial unique index
+- `worker_profiles`: 1:1 with `profiles`, opt-in — legal name (first/last/optional second last name, shown to businesses instead of the account username), bio, city, looking-for-work flag. Legal name is self-reported only; no identity verification yet (see Phase 2+)
+- `worker_invitations`: business_id, worker_profile_id, status (pending/accepted/declined) — a business invites a worker by username, the worker must accept before `workers.profile_id` gets linked
 - `bookings`: worker_id, service_id, customer_id, start_time, end_time, status
 - `reviews`: booking_id, shop_rating, worker_rating, haircut_rating, haircut_type, comments
 - `posts`, `post_media`, `comments`, `likes`: social feed (Phase 1, basic version only)
@@ -68,6 +70,7 @@ Deferred to Phase 2+: `referral_codes` + ranking aggregation tables, `reward_led
 - 3D haircut designer (save/load/share designs, paid extra storage)
 - In-app direct messaging
 - Auto-suspend/resume business accounts on failed subscription payment
+- Worker identity verification — `worker_profiles` legal name is currently self-reported with no check behind it. Real verification (ID document check, third-party KYC provider, or at minimum a manual admin-review flag) is flagged but intentionally not built yet — it has real compliance/cost implications the spec never scoped, so it needs its own design pass rather than a bolted-on check.
 
 ## Repo layout
 
