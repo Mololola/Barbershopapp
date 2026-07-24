@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
+import '../../customer/application/booking_controller.dart' show bookingsRepositoryProvider;
+import '../../customer/domain/booking.dart';
 import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../data/business_repository.dart';
@@ -40,6 +42,12 @@ final workersProvider = FutureProvider<List<Worker>>((ref) async {
   final business = await ref.watch(currentBusinessProvider.future);
   if (business == null) return [];
   return ref.watch(businessRepositoryProvider).fetchWorkers(business.id);
+});
+
+final businessBookingsProvider = FutureProvider<List<Booking>>((ref) async {
+  final business = await ref.watch(currentBusinessProvider.future);
+  if (business == null) return [];
+  return ref.watch(bookingsRepositoryProvider).fetchBusinessBookings(business.id);
 });
 
 final sentInvitationsProvider = FutureProvider<List<WorkerInvitation>>((ref) async {

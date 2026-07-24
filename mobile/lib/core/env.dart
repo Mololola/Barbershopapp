@@ -5,4 +5,8 @@
 class Env {
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const fastApiBaseUrl = String.fromEnvironment(
+    'FASTAPI_BASE_URL',
+    defaultValue: 'http://localhost:8000',
+  );
 }

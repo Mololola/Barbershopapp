@@ -24,8 +24,16 @@ class CustomerHomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Customer home — booking features start in the next milestone.'),
-            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => context.push('/customer/businesses'),
+              child: const Text('Browse barbershops'),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => context.push('/customer/my-bookings'),
+              child: const Text('My bookings'),
+            ),
+            const SizedBox(height: 8),
             FilledButton(
               onPressed: () => context.push('/customer/worker-profile'),
               child: const Text('Worker profile'),

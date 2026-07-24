@@ -10,8 +10,13 @@ import '../features/business/application/business_controller.dart';
 import '../features/business/presentation/business_home_screen.dart';
 import '../features/business/presentation/business_setup_screen.dart';
 import '../features/business/presentation/services_screen.dart';
+import '../features/business/presentation/bookings_screen.dart';
 import '../features/business/presentation/staff_screen.dart';
+import '../features/customer/presentation/business_detail_screen.dart';
+import '../features/customer/presentation/business_list_screen.dart';
+import '../features/customer/presentation/booking_screen.dart';
 import '../features/customer/presentation/customer_home_screen.dart';
+import '../features/customer/presentation/my_bookings_screen.dart';
 import '../features/worker/presentation/worker_profile_screen.dart';
 import 'supabase_providers.dart';
 
@@ -77,10 +82,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/customer/worker-profile',
         builder: (context, state) => const WorkerProfileScreen(),
       ),
+      GoRoute(
+        path: '/customer/my-bookings',
+        builder: (context, state) => const MyBookingsScreen(),
+      ),
+      GoRoute(
+        path: '/customer/businesses',
+        builder: (context, state) => const BusinessListScreen(),
+      ),
+      GoRoute(
+        path: '/customer/businesses/:businessId',
+        builder: (context, state) =>
+            BusinessDetailScreen(businessId: state.pathParameters['businessId']!),
+      ),
+      GoRoute(
+        path: '/customer/businesses/:businessId/book',
+        builder: (context, state) => BookingScreen(
+          businessId: state.pathParameters['businessId']!,
+          serviceId: state.uri.queryParameters['serviceId']!,
+        ),
+      ),
       GoRoute(path: '/business', builder: (context, state) => const BusinessHomeScreen()),
       GoRoute(path: _businessSetupRoute, builder: (context, state) => const BusinessSetupScreen()),
       GoRoute(path: '/business/services', builder: (context, state) => const ServicesScreen()),
       GoRoute(path: '/business/staff', builder: (context, state) => const StaffScreen()),
+      GoRoute(path: '/business/bookings', builder: (context, state) => const BookingsScreen()),
     ],
   );
 });
