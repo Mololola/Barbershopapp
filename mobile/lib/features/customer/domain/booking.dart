@@ -1,4 +1,4 @@
-enum BookingStatus { confirmed, cancelled }
+enum BookingStatus { confirmed, cancelled, completed }
 
 extension BookingStatusX on BookingStatus {
   String get wireValue => name;

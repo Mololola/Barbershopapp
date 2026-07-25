@@ -12,22 +12,29 @@ import '../features/business/presentation/business_setup_screen.dart';
 import '../features/business/presentation/services_screen.dart';
 import '../features/business/presentation/bookings_screen.dart';
 import '../features/business/presentation/staff_screen.dart';
+import '../features/customer/application/review_controller.dart';
 import '../features/customer/presentation/business_detail_screen.dart';
 import '../features/customer/presentation/business_list_screen.dart';
 import '../features/customer/presentation/booking_screen.dart';
 import '../features/customer/presentation/customer_home_screen.dart';
 import '../features/customer/presentation/my_bookings_screen.dart';
+import '../features/customer/presentation/review_screen.dart';
 import '../features/worker/presentation/worker_profile_screen.dart';
 import 'supabase_providers.dart';
 
 const _authRoutes = {'/sign-in', '/sign-up'};
 const _businessSetupRoute = '/business-setup';
 
+bool _isReviewRoute(String location, String? bookingId) {
+  return bookingId != null && location == '/customer/bookings/$bookingId/review';
+}
+
 /// Pure routing decision, unit-testable without a live Supabase client.
 String? resolveRedirect({
   required bool isAuthenticated,
   required Profile? profile,
   required bool hasBusiness,
+  required String? pendingReviewBookingId,
   required String location,
 }) {
   if (!isAuthenticated) {
@@ -44,6 +51,15 @@ String? resolveRedirect({
     return location == _businessSetupRoute ? null : _businessSetupRoute;
   }
 
+  // Re-checked on every navigation attempt (not just once on open) so the
+  // customer genuinely can't do anything else until they've rated or
+  // omitted every step — see review_screen.dart.
+  if (profile.role == AccountRole.customer &&
+      pendingReviewBookingId != null &&
+      !_isReviewRoute(location, pendingReviewBookingId)) {
+    return '/customer/bookings/$pendingReviewBookingId/review';
+  }
+
   final home = profile.role == AccountRole.customer ? '/customer' : '/business';
   final onboardingRoutes = {..._authRoutes, _businessSetupRoute};
   return onboardingRoutes.contains(location) ? home : null;
@@ -58,6 +74,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(authStateChangesProvider, (_, __) => refresh.ping());
   ref.listen(currentProfileProvider, (_, __) => refresh.ping());
   ref.listen(currentBusinessProvider, (_, __) => refresh.ping());
+  ref.listen(pendingReviewProvider, (_, __) => refresh.ping());
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -67,10 +84,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = ref.read(supabaseClientProvider).auth.currentUser != null;
       final profile = ref.read(currentProfileProvider).value;
       final hasBusiness = ref.read(currentBusinessProvider).value != null;
+      final pendingReviewBookingId = ref.read(pendingReviewProvider).value?.id;
       return resolveRedirect(
         isAuthenticated: isAuthenticated,
         profile: profile,
         hasBusiness: hasBusiness,
+        pendingReviewBookingId: pendingReviewBookingId,
         location: state.matchedLocation,
       );
     },
@@ -85,6 +104,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/customer/my-bookings',
         builder: (context, state) => const MyBookingsScreen(),
+      ),
+      GoRoute(
+        path: '/customer/bookings/:bookingId/review',
+        builder: (context, state) => ReviewScreen(bookingId: state.pathParameters['bookingId']!),
       ),
       GoRoute(
         path: '/customer/businesses',

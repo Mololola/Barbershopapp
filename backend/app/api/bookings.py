@@ -32,6 +32,7 @@ class BookingResponse(BaseModel):
     start_time: datetime.datetime
     end_time: datetime.datetime
     status: str
+    completed_at: datetime.datetime | None = None
 
 
 def _get_active_service(db: Session, business_id: uuid.UUID, service_id: uuid.UUID) -> Service:
@@ -149,28 +150,59 @@ def _map_booking_integrity_error(exc: IntegrityError) -> HTTPException:
     return HTTPException(status.HTTP_400_BAD_REQUEST, "Could not create booking")
 
 
+def _is_business_owner(db: Session, business_id: uuid.UUID, user_id: str) -> bool:
+    return (
+        db.execute(
+            text("select 1 from businesses where id = :business_id and owner_id = :user_id"),
+            {"business_id": business_id, "user_id": user_id},
+        ).first()
+        is not None
+    )
+
+
+def _get_booking_or_404(db: Session, booking_id: uuid.UUID) -> Booking:
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if booking is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Booking not found")
+    return booking
+
+
 @router.post("/bookings/{booking_id}/cancel", response_model=BookingResponse)
 def cancel_booking(
     booking_id: uuid.UUID,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> Booking:
-    booking = db.query(Booking).filter(Booking.id == booking_id).first()
-    if booking is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Booking not found")
+    booking = _get_booking_or_404(db, booking_id)
 
     is_customer = str(booking.customer_id) == user_id
-    is_business_owner = (
-        db.execute(
-            text("select 1 from businesses where id = :business_id and owner_id = :user_id"),
-            {"business_id": booking.business_id, "user_id": user_id},
-        ).first()
-        is not None
-    )
-    if not (is_customer or is_business_owner):
+    if not (is_customer or _is_business_owner(db, booking.business_id, user_id)):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your booking to cancel")
 
     booking.status = "cancelled"
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
+@router.post("/bookings/{booking_id}/complete", response_model=BookingResponse)
+def complete_booking(
+    booking_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> Booking:
+    """Only the business can mark a haircut done — see docs/architecture.md
+    on why the spec cares about this being business-confirmed (it's what
+    unlocks the customer's review prompt, and later, reward eligibility)."""
+    booking = _get_booking_or_404(db, booking_id)
+
+    if not _is_business_owner(db, booking.business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business's booking")
+    if booking.status != "confirmed":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only confirmed bookings can be marked done")
+
+    booking.status = "completed"
+    booking.completed_at = datetime.datetime.now(datetime.UTC)
     db.commit()
     db.refresh(booking)
     return booking

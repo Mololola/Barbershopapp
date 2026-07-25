@@ -18,3 +18,4 @@ class Booking(Base):
     start_time: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String, default="confirmed")
+    completed_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=None)

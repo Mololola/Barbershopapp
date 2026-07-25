@@ -46,10 +46,19 @@ class BookingApiClient {
     return Booking.fromApiJson(result as Map<String, dynamic>);
   }
 
+  /// Business-side action — only the owning business can call this.
+  Future<Booking> completeBooking(String bookingId) async {
+    final result = await _api.post('/bookings/$bookingId/complete');
+    return Booking.fromApiJson(result as Map<String, dynamic>);
+  }
+
   String _dateOnly(DateTime date) {
-    final utc = date.toUtc();
-    final month = utc.month.toString().padLeft(2, '0');
-    final day = utc.day.toString().padLeft(2, '0');
-    return '${utc.year}-$month-$day';
+    // `date` is a calendar-day value from the date picker (local midnight),
+    // not a specific instant — converting to UTC here shifted it a day back
+    // for any positive UTC offset, silently querying (and then booking) the
+    // wrong day's slots while the on-screen date label stayed correct.
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 }

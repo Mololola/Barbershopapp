@@ -32,6 +32,10 @@ final myBookingsProvider = FutureProvider<List<Booking>>((ref) async {
   return ref.watch(bookingsRepositoryProvider).fetchMyBookings(profile.id);
 });
 
+final bookingProvider = FutureProvider.family<Booking?, String>((ref, bookingId) {
+  return ref.watch(bookingsRepositoryProvider).fetchBooking(bookingId);
+});
+
 final bookingActionControllerProvider =
     AsyncNotifierProvider<BookingActionController, void>(BookingActionController.new);
 
@@ -65,6 +69,13 @@ class BookingActionController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       await ref.read(bookingApiClientProvider).cancelBooking(bookingId);
       ref.invalidate(myBookingsProvider);
+    });
+  }
+
+  Future<void> completeBooking(String bookingId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(bookingApiClientProvider).completeBooking(bookingId);
     });
   }
 }

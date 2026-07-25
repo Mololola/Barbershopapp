@@ -8,29 +8,59 @@ void main() {
 
   test('unauthenticated user is sent to sign-in from any non-auth route', () {
     expect(
-      resolveRedirect(isAuthenticated: false, profile: null, hasBusiness: false, location: '/customer'),
+      resolveRedirect(
+        isAuthenticated: false,
+        profile: null,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/customer',
+      ),
       '/sign-in',
     );
   });
 
   test('unauthenticated user is left alone on sign-in/sign-up', () {
     expect(
-      resolveRedirect(isAuthenticated: false, profile: null, hasBusiness: false, location: '/sign-in'),
+      resolveRedirect(
+        isAuthenticated: false,
+        profile: null,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/sign-in',
+      ),
       null,
     );
     expect(
-      resolveRedirect(isAuthenticated: false, profile: null, hasBusiness: false, location: '/sign-up'),
+      resolveRedirect(
+        isAuthenticated: false,
+        profile: null,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/sign-up',
+      ),
       null,
     );
   });
 
   test('authenticated with no profile yet is kept on sign-up', () {
     expect(
-      resolveRedirect(isAuthenticated: true, profile: null, hasBusiness: false, location: '/customer'),
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: null,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/customer',
+      ),
       '/sign-up',
     );
     expect(
-      resolveRedirect(isAuthenticated: true, profile: null, hasBusiness: false, location: '/sign-up'),
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: null,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/sign-up',
+      ),
       null,
     );
   });
@@ -41,6 +71,7 @@ void main() {
         isAuthenticated: true,
         profile: customerProfile,
         hasBusiness: false,
+        pendingReviewBookingId: null,
         location: '/sign-in',
       ),
       '/customer',
@@ -50,6 +81,7 @@ void main() {
         isAuthenticated: true,
         profile: customerProfile,
         hasBusiness: false,
+        pendingReviewBookingId: null,
         location: '/customer',
       ),
       null,
@@ -62,6 +94,7 @@ void main() {
         isAuthenticated: true,
         profile: businessProfile,
         hasBusiness: false,
+        pendingReviewBookingId: null,
         location: '/sign-up',
       ),
       '/business-setup',
@@ -71,6 +104,7 @@ void main() {
         isAuthenticated: true,
         profile: businessProfile,
         hasBusiness: false,
+        pendingReviewBookingId: null,
         location: '/business-setup',
       ),
       null,
@@ -83,6 +117,7 @@ void main() {
         isAuthenticated: true,
         profile: businessProfile,
         hasBusiness: true,
+        pendingReviewBookingId: null,
         location: '/sign-up',
       ),
       '/business',
@@ -92,6 +127,7 @@ void main() {
         isAuthenticated: true,
         profile: businessProfile,
         hasBusiness: true,
+        pendingReviewBookingId: null,
         location: '/business-setup',
       ),
       '/business',
@@ -101,6 +137,7 @@ void main() {
         isAuthenticated: true,
         profile: businessProfile,
         hasBusiness: true,
+        pendingReviewBookingId: null,
         location: '/business',
       ),
       null,
@@ -113,6 +150,7 @@ void main() {
         isAuthenticated: true,
         profile: businessProfile,
         hasBusiness: true,
+        pendingReviewBookingId: null,
         location: '/business/services',
       ),
       null,
@@ -122,7 +160,59 @@ void main() {
         isAuthenticated: true,
         profile: businessProfile,
         hasBusiness: true,
+        pendingReviewBookingId: null,
         location: '/business/staff',
+      ),
+      null,
+    );
+  });
+
+  test('customer with a pending review is redirected there from anywhere', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: customerProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: 'booking-1',
+        location: '/customer',
+      ),
+      '/customer/bookings/booking-1/review',
+    );
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: customerProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: 'booking-1',
+        location: '/customer/businesses',
+      ),
+      '/customer/bookings/booking-1/review',
+    );
+  });
+
+  test('customer is left alone on the review route for their own pending booking', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: customerProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: 'booking-1',
+        location: '/customer/bookings/booking-1/review',
+      ),
+      null,
+    );
+  });
+
+  test('a pending review for a business account does not gate business routes', () {
+    // pendingReviewBookingId only ever applies to the customer role in
+    // practice, but the gate should be inert for a business account anyway.
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: businessProfile,
+        hasBusiness: true,
+        pendingReviewBookingId: 'booking-1',
+        location: '/business',
       ),
       null,
     );
