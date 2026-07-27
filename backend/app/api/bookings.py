@@ -35,6 +35,12 @@ class BookingResponse(BaseModel):
     completed_at: datetime.datetime | None = None
 
 
+class AvailableSlot(BaseModel):
+    worker_id: uuid.UUID
+    worker_name: str
+    start_time: datetime.datetime
+
+
 def _get_active_service(db: Session, business_id: uuid.UUID, service_id: uuid.UUID) -> Service:
     service = (
         db.query(Service)
@@ -68,46 +74,75 @@ def _get_opening_hours(db: Session, business_id: uuid.UUID, day_of_week: int) ->
     return dict(row) if row else None
 
 
-@router.get("/businesses/{business_id}/availability", response_model=list[datetime.datetime])
+def _get_worker_schedule(db: Session, worker_id: uuid.UUID, day_of_week: int) -> dict | None:
+    row = db.execute(
+        text(
+            "select is_closed, open_time, close_time from worker_schedules "
+            "where worker_id = :worker_id and day_of_week = :day_of_week"
+        ),
+        {"worker_id": worker_id, "day_of_week": day_of_week},
+    ).mappings().first()
+    return dict(row) if row else None
+
+
+def _effective_hours(worker_schedule: dict | None, business_hours: dict) -> dict:
+    """A worker with no schedule of their own (never configured by the
+    business) works the business's hours; once a business sets one, that
+    worker's own per-day hours — including intentional days off — take over
+    completely, with no further cross-check against business hours."""
+    return worker_schedule if worker_schedule is not None else business_hours
+
+
+@router.get("/businesses/{business_id}/availability", response_model=list[AvailableSlot])
 def get_availability(
     business_id: uuid.UUID,
-    worker_id: uuid.UUID,
     service_id: uuid.UUID,
     date: datetime.date,
     db: Session = Depends(get_db),
     _user_id: str = Depends(get_current_user_id),
-) -> list[datetime.datetime]:
+) -> list[AvailableSlot]:
     service = _get_active_service(db, business_id, service_id)
-    _get_active_worker(db, business_id, worker_id)
 
     # Monday=0 to match `opening_hours.day_of_week`.
-    hours = _get_opening_hours(db, business_id, date.weekday())
-    if hours is None:
+    day_of_week = date.weekday()
+    business_hours = _get_opening_hours(db, business_id, day_of_week)
+    if business_hours is None:
         return []
+
+    workers = db.query(Worker).filter(Worker.business_id == business_id, Worker.is_active.is_(True)).all()
 
     day_start = datetime.datetime.combine(date, datetime.time.min, tzinfo=datetime.UTC)
     day_end = datetime.datetime.combine(date, datetime.time.max, tzinfo=datetime.UTC)
-    existing = (
-        db.query(Booking)
-        .filter(
-            Booking.worker_id == worker_id,
-            Booking.status == "confirmed",
-            Booking.start_time < day_end,
-            Booking.end_time > day_start,
-        )
-        .all()
-    )
-    booked_ranges = [(b.start_time, b.end_time) for b in existing]
+    now = datetime.datetime.now(datetime.UTC)
 
-    return compute_available_slots(
-        date=date,
-        open_time=hours["open_time"],
-        close_time=hours["close_time"],
-        is_closed=hours["is_closed"],
-        duration_minutes=service.duration_minutes,
-        booked_ranges=booked_ranges,
-        now=datetime.datetime.now(datetime.UTC),
-    )
+    slots: list[AvailableSlot] = []
+    for worker in workers:
+        hours = _effective_hours(_get_worker_schedule(db, worker.id, day_of_week), business_hours)
+        existing = (
+            db.query(Booking)
+            .filter(
+                Booking.worker_id == worker.id,
+                Booking.status == "confirmed",
+                Booking.start_time < day_end,
+                Booking.end_time > day_start,
+            )
+            .all()
+        )
+        booked_ranges = [(b.start_time, b.end_time) for b in existing]
+
+        for start_time in compute_available_slots(
+            date=date,
+            open_time=hours["open_time"],
+            close_time=hours["close_time"],
+            is_closed=hours["is_closed"],
+            duration_minutes=service.duration_minutes,
+            booked_ranges=booked_ranges,
+            now=now,
+        ):
+            slots.append(AvailableSlot(worker_id=worker.id, worker_name=worker.name, start_time=start_time))
+
+    slots.sort(key=lambda slot: (slot.start_time, slot.worker_name))
+    return slots
 
 
 @router.post("/bookings", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)

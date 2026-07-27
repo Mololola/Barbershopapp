@@ -13,6 +13,7 @@ class Business {
     required this.name,
     this.phone,
     required this.currency,
+    this.logoUrl,
   });
 
   final String id;
@@ -20,6 +21,7 @@ class Business {
   final String name;
   final String? phone;
   final String currency;
+  final String? logoUrl;
 
   factory Business.fromRow(Map<String, dynamic> row) {
     return Business(
@@ -28,6 +30,7 @@ class Business {
       name: row['name'] as String,
       phone: row['phone'] as String?,
       currency: row['currency'] as String,
+      logoUrl: row['logo_url'] as String?,
     );
   }
 }

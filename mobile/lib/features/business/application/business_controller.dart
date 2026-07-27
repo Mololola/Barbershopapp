@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase_providers.dart';
@@ -42,6 +44,10 @@ final workersProvider = FutureProvider<List<Worker>>((ref) async {
   final business = await ref.watch(currentBusinessProvider.future);
   if (business == null) return [];
   return ref.watch(businessRepositoryProvider).fetchWorkers(business.id);
+});
+
+final workerScheduleProvider = FutureProvider.family<List<OpeningHours>, String>((ref, workerId) {
+  return ref.watch(businessRepositoryProvider).fetchWorkerSchedule(workerId);
 });
 
 final businessBookingsProvider = FutureProvider<List<Booking>>((ref) async {
@@ -123,6 +129,10 @@ class ServiceController extends AsyncNotifier<void> {
   }
 }
 
+final workersLookingForWorkProvider = FutureProvider<List<WorkerSearchResult>>((ref) {
+  return ref.watch(businessRepositoryProvider).fetchWorkersLookingForWork();
+});
+
 final workerControllerProvider = AsyncNotifierProvider<WorkerController, void>(WorkerController.new);
 
 class WorkerController extends AsyncNotifier<void> {
@@ -173,5 +183,58 @@ class WorkerController extends AsyncNotifier<void> {
           );
       ref.invalidate(sentInvitationsProvider);
     });
+  }
+}
+
+final businessEditControllerProvider =
+    AsyncNotifierProvider<BusinessEditController, void>(BusinessEditController.new);
+
+class BusinessEditController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<bool> save({File? logoImage, required List<BusinessLocation> locations}) async {
+    state = const AsyncLoading();
+    var success = false;
+    state = await AsyncValue.guard(() async {
+      final business = await ref.read(currentBusinessProvider.future);
+      if (business == null) throw StateError('No business set up yet.');
+
+      if (logoImage != null) {
+        // Same uploaded image becomes both the owner's personal avatar
+        // (shown on the feed/profile-search) and the business's public logo.
+        final url = await ref.read(profileRepositoryProvider).uploadAvatarImage(business.ownerId, logoImage);
+        await ref.read(profileRepositoryProvider).updateAvatarUrl(business.ownerId, url);
+        await ref.read(businessRepositoryProvider).updateLogoUrl(business.id, url);
+      }
+      await ref.read(businessRepositoryProvider).updateLocations(business.id, locations);
+
+      ref.invalidate(currentBusinessProvider);
+      ref.invalidate(locationsProvider);
+      ref.invalidate(currentProfileProvider);
+      await ref.read(currentBusinessProvider.future);
+      success = true;
+    });
+    return success;
+  }
+}
+
+final workerScheduleControllerProvider =
+    AsyncNotifierProvider<WorkerScheduleController, void>(WorkerScheduleController.new);
+
+class WorkerScheduleController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<bool> save(String workerId, List<OpeningHours> hours) async {
+    state = const AsyncLoading();
+    var success = false;
+    state = await AsyncValue.guard(() async {
+      await ref.read(businessRepositoryProvider).updateWorkerSchedule(workerId, hours);
+      ref.invalidate(workerScheduleProvider(workerId));
+      await ref.read(workerScheduleProvider(workerId).future);
+      success = true;
+    });
+    return success;
   }
 }

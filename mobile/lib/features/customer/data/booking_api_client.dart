@@ -6,21 +6,21 @@ class BookingApiClient {
 
   final ApiClient _api;
 
-  Future<List<DateTime>> fetchAvailability({
+  Future<List<AvailableSlot>> fetchAvailability({
     required String businessId,
-    required String workerId,
     required String serviceId,
     required DateTime date,
   }) async {
     final result = await _api.get(
       '/businesses/$businessId/availability',
       query: {
-        'worker_id': workerId,
         'service_id': serviceId,
         'date': _dateOnly(date),
       },
     );
-    return (result as List).map((slot) => DateTime.parse(slot as String)).toList();
+    return (result as List)
+        .map((slot) => AvailableSlot.fromApiJson(slot as Map<String, dynamic>))
+        .toList();
   }
 
   Future<Booking> createBooking({

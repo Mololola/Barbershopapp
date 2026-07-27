@@ -4,14 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/domain/profile.dart';
+import '../features/auth/presentation/edit_profile_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/business/application/business_controller.dart';
+import '../features/business/presentation/business_edit_screen.dart';
 import '../features/business/presentation/business_home_screen.dart';
 import '../features/business/presentation/business_setup_screen.dart';
 import '../features/business/presentation/services_screen.dart';
 import '../features/business/presentation/bookings_screen.dart';
 import '../features/business/presentation/staff_screen.dart';
+import '../features/business/presentation/worker_candidate_detail_screen.dart';
+import '../features/business/presentation/worker_schedule_screen.dart';
 import '../features/customer/application/review_controller.dart';
 import '../features/customer/presentation/business_detail_screen.dart';
 import '../features/customer/presentation/business_list_screen.dart';
@@ -19,6 +23,12 @@ import '../features/customer/presentation/booking_screen.dart';
 import '../features/customer/presentation/customer_home_screen.dart';
 import '../features/customer/presentation/my_bookings_screen.dart';
 import '../features/customer/presentation/review_screen.dart';
+import '../features/feed/presentation/create_post_screen.dart';
+import '../features/feed/presentation/feed_screen.dart';
+import '../features/feed/presentation/post_detail_screen.dart';
+import '../features/feed/presentation/profile_screen.dart';
+import '../features/feed/presentation/profile_search_screen.dart';
+import '../features/worker/domain/worker_profile.dart';
 import '../features/worker/presentation/worker_profile_screen.dart';
 import 'supabase_providers.dart';
 
@@ -126,10 +136,34 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/business', builder: (context, state) => const BusinessHomeScreen()),
+      GoRoute(path: '/business/edit', builder: (context, state) => const BusinessEditScreen()),
       GoRoute(path: _businessSetupRoute, builder: (context, state) => const BusinessSetupScreen()),
       GoRoute(path: '/business/services', builder: (context, state) => const ServicesScreen()),
       GoRoute(path: '/business/staff', builder: (context, state) => const StaffScreen()),
       GoRoute(path: '/business/bookings', builder: (context, state) => const BookingsScreen()),
+      GoRoute(
+        path: '/business/staff/:workerId/schedule',
+        builder: (context, state) => WorkerScheduleScreen(
+          workerId: state.pathParameters['workerId']!,
+          workerName: state.extra as String,
+        ),
+      ),
+      GoRoute(
+        path: '/business/browse-workers/:profileId',
+        builder: (context, state) => WorkerCandidateDetailScreen(candidate: state.extra as WorkerSearchResult),
+      ),
+      GoRoute(path: '/feed', builder: (context, state) => const FeedScreen()),
+      GoRoute(path: '/feed/new', builder: (context, state) => const CreatePostScreen()),
+      GoRoute(
+        path: '/feed/:postId',
+        builder: (context, state) => PostDetailScreen(postId: state.pathParameters['postId']!),
+      ),
+      GoRoute(path: '/profile/edit', builder: (context, state) => const EditProfileScreen()),
+      GoRoute(path: '/profile/search', builder: (context, state) => const ProfileSearchScreen()),
+      GoRoute(
+        path: '/profile/:profileId',
+        builder: (context, state) => ProfileScreen(profileId: state.pathParameters['profileId']!),
+      ),
     ],
   );
 });

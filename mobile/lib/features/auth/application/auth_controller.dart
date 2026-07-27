@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase_providers.dart';
@@ -6,6 +8,10 @@ import '../domain/profile.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepository(ref.watch(supabaseClientProvider));
+});
+
+final profileByIdProvider = FutureProvider.family<Profile?, String>((ref, profileId) {
+  return ref.watch(profileRepositoryProvider).fetchProfile(profileId);
 });
 
 /// Fetches the signed-in user's profile, lazily creating it from the
@@ -78,5 +84,28 @@ class AuthController extends AsyncNotifier<void> {
       await ref.read(supabaseClientProvider).auth.signOut();
       ref.invalidate(currentProfileProvider);
     });
+  }
+}
+
+final profileEditControllerProvider =
+    AsyncNotifierProvider<ProfileEditController, void>(ProfileEditController.new);
+
+class ProfileEditController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<bool> updateAvatar(File image) async {
+    state = const AsyncLoading();
+    var success = false;
+    state = await AsyncValue.guard(() async {
+      final profile = await ref.read(currentProfileProvider.future);
+      if (profile == null) throw StateError('No signed-in profile.');
+      await ref.read(profileRepositoryProvider).updateAvatar(profileId: profile.id, image: image);
+      ref.invalidate(currentProfileProvider);
+      ref.invalidate(profileByIdProvider(profile.id));
+      await ref.read(currentProfileProvider.future);
+      success = true;
+    });
+    return success;
   }
 }

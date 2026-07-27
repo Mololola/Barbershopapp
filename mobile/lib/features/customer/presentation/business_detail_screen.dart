@@ -16,12 +16,21 @@ class BusinessDetailScreen extends ConsumerWidget {
     final locations = ref.watch(businessLocationsProvider(businessId));
     final hours = ref.watch(businessOpeningHoursProvider(businessId));
     final services = ref.watch(businessServicesProvider(businessId));
+    final workers = ref.watch(businessWorkersProvider(businessId));
 
     return Scaffold(
       appBar: AppBar(title: Text(business.value?.name ?? 'Barbershop')),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
+          if (business.value?.logoUrl != null)
+            Center(
+              child: CircleAvatar(
+                radius: 32,
+                backgroundImage: NetworkImage(business.value!.logoUrl!),
+              ),
+            ),
+          if (business.value?.logoUrl != null) const SizedBox(height: 16),
           Text('Locations', style: Theme.of(context).textTheme.titleMedium),
           locations.when(
             loading: () => const CircularProgressIndicator(),
@@ -71,6 +80,19 @@ class BusinessDetailScreen extends ConsumerWidget {
                       ),
                     ),
                 ],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          Text('Staff', style: Theme.of(context).textTheme.titleMedium),
+          workers.when(
+            loading: () => const CircularProgressIndicator(),
+            error: (error, _) => Text('Error: $error'),
+            data: (list) {
+              if (list.isEmpty) return const Text('No staff listed yet.');
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [for (final worker in list) Text(worker.name)],
               );
             },
           ),

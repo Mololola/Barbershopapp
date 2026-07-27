@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../application/booking_controller.dart';
-import '../application/browse_controller.dart';
+import '../domain/booking.dart';
 
 class BookingScreen extends ConsumerStatefulWidget {
   const BookingScreen({super.key, required this.businessId, required this.serviceId});
@@ -16,9 +16,8 @@ class BookingScreen extends ConsumerStatefulWidget {
 }
 
 class _BookingScreenState extends ConsumerState<BookingScreen> {
-  String? _workerId;
   DateTime _date = DateTime.now();
-  DateTime? _selectedSlot;
+  AvailableSlot? _selectedSlot;
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -35,15 +34,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   Future<void> _confirm() async {
-    final workerId = _workerId;
     final slot = _selectedSlot;
-    if (workerId == null || slot == null) return;
+    if (slot == null) return;
 
     final booking = await ref.read(bookingActionControllerProvider.notifier).createBooking(
           businessId: widget.businessId,
-          workerId: workerId,
+          workerId: slot.workerId,
           serviceId: widget.serviceId,
-          startTime: slot,
+          startTime: slot.startTime,
         );
 
     if (!mounted) return;
@@ -55,12 +53,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     } else {
       // On conflict (slot just taken), refresh availability so the stale slot disappears.
       ref.invalidate(
-        availabilityProvider((
-          businessId: widget.businessId,
-          workerId: workerId,
-          serviceId: widget.serviceId,
-          date: _date,
-        )),
+        availabilityProvider((businessId: widget.businessId, serviceId: widget.serviceId, date: _date)),
       );
       setState(() => _selectedSlot = null);
     }
@@ -68,33 +61,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final workers = ref.watch(businessWorkersProvider(widget.businessId));
     final bookingState = ref.watch(bookingActionControllerProvider);
-
-    // Built before reading `_workerId` below — `data` sets a default the
-    // first time the list loads, and that default must be visible to the
-    // rest of this build, not just the next one.
-    final workerPicker = workers.when(
-      loading: () => const CircularProgressIndicator(),
-      error: (error, _) => Text('Error: $error'),
-      data: (list) {
-        if (list.isEmpty) {
-          return const Text('No staff available to book with yet.');
-        }
-        _workerId ??= list.first.id;
-        return DropdownButton<String>(
-          value: _workerId,
-          items: [
-            for (final worker in list) DropdownMenuItem(value: worker.id, child: Text(worker.name)),
-          ],
-          onChanged: (value) => setState(() {
-            _workerId = value;
-            _selectedSlot = null;
-          }),
-        );
-      },
-    );
-    final workerId = _workerId;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Book appointment')),
@@ -102,9 +69,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         padding: const EdgeInsets.all(24),
         child: ListView(
           children: [
-            Text('Barber', style: Theme.of(context).textTheme.titleMedium),
-            workerPicker,
-            const SizedBox(height: 16),
             Row(
               children: [
                 Text('Date: ${_date.toLocal().toString().split(' ').first}'),
@@ -112,10 +76,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (workerId != null) ...[
-              Text('Available times', style: Theme.of(context).textTheme.titleMedium),
-              _buildAvailability(context, workerId),
-            ],
+            Text('Available times', style: Theme.of(context).textTheme.titleMedium),
+            _buildAvailability(context),
             const SizedBox(height: 24),
             if (bookingState.hasError)
               Text(
@@ -134,14 +96,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
-  Widget _buildAvailability(BuildContext context, String workerId) {
+  Widget _buildAvailability(BuildContext context) {
     final availability = ref.watch(
-      availabilityProvider((
-        businessId: widget.businessId,
-        workerId: workerId,
-        serviceId: widget.serviceId,
-        date: _date,
-      )),
+      availabilityProvider((businessId: widget.businessId, serviceId: widget.serviceId, date: _date)),
     );
     return availability.when(
       loading: () => const CircularProgressIndicator(),
@@ -156,7 +113,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           children: [
             for (final slot in slots)
               ChoiceChip(
-                label: Text(TimeOfDay.fromDateTime(slot.toLocal()).format(context)),
+                label: Text(
+                  '${TimeOfDay.fromDateTime(slot.startTime.toLocal()).format(context)} — ${slot.workerName}',
+                ),
                 selected: _selectedSlot == slot,
                 onSelected: (_) => setState(() => _selectedSlot = slot),
               ),

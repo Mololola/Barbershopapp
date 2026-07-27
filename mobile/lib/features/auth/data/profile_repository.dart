@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/profile.dart';
@@ -41,5 +43,47 @@ class ProfileRepository {
     final row = await _client.from('profiles').select().eq('id', userId).maybeSingle();
     if (row == null) return null;
     return Profile.fromRow(row);
+  }
+
+  /// Same query as [fetchOwnProfile] — `profiles` RLS already permits any
+  /// signed-in user to read any profile — named separately so call sites
+  /// (e.g. viewing another user's profile) read clearly.
+  Future<Profile?> fetchProfile(String profileId) => fetchOwnProfile(profileId);
+
+  Future<List<Profile>> searchByUsername(String query) async {
+    final rows = await _client.from('profiles').select().ilike('username', '%$query%').limit(20);
+    return rows.map(Profile.fromRow).toList();
+  }
+
+  Future<void> updateAvatar({required String profileId, required File image}) async {
+    final avatarUrl = await uploadAvatarImage(profileId, image);
+    await updateAvatarUrl(profileId, avatarUrl);
+  }
+
+  /// Uploaded to the same path every time (`upsert: true`) so edits overwrite
+  /// the previous photo instead of accumulating orphaned files. `uid` is
+  /// whoever owns the `avatars/<uid>/...` folder under storage RLS — not
+  /// necessarily the profile the resulting URL gets written to (a business
+  /// logo upload uses the owner's own uid but also updates `businesses`).
+  Future<String> uploadAvatarImage(String uid, File image) async {
+    final path = '$uid/avatar${_extensionOf(image.path)}';
+    await _client.storage.from('avatars').upload(
+          path,
+          image,
+          fileOptions: const FileOptions(upsert: true),
+        );
+    // Cache-bust: the path (and therefore URL) is identical across edits
+    // since it's upserted, so without this a client that already fetched
+    // the old image would keep showing it.
+    return '${_client.storage.from('avatars').getPublicUrl(path)}?v=${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  Future<void> updateAvatarUrl(String profileId, String avatarUrl) async {
+    await _client.from('profiles').update({'avatar_url': avatarUrl}).eq('id', profileId);
+  }
+
+  String _extensionOf(String path) {
+    final dot = path.lastIndexOf('.');
+    return dot == -1 ? '.jpg' : path.substring(dot);
   }
 }

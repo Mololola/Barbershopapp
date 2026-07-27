@@ -29,6 +29,12 @@ final currentJobProvider = FutureProvider<Worker?>((ref) async {
   return ref.watch(workerRepositoryProvider).fetchCurrentJob(profile.id);
 });
 
+/// Used by the public profile screen to show any given profile's worker
+/// status, not just the signed-in user's own.
+final workerProfileByIdProvider = FutureProvider.family<WorkerProfile?, String>((ref, profileId) {
+  return ref.watch(workerRepositoryProvider).fetchOwnWorkerProfile(profileId);
+});
+
 final workerProfileControllerProvider =
     AsyncNotifierProvider<WorkerProfileController, void>(WorkerProfileController.new);
 

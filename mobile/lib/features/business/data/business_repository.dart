@@ -57,6 +57,49 @@ class BusinessRepository {
     return rows.map(BusinessLocation.fromRow).toList();
   }
 
+  /// Delete-then-reinsert — same "one-time, non-concurrent config action"
+  /// reasoning as [createBusiness]'s location inserts, not a high-frequency
+  /// or concurrent write path that would need real diffing.
+  Future<void> updateLocations(String businessId, List<BusinessLocation> locations) async {
+    await _client.from('locations').delete().eq('business_id', businessId);
+    await _client.from('locations').insert([
+      for (final location in locations)
+        {'business_id': businessId, 'address_line': location.addressLine, 'city': location.city},
+    ]);
+  }
+
+  Future<void> updateLogoUrl(String businessId, String logoUrl) async {
+    await _client.from('businesses').update({'logo_url': logoUrl}).eq('id', businessId);
+  }
+
+  Future<List<OpeningHours>> fetchWorkerSchedule(String workerId) async {
+    final rows = await _client
+        .from('worker_schedules')
+        .select()
+        .eq('worker_id', workerId)
+        .order('day_of_week');
+    return rows.map(OpeningHours.fromRow).toList();
+  }
+
+  /// Always writes all 7 days — a worker with no rows yet falls back to the
+  /// business's own opening hours (see the availability endpoint); once
+  /// saved here, these rows are authoritative for that worker.
+  Future<void> updateWorkerSchedule(String workerId, List<OpeningHours> hours) async {
+    await _client.from('worker_schedules').upsert(
+      [
+        for (final h in hours)
+          {
+            'worker_id': workerId,
+            'day_of_week': h.dayOfWeek,
+            'is_closed': h.isClosed,
+            'open_time': timeOfDayToSql(h.openTime),
+            'close_time': timeOfDayToSql(h.closeTime),
+          },
+      ],
+      onConflict: 'worker_id,day_of_week',
+    );
+  }
+
   Future<List<OpeningHours>> fetchOpeningHours(String businessId) async {
     final rows = await _client
         .from('opening_hours')
@@ -135,6 +178,32 @@ class BusinessRepository {
     }
 
     final rows = await query;
+    return rows.map((row) {
+      final workerProfile = row['worker_profiles'] as Map<String, dynamic>;
+      return WorkerSearchResult(
+        profileId: row['id'] as String,
+        username: row['username'] as String,
+        legalFirstName: workerProfile['legal_first_name'] as String,
+        legalLastName: workerProfile['legal_last_name'] as String,
+        legalSecondLastName: workerProfile['legal_second_last_name'] as String?,
+        bio: workerProfile['bio'] as String?,
+        city: workerProfile['city'] as String?,
+      );
+    }).toList();
+  }
+
+  /// Same shape as [findWorkersByName] minus the name filters — every
+  /// profile currently looking for work, for a browsable list.
+  Future<List<WorkerSearchResult>> fetchWorkersLookingForWork() async {
+    final rows = await _client
+        .from('profiles')
+        .select(
+          'id, username, '
+          'worker_profiles!inner(legal_first_name, legal_last_name, legal_second_last_name, '
+          'bio, city, is_looking_for_work)',
+        )
+        .eq('worker_profiles.is_looking_for_work', true);
+
     return rows.map((row) {
       final workerProfile = row['worker_profiles'] as Map<String, dynamic>;
       return WorkerSearchResult(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../worker/presentation/invitation_status_style.dart';
 import '../application/business_controller.dart';
@@ -129,84 +130,137 @@ class StaffScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Staff'),
+          actions: [
+            TextButton(
+              onPressed: () => _showInviteByNameDialog(context, ref),
+              child: const Text('Invite by name', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [Tab(text: 'My Staff'), Tab(text: 'Marketplace')],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showAddWorkerDialog(context, ref),
+          child: const Icon(Icons.add),
+        ),
+        body: TabBarView(
+          children: [
+            _MyStaffTab(),
+            const _MarketplaceTab(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MyStaffTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final workers = ref.watch(workersProvider);
     final sentInvitations = ref.watch(sentInvitationsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Staff'),
-        actions: [
-          TextButton(
-            onPressed: () => _showInviteByNameDialog(context, ref),
-            child: const Text('Invite by name', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddWorkerDialog(context, ref),
-        child: const Icon(Icons.add),
-      ),
-      body: ListView(
-        children: [
-          workers.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Text('Error: $error'),
-            data: (list) {
-              if (list.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('No staff yet — add your first team member.'),
-                );
-              }
-              return Column(
-                children: [
-                  for (final worker in list)
-                    ListTile(
-                      title: Text(worker.name),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () =>
-                            ref.read(workerControllerProvider.notifier).deleteWorker(worker.id!),
+    return ListView(
+      children: [
+        workers.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Text('Error: $error'),
+          data: (list) {
+            if (list.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No staff yet — add your first team member.'),
+              );
+            }
+            return Column(
+              children: [
+                for (final worker in list)
+                  ListTile(
+                    title: Text(worker.name),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => ref.read(workerControllerProvider.notifier).deleteWorker(worker.id!),
+                    ),
+                    onTap: worker.id == null
+                        ? null
+                        : () => context.push(
+                              '/business/staff/${worker.id}/schedule',
+                              extra: worker.name,
+                            ),
+                  ),
+              ],
+            );
+          },
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('Sent invitations', style: Theme.of(context).textTheme.titleMedium),
+        ),
+        sentInvitations.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Text('Error: $error'),
+          data: (list) {
+            if (list.isEmpty) {
+              return const Padding(padding: EdgeInsets.all(16), child: Text('No invitations sent yet.'));
+            }
+            return Column(
+              children: [
+                for (final invitation in list)
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: ListTile(
+                      leading: Icon(invitation.status.icon, color: invitation.status.color),
+                      title: Text(invitation.workerLegalFullName ?? invitation.workerUsername ?? 'Unknown'),
+                      trailing: Chip(
+                        label: Text(invitation.status.label),
+                        backgroundColor: invitation.status.color.withValues(alpha: 0.15),
+                        labelStyle: TextStyle(color: invitation.status.color),
+                        side: BorderSide.none,
                       ),
                     ),
-                ],
-              );
-            },
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text('Sent invitations', style: Theme.of(context).textTheme.titleMedium),
-          ),
-          sentInvitations.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Text('Error: $error'),
-            data: (list) {
-              if (list.isEmpty) {
-                return const Padding(padding: EdgeInsets.all(16), child: Text('No invitations sent yet.'));
-              }
-              return Column(
-                children: [
-                  for (final invitation in list)
-                    Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: ListTile(
-                        leading: Icon(invitation.status.icon, color: invitation.status.color),
-                        title: Text(invitation.workerLegalFullName ?? invitation.workerUsername ?? 'Unknown'),
-                        trailing: Chip(
-                          label: Text(invitation.status.label),
-                          backgroundColor: invitation.status.color.withValues(alpha: 0.15),
-                          labelStyle: TextStyle(color: invitation.status.color),
-                          side: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MarketplaceTab extends ConsumerWidget {
+  const _MarketplaceTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final candidates = ref.watch(workersLookingForWorkProvider);
+
+    return candidates.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(child: Text('Error: $error')),
+      data: (list) {
+        if (list.isEmpty) {
+          return const Center(child: Text('No one is looking for work right now.'));
+        }
+        return ListView(
+          children: [
+            for (final candidate in list)
+              ListTile(
+                title: Text(candidate.legalFullName),
+                subtitle: candidate.city != null ? Text(candidate.city!) : null,
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/business/browse-workers/${candidate.profileId}', extra: candidate),
+              ),
+          ],
+        );
+      },
     );
   }
 }

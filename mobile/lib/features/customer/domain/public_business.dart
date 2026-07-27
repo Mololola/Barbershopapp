@@ -2,17 +2,19 @@
 /// `phone` (the spec: internal records only, never public). Backed by the
 /// `businesses_public` view, not the `businesses` table.
 class PublicBusiness {
-  const PublicBusiness({required this.id, required this.name, required this.currency});
+  const PublicBusiness({required this.id, required this.name, required this.currency, this.logoUrl});
 
   final String id;
   final String name;
   final String currency;
+  final String? logoUrl;
 
   factory PublicBusiness.fromRow(Map<String, dynamic> row) {
     return PublicBusiness(
       id: row['id'] as String,
       name: row['name'] as String,
       currency: row['currency'] as String,
+      logoUrl: row['logo_url'] as String?,
     );
   }
 }

@@ -80,3 +80,29 @@ class Booking {
     );
   }
 }
+
+/// One bookable (time, worker) pair — the availability endpoint returns
+/// these merged across every worker on shift, not grouped by worker, so two
+/// workers free at the same time show up as two separate slots.
+class AvailableSlot {
+  const AvailableSlot({required this.workerId, required this.workerName, required this.startTime});
+
+  final String workerId;
+  final String workerName;
+  final DateTime startTime;
+
+  factory AvailableSlot.fromApiJson(Map<String, dynamic> json) {
+    return AvailableSlot(
+      workerId: json['worker_id'] as String,
+      workerName: json['worker_name'] as String,
+      startTime: DateTime.parse(json['start_time'] as String),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is AvailableSlot && other.workerId == workerId && other.startTime == startTime;
+
+  @override
+  int get hashCode => Object.hash(workerId, startTime);
+}

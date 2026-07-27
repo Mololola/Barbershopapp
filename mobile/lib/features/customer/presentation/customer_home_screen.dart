@@ -9,6 +9,8 @@ class CustomerHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final myProfile = ref.watch(currentProfileProvider).value;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Barbershop'),
@@ -35,8 +37,13 @@ class CustomerHomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             FilledButton(
-              onPressed: () => context.push('/customer/worker-profile'),
-              child: const Text('Worker profile'),
+              onPressed: myProfile == null ? null : () => context.push('/profile/${myProfile.id}'),
+              child: const Text('Profile'),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => context.push('/feed'),
+              child: const Text('Feed'),
             ),
           ],
         ),

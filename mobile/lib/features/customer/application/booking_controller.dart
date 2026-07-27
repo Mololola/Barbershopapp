@@ -15,12 +15,11 @@ final bookingsRepositoryProvider = Provider<BookingsRepository>((ref) {
   return BookingsRepository(ref.watch(supabaseClientProvider));
 });
 
-typedef AvailabilityQuery = ({String businessId, String workerId, String serviceId, DateTime date});
+typedef AvailabilityQuery = ({String businessId, String serviceId, DateTime date});
 
-final availabilityProvider = FutureProvider.family<List<DateTime>, AvailabilityQuery>((ref, query) {
+final availabilityProvider = FutureProvider.family<List<AvailableSlot>, AvailabilityQuery>((ref, query) {
   return ref.watch(bookingApiClientProvider).fetchAvailability(
         businessId: query.businessId,
-        workerId: query.workerId,
         serviceId: query.serviceId,
         date: query.date,
       );
