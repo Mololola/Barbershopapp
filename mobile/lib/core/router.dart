@@ -28,6 +28,7 @@ import '../features/feed/presentation/feed_screen.dart';
 import '../features/feed/presentation/post_detail_screen.dart';
 import '../features/feed/presentation/profile_screen.dart';
 import '../features/feed/presentation/profile_search_screen.dart';
+import '../features/rankings/presentation/rankings_screen.dart';
 import '../features/worker/domain/worker_profile.dart';
 import '../features/worker/presentation/worker_profile_screen.dart';
 import 'supabase_providers.dart';
@@ -158,6 +159,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/feed/:postId',
         builder: (context, state) => PostDetailScreen(postId: state.pathParameters['postId']!),
       ),
+      GoRoute(path: '/rankings', builder: (context, state) => const RankingsScreen()),
       GoRoute(path: '/profile/edit', builder: (context, state) => const EditProfileScreen()),
       GoRoute(path: '/profile/search', builder: (context, state) => const ProfileSearchScreen()),
       GoRoute(

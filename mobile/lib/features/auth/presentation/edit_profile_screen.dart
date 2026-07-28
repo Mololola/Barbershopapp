@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -77,6 +78,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   : const Text('Save'),
             ),
             const SizedBox(height: 32),
+            if (profile != null)
+              ListTile(
+                title: const Text('Your referral code'),
+                subtitle: Text(profile.referralCode),
+                trailing: IconButton(
+                  icon: const Icon(Icons.copy),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: profile.referralCode));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Referral code copied')),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 8),
             ListTile(
               title: const Text('Manage worker profile'),
               subtitle: const Text('Set up legal name, bio, and availability to work at a shop'),

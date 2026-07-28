@@ -29,6 +29,7 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _referralCodeController = TextEditingController();
   final _locations = [_LocationFields()];
   final List<OpeningHours> _hours = OpeningHours.defaultWeek();
   String _currency = supportedCurrencies.first;
@@ -37,6 +38,7 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _referralCodeController.dispose();
     for (final location in _locations) {
       location.dispose();
     }
@@ -68,6 +70,8 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
           currency: _currency,
           locations: locations,
           openingHours: _hours,
+          referredByCode:
+              _referralCodeController.text.trim().isEmpty ? null : _referralCodeController.text.trim(),
         );
   }
 
@@ -95,6 +99,11 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
                   labelText: 'Phone (internal only, not shown publicly)',
                 ),
                 keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _referralCodeController,
+                decoration: const InputDecoration(labelText: 'Referral code (optional)'),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(

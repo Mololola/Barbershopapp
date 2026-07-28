@@ -45,6 +45,11 @@ class CustomerHomeScreen extends ConsumerWidget {
               onPressed: () => context.push('/feed'),
               child: const Text('Feed'),
             ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => context.push('/rankings'),
+              child: const Text('Rankings'),
+            ),
           ],
         ),
       ),

@@ -8,7 +8,8 @@ import 'package:mobile/features/feed/domain/post.dart';
 import 'package:mobile/features/feed/presentation/feed_screen.dart';
 
 void main() {
-  const myProfile = Profile(id: 'me-1', role: AccountRole.customer, username: 'me');
+  const myProfile =
+      Profile(id: 'me-1', role: AccountRole.customer, username: 'me', referralCode: 'MYCODE01');
 
   final myPost = Post(
     id: 'post-1',

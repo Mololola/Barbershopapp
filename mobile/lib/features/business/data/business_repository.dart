@@ -4,8 +4,15 @@ import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../domain/business.dart';
 
+class InvalidReferralCodeException implements Exception {
+  @override
+  String toString() => 'That referral code doesn\'t exist.';
+}
+
 class BusinessRepository {
   BusinessRepository(this._client);
+
+  static const _foreignKeyViolation = '23503';
 
   final SupabaseClient _client;
 
@@ -25,12 +32,27 @@ class BusinessRepository {
     required String currency,
     required List<BusinessLocation> locations,
     required List<OpeningHours> openingHours,
+    String? referredByCode,
   }) async {
-    final businessRow = await _client
-        .from('businesses')
-        .insert({'owner_id': ownerId, 'name': name, 'phone': phone, 'currency': currency})
-        .select()
-        .single();
+    final Map<String, dynamic> businessRow;
+    try {
+      businessRow = await _client
+          .from('businesses')
+          .insert({
+            'owner_id': ownerId,
+            'name': name,
+            'phone': phone,
+            'currency': currency,
+            'referred_by_code': referredByCode,
+          })
+          .select()
+          .single();
+    } on PostgrestException catch (e) {
+      if (e.code == _foreignKeyViolation) {
+        throw InvalidReferralCodeException();
+      }
+      rethrow;
+    }
     final business = Business.fromRow(businessRow);
 
     await _client.from('locations').insert([

@@ -10,7 +10,8 @@ import 'package:mobile/features/worker/domain/worker_invitation.dart';
 import 'package:mobile/features/worker/presentation/worker_profile_screen.dart';
 
 void main() {
-  const profile = Profile(id: 'me-1', role: AccountRole.customer, username: 'me');
+  const profile =
+      Profile(id: 'me-1', role: AccountRole.customer, username: 'me', referralCode: 'MYCODE01');
 
   Widget buildTestable() {
     final router = GoRouter(
@@ -44,5 +45,12 @@ void main() {
 
     expect(find.text('Worker profile'), findsOneWidget);
     expect(find.text('Available as worker'), findsOneWidget);
+  });
+
+  testWidgets('shows the referral code', (tester) async {
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('MYCODE01'), findsOneWidget);
   });
 }

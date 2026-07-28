@@ -10,9 +10,20 @@ import 'package:mobile/features/worker/application/worker_controller.dart';
 import 'package:mobile/features/worker/domain/worker_profile.dart';
 
 void main() {
-  const customerProfile = Profile(id: 'cust-1', role: AccountRole.customer, username: 'customer_one');
-  const businessProfile = Profile(id: 'biz-1', role: AccountRole.business, username: 'biz_one');
-  const viewer = Profile(id: 'viewer-1', role: AccountRole.customer, username: 'viewer');
+  const customerProfile = Profile(
+    id: 'cust-1',
+    role: AccountRole.customer,
+    username: 'customer_one',
+    referralCode: 'CUSTCODE',
+  );
+  const businessProfile = Profile(
+    id: 'biz-1',
+    role: AccountRole.business,
+    username: 'biz_one',
+    referralCode: 'BIZCODE1',
+  );
+  const viewer =
+      Profile(id: 'viewer-1', role: AccountRole.customer, username: 'viewer', referralCode: 'VIEWCODE');
 
   const workerProfile = WorkerProfile(
     profileId: 'cust-1',

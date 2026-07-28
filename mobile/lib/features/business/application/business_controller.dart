@@ -75,6 +75,7 @@ class BusinessSetupController extends AsyncNotifier<void> {
     required String currency,
     required List<BusinessLocation> locations,
     required List<OpeningHours> openingHours,
+    String? referredByCode,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -87,6 +88,7 @@ class BusinessSetupController extends AsyncNotifier<void> {
             currency: currency,
             locations: locations,
             openingHours: openingHours,
+            referredByCode: referredByCode,
           );
       ref.invalidate(currentBusinessProvider);
     });
