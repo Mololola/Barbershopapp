@@ -153,6 +153,27 @@ class BusinessRepository {
     await _client.from('services').delete().eq('id', serviceId);
   }
 
+  Future<List<CostItem>> fetchCostItems(String businessId) async {
+    final rows = await _client
+        .from('business_cost_items')
+        .select()
+        .eq('business_id', businessId)
+        .order('created_at');
+    return rows.map(CostItem.fromRow).toList();
+  }
+
+  Future<void> addCostItem(String businessId, String label, int amountCents) async {
+    await _client.from('business_cost_items').insert({
+      'business_id': businessId,
+      'label': label,
+      'amount_cents': amountCents,
+    });
+  }
+
+  Future<void> deleteCostItem(String costItemId) async {
+    await _client.from('business_cost_items').delete().eq('id', costItemId);
+  }
+
   Future<List<Worker>> fetchWorkers(String businessId) async {
     final rows = await _client
         .from('workers')

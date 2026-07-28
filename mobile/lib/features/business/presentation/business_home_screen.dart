@@ -125,6 +125,11 @@ class BusinessHomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               FilledButton(
+                onPressed: () => context.push('/business/finance'),
+                child: const Text('Finance'),
+              ),
+              const SizedBox(height: 8),
+              FilledButton(
                 onPressed: () => context.push('/feed'),
                 child: const Text('Feed'),
               ),

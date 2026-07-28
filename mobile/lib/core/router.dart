@@ -14,6 +14,7 @@ import '../features/business/presentation/business_home_screen.dart';
 import '../features/business/presentation/business_setup_screen.dart';
 import '../features/business/presentation/services_screen.dart';
 import '../features/business/presentation/bookings_screen.dart';
+import '../features/business/presentation/finance_screen.dart';
 import '../features/business/presentation/staff_screen.dart';
 import '../features/business/presentation/worker_candidate_detail_screen.dart';
 import '../features/business/presentation/worker_schedule_screen.dart';
@@ -144,6 +145,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/business/services', builder: (context, state) => const ServicesScreen()),
       GoRoute(path: '/business/staff', builder: (context, state) => const StaffScreen()),
       GoRoute(path: '/business/bookings', builder: (context, state) => const BookingsScreen()),
+      GoRoute(path: '/business/finance', builder: (context, state) => const FinanceScreen()),
       GoRoute(
         path: '/business/staff/:workerId/schedule',
         builder: (context, state) => WorkerScheduleScreen(

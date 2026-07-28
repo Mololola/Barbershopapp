@@ -141,6 +141,31 @@ class Service {
   }
 }
 
+class CostItem {
+  const CostItem({
+    this.id,
+    required this.businessId,
+    required this.label,
+    required this.amountCents,
+  });
+
+  final String? id;
+  final String businessId;
+  final String label;
+  final int amountCents;
+
+  double get amountInMajorUnits => amountCents / 100;
+
+  factory CostItem.fromRow(Map<String, dynamic> row) {
+    return CostItem(
+      id: row['id'] as String,
+      businessId: row['business_id'] as String,
+      label: row['label'] as String,
+      amountCents: row['amount_cents'] as int,
+    );
+  }
+}
+
 class Worker {
   const Worker({
     this.id,

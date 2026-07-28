@@ -40,6 +40,12 @@ final servicesProvider = FutureProvider<List<Service>>((ref) async {
   return ref.watch(businessRepositoryProvider).fetchServices(business.id);
 });
 
+final costItemsProvider = FutureProvider<List<CostItem>>((ref) async {
+  final business = await ref.watch(currentBusinessProvider.future);
+  if (business == null) return [];
+  return ref.watch(businessRepositoryProvider).fetchCostItems(business.id);
+});
+
 final workersProvider = FutureProvider<List<Worker>>((ref) async {
   final business = await ref.watch(currentBusinessProvider.future);
   if (business == null) return [];
@@ -127,6 +133,32 @@ class ServiceController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       await ref.read(businessRepositoryProvider).deleteService(serviceId);
       ref.invalidate(servicesProvider);
+    });
+  }
+}
+
+final costItemControllerProvider =
+    AsyncNotifierProvider<CostItemController, void>(CostItemController.new);
+
+class CostItemController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<void> addCostItem({required String label, required int amountCents}) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final business = await ref.read(currentBusinessProvider.future);
+      if (business == null) throw StateError('No business set up yet.');
+      await ref.read(businessRepositoryProvider).addCostItem(business.id, label, amountCents);
+      ref.invalidate(costItemsProvider);
+    });
+  }
+
+  Future<void> deleteCostItem(String costItemId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(businessRepositoryProvider).deleteCostItem(costItemId);
+      ref.invalidate(costItemsProvider);
     });
   }
 }
