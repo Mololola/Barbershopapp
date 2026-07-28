@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../rewards/application/rewards_controller.dart';
 
 class CustomerHomeScreen extends ConsumerWidget {
   const CustomerHomeScreen({super.key});
@@ -10,11 +11,20 @@ class CustomerHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myProfile = ref.watch(currentProfileProvider).value;
+    final balance = ref.watch(rewardBalanceProvider).value ?? 0;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Barbershop'),
         actions: [
+          TextButton.icon(
+            onPressed: () => context.push('/rewards'),
+            icon: const Icon(Icons.paid_outlined, color: Colors.white),
+            label: Text(
+              '\$${(balance / 100).toStringAsFixed(2)}',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
@@ -50,6 +60,13 @@ class CustomerHomeScreen extends ConsumerWidget {
               onPressed: () => context.push('/rankings'),
               child: const Text('Rankings'),
             ),
+            if (myProfile?.isAdmin == true) ...[
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => context.push('/admin'),
+                child: const Text('Admin'),
+              ),
+            ],
           ],
         ),
       ),

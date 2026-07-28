@@ -1,11 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../rewards/application/rewards_controller.dart';
 import '../data/review_repository.dart';
 import '../domain/booking.dart';
 import '../domain/review.dart';
-import 'booking_controller.dart' show bookingsRepositoryProvider;
+import 'booking_controller.dart' show bookingApiClientProvider, bookingsRepositoryProvider;
 
 final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   return ReviewRepository(ref.watch(supabaseClientProvider));
@@ -73,6 +75,16 @@ class ReviewController extends AsyncNotifier<void> {
       // value and route straight back into reviewing this same booking.
       await ref.read(pendingReviewProvider.future);
       success = true;
+
+      // Best-effort: the review itself already succeeded above, so a
+      // failure crediting the reward (or a legitimate non-credit, e.g. the
+      // monthly cap) shouldn't surface as an error on this flow.
+      try {
+        await ref.read(bookingApiClientProvider).creditReviewReward(bookingId);
+        ref.invalidate(rewardBalanceProvider);
+      } catch (error) {
+        debugPrint('Reward crediting failed for booking $bookingId: $error');
+      }
     });
     return success;
   }

@@ -16,6 +16,7 @@ class BusinessHomeScreen extends ConsumerWidget {
     final hours = ref.watch(openingHoursProvider);
     final services = ref.watch(servicesProvider);
     final workers = ref.watch(workersProvider);
+    final myProfile = ref.watch(currentProfileProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -127,6 +128,13 @@ class BusinessHomeScreen extends ConsumerWidget {
                 onPressed: () => context.push('/feed'),
                 child: const Text('Feed'),
               ),
+              if (myProfile?.isAdmin == true) ...[
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: () => context.push('/admin'),
+                  child: const Text('Admin'),
+                ),
+              ],
             ],
           );
         },

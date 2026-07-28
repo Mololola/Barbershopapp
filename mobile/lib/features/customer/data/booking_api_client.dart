@@ -1,4 +1,5 @@
 import '../../../core/api_client.dart';
+import '../../rewards/domain/reward_credit.dart';
 import '../domain/booking.dart';
 
 class BookingApiClient {
@@ -50,6 +51,11 @@ class BookingApiClient {
   Future<Booking> completeBooking(String bookingId) async {
     final result = await _api.post('/bookings/$bookingId/complete');
     return Booking.fromApiJson(result as Map<String, dynamic>);
+  }
+
+  Future<RewardCredit> creditReviewReward(String bookingId) async {
+    final result = await _api.post('/bookings/$bookingId/credit-review-reward');
+    return RewardCredit.fromApiJson(result as Map<String, dynamic>);
   }
 
   String _dateOnly(DateTime date) {

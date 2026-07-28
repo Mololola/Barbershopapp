@@ -131,7 +131,10 @@ class ServiceController extends AsyncNotifier<void> {
   }
 }
 
-final workersLookingForWorkProvider = FutureProvider<List<WorkerSearchResult>>((ref) {
+/// autoDispose — a business browsing the marketplace needs whoever is
+/// looking for work *right now*, not whatever was cached from the last
+/// time any business viewed this screen in the current app session.
+final workersLookingForWorkProvider = FutureProvider.autoDispose<List<WorkerSearchResult>>((ref) {
   return ref.watch(businessRepositoryProvider).fetchWorkersLookingForWork();
 });
 

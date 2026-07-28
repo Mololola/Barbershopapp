@@ -9,21 +9,25 @@ final rankingsRepositoryProvider = Provider<RankingsRepository>((ref) {
   return RankingsRepository(ref.watch(supabaseClientProvider));
 });
 
+// autoDispose — a leaderboard is stale the moment anyone else completes a
+// booking or review, which nothing here can know to invalidate directly.
+// Dropping the cache when the screen isn't watching it means re-opening
+// Rankings always re-fetches instead of showing however-old data.
 final distinctShopsRankingProvider =
-    FutureProvider.family<List<CustomerRankingEntry>, RankingWindow>((ref, window) {
+    FutureProvider.autoDispose.family<List<CustomerRankingEntry>, RankingWindow>((ref, window) {
   return ref.watch(rankingsRepositoryProvider).fetchDistinctShops(window);
 });
 
 final totalHaircutsRankingProvider =
-    FutureProvider.family<List<CustomerRankingEntry>, RankingWindow>((ref, window) {
+    FutureProvider.autoDispose.family<List<CustomerRankingEntry>, RankingWindow>((ref, window) {
   return ref.watch(rankingsRepositoryProvider).fetchTotalHaircuts(window);
 });
 
 final haircutTypesRankingProvider =
-    FutureProvider.family<List<HaircutTypeRankingEntry>, RankingWindow>((ref, window) {
+    FutureProvider.autoDispose.family<List<HaircutTypeRankingEntry>, RankingWindow>((ref, window) {
   return ref.watch(rankingsRepositoryProvider).fetchHaircutTypes(window);
 });
 
-final referralsRankingProvider = FutureProvider<List<CustomerRankingEntry>>((ref) {
+final referralsRankingProvider = FutureProvider.autoDispose<List<CustomerRankingEntry>>((ref) {
   return ref.watch(rankingsRepositoryProvider).fetchReferrals();
 });

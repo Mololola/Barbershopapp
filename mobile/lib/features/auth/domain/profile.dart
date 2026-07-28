@@ -15,6 +15,8 @@ class Profile {
     required this.username,
     required this.referralCode,
     this.avatarUrl,
+    this.isAdmin = false,
+    this.isQualityReviewer = false,
   });
 
   final String id;
@@ -27,6 +29,14 @@ class Profile {
 
   final String? avatarUrl;
 
+  /// Only ever set via direct DB access, never through the app — gates the
+  /// Admin screen.
+  final bool isAdmin;
+
+  /// Set by an admin, per-account — makes this customer's future review
+  /// rewards pay the higher tier (see backend/app/api/rewards.py).
+  final bool isQualityReviewer;
+
   factory Profile.fromRow(Map<String, dynamic> row) {
     return Profile(
       id: row['id'] as String,
@@ -34,6 +44,8 @@ class Profile {
       username: row['username'] as String,
       referralCode: row['referral_code'] as String,
       avatarUrl: row['avatar_url'] as String?,
+      isAdmin: row['is_admin'] as bool? ?? false,
+      isQualityReviewer: row['is_quality_reviewer'] as bool? ?? false,
     );
   }
 }

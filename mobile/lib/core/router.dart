@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/admin/presentation/admin_screen.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/domain/profile.dart';
 import '../features/auth/presentation/edit_profile_screen.dart';
@@ -29,6 +30,7 @@ import '../features/feed/presentation/post_detail_screen.dart';
 import '../features/feed/presentation/profile_screen.dart';
 import '../features/feed/presentation/profile_search_screen.dart';
 import '../features/rankings/presentation/rankings_screen.dart';
+import '../features/rewards/presentation/reward_history_screen.dart';
 import '../features/worker/domain/worker_profile.dart';
 import '../features/worker/presentation/worker_profile_screen.dart';
 import 'supabase_providers.dart';
@@ -160,6 +162,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => PostDetailScreen(postId: state.pathParameters['postId']!),
       ),
       GoRoute(path: '/rankings', builder: (context, state) => const RankingsScreen()),
+      GoRoute(path: '/rewards', builder: (context, state) => const RewardHistoryScreen()),
+      GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),
       GoRoute(path: '/profile/edit', builder: (context, state) => const EditProfileScreen()),
       GoRoute(path: '/profile/search', builder: (context, state) => const ProfileSearchScreen()),
       GoRoute(
