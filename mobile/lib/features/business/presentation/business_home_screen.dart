@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../messaging/presentation/messages_entry_button.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 
@@ -133,6 +134,8 @@ class BusinessHomeScreen extends ConsumerWidget {
                 onPressed: () => context.push('/feed'),
                 child: const Text('Feed'),
               ),
+              const SizedBox(height: 8),
+              const MessagesEntryButton(),
               if (myProfile?.isAdmin == true) ...[
                 const SizedBox(height: 8),
                 FilledButton(

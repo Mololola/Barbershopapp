@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../messaging/application/messaging_controller.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../application/business_controller.dart';
 
@@ -44,6 +46,17 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
               child: actionState.isLoading
                   ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('Send invite'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: const Text('Message'),
+              onPressed: () async {
+                final conversationId = await ref
+                    .read(messagingActionControllerProvider.notifier)
+                    .startOrGetConversation(candidate.profileId);
+                if (context.mounted) context.push('/messages/$conversationId');
+              },
             ),
           ],
         ),

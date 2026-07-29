@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
+import '../../messaging/application/messaging_controller.dart';
 import '../../worker/application/worker_controller.dart';
 import '../application/feed_controller.dart';
 import 'post_card.dart';
@@ -62,6 +63,19 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              if (!isMine) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Message'),
+                  onPressed: () async {
+                    final conversationId = await ref
+                        .read(messagingActionControllerProvider.notifier)
+                        .startOrGetConversation(profileId);
+                    if (context.mounted) context.push('/messages/$conversationId');
+                  },
+                ),
+              ],
               if (value.role == AccountRole.customer) ...[
                 const SizedBox(height: 24),
                 _WorkerStatusLine(profileId: profileId),

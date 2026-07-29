@@ -30,6 +30,8 @@ import '../features/feed/presentation/feed_screen.dart';
 import '../features/feed/presentation/post_detail_screen.dart';
 import '../features/feed/presentation/profile_screen.dart';
 import '../features/feed/presentation/profile_search_screen.dart';
+import '../features/messaging/presentation/conversation_screen.dart';
+import '../features/messaging/presentation/conversations_screen.dart';
 import '../features/rankings/presentation/rankings_screen.dart';
 import '../features/rewards/presentation/reward_history_screen.dart';
 import '../features/worker/domain/worker_profile.dart';
@@ -166,6 +168,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/rankings', builder: (context, state) => const RankingsScreen()),
       GoRoute(path: '/rewards', builder: (context, state) => const RewardHistoryScreen()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),
+      GoRoute(path: '/messages', builder: (context, state) => const ConversationsScreen()),
+      GoRoute(
+        path: '/messages/:conversationId',
+        builder: (context, state) =>
+            ConversationScreen(conversationId: state.pathParameters['conversationId']!),
+      ),
       GoRoute(path: '/profile/edit', builder: (context, state) => const EditProfileScreen()),
       GoRoute(path: '/profile/search', builder: (context, state) => const ProfileSearchScreen()),
       GoRoute(

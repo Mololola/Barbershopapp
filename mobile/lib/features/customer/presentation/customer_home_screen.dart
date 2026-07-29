@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../messaging/presentation/messages_entry_button.dart';
 import '../../rewards/application/rewards_controller.dart';
 
 class CustomerHomeScreen extends ConsumerWidget {
@@ -55,6 +56,8 @@ class CustomerHomeScreen extends ConsumerWidget {
               onPressed: () => context.push('/feed'),
               child: const Text('Feed'),
             ),
+            const SizedBox(height: 8),
+            const MessagesEntryButton(),
             const SizedBox(height: 8),
             FilledButton(
               onPressed: () => context.push('/rankings'),
