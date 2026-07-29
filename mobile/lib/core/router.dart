@@ -30,6 +30,9 @@ import '../features/feed/presentation/feed_screen.dart';
 import '../features/feed/presentation/post_detail_screen.dart';
 import '../features/feed/presentation/profile_screen.dart';
 import '../features/feed/presentation/profile_search_screen.dart';
+import '../features/designer/presentation/design_detail_screen.dart';
+import '../features/designer/presentation/design_editor_screen.dart';
+import '../features/designer/presentation/designer_gallery_screen.dart';
 import '../features/messaging/presentation/conversation_screen.dart';
 import '../features/messaging/presentation/conversations_screen.dart';
 import '../features/rankings/presentation/rankings_screen.dart';
@@ -173,6 +176,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/messages/:conversationId',
         builder: (context, state) =>
             ConversationScreen(conversationId: state.pathParameters['conversationId']!),
+      ),
+      GoRoute(path: '/designs', builder: (context, state) => const DesignerGalleryScreen()),
+      GoRoute(path: '/designs/new', builder: (context, state) => const DesignEditorScreen()),
+      GoRoute(
+        path: '/designs/:designId/edit',
+        builder: (context, state) => DesignEditorScreen(designId: state.pathParameters['designId']!),
+      ),
+      GoRoute(
+        path: '/designs/:designId',
+        builder: (context, state) => DesignDetailScreen(designId: state.pathParameters['designId']!),
       ),
       GoRoute(path: '/profile/edit', builder: (context, state) => const EditProfileScreen()),
       GoRoute(path: '/profile/search', builder: (context, state) => const ProfileSearchScreen()),

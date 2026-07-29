@@ -8,7 +8,10 @@ plugins {
 android {
     namespace = "com.barbershopapp.mobile"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Pinned above Flutter's default (flutter.ndkVersion) — several plugins
+    // (webview_flutter_android among them) require this newer NDK; it's
+    // backward compatible with the rest of the toolchain.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

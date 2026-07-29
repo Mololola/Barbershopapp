@@ -63,6 +63,11 @@ class CustomerHomeScreen extends ConsumerWidget {
               onPressed: () => context.push('/rankings'),
               child: const Text('Rankings'),
             ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => context.push('/designs'),
+              child: const Text('Haircut designs'),
+            ),
             if (myProfile?.isAdmin == true) ...[
               const SizedBox(height: 8),
               FilledButton(
