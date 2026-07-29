@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
@@ -9,11 +10,17 @@ import '../../customer/application/booking_controller.dart' show bookingsReposit
 import '../../customer/domain/booking.dart';
 import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_profile.dart';
+import '../data/billing_api_client.dart';
 import '../data/business_repository.dart';
 import '../domain/business.dart';
+import '../domain/business_subscription.dart';
 
 final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
   return BusinessRepository(ref.watch(supabaseClientProvider));
+});
+
+final billingApiClientProvider = Provider<BillingApiClient>((ref) {
+  return BillingApiClient(ref.watch(apiClientProvider));
 });
 
 final currentBusinessProvider = FutureProvider<Business?>((ref) async {
@@ -21,6 +28,35 @@ final currentBusinessProvider = FutureProvider<Business?>((ref) async {
   if (profile == null || profile.role != AccountRole.business) return null;
   return ref.watch(businessRepositoryProvider).fetchOwnBusiness(profile.id);
 });
+
+/// autoDispose — subscription status can flip via a Stripe webhook at any
+/// time, independent of anything the app itself does; re-fetch whenever the
+/// home screen is opened, same reasoning as rankings/marketplace elsewhere.
+final businessSubscriptionProvider = FutureProvider.autoDispose<BusinessSubscription?>((ref) async {
+  final business = await ref.watch(currentBusinessProvider.future);
+  if (business == null) return null;
+  return ref.watch(businessRepositoryProvider).fetchSubscription(business.id);
+});
+
+final billingActionControllerProvider =
+    AsyncNotifierProvider<BillingActionController, void>(BillingActionController.new);
+
+class BillingActionController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<String> startCheckout() async {
+    final business = await ref.read(currentBusinessProvider.future);
+    if (business == null) throw StateError('No business set up yet.');
+    return ref.read(billingApiClientProvider).createCheckoutSession(business.id);
+  }
+
+  Future<String> openPortal() async {
+    final business = await ref.read(currentBusinessProvider.future);
+    if (business == null) throw StateError('No business set up yet.');
+    return ref.read(billingApiClientProvider).createPortalSession(business.id);
+  }
+}
 
 final locationsProvider = FutureProvider<List<BusinessLocation>>((ref) async {
   final business = await ref.watch(currentBusinessProvider.future);

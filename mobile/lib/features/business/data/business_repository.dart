@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../domain/business.dart';
+import '../domain/business_subscription.dart';
 
 class InvalidReferralCodeException implements Exception {
   @override
@@ -15,6 +16,16 @@ class BusinessRepository {
   static const _foreignKeyViolation = '23503';
 
   final SupabaseClient _client;
+
+  Future<BusinessSubscription?> fetchSubscription(String businessId) async {
+    final row = await _client
+        .from('business_subscriptions')
+        .select()
+        .eq('business_id', businessId)
+        .maybeSingle();
+    if (row == null) return null;
+    return BusinessSubscription.fromRow(row);
+  }
 
   Future<Business?> fetchOwnBusiness(String ownerId) async {
     final row = await _client.from('businesses').select().eq('owner_id', ownerId).maybeSingle();

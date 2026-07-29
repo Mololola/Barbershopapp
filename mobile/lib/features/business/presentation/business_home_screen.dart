@@ -6,6 +6,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../messaging/presentation/messages_entry_button.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
+import 'subscription_banner.dart';
 
 class BusinessHomeScreen extends ConsumerWidget {
   const BusinessHomeScreen({super.key});
@@ -43,6 +44,7 @@ class BusinessHomeScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              const SubscriptionBanner(),
               Row(
                 children: [
                   CircleAvatar(

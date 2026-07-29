@@ -151,6 +151,9 @@ def create_booking(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> Booking:
+    if _is_business_suspended(db, body.business_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This business is currently unavailable")
+
     service = _get_active_service(db, body.business_id, body.service_id)
     _get_active_worker(db, body.business_id, body.worker_id)
 
@@ -183,6 +186,15 @@ def _map_booking_integrity_error(exc: IntegrityError) -> HTTPException:
             "That slot was just taken — please pick another.",
         )
     return HTTPException(status.HTTP_400_BAD_REQUEST, "Could not create booking")
+
+
+def _is_business_suspended(db: Session, business_id: uuid.UUID) -> bool:
+    return bool(
+        db.execute(
+            text("select is_suspended from businesses where id = :business_id"),
+            {"business_id": business_id},
+        ).scalar()
+    )
 
 
 def _is_business_owner(db: Session, business_id: uuid.UUID, user_id: str) -> bool:
