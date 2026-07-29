@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../application/business_controller.dart';
 import '../domain/business.dart';
+import 'finance_access_section.dart';
 
 class _LocationFields {
   _LocationFields({String addressLine = '', String city = ''})
@@ -170,6 +171,8 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/business/staff'),
                 ),
+                const SizedBox(height: 32),
+                FinanceAccessSection(business: business),
               ],
             );
           },

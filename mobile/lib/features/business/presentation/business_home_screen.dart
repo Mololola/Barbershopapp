@@ -19,6 +19,7 @@ class BusinessHomeScreen extends ConsumerWidget {
     final services = ref.watch(servicesProvider);
     final workers = ref.watch(workersProvider);
     final myProfile = ref.watch(currentProfileProvider).value;
+    final financeAccess = ref.watch(financeAccessProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -126,11 +127,13 @@ class BusinessHomeScreen extends ConsumerWidget {
                 onPressed: () => context.push('/business/bookings'),
                 child: const Text('Bookings'),
               ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: () => context.push('/business/finance'),
-                child: const Text('Finance'),
-              ),
+              if (financeAccess != null && financeAccess.isUnlocked) ...[
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: () => context.push('/business/finance'),
+                  child: const Text('Finance'),
+                ),
+              ],
               const SizedBox(height: 8),
               FilledButton(
                 onPressed: () => context.push('/feed'),

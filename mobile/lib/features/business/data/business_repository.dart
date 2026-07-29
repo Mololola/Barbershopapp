@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../domain/business.dart';
+import '../domain/business_finance_access.dart';
 import '../domain/business_subscription.dart';
 
 class InvalidReferralCodeException implements Exception {
@@ -25,6 +26,16 @@ class BusinessRepository {
         .maybeSingle();
     if (row == null) return null;
     return BusinessSubscription.fromRow(row);
+  }
+
+  Future<BusinessFinanceAccess?> fetchFinanceAccess(String businessId) async {
+    final row = await _client
+        .from('business_finance_access')
+        .select()
+        .eq('business_id', businessId)
+        .maybeSingle();
+    if (row == null) return null;
+    return BusinessFinanceAccess.fromRow(row);
   }
 
   Future<Business?> fetchOwnBusiness(String ownerId) async {

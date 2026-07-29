@@ -13,6 +13,7 @@ import '../../worker/domain/worker_profile.dart';
 import '../data/billing_api_client.dart';
 import '../data/business_repository.dart';
 import '../domain/business.dart';
+import '../domain/business_finance_access.dart';
 import '../domain/business_subscription.dart';
 
 final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
@@ -38,6 +39,14 @@ final businessSubscriptionProvider = FutureProvider.autoDispose<BusinessSubscrip
   return ref.watch(businessRepositoryProvider).fetchSubscription(business.id);
 });
 
+/// autoDispose — same reasoning as [businessSubscriptionProvider]: a Stripe
+/// webhook can flip this any time, independent of the app.
+final financeAccessProvider = FutureProvider.autoDispose<BusinessFinanceAccess?>((ref) async {
+  final business = await ref.watch(currentBusinessProvider.future);
+  if (business == null) return null;
+  return ref.watch(businessRepositoryProvider).fetchFinanceAccess(business.id);
+});
+
 final billingActionControllerProvider =
     AsyncNotifierProvider<BillingActionController, void>(BillingActionController.new);
 
@@ -55,6 +64,23 @@ class BillingActionController extends AsyncNotifier<void> {
     final business = await ref.read(currentBusinessProvider.future);
     if (business == null) throw StateError('No business set up yet.');
     return ref.read(billingApiClientProvider).createPortalSession(business.id);
+  }
+
+  Future<void> startFinanceTrial() async {
+    final business = await ref.read(currentBusinessProvider.future);
+    if (business == null) throw StateError('No business set up yet.');
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(billingApiClientProvider).startFinanceTrial(business.id);
+      ref.invalidate(financeAccessProvider);
+      await ref.read(financeAccessProvider.future);
+    });
+  }
+
+  Future<String> startFinanceCheckout() async {
+    final business = await ref.read(currentBusinessProvider.future);
+    if (business == null) throw StateError('No business set up yet.');
+    return ref.read(billingApiClientProvider).createFinanceAccessCheckout(business.id);
   }
 }
 

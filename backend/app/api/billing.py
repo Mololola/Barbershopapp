@@ -1,4 +1,6 @@
+import calendar
 import uuid
+from datetime import datetime, timezone
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -17,6 +19,9 @@ router = APIRouter()
 # service price, times this multiplier, becomes its monthly subscription.
 _PRICE_MULTIPLIER = 10
 
+# Finance tool: a flat one-off unlock, not tied to service pricing.
+_FINANCE_ACCESS_PRICE_CENTS = 4500
+
 
 class CheckoutSessionResponse(BaseModel):
     url: str
@@ -24,6 +29,10 @@ class CheckoutSessionResponse(BaseModel):
 
 class PortalSessionResponse(BaseModel):
     url: str
+
+
+class OkResponse(BaseModel):
+    ok: bool = True
 
 
 def _is_business_owner(db: Session, business_id: uuid.UUID, user_id: str) -> bool:
@@ -162,18 +171,119 @@ def create_portal_session(
     return PortalSessionResponse(url=portal_session.url)
 
 
-def _handle_checkout_completed(db: Session, session: dict) -> None:
-    if session.get("mode") != "subscription":
-        return
-    business_id = session["metadata"]["business_id"]
+def _add_one_calendar_month(dt: datetime) -> datetime:
+    """Same day next month (Jan 1 -> Feb 1, Apr 15 -> May 15), clamped to the
+    target month's last day when it doesn't have that day (Jan 31 -> Feb
+    28/29) — the "1 month free trial" the user described by example."""
+    year = dt.year + dt.month // 12
+    month = dt.month % 12 + 1
+    day = min(dt.day, calendar.monthrange(year, month)[1])
+    return dt.replace(year=year, month=month, day=day)
+
+
+def _finance_access_row(db: Session, business_id: uuid.UUID):
+    return db.execute(
+        text("select grandfathered, paid_at from business_finance_access where business_id = :business_id"),
+        {"business_id": business_id},
+    ).mappings().first()
+
+
+@router.post("/businesses/{business_id}/finance-access/trial", response_model=OkResponse)
+def start_finance_trial(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+
+    if _finance_access_row(db, business_id) is not None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Finance tool access was already started for this business")
+
+    now = datetime.now(timezone.utc)
     db.execute(
         text(
-            "update business_subscriptions set stripe_subscription_id = :sub, status = 'active' "
-            "where business_id = :business_id"
+            "insert into business_finance_access (business_id, trial_started_at, trial_ends_at) "
+            "values (:business_id, :started, :ends)"
         ),
-        {"sub": session["subscription"], "business_id": business_id},
+        {"business_id": business_id, "started": now, "ends": _add_one_calendar_month(now)},
     )
-    db.execute(text("update businesses set is_suspended = false where id = :business_id"), {"business_id": business_id})
+    db.commit()
+    return OkResponse()
+
+
+@router.post("/businesses/{business_id}/finance-access/checkout", response_model=CheckoutSessionResponse)
+def create_finance_access_checkout(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> CheckoutSessionResponse:
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+
+    existing = _finance_access_row(db, business_id)
+    if existing and (existing["grandfathered"] or existing["paid_at"] is not None):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Finance tool is already unlocked for this business")
+
+    business = db.execute(
+        text("select owner_id, currency, name from businesses where id = :business_id"),
+        {"business_id": business_id},
+    ).mappings().first()
+    if business is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Business not found")
+
+    email = db.execute(
+        text("select email from auth.users where id = :owner_id"),
+        {"owner_id": business["owner_id"]},
+    ).scalar()
+
+    placeholder_return_url = f"{settings.supabase_url}/"
+
+    session = stripe.checkout.Session.create(
+        customer_email=email,
+        mode="payment",
+        line_items=[
+            {
+                "price_data": {
+                    "currency": business["currency"].lower(),
+                    "product_data": {"name": f"{business['name']} — Finance tool (one-time unlock)"},
+                    "unit_amount": _FINANCE_ACCESS_PRICE_CENTS,
+                },
+                "quantity": 1,
+            }
+        ],
+        metadata={"business_id": str(business_id)},
+        success_url=f"{placeholder_return_url}?billing=success",
+        cancel_url=f"{placeholder_return_url}?billing=cancelled",
+    )
+    return CheckoutSessionResponse(url=session.url)
+
+
+def _handle_checkout_completed(db: Session, session: dict) -> None:
+    mode = session.get("mode")
+    business_id = session["metadata"]["business_id"]
+
+    if mode == "subscription":
+        db.execute(
+            text(
+                "update business_subscriptions set stripe_subscription_id = :sub, status = 'active' "
+                "where business_id = :business_id"
+            ),
+            {"sub": session["subscription"], "business_id": business_id},
+        )
+        db.execute(
+            text("update businesses set is_suspended = false where id = :business_id"), {"business_id": business_id}
+        )
+    elif mode == "payment":
+        # Upsert: a business may pay without ever having started a trial, so
+        # there might be no existing business_finance_access row yet.
+        db.execute(
+            text(
+                "insert into business_finance_access (business_id, paid_at) values (:business_id, now()) "
+                "on conflict (business_id) do update set paid_at = now()"
+            ),
+            {"business_id": business_id},
+        )
 
 
 def _handle_invoice_payment_failed(db: Session, invoice: dict) -> None:
