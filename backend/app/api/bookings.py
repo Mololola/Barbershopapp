@@ -93,6 +93,33 @@ def _effective_hours(worker_schedule: dict | None, business_hours: dict) -> dict
     return worker_schedule if worker_schedule is not None else business_hours
 
 
+_CLOSED_HOURS = {"is_closed": True, "open_time": None, "close_time": None}
+
+
+def _slot_rejection_reason(
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+    hours: dict,
+    now: datetime.datetime,
+) -> str | None:
+    """None if the slot is bookable, else why not. Mirrors compute_available_slots'
+    own rules (see app/services/availability.py) — the EXCLUDE constraint
+    only guarantees no double-booking, not that the slot was ever actually
+    open or in the future, so create_booking must check this itself rather
+    than trusting whatever the client claims is an available slot."""
+    if start_time < now:
+        return "Cannot book a time in the past"
+    if hours["is_closed"] or hours["open_time"] is None or hours["close_time"] is None:
+        return "Outside business hours"
+
+    day = start_time.date()
+    open_at = datetime.datetime.combine(day, hours["open_time"], tzinfo=start_time.tzinfo)
+    close_at = datetime.datetime.combine(day, hours["close_time"], tzinfo=start_time.tzinfo)
+    if start_time < open_at or end_time > close_at:
+        return "Outside business hours"
+    return None
+
+
 @router.get("/businesses/{business_id}/availability", response_model=list[AvailableSlot])
 def get_availability(
     business_id: uuid.UUID,
@@ -158,6 +185,16 @@ def create_booking(
     _get_active_worker(db, body.business_id, body.worker_id)
 
     end_time = body.start_time + datetime.timedelta(minutes=service.duration_minutes)
+
+    business_hours = _get_opening_hours(db, body.business_id, body.start_time.weekday()) or _CLOSED_HOURS
+    worker_schedule = _get_worker_schedule(db, body.worker_id, body.start_time.weekday())
+    hours = _effective_hours(worker_schedule, business_hours)
+    rejection_reason = _slot_rejection_reason(
+        body.start_time, end_time, hours, datetime.datetime.now(datetime.UTC)
+    )
+    if rejection_reason:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, rejection_reason)
+
     booking = Booking(
         business_id=body.business_id,
         worker_id=body.worker_id,
