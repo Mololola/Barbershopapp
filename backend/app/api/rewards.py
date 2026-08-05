@@ -1,9 +1,11 @@
 import datetime
 import uuid
 
+import psycopg
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user_id
@@ -29,6 +31,17 @@ def _month_start(now: datetime.datetime) -> datetime.datetime:
 
 def _tier_amount_cents(is_quality_reviewer: bool) -> int:
     return _QUALITY_REWARD_CENTS if is_quality_reviewer else _AUTOMATIC_REWARD_CENTS
+
+
+def _is_duplicate_reward_error(exc: IntegrityError) -> bool:
+    """True when the failure is reward_ledger.review_id's unique constraint
+    — i.e. a concurrent request already credited this review between our
+    "already credited?" check and this insert. Same reasoning as
+    _map_booking_integrity_error in bookings.py: the application-level
+    check is for the common case, the DB constraint is the actual
+    guarantee, and a race on it should look like the idempotent response,
+    not a raw 500."""
+    return isinstance(exc.orig, psycopg.errors.UniqueViolation)
 
 
 @router.post("/bookings/{booking_id}/credit-review-reward", response_model=RewardCreditResponse)
@@ -80,5 +93,11 @@ def credit_review_reward(
             amount_cents=amount_cents,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if _is_duplicate_reward_error(exc):
+            return RewardCreditResponse(credited=False, amount_cents=0, reason="already credited")
+        raise
     return RewardCreditResponse(credited=True, amount_cents=amount_cents)
