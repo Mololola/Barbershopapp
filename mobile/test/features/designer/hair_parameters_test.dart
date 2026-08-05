@@ -10,6 +10,16 @@ void main() {
       colorHex: '#8a3324',
       partOffset: -0.5,
       fadeHeight: 0.9,
+      faceParams: FaceParameters(skinTone: '#c68642'),
+      strokes: [
+        HairStroke(tool: 'clipper', guard: 3, radius: 0.05, points: [
+          [0.2, 0.3],
+          [0.25, 0.35],
+        ]),
+        HairStroke(tool: 'dye', colorHex: '#ff00ff', radius: 0.02, points: [
+          [0.6, 0.1],
+        ]),
+      ],
     );
 
     final restored = HairParameters.fromJson(original.toJson());
@@ -20,6 +30,16 @@ void main() {
     expect(restored.colorHex, original.colorHex);
     expect(restored.partOffset, original.partOffset);
     expect(restored.fadeHeight, original.fadeHeight);
+    expect(restored.faceParams.skinTone, '#c68642');
+    expect(restored.strokes, hasLength(2));
+    expect(restored.strokes[0].tool, 'clipper');
+    expect(restored.strokes[0].guard, 3);
+    expect(restored.strokes[0].points, [
+      [0.2, 0.3],
+      [0.25, 0.35],
+    ]);
+    expect(restored.strokes[1].tool, 'dye');
+    expect(restored.strokes[1].colorHex, '#ff00ff');
   });
 
   test('fromJson fills in defaults for missing fields', () {
@@ -31,6 +51,25 @@ void main() {
     expect(restored.curl, const HairParameters().curl);
     expect(restored.partOffset, const HairParameters().partOffset);
     expect(restored.fadeHeight, const HairParameters().fadeHeight);
+    expect(restored.faceParams.skinTone, const FaceParameters().skinTone);
+    expect(restored.strokes, isEmpty);
+  });
+
+  test('fromJson on a pre-existing saved design (no faceParams/strokes keys) still loads', () {
+    final legacyJson = {
+      'length': 10.0,
+      'volume': 1.2,
+      'curl': 0.3,
+      'colorHex': '#3b2314',
+      'partOffset': 0.0,
+      'fadeHeight': 0.5,
+    };
+
+    final restored = HairParameters.fromJson(legacyJson);
+
+    expect(restored.length, 10.0);
+    expect(restored.faceParams.skinTone, const FaceParameters().skinTone);
+    expect(restored.strokes, isEmpty);
   });
 
   test('copyWith only overrides the given fields', () {
