@@ -6,10 +6,31 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/haircut_design.dart';
 import '../domain/hair_parameters.dart';
 
+/// Raised when the Postgres trigger (not just the client-side pre-check)
+/// rejects an insert past the free-plus-purchased design cap — see
+/// enforce_design_slot_cap() in the design_extra_slots migration. Thrown as
+/// a defense-in-depth backstop; the UI should rarely hit this since
+/// [DesignEditController] checks the cap before inserting.
+class DesignSlotCapReachedException implements Exception {
+  @override
+  String toString() => 'Design slot cap reached.';
+}
+
 class DesignerRepository {
   DesignerRepository(this._client);
 
+  static const _designSlotCapErrorCode = 'P0001';
+
   final SupabaseClient _client;
+
+  Future<int> fetchExtraSlots(String profileId) async {
+    final row = await _client
+        .from('design_extra_slots')
+        .select('extra_slots')
+        .eq('profile_id', profileId)
+        .maybeSingle();
+    return row == null ? 0 : row['extra_slots'] as int;
+  }
 
   Future<List<HaircutDesign>> fetchMyDesigns(String ownerId) async {
     final rows = await _client
@@ -49,14 +70,19 @@ class DesignerRepository {
     String? forkedFromId,
     bool isPublic = false,
   }) async {
-    final rows = await _client.from('haircut_designs').insert({
-      'owner_id': ownerId,
-      'name': name,
-      'parameters': parameters.toJson(),
-      'forked_from_id': forkedFromId,
-      'is_public': isPublic,
-    }).select();
-    return rows.first['id'] as String;
+    try {
+      final rows = await _client.from('haircut_designs').insert({
+        'owner_id': ownerId,
+        'name': name,
+        'parameters': parameters.toJson(),
+        'forked_from_id': forkedFromId,
+        'is_public': isPublic,
+      }).select();
+      return rows.first['id'] as String;
+    } on PostgrestException catch (e) {
+      if (e.code == _designSlotCapErrorCode) throw DesignSlotCapReachedException();
+      rethrow;
+    }
   }
 
   Future<void> updateDesign(

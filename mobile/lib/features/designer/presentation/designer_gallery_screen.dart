@@ -35,15 +35,20 @@ class _MyDesignsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final designs = ref.watch(myDesignsProvider);
+    final extraSlots = ref.watch(designExtraSlotsProvider).value ?? 0;
     return designs.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (list) {
+        final cap = maxFreeDesigns + extraSlots;
+        final label = extraSlots > 0
+            ? '${list.length}/$cap designs used ($maxFreeDesigns free + $extraSlots purchased)'
+            : '${list.length}/$cap free designs used';
         return Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(12),
-              child: Text('${list.length}/$maxFreeDesigns free designs used'),
+              child: Text(label),
             ),
             Expanded(
               child: list.isEmpty

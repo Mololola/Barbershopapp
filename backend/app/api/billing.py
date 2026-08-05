@@ -22,6 +22,11 @@ _PRICE_MULTIPLIER = 10
 # Finance tool: a flat one-off unlock, not tied to service pricing.
 _FINANCE_ACCESS_PRICE_CENTS = 4500
 
+# 3D designer: a repeatable, per-user bundle — buy again any time you fill
+# up. Fixed GBP price since profiles (unlike businesses) have no currency.
+_DESIGN_SLOT_BUNDLE_SIZE = 2
+_DESIGN_SLOT_BUNDLE_PRICE_CENTS = 200
+
 
 class CheckoutSessionResponse(BaseModel):
     url: str
@@ -259,11 +264,41 @@ def create_finance_access_checkout(
     return CheckoutSessionResponse(url=session.url)
 
 
+@router.post("/designer/extra-slots/checkout", response_model=CheckoutSessionResponse)
+def create_design_slot_checkout(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> CheckoutSessionResponse:
+    email = db.execute(text("select email from auth.users where id = :user_id"), {"user_id": user_id}).scalar()
+
+    placeholder_return_url = f"{settings.supabase_url}/"
+
+    session = stripe.checkout.Session.create(
+        customer_email=email,
+        mode="payment",
+        line_items=[
+            {
+                "price_data": {
+                    "currency": "gbp",
+                    "product_data": {"name": f"+{_DESIGN_SLOT_BUNDLE_SIZE} extra 3D design slots"},
+                    "unit_amount": _DESIGN_SLOT_BUNDLE_PRICE_CENTS,
+                },
+                "quantity": 1,
+            }
+        ],
+        metadata={"profile_id": str(user_id)},
+        success_url=f"{placeholder_return_url}?billing=success",
+        cancel_url=f"{placeholder_return_url}?billing=cancelled",
+    )
+    return CheckoutSessionResponse(url=session.url)
+
+
 def _handle_checkout_completed(db: Session, session: dict) -> None:
     mode = session.get("mode")
-    business_id = session["metadata"]["business_id"]
+    metadata = session.get("metadata", {})
 
     if mode == "subscription":
+        business_id = metadata["business_id"]
         db.execute(
             text(
                 "update business_subscriptions set stripe_subscription_id = :sub, status = 'active' "
@@ -274,7 +309,7 @@ def _handle_checkout_completed(db: Session, session: dict) -> None:
         db.execute(
             text("update businesses set is_suspended = false where id = :business_id"), {"business_id": business_id}
         )
-    elif mode == "payment":
+    elif mode == "payment" and "business_id" in metadata:
         # Upsert: a business may pay without ever having started a trial, so
         # there might be no existing business_finance_access row yet.
         db.execute(
@@ -282,7 +317,17 @@ def _handle_checkout_completed(db: Session, session: dict) -> None:
                 "insert into business_finance_access (business_id, paid_at) values (:business_id, now()) "
                 "on conflict (business_id) do update set paid_at = now()"
             ),
-            {"business_id": business_id},
+            {"business_id": metadata["business_id"]},
+        )
+    elif mode == "payment" and "profile_id" in metadata:
+        # Upsert: a user may buy a bundle before ever hitting the free cap,
+        # so there might be no existing design_extra_slots row yet.
+        db.execute(
+            text(
+                "insert into design_extra_slots (profile_id, extra_slots) values (:profile_id, :n) "
+                "on conflict (profile_id) do update set extra_slots = design_extra_slots.extra_slots + :n"
+            ),
+            {"profile_id": metadata["profile_id"], "n": _DESIGN_SLOT_BUNDLE_SIZE},
         )
 
 

@@ -2,20 +2,35 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
+import '../data/designer_billing_api_client.dart';
 import '../data/designer_repository.dart';
 import '../domain/haircut_design.dart';
 import '../domain/hair_parameters.dart';
 
 /// Free-tier cap on saved designs, per the spec ("save up to 3... pay for
-/// extra space"). Enforced client-side only — there's no way to actually
-/// pay for more yet (that's the Stripe billing milestone), so there's
-/// nothing money-adjacent to protect server-side until that exists.
+/// extra space"). The actual source of truth is the enforce_design_slot_cap
+/// Postgres trigger (see the design_extra_slots migration) — this constant
+/// must stay in sync with the literal 3 there. Kept here too so the UI can
+/// show the right number without a round-trip.
 const maxFreeDesigns = 3;
 
 final designerRepositoryProvider = Provider<DesignerRepository>((ref) {
   return DesignerRepository(ref.watch(supabaseClientProvider));
+});
+
+final designerBillingApiClientProvider = Provider<DesignerBillingApiClient>((ref) {
+  return DesignerBillingApiClient(ref.watch(apiClientProvider));
+});
+
+/// autoDispose — same reasoning as the billing providers elsewhere: a
+/// Stripe webhook can raise this any time, independent of the app.
+final designExtraSlotsProvider = FutureProvider.autoDispose<int>((ref) async {
+  final profile = await ref.watch(currentProfileProvider.future);
+  if (profile == null) return 0;
+  return ref.watch(designerRepositoryProvider).fetchExtraSlots(profile.id);
 });
 
 /// autoDispose — same cross-account staleness reasoning as rankings and the
@@ -63,29 +78,38 @@ class DesignEditController extends AsyncNotifier<void> {
     final profile = await ref.read(currentProfileProvider.future);
     if (profile == null) throw StateError('Not signed in.');
 
-    final existing = await ref.read(designerRepositoryProvider).fetchMyDesigns(profile.id);
-    if (existing.length >= maxFreeDesigns) {
+    final repository = ref.read(designerRepositoryProvider);
+    final existing = await repository.fetchMyDesigns(profile.id);
+    final extraSlots = await ref.read(designExtraSlotsProvider.future);
+    if (existing.length >= maxFreeDesigns + extraSlots) {
       return const DesignSaveResult.capReached();
     }
 
     var result = const DesignSaveResult.capReached();
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final repository = ref.read(designerRepositoryProvider);
-      final designId = await repository.createDesign(
-        ownerId: profile.id,
-        name: name,
-        parameters: parameters,
-        forkedFromId: forkedFromId,
-      );
-      if (thumbnailPngBytes != null) {
-        final url = await repository.uploadThumbnail(profile.id, designId, thumbnailPngBytes);
-        await repository.updateDesign(designId, thumbnailUrl: url);
+      try {
+        final designId = await repository.createDesign(
+          ownerId: profile.id,
+          name: name,
+          parameters: parameters,
+          forkedFromId: forkedFromId,
+        );
+        if (thumbnailPngBytes != null) {
+          final url = await repository.uploadThumbnail(profile.id, designId, thumbnailPngBytes);
+          await repository.updateDesign(designId, thumbnailUrl: url);
+        }
+        ref.invalidate(myDesignsProvider);
+        result = DesignSaveResult.success(designId);
+      } on DesignSlotCapReachedException {
+        result = const DesignSaveResult.capReached();
       }
-      ref.invalidate(myDesignsProvider);
-      result = DesignSaveResult.success(designId);
     });
     return result;
+  }
+
+  Future<String> startExtraSlotsCheckout() {
+    return ref.read(designerBillingApiClientProvider).createExtraSlotsCheckout();
   }
 
   Future<void> updateDesign({
@@ -128,26 +152,31 @@ class DesignEditController extends AsyncNotifier<void> {
     final profile = await ref.read(currentProfileProvider.future);
     if (profile == null) throw StateError('Not signed in.');
 
-    final existing = await ref.read(designerRepositoryProvider).fetchMyDesigns(profile.id);
-    if (existing.length >= maxFreeDesigns) {
+    final repository = ref.read(designerRepositoryProvider);
+    final existing = await repository.fetchMyDesigns(profile.id);
+    final extraSlots = await ref.read(designExtraSlotsProvider.future);
+    if (existing.length >= maxFreeDesigns + extraSlots) {
       return const DesignSaveResult.capReached();
     }
 
     var result = const DesignSaveResult.capReached();
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final repository = ref.read(designerRepositoryProvider);
-      final designId = await repository.createDesign(
-        ownerId: profile.id,
-        name: '${source.name} (fork)',
-        parameters: source.parameters,
-        forkedFromId: source.id,
-      );
-      if (source.thumbnailUrl != null) {
-        await repository.updateDesign(designId, thumbnailUrl: source.thumbnailUrl);
+      try {
+        final designId = await repository.createDesign(
+          ownerId: profile.id,
+          name: '${source.name} (fork)',
+          parameters: source.parameters,
+          forkedFromId: source.id,
+        );
+        if (source.thumbnailUrl != null) {
+          await repository.updateDesign(designId, thumbnailUrl: source.thumbnailUrl);
+        }
+        ref.invalidate(myDesignsProvider);
+        result = DesignSaveResult.success(designId);
+      } on DesignSlotCapReachedException {
+        result = const DesignSaveResult.capReached();
       }
-      ref.invalidate(myDesignsProvider);
-      result = DesignSaveResult.success(designId);
     });
     return result;
   }

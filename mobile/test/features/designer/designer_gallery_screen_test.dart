@@ -19,11 +19,16 @@ void main() {
     );
   }
 
-  Widget buildTestable({required List<HaircutDesign> myDesigns, required List<HaircutDesign> publicDesigns}) {
+  Widget buildTestable({
+    required List<HaircutDesign> myDesigns,
+    required List<HaircutDesign> publicDesigns,
+    int extraSlots = 0,
+  }) {
     return ProviderScope(
       overrides: [
         myDesignsProvider.overrideWith((ref) async => myDesigns),
         publicDesignsProvider.overrideWith((ref) async => publicDesigns),
+        designExtraSlotsProvider.overrideWith((ref) async => extraSlots),
       ],
       child: const MaterialApp(home: DesignerGalleryScreen()),
     );
@@ -54,5 +59,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Shared style'), findsOneWidget);
+  });
+
+  testWidgets('shows purchased slots and the raised cap once bought', (tester) async {
+    await tester.pumpWidget(buildTestable(
+      myDesigns: [design('d1', 'One'), design('d2', 'Two'), design('d3', 'Three')],
+      publicDesigns: [],
+      extraSlots: 2,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('3/5 designs used ($maxFreeDesigns free + 2 purchased)'), findsOneWidget);
   });
 }

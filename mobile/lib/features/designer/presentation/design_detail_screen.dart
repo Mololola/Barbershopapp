@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../application/designer_controller.dart';
+import 'cap_reached_dialog.dart';
 
 class DesignDetailScreen extends ConsumerStatefulWidget {
   const DesignDetailScreen({super.key, required this.designId});
@@ -38,14 +39,7 @@ class _DesignDetailScreenState extends ConsumerState<DesignDetailScreen> {
     final result = await ref.read(designEditControllerProvider.notifier).forkDesign(design);
     if (!mounted) return;
     if (result.capReached) {
-      showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Design limit reached'),
-          content: Text('You can save up to $maxFreeDesigns designs for free. Delete one to make room.'),
-          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-        ),
-      );
+      showCapReachedDialog(context, ref);
     } else {
       context.pushReplacement('/designs/${result.designId}/edit');
     }
