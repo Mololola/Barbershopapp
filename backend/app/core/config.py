@@ -28,5 +28,11 @@ class Settings(BaseSettings):
     db_max_overflow: int = 5
     db_pool_recycle_seconds: int = 1800
 
+    # Business hours / worker schedules change a handful of times a year at
+    # most, so a few minutes of staleness is a non-issue — see
+    # app/core/cache.py for what this actually gates.
+    cache_ttl_seconds: int = 300
+    cache_max_size: int = 2000
+
 
 settings = Settings()

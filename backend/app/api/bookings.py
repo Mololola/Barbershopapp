@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user_id
+from app.core.cache import cache
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 from app.models import Booking, Service, Worker
@@ -65,25 +66,39 @@ def _get_active_worker(db: Session, business_id: uuid.UUID, worker_id: uuid.UUID
 
 
 def _get_opening_hours(db: Session, business_id: uuid.UUID, day_of_week: int) -> dict | None:
-    row = db.execute(
-        text(
-            "select is_closed, open_time, close_time from opening_hours "
-            "where business_id = :business_id and day_of_week = :day_of_week"
-        ),
-        {"business_id": business_id, "day_of_week": day_of_week},
-    ).mappings().first()
-    return dict(row) if row else None
+    # Cached: businesses set their hours and rarely touch them again, but
+    # this is read once per get_availability call and again per active
+    # worker inside it (see _effective_hours' caller) — the single highest-
+    # amplification read on the app's most frequently hit endpoint.
+    def fetch() -> dict | None:
+        row = db.execute(
+            text(
+                "select is_closed, open_time, close_time from opening_hours "
+                "where business_id = :business_id and day_of_week = :day_of_week"
+            ),
+            {"business_id": business_id, "day_of_week": day_of_week},
+        ).mappings().first()
+        return dict(row) if row else None
+
+    return cache.get_or_set(f"opening_hours:{business_id}:{day_of_week}", fetch)
 
 
 def _get_worker_schedule(db: Session, worker_id: uuid.UUID, day_of_week: int) -> dict | None:
-    row = db.execute(
-        text(
-            "select is_closed, open_time, close_time from worker_schedules "
-            "where worker_id = :worker_id and day_of_week = :day_of_week"
-        ),
-        {"worker_id": worker_id, "day_of_week": day_of_week},
-    ).mappings().first()
-    return dict(row) if row else None
+    # Cached — same reasoning as _get_opening_hours, and this one is
+    # already inside a per-worker loop in get_availability, so it's the
+    # actual N+1 query multiplied by however many active workers a
+    # business has.
+    def fetch() -> dict | None:
+        row = db.execute(
+            text(
+                "select is_closed, open_time, close_time from worker_schedules "
+                "where worker_id = :worker_id and day_of_week = :day_of_week"
+            ),
+            {"worker_id": worker_id, "day_of_week": day_of_week},
+        ).mappings().first()
+        return dict(row) if row else None
+
+    return cache.get_or_set(f"worker_schedule:{worker_id}:{day_of_week}", fetch)
 
 
 def _effective_hours(worker_schedule: dict | None, business_hours: dict) -> dict:
