@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 import app.core.stripe_client  # noqa: F401 — sets stripe.api_key on import
 from app.core.auth import get_current_user_id
 from app.core.config import settings
+from app.core.rate_limit import limiter, rate_limit
 from app.db.session import get_db
 
 router = APIRouter()
@@ -76,6 +77,7 @@ def _compute_monthly_amount_cents(db: Session, business_id: uuid.UUID) -> int:
 def create_checkout_session(
     business_id: uuid.UUID,
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
     user_id: str = Depends(get_current_user_id),
 ) -> CheckoutSessionResponse:
     if not _is_business_owner(db, business_id, user_id):
@@ -157,6 +159,7 @@ def create_checkout_session(
 def create_portal_session(
     business_id: uuid.UUID,
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
     user_id: str = Depends(get_current_user_id),
 ) -> PortalSessionResponse:
     if not _is_business_owner(db, business_id, user_id):
@@ -221,6 +224,7 @@ def start_finance_trial(
 def create_finance_access_checkout(
     business_id: uuid.UUID,
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
     user_id: str = Depends(get_current_user_id),
 ) -> CheckoutSessionResponse:
     if not _is_business_owner(db, business_id, user_id):
@@ -267,6 +271,7 @@ def create_finance_access_checkout(
 @router.post("/designer/extra-slots/checkout", response_model=CheckoutSessionResponse)
 def create_design_slot_checkout(
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
     user_id: str = Depends(get_current_user_id),
 ) -> CheckoutSessionResponse:
     email = db.execute(text("select email from auth.users where id = :user_id"), {"user_id": user_id}).scalar()
@@ -390,6 +395,10 @@ _WEBHOOK_HANDLERS = {
 
 
 @router.post("/webhooks/stripe")
+@limiter.exempt  # already gated by signature verification below, not by our own rate limit —
+# an attacker without the webhook secret is rejected for free, and a legitimate burst of
+# Stripe events (many businesses' subscriptions renewing around the same time, etc.) must
+# never be dropped just because it looks like a flood.
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)) -> dict:
     payload = await request.body()
     signature = request.headers.get("stripe-signature", "")

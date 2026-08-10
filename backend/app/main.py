@@ -1,11 +1,14 @@
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.billing import router as billing_router
 from app.api.bookings import router as bookings_router
 from app.api.rewards import router as rewards_router
+from app.core.rate_limit import _rate_limit_exceeded_handler, limiter
 from app.db.session import SessionLocal
 from app.jobs.expire_grace_periods import find_and_delete_expired_businesses
 
@@ -33,11 +36,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Barbershop API", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 app.include_router(bookings_router)
 app.include_router(rewards_router)
 app.include_router(billing_router)
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+@limiter.exempt
+def health(request: Request) -> dict[str, str]:
     return {"status": "ok"}

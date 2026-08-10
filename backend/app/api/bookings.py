@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user_id
+from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 from app.models import Booking, Service, Worker
 from app.services.availability import compute_available_slots
@@ -126,6 +127,7 @@ def get_availability(
     service_id: uuid.UUID,
     date: datetime.date,
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("120/minute")),  # read-heavy — likely re-queried on every date-picker change
     _user_id: str = Depends(get_current_user_id),
 ) -> list[AvailableSlot]:
     service = _get_active_service(db, business_id, service_id)
@@ -176,6 +178,7 @@ def get_availability(
 def create_booking(
     body: BookingCreateRequest,
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("10/minute")),  # a human can't legitimately create more than this
     user_id: str = Depends(get_current_user_id),
 ) -> Booking:
     if _is_business_suspended(db, body.business_id):
