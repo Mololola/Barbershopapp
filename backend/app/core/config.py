@@ -17,5 +17,16 @@ class Settings(BaseSettings):
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
 
+    # Deliberately small — Supabase's free/small-tier max_connections is 60
+    # total, shared with its own internal services (Supavisor, PostgREST,
+    # pg_cron, auth, ...), which alone already account for a handful before
+    # this app connects at all. pool_size + db_max_overflow is this one
+    # process's ceiling; a paid tier with a higher max_connections (or
+    # running as more than one process) should raise these via .env rather
+    # than needing a code change.
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+    db_pool_recycle_seconds: int = 1800
+
 
 settings = Settings()
