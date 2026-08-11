@@ -27,7 +27,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   bool get _canSubmit => _bodyController.text.trim().isNotEmpty || _image != null;
 
   Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    // Compressed client-side rather than uploading the original — a modern
+    // phone photo can be several MB at full resolution, and a feed image
+    // doesn't need to be larger than this. The post-media bucket's
+    // file_size_limit (see the c8a1f5d47b6e migration) is the actual
+    // backstop; this is what keeps normal uploads well under it instead of
+    // relying on that cap alone.
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1920, imageQuality: 80);
     if (picked == null) return;
     setState(() => _image = File(picked.path));
   }
