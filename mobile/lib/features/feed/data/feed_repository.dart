@@ -15,7 +15,7 @@ class FeedRepository {
   Future<List<Post>> fetchFeed({required String? myProfileId}) async {
     final rows = await _client
         .from('posts')
-        .select('*, profiles(username), post_media(media_url), likes(profile_id), comments(count)')
+        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
         .order('created_at', ascending: false);
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
   }
@@ -32,7 +32,7 @@ class FeedRepository {
   Future<List<Post>> fetchPostsByAuthor({required String authorId, required String? myProfileId}) async {
     final rows = await _client
         .from('posts')
-        .select('*, profiles(username), post_media(media_url), likes(profile_id), comments(count)')
+        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
         .eq('author_id', authorId)
         .order('created_at', ascending: false);
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
@@ -42,16 +42,28 @@ class FeedRepository {
     required String authorId,
     required String? body,
     required File? image,
+    required File? video,
   }) async {
+    assert(image == null || video == null, 'A post has at most one piece of media — an image or a video, not both.');
     final post = await _client.from('posts').insert({'author_id': authorId, 'body': body}).select().single();
 
-    if (image == null) return;
+    final mediaFile = image ?? video;
+    if (mediaFile == null) return;
+    final mediaType = video != null ? 'video' : 'image';
+
     // The post's own id is already a fresh unique value — no need to mint a
-    // separate one just to name the file.
-    final path = '$authorId/${post['id']}${_extensionOf(image.path)}';
-    await _client.storage.from('post-media').upload(path, image);
+    // separate one just to name the file. Content type is set explicitly
+    // (not left to the client library's guess) since the post-media
+    // bucket enforces allowed_mime_types.
+    final extension = _extensionOf(mediaFile.path);
+    final path = '$authorId/${post['id']}$extension';
+    await _client.storage.from('post-media').upload(
+          path,
+          mediaFile,
+          fileOptions: FileOptions(contentType: _contentTypeOf(extension)),
+        );
     final mediaUrl = _client.storage.from('post-media').getPublicUrl(path);
-    await _client.from('post_media').insert({'post_id': post['id'], 'media_url': mediaUrl});
+    await _client.from('post_media').insert({'post_id': post['id'], 'media_url': mediaUrl, 'media_type': mediaType});
   }
 
   Future<void> toggleLike({required String postId, required String profileId, required bool currentlyLiked}) async {
@@ -109,5 +121,24 @@ class FeedRepository {
   String _extensionOf(String path) {
     final dot = path.lastIndexOf('.');
     return dot == -1 ? '.jpg' : path.substring(dot);
+  }
+
+  /// Must match one of post-media's allowed_mime_types (see the
+  /// d7f3a92c1e58 migration) or Supabase rejects the upload.
+  String _contentTypeOf(String extension) {
+    switch (extension.toLowerCase()) {
+      case '.png':
+        return 'image/png';
+      case '.webp':
+        return 'image/webp';
+      case '.mp4':
+        return 'video/mp4';
+      case '.mov':
+        return 'video/quicktime';
+      case '.jpg':
+      case '.jpeg':
+      default:
+        return 'image/jpeg';
+    }
   }
 }

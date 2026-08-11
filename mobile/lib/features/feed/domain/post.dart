@@ -1,3 +1,5 @@
+enum PostMediaType { image, video }
+
 class Post {
   const Post({
     required this.id,
@@ -5,6 +7,7 @@ class Post {
     required this.authorUsername,
     required this.body,
     required this.mediaUrl,
+    required this.mediaType,
     required this.likeCount,
     required this.commentCount,
     required this.likedByMe,
@@ -16,6 +19,9 @@ class Post {
   final String authorUsername;
   final String? body;
   final String? mediaUrl;
+
+  /// Only meaningful when [mediaUrl] is non-null.
+  final PostMediaType mediaType;
   final int likeCount;
   final int commentCount;
   final bool likedByMe;
@@ -25,12 +31,14 @@ class Post {
     final media = row['post_media'] as List;
     final likes = row['likes'] as List;
     final comments = row['comments'] as List;
+    final firstMedia = media.isEmpty ? null : media.first as Map<String, dynamic>;
     return Post(
       id: row['id'] as String,
       authorId: row['author_id'] as String,
       authorUsername: (row['profiles'] as Map<String, dynamic>)['username'] as String,
       body: row['body'] as String?,
-      mediaUrl: media.isEmpty ? null : media.first['media_url'] as String,
+      mediaUrl: firstMedia?['media_url'] as String?,
+      mediaType: firstMedia?['media_type'] == 'video' ? PostMediaType.video : PostMediaType.image,
       likeCount: likes.length,
       commentCount: comments.isEmpty ? 0 : comments.first['count'] as int,
       likedByMe: myProfileId != null && likes.any((like) => like['profile_id'] == myProfileId),

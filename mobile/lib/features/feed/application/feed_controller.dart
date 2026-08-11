@@ -32,11 +32,11 @@ class FeedActionController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<bool> createPost({required String? body, required File? image}) async {
+  Future<bool> createPost({required String? body, required File? image, required File? video}) async {
     return _run(() async {
       final profile = await ref.read(currentProfileProvider.future);
       if (profile == null) throw StateError('No signed-in profile.');
-      await ref.read(feedRepositoryProvider).createPost(authorId: profile.id, body: body, image: image);
+      await ref.read(feedRepositoryProvider).createPost(authorId: profile.id, body: body, image: image, video: video);
     });
   }
 
