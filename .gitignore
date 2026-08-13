@@ -5,6 +5,17 @@
 mobile/env.json
 !mobile/env.json.example
 
+# Other common secret-file shapes — none of these exist in this repo today;
+# kept as a guard against accidentally committing one later.
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+google-services.json
+GoogleService-Info.plist
+
 # Python (backend/)
 __pycache__/
 *.py[cod]
