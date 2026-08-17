@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,6 +27,7 @@ import '../features/customer/presentation/my_bookings_screen.dart';
 import '../features/customer/presentation/review_screen.dart';
 import '../features/feed/presentation/create_post_screen.dart';
 import '../features/feed/presentation/feed_screen.dart';
+import '../features/feed/presentation/my_profile_screen.dart';
 import '../features/feed/presentation/post_detail_screen.dart';
 import '../features/feed/presentation/profile_screen.dart';
 import '../features/feed/presentation/profile_search_screen.dart';
@@ -39,6 +40,7 @@ import '../features/rankings/presentation/rankings_screen.dart';
 import '../features/rewards/presentation/reward_history_screen.dart';
 import '../features/worker/domain/worker_profile.dart';
 import '../features/worker/presentation/worker_profile_screen.dart';
+import 'app_shell.dart';
 import 'supabase_providers.dart';
 
 const _authRoutes = {'/sign-in', '/sign-up'};
@@ -88,6 +90,22 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   void ping() => notifyListeners();
 }
 
+const _customerDestinations = [
+  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+  NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Browse'),
+  NavigationDestination(icon: Icon(Icons.photo_outlined), selectedIcon: Icon(Icons.photo), label: 'Feed'),
+  NavigationDestination(icon: Icon(Icons.content_cut_outlined), selectedIcon: Icon(Icons.content_cut), label: 'Designs'),
+  NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+];
+
+const _businessDestinations = [
+  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+  NavigationDestination(icon: Icon(Icons.event_outlined), selectedIcon: Icon(Icons.event), label: 'Bookings'),
+  NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Staff'),
+  NavigationDestination(icon: Icon(Icons.payments_outlined), selectedIcon: Icon(Icons.payments), label: 'Finance'),
+  NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+];
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _RouterRefreshNotifier();
   ref.listen(authStateChangesProvider, (_, __) => refresh.ping());
@@ -115,7 +133,105 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/sign-in', builder: (context, state) => const SignInScreen()),
       GoRoute(path: '/sign-up', builder: (context, state) => const SignUpScreen()),
-      GoRoute(path: '/customer', builder: (context, state) => const CustomerHomeScreen()),
+
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell, destinations: _customerDestinations),
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/customer', builder: (context, state) => const CustomerHomeScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/customer/businesses',
+              builder: (context, state) => const BusinessListScreen(),
+              routes: [
+                GoRoute(
+                  path: ':businessId',
+                  builder: (context, state) =>
+                      BusinessDetailScreen(businessId: state.pathParameters['businessId']!),
+                  routes: [
+                    GoRoute(
+                      path: 'book',
+                      builder: (context, state) => BookingScreen(
+                        businessId: state.pathParameters['businessId']!,
+                        serviceId: state.uri.queryParameters['serviceId']!,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/feed',
+              builder: (context, state) => const FeedScreen(),
+              routes: [
+                GoRoute(path: 'new', builder: (context, state) => const CreatePostScreen()),
+                GoRoute(
+                  path: ':postId',
+                  builder: (context, state) => PostDetailScreen(postId: state.pathParameters['postId']!),
+                ),
+              ],
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/designs',
+              builder: (context, state) => const DesignerGalleryScreen(),
+              routes: [
+                GoRoute(path: 'new', builder: (context, state) => const DesignEditorScreen()),
+                GoRoute(
+                  path: ':designId/edit',
+                  builder: (context, state) => DesignEditorScreen(designId: state.pathParameters['designId']!),
+                ),
+                GoRoute(
+                  path: ':designId',
+                  builder: (context, state) => DesignDetailScreen(designId: state.pathParameters['designId']!),
+                ),
+              ],
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/customer/profile', builder: (context, state) => const MyProfileScreen()),
+          ]),
+        ],
+      ),
+
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell, destinations: _businessDestinations),
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/business', builder: (context, state) => const BusinessHomeScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/business/bookings', builder: (context, state) => const BookingsScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/business/staff', builder: (context, state) => const StaffScreen()),
+            GoRoute(
+              path: '/business/staff/:workerId/schedule',
+              builder: (context, state) => WorkerScheduleScreen(
+                workerId: state.pathParameters['workerId']!,
+                workerName: state.extra as String,
+              ),
+            ),
+            GoRoute(
+              path: '/business/browse-workers/:profileId',
+              builder: (context, state) => WorkerCandidateDetailScreen(candidate: state.extra as WorkerSearchResult),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/business/finance', builder: (context, state) => const FinanceScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/business/profile', builder: (context, state) => const MyProfileScreen()),
+          ]),
+        ],
+      ),
+
       GoRoute(
         path: '/customer/worker-profile',
         builder: (context, state) => const WorkerProfileScreen(),
@@ -128,46 +244,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/customer/bookings/:bookingId/review',
         builder: (context, state) => ReviewScreen(bookingId: state.pathParameters['bookingId']!),
       ),
-      GoRoute(
-        path: '/customer/businesses',
-        builder: (context, state) => const BusinessListScreen(),
-      ),
-      GoRoute(
-        path: '/customer/businesses/:businessId',
-        builder: (context, state) =>
-            BusinessDetailScreen(businessId: state.pathParameters['businessId']!),
-      ),
-      GoRoute(
-        path: '/customer/businesses/:businessId/book',
-        builder: (context, state) => BookingScreen(
-          businessId: state.pathParameters['businessId']!,
-          serviceId: state.uri.queryParameters['serviceId']!,
-        ),
-      ),
-      GoRoute(path: '/business', builder: (context, state) => const BusinessHomeScreen()),
       GoRoute(path: '/business/edit', builder: (context, state) => const BusinessEditScreen()),
       GoRoute(path: _businessSetupRoute, builder: (context, state) => const BusinessSetupScreen()),
       GoRoute(path: '/business/services', builder: (context, state) => const ServicesScreen()),
-      GoRoute(path: '/business/staff', builder: (context, state) => const StaffScreen()),
-      GoRoute(path: '/business/bookings', builder: (context, state) => const BookingsScreen()),
-      GoRoute(path: '/business/finance', builder: (context, state) => const FinanceScreen()),
-      GoRoute(
-        path: '/business/staff/:workerId/schedule',
-        builder: (context, state) => WorkerScheduleScreen(
-          workerId: state.pathParameters['workerId']!,
-          workerName: state.extra as String,
-        ),
-      ),
-      GoRoute(
-        path: '/business/browse-workers/:profileId',
-        builder: (context, state) => WorkerCandidateDetailScreen(candidate: state.extra as WorkerSearchResult),
-      ),
-      GoRoute(path: '/feed', builder: (context, state) => const FeedScreen()),
-      GoRoute(path: '/feed/new', builder: (context, state) => const CreatePostScreen()),
-      GoRoute(
-        path: '/feed/:postId',
-        builder: (context, state) => PostDetailScreen(postId: state.pathParameters['postId']!),
-      ),
       GoRoute(path: '/rankings', builder: (context, state) => const RankingsScreen()),
       GoRoute(path: '/rewards', builder: (context, state) => const RewardHistoryScreen()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),
@@ -176,16 +255,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/messages/:conversationId',
         builder: (context, state) =>
             ConversationScreen(conversationId: state.pathParameters['conversationId']!),
-      ),
-      GoRoute(path: '/designs', builder: (context, state) => const DesignerGalleryScreen()),
-      GoRoute(path: '/designs/new', builder: (context, state) => const DesignEditorScreen()),
-      GoRoute(
-        path: '/designs/:designId/edit',
-        builder: (context, state) => DesignEditorScreen(designId: state.pathParameters['designId']!),
-      ),
-      GoRoute(
-        path: '/designs/:designId',
-        builder: (context, state) => DesignDetailScreen(designId: state.pathParameters['designId']!),
       ),
       GoRoute(path: '/profile/edit', builder: (context, state) => const EditProfileScreen()),
       GoRoute(path: '/profile/search', builder: (context, state) => const ProfileSearchScreen()),

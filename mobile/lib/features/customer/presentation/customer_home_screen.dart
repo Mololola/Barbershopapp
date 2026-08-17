@@ -38,23 +38,8 @@ class CustomerHomeScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             FilledButton(
-              onPressed: () => context.push('/customer/businesses'),
-              child: const Text('Browse barbershops'),
-            ),
-            const SizedBox(height: 8),
-            FilledButton(
               onPressed: () => context.push('/customer/my-bookings'),
               child: const Text('My bookings'),
-            ),
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: myProfile == null ? null : () => context.push('/profile/${myProfile.id}'),
-              child: const Text('Profile'),
-            ),
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: () => context.push('/feed'),
-              child: const Text('Feed'),
             ),
             const SizedBox(height: 8),
             const MessagesEntryButton(),
@@ -62,11 +47,6 @@ class CustomerHomeScreen extends ConsumerWidget {
             FilledButton(
               onPressed: () => context.push('/rankings'),
               child: const Text('Rankings'),
-            ),
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: () => context.push('/designs'),
-              child: const Text('Haircut designs'),
             ),
             if (myProfile?.isAdmin == true) ...[
               const SizedBox(height: 8),

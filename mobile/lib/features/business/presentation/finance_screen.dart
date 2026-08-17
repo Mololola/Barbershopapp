@@ -5,6 +5,7 @@ import '../../customer/domain/booking.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 import '../domain/finance_calculator.dart';
+import 'finance_access_section.dart';
 
 class FinanceScreen extends ConsumerWidget {
   const FinanceScreen({super.key});
@@ -62,10 +63,29 @@ class FinanceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final financeAccess = ref.watch(financeAccessProvider);
+    final business = ref.watch(currentBusinessProvider).value;
+
+    // Finance is a fixed bottom-nav tab now, reachable before the tool is
+    // unlocked, so the gate has to live here rather than in whether the
+    // entry point is shown at all.
+    if (financeAccess.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final access = financeAccess.value;
+    if (access == null || !access.isUnlocked) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Finance')),
+        body: Padding(
+          padding: const EdgeInsets.all(24),
+          child: FinanceAccessSection(business: business),
+        ),
+      );
+    }
+
     final costItems = ref.watch(costItemsProvider);
     final bookings = ref.watch(businessBookingsProvider);
     final services = ref.watch(servicesProvider);
-    final business = ref.watch(currentBusinessProvider).value;
     final symbol = business == null ? '' : currencySymbol(business.currency);
 
     return Scaffold(

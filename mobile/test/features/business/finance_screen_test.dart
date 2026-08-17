@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/business/application/business_controller.dart';
 import 'package:mobile/features/business/domain/business.dart';
+import 'package:mobile/features/business/domain/business_finance_access.dart';
 import 'package:mobile/features/business/presentation/finance_screen.dart';
 import 'package:mobile/features/customer/domain/booking.dart';
 
@@ -29,6 +30,9 @@ void main() {
         servicesProvider.overrideWith((ref) async => [service]),
         businessBookingsProvider.overrideWith((ref) async => [completedBooking]),
         costItemsProvider.overrideWith((ref) async => [costItem]),
+        financeAccessProvider.overrideWith(
+          (ref) async => const BusinessFinanceAccess(grandfathered: true, amountCents: 4500),
+        ),
       ],
       child: const MaterialApp(home: FinanceScreen()),
     );
