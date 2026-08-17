@@ -146,6 +146,7 @@ class StaffScreen extends ConsumerWidget {
           ),
         ),
         floatingActionButton: FloatingActionButton(
+          heroTag: null,
           onPressed: () => _showAddWorkerDialog(context, ref),
           child: const Icon(Icons.add),
         ),

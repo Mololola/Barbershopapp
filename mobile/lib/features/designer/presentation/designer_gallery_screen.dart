@@ -18,6 +18,7 @@ class DesignerGalleryScreen extends StatelessWidget {
           bottom: const TabBar(tabs: [Tab(text: 'My Designs'), Tab(text: 'Browse')]),
         ),
         floatingActionButton: FloatingActionButton(
+          heroTag: null,
           onPressed: () => context.push('/designs/new'),
           child: const Icon(Icons.add),
         ),

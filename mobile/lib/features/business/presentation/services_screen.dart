@@ -79,6 +79,7 @@ class ServicesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Services')),
       floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => _showAddServiceDialog(context, ref),
         child: const Icon(Icons.add),
       ),

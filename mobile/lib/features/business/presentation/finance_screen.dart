@@ -91,6 +91,7 @@ class FinanceScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Finance')),
       floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => _showAddCostDialog(context, ref),
         child: const Icon(Icons.add),
       ),

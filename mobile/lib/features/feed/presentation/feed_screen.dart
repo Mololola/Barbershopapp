@@ -17,6 +17,7 @@ class FeedScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Feed')),
       floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => context.push('/feed/new'),
         child: const Icon(Icons.add),
       ),
