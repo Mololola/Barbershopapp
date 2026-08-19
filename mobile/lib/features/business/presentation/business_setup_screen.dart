@@ -132,6 +132,7 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
                               validator: (value) =>
                                   (value == null || value.trim().isEmpty) ? 'Required' : null,
                             ),
+                            const SizedBox(height: 16),
                             TextFormField(
                               controller: _locations[i].city,
                               decoration: const InputDecoration(labelText: 'City'),

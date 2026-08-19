@@ -28,6 +28,7 @@ class ServicesScreen extends ConsumerWidget {
                 decoration: const InputDecoration(labelText: 'Name'),
                 validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: priceController,
                 decoration: const InputDecoration(labelText: 'Price'),
@@ -38,6 +39,7 @@ class ServicesScreen extends ConsumerWidget {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: durationController,
                 decoration: const InputDecoration(labelText: 'Duration (minutes)'),

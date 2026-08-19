@@ -30,6 +30,7 @@ class FinanceScreen extends ConsumerWidget {
                 decoration: const InputDecoration(labelText: 'Label'),
                 validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: amountController,
                 decoration: const InputDecoration(labelText: 'Monthly amount'),

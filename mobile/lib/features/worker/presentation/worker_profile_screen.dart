@@ -100,22 +100,26 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
                     'you as once you accept a job.',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _legalFirstNameController,
                     decoration: const InputDecoration(labelText: 'Legal first name'),
                     validator: (value) =>
                         (value == null || value.trim().isEmpty) ? 'Required' : null,
                   ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _legalLastNameController,
                     decoration: const InputDecoration(labelText: 'Legal last name'),
                     validator: (value) =>
                         (value == null || value.trim().isEmpty) ? 'Required' : null,
                   ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _legalSecondLastNameController,
                     decoration: const InputDecoration(labelText: 'Legal second last name (optional)'),
                   ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _bioController,
                     decoration: const InputDecoration(labelText: 'Experience / bio'),
@@ -123,12 +127,14 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
                     validator: (value) =>
                         (value == null || value.trim().isEmpty) ? 'Required' : null,
                   ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _cityController,
                     decoration: const InputDecoration(labelText: 'City'),
                     validator: (value) =>
                         (value == null || value.trim().isEmpty) ? 'Required' : null,
                   ),
+                  const SizedBox(height: 8),
                   ListenableBuilder(
                     listenable: Listenable.merge([
                       _legalFirstNameController,

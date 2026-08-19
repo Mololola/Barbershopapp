@@ -61,10 +61,12 @@ class StaffScreen extends ConsumerWidget {
                 decoration: const InputDecoration(labelText: 'Legal first name'),
                 autofocus: true,
               ),
+              const SizedBox(height: 16),
               TextField(
                 controller: lastNameController,
                 decoration: const InputDecoration(labelText: 'Legal last name'),
               ),
+              const SizedBox(height: 16),
               TextField(
                 controller: secondLastNameController,
                 decoration: const InputDecoration(

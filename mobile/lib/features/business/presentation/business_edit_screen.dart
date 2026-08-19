@@ -124,6 +124,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
                                 controller: fields[i].addressLine,
                                 decoration: const InputDecoration(labelText: 'Address'),
                               ),
+                              const SizedBox(height: 16),
                               TextFormField(
                                 controller: fields[i].city,
                                 decoration: const InputDecoration(labelText: 'City'),
