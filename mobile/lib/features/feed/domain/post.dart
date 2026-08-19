@@ -27,6 +27,21 @@ class Post {
   final bool likedByMe;
   final DateTime createdAt;
 
+  Post copyWith({int? likeCount, bool? likedByMe}) {
+    return Post(
+      id: id,
+      authorId: authorId,
+      authorUsername: authorUsername,
+      body: body,
+      mediaUrl: mediaUrl,
+      mediaType: mediaType,
+      likeCount: likeCount ?? this.likeCount,
+      commentCount: commentCount,
+      likedByMe: likedByMe ?? this.likedByMe,
+      createdAt: createdAt,
+    );
+  }
+
   factory Post.fromRow(Map<String, dynamic> row, {required String? myProfileId}) {
     final media = row['post_media'] as List;
     final likes = row['likes'] as List;
@@ -69,6 +84,20 @@ class Comment {
   final int likeCount;
   final bool likedByMe;
   final DateTime createdAt;
+
+  Comment copyWith({int? likeCount, bool? likedByMe}) {
+    return Comment(
+      id: id,
+      postId: postId,
+      parentCommentId: parentCommentId,
+      authorId: authorId,
+      authorUsername: authorUsername,
+      body: body,
+      likeCount: likeCount ?? this.likeCount,
+      likedByMe: likedByMe ?? this.likedByMe,
+      createdAt: createdAt,
+    );
+  }
 
   factory Comment.fromRow(Map<String, dynamic> row, {required String? myProfileId}) {
     final likes = row['comment_likes'] as List;

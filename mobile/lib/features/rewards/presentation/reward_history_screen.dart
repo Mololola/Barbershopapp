@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../rankings/application/rankings_controller.dart';
 import '../application/rewards_controller.dart';
@@ -45,7 +46,7 @@ class RewardHistoryScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           Text('Reviews', style: Theme.of(context).textTheme.titleMedium),
           history.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const LoadingView(),
             error: (error, _) => Text('Error: $error'),
             data: (entries) {
               if (entries.isEmpty) {

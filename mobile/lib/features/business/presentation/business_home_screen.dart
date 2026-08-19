@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/app_network_image.dart';
+import '../../../core/loading.dart';
+import '../../../core/quick_action_tile.dart';
+import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../messaging/presentation/messages_entry_button.dart';
+import '../../messaging/application/messaging_controller.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 import 'subscription_banner.dart';
@@ -19,6 +23,8 @@ class BusinessHomeScreen extends ConsumerWidget {
     final services = ref.watch(servicesProvider);
     final workers = ref.watch(workersProvider);
     final myProfile = ref.watch(currentProfileProvider).value;
+    final conversations = ref.watch(conversationsProvider).value ?? const [];
+    final unreadCount = conversations.fold<int>(0, (sum, c) => sum + c.unreadCount);
 
     return Scaffold(
       appBar: AppBar(
@@ -35,109 +41,310 @@ class BusinessHomeScreen extends ConsumerWidget {
         ],
       ),
       body: business.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (business) {
           if (business == null) {
             return const Center(child: Text('No business found.'));
           }
           return ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             children: [
               const SubscriptionBanner(),
+              _ShopPlaque(business: business, locations: locations, hours: hours),
+              const SizedBox(height: 16),
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundImage: business.logoUrl != null ? NetworkImage(business.logoUrl!) : null,
-                    child: business.logoUrl == null ? const Icon(Icons.storefront, size: 32) : null,
-                  ),
-                  const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(business.name, style: Theme.of(context).textTheme.headlineSmall),
-                        if (business.phone != null) Text('Phone: ${business.phone}'),
-                      ],
+                    child: _StatChip(
+                      value: services.value?.length,
+                      label: services.value?.length == 1 ? 'service' : 'services',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatChip(
+                      value: workers.value?.length,
+                      label: workers.value?.length == 1 ? 'staff member' : 'staff',
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              locations.when(
-                loading: () => const CircularProgressIndicator(),
-                error: (error, _) => Text('Error: $error'),
-                data: (list) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [for (final l in list) Text('${l.addressLine}, ${l.city}')],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text('Opening hours', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 24),
+              _SectionHeader(title: 'This week', onManage: () => context.push('/business/edit')),
               hours.when(
-                loading: () => const CircularProgressIndicator(),
+                loading: () => const LoadingView(),
                 error: (error, _) => Text('Error: $error'),
-                data: (list) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final h in list)
-                      Text(
-                        '${OpeningHours.dayNames[h.dayOfWeek]}: '
-                        '${h.isClosed ? 'Closed' : '${h.openTime?.format(context)} – ${h.closeTime?.format(context)}'}',
-                      ),
-                  ],
-                ),
+                data: (list) => _HoursCard(hours: list),
               ),
-              const SizedBox(height: 16),
-              Text('Services', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 24),
+              _SectionHeader(title: 'Services', onManage: () => context.push('/business/services')),
               services.when(
-                loading: () => const CircularProgressIndicator(),
+                loading: () => const LoadingView(),
                 error: (error, _) => Text('Error: $error'),
                 data: (list) {
-                  if (list.isEmpty) return const Text('No services listed yet.');
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (final service in list)
-                        Text(
-                          '${service.name} — ${currencySymbol(business.currency)}'
-                          '${service.priceInMajorUnits.toStringAsFixed(2)}',
-                        ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              Text('Staff', style: Theme.of(context).textTheme.titleMedium),
-              workers.when(
-                loading: () => const CircularProgressIndicator(),
-                error: (error, _) => Text('Error: $error'),
-                data: (list) {
-                  if (list.isEmpty) return const Text('No staff yet.');
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [for (final worker in list) Text(worker.name)],
+                  if (list.isEmpty) {
+                    return const Text('No services listed yet.', style: TextStyle(color: AppColors.steel));
+                  }
+                  return Card(
+                    child: Column(
+                      children: [
+                        for (final service in list)
+                          ListTile(
+                            leading: const Icon(Icons.content_cut, color: AppColors.brass),
+                            title: Text(service.name),
+                            trailing: Text(
+                              '${currencySymbol(business.currency)}${service.priceInMajorUnits.toStringAsFixed(2)}',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                      ],
+                    ),
                   );
                 },
               ),
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => context.push('/feed'),
-                child: const Text('Feed'),
+              _SectionHeader(title: 'Staff', onManage: () => context.push('/business/staff')),
+              workers.when(
+                loading: () => const LoadingView(),
+                error: (error, _) => Text('Error: $error'),
+                data: (list) {
+                  if (list.isEmpty) {
+                    return const Text('No staff yet.', style: TextStyle(color: AppColors.steel));
+                  }
+                  return Card(
+                    child: Column(
+                      children: [
+                        for (final worker in list)
+                          ListTile(
+                            leading: const CircleAvatar(
+                              backgroundColor: AppColors.chalk,
+                              child: Icon(Icons.person_outline, color: AppColors.brass),
+                            ),
+                            title: Text(worker.name),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 8),
-              const MessagesEntryButton(),
-              if (myProfile?.isAdmin == true) ...[
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: () => context.push('/admin'),
-                  child: const Text('Admin'),
-                ),
-              ],
+              const SizedBox(height: 28),
+              Text('Quick actions', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  QuickActionTile(
+                    icon: Icons.photo_outlined,
+                    label: 'Feed',
+                    onTap: () => context.push('/feed'),
+                  ),
+                  QuickActionTile(
+                    icon: Icons.mode_comment_outlined,
+                    label: 'Messages',
+                    badgeCount: unreadCount,
+                    onTap: () => context.push('/messages'),
+                  ),
+                  if (myProfile?.isAdmin == true)
+                    QuickActionTile(
+                      icon: Icons.shield_outlined,
+                      label: 'Admin',
+                      onTap: () => context.push('/admin'),
+                    ),
+                ],
+              ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// The shop's own storefront sign — same dark-ground, brass-accented
+/// treatment as the customer home's appointment ticket, so the two
+/// dashboards read as one identity, but built around what a shop owner
+/// actually wants at a glance: is the shop open right now, and where is it.
+class _ShopPlaque extends StatelessWidget {
+  const _ShopPlaque({required this.business, required this.locations, required this.hours});
+
+  final Business business;
+  final AsyncValue<List<BusinessLocation>> locations;
+  final AsyncValue<List<OpeningHours>> hours;
+
+  @override
+  Widget build(BuildContext context) {
+    final address = locations.value?.firstOrNull;
+    final openNow = _isOpenNow(hours.value);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.charcoal,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.brass.withValues(alpha: 0.4)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipOval(
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: business.logoUrl != null
+                    ? AppNetworkImage(business.logoUrl!)
+                    : ColoredBox(
+                        color: AppColors.brass.withValues(alpha: 0.2),
+                        child: const Icon(Icons.storefront, color: AppColors.brass, size: 28),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    business.name,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(color: AppColors.chalk, fontWeight: FontWeight.w800),
+                  ),
+                  if (address != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${address.addressLine}, ${address.city}',
+                      style: const TextStyle(color: AppColors.chalk, fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  if (openNow != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: openNow ? AppColors.brass : AppColors.steel,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        openNow ? 'OPEN NOW' : 'CLOSED NOW',
+                        style: const TextStyle(color: AppColors.onBrass, fontWeight: FontWeight.w700, fontSize: 11),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static bool? _isOpenNow(List<OpeningHours>? list) {
+    if (list == null || list.isEmpty) return null;
+    final now = DateTime.now();
+    final today = list.where((h) => h.dayOfWeek == now.weekday - 1).firstOrNull;
+    if (today == null || today.isClosed || today.openTime == null || today.closeTime == null) return false;
+    final minutesNow = now.hour * 60 + now.minute;
+    final openMinutes = today.openTime!.hour * 60 + today.openTime!.minute;
+    final closeMinutes = today.closeTime!.hour * 60 + today.closeTime!.minute;
+    return minutesNow >= openMinutes && minutesNow < closeMinutes;
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.value, required this.label});
+
+  final int? value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          Text(
+            value?.toString() ?? '–',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.brass),
+          ),
+          const SizedBox(width: 6),
+          Expanded(child: Text(label, style: const TextStyle(color: AppColors.steel, fontSize: 13))),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.onManage});
+
+  final String title;
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          TextButton(onPressed: onManage, child: const Text('Manage')),
+        ],
+      ),
+    );
+  }
+}
+
+class _HoursCard extends StatelessWidget {
+  const _HoursCard({required this.hours});
+
+  final List<OpeningHours> hours;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = [...hours]..sort((a, b) => a.dayOfWeek.compareTo(b.dayOfWeek));
+    final today = DateTime.now().weekday - 1;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            for (final h in sorted)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      child: Text(
+                        OpeningHours.dayNames[h.dayOfWeek],
+                        style: TextStyle(
+                          fontWeight: h.dayOfWeek == today ? FontWeight.w700 : FontWeight.w400,
+                          color: h.dayOfWeek == today ? AppColors.brass : null,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      h.isClosed ? 'Closed' : '${h.openTime?.format(context)} – ${h.closeTime?.format(context)}',
+                      style: TextStyle(
+                        fontWeight: h.dayOfWeek == today ? FontWeight.w700 : FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

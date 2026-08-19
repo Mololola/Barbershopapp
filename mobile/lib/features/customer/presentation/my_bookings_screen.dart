@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/loading.dart';
 import '../application/booking_controller.dart';
 import '../application/review_controller.dart';
 import '../domain/booking.dart';
@@ -16,7 +17,7 @@ class MyBookingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('My bookings')),
       body: bookings.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (list) {
           if (list.isEmpty) {

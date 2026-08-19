@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/loading.dart';
 import '../../auth/domain/profile.dart';
 import '../application/admin_controller.dart';
 
@@ -120,7 +121,7 @@ class _SearchResults extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final results = ref.watch(customerSearchProvider(query));
     return results.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingView(),
       error: (error, _) => Text('Error: $error'),
       data: (list) {
         if (list.isEmpty) {
@@ -151,7 +152,7 @@ class _ReviewHistory extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reviews = ref.watch(customerReviewsProvider(customerId));
     return reviews.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingView(),
       error: (error, _) => Text('Error: $error'),
       data: (list) {
         if (list.isEmpty) {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../../core/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -52,7 +53,7 @@ class _DesignDetailScreenState extends ConsumerState<DesignDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(design.value?.name ?? 'Design')),
       body: design.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (value) {
           if (value == null) {

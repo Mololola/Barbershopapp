@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/loading.dart';
 import '../application/worker_controller.dart';
 import 'invitation_status_style.dart';
 
@@ -168,7 +169,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           currentJobAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const LoadingView(),
             error: (error, _) => Text('Error: $error'),
             data: (job) {
               if (job == null) {
@@ -193,7 +194,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           invitationsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const LoadingView(),
             error: (error, _) => Text('Error: $error'),
             data: (invitations) {
               if (invitations.isEmpty) {

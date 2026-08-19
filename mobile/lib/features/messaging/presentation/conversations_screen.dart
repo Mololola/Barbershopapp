@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/loading.dart';
 import '../application/messaging_controller.dart';
 
 class ConversationsScreen extends ConsumerWidget {
@@ -14,7 +15,7 @@ class ConversationsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Messages')),
       body: conversations.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (list) {
           if (list.isEmpty) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/loading.dart';
 import '../../business/domain/business.dart';
 import '../application/browse_controller.dart';
 
@@ -59,7 +60,7 @@ class BusinessDetailScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           Text('Services', style: Theme.of(context).textTheme.titleMedium),
           services.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const LoadingView(),
             error: (error, _) => Text('Error: $error'),
             data: (list) {
               if (list.isEmpty) {

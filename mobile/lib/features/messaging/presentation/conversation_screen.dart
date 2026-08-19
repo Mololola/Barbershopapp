@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/messaging_controller.dart';
 
@@ -62,7 +63,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         children: [
           Expanded(
             child: messages.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const LoadingView(),
               error: (error, _) => Center(child: Text('Error: $error')),
               data: (list) {
                 if (list.isEmpty) {

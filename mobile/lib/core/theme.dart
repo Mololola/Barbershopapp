@@ -124,6 +124,19 @@ class AppTheme {
         selectedColor: AppColors.brass,
         backgroundColor: AppColors.chalk,
       ),
+      // Same considered motion on every platform — iOS/macOS keep the native
+      // swipe-back feel since users expect it there, everywhere else gets
+      // the subtle scale+fade instead of leaving desktop/web on Flutter's
+      // unstyled fallback.
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+          TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 }

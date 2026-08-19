@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../../core/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -181,7 +182,7 @@ class _LocalVideoPreviewState extends State<_LocalVideoPreview> {
   @override
   Widget build(BuildContext context) {
     if (!_controller.value.isInitialized) {
-      return SizedBox(height: widget.height, child: const Center(child: CircularProgressIndicator()));
+      return SizedBox(height: widget.height, child: const LoadingView());
     }
     return SizedBox(
       height: widget.height,

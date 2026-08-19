@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/loading.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 
@@ -54,7 +55,7 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: schedule.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const LoadingView(),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (existing) {
             _seedIfNeeded(existing);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/loading.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 
@@ -84,7 +85,7 @@ class ServicesScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       body: services.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (list) {
           if (list.isEmpty) {

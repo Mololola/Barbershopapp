@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
 import '../../messaging/application/messaging_controller.dart';
@@ -37,7 +38,7 @@ class ProfileScreen extends ConsumerWidget {
         ],
       ),
       body: profile.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (value) {
           if (value == null) {
@@ -85,7 +86,7 @@ class ProfileScreen extends ConsumerWidget {
               posts.when(
                 loading: () => const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: LoadingView(),
                 ),
                 error: (error, _) => Text('Error: $error'),
                 data: (list) {

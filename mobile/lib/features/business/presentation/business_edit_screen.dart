@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../../core/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -80,7 +81,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: locations.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const LoadingView(),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (existingLocations) {
             _seedLocationsIfNeeded(existingLocations);

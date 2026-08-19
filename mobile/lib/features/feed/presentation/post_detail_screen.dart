@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/feed_controller.dart';
 import '../domain/post.dart';
@@ -51,7 +52,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         children: [
           Expanded(
             child: comments.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const LoadingView(),
               error: (error, _) => Center(child: Text('Error: $error')),
               data: (list) {
                 if (list.isEmpty) {
@@ -120,7 +121,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 }
 
-class _CommentTile extends ConsumerWidget {
+class _CommentTile extends ConsumerStatefulWidget {
   const _CommentTile({required this.comment, required this.myProfileId, required this.onReply});
 
   final Comment comment;
@@ -128,9 +129,48 @@ class _CommentTile extends ConsumerWidget {
   final VoidCallback? onReply;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CommentTile> createState() => _CommentTileState();
+}
+
+class _CommentTileState extends ConsumerState<_CommentTile> {
+  // Same optimistic-overlay pattern as PostCard's like button.
+  late Comment _comment = widget.comment;
+  bool _likeInFlight = false;
+
+  @override
+  void didUpdateWidget(_CommentTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.comment.id != widget.comment.id) _comment = widget.comment;
+  }
+
+  Future<void> _toggleLike() async {
+    if (_likeInFlight) return;
+    final before = _comment;
+    setState(() {
+      _comment = _comment.copyWith(
+        likedByMe: !_comment.likedByMe,
+        likeCount: _comment.likeCount + (_comment.likedByMe ? -1 : 1),
+      );
+      _likeInFlight = true;
+    });
+    final success = await ref
+        .read(feedActionControllerProvider.notifier)
+        .toggleCommentLike(commentId: before.id, currentlyLiked: before.likedByMe);
+    if (!mounted) return;
+    setState(() {
+      _likeInFlight = false;
+      if (!success) _comment = before;
+    });
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not update like.')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final actionState = ref.watch(feedActionControllerProvider);
-    final isMine = comment.authorId == myProfileId;
+    final comment = _comment;
+    final isMine = comment.authorId == widget.myProfileId;
 
     return ListTile(
       title: InkWell(
@@ -149,18 +189,12 @@ class _CommentTile extends ConsumerWidget {
                   size: 18,
                 ),
                 color: comment.likedByMe ? Colors.red : null,
-                onPressed: actionState.isLoading
-                    ? null
-                    : () => ref.read(feedActionControllerProvider.notifier).toggleCommentLike(
-                          postId: comment.postId,
-                          commentId: comment.id,
-                          currentlyLiked: comment.likedByMe,
-                        ),
+                onPressed: _toggleLike,
               ),
               Text('${comment.likeCount}'),
-              if (onReply != null)
+              if (widget.onReply != null)
                 TextButton(
-                  onPressed: onReply,
+                  onPressed: widget.onReply,
                   child: const Text('Reply'),
                 ),
             ],

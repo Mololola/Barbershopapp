@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/loading.dart';
 import '../../worker/presentation/invitation_status_style.dart';
 import '../application/business_controller.dart';
 
@@ -170,7 +171,7 @@ class _MyStaffTab extends ConsumerWidget {
     return ListView(
       children: [
         workers.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const LoadingView(),
           error: (error, _) => Text('Error: $error'),
           data: (list) {
             if (list.isEmpty) {
@@ -205,7 +206,7 @@ class _MyStaffTab extends ConsumerWidget {
           child: Text('Sent invitations', style: Theme.of(context).textTheme.titleMedium),
         ),
         sentInvitations.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const LoadingView(),
           error: (error, _) => Text('Error: $error'),
           data: (list) {
             if (list.isEmpty) {
@@ -244,7 +245,7 @@ class _MarketplaceTab extends ConsumerWidget {
     final candidates = ref.watch(workersLookingForWorkProvider);
 
     return candidates.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingView(),
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (list) {
         if (list.isEmpty) {

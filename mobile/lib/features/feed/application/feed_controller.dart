@@ -40,14 +40,22 @@ class FeedActionController extends AsyncNotifier<void> {
     });
   }
 
+  // Unlike the other actions below, a like toggle doesn't touch the shared
+  // `state` or refetch the list — PostCard/_CommentTile show the new state
+  // immediately themselves (optimistic UI) and revert on failure, so
+  // there's nothing here that should disable every other post's buttons or
+  // force a full-list reload for what's ultimately a one-row flip.
   Future<bool> toggleLike({required String postId, required bool currentlyLiked}) async {
-    return _run(() async {
-      final profile = await ref.read(currentProfileProvider.future);
-      if (profile == null) throw StateError('No signed-in profile.');
+    final profile = await ref.read(currentProfileProvider.future);
+    if (profile == null) return false;
+    try {
       await ref
           .read(feedRepositoryProvider)
           .toggleLike(postId: postId, profileId: profile.id, currentlyLiked: currentlyLiked);
-    });
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> addComment({required String postId, required String body, String? parentCommentId}) async {
@@ -66,21 +74,21 @@ class FeedActionController extends AsyncNotifier<void> {
   }
 
   Future<bool> toggleCommentLike({
-    required String postId,
     required String commentId,
     required bool currentlyLiked,
   }) async {
-    return _run(() async {
-      final profile = await ref.read(currentProfileProvider.future);
-      if (profile == null) throw StateError('No signed-in profile.');
+    final profile = await ref.read(currentProfileProvider.future);
+    if (profile == null) return false;
+    try {
       await ref.read(feedRepositoryProvider).toggleCommentLike(
             commentId: commentId,
             profileId: profile.id,
             currentlyLiked: currentlyLiked,
           );
-      ref.invalidate(commentsProvider(postId));
-      await ref.read(commentsProvider(postId).future);
-    });
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> deletePost(String postId) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
 
@@ -71,7 +72,7 @@ class _ProfileSearchScreenState extends ConsumerState<ProfileSearchScreen> {
             ),
             const SizedBox(height: 16),
             if (_error != null) Text('Error: $_error'),
-            if (_isSearching) const Center(child: CircularProgressIndicator()),
+            if (_isSearching) const LoadingView(),
             if (results != null)
               Expanded(
                 child: results.isEmpty

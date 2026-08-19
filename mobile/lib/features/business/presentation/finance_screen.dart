@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/loading.dart';
 import '../../customer/domain/booking.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
@@ -70,7 +71,7 @@ class FinanceScreen extends ConsumerWidget {
     // unlocked, so the gate has to live here rather than in whether the
     // entry point is shown at all.
     if (financeAccess.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: LoadingView());
     }
     final access = financeAccess.value;
     if (access == null || !access.isUnlocked) {
@@ -108,7 +109,7 @@ class FinanceScreen extends ConsumerWidget {
           Text('Monthly costs', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           costItems.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const LoadingView(),
             error: (error, _) => Text('Error: $error'),
             data: (list) {
               if (list.isEmpty) {
@@ -162,7 +163,7 @@ class _SummaryCard extends StatelessWidget {
     final serviceList = services.value;
 
     if (costs == null || bookingList == null || serviceList == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingView();
     }
 
     final now = DateTime.now();

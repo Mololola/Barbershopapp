@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/loading.dart';
+import '../../../core/app_network_image.dart';
 import '../application/designer_controller.dart';
 import '../domain/haircut_design.dart';
 
@@ -38,7 +40,7 @@ class _MyDesignsTab extends ConsumerWidget {
     final designs = ref.watch(myDesignsProvider);
     final extraSlots = ref.watch(designExtraSlotsProvider).value ?? 0;
     return designs.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingView(),
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (list) {
         final cap = maxFreeDesigns + extraSlots;
@@ -73,7 +75,7 @@ class _BrowseTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final designs = ref.watch(publicDesignsProvider);
     return designs.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const LoadingView(),
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (list) {
         if (list.isEmpty) {
@@ -110,7 +112,7 @@ class _DesignGrid extends StatelessWidget {
               children: [
                 Expanded(
                   child: design.thumbnailUrl != null
-                      ? Image.network(design.thumbnailUrl!, fit: BoxFit.cover)
+                      ? AppNetworkImage(design.thumbnailUrl!)
                       : const Center(child: Icon(Icons.face_retouching_natural, size: 40)),
                 ),
                 Padding(

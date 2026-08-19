@@ -3,19 +3,61 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/app_network_image.dart';
 import '../application/feed_controller.dart';
 import '../domain/post.dart';
 
 /// Shared between the feed and a profile's own-posts list.
-class PostCard extends ConsumerWidget {
+class PostCard extends ConsumerStatefulWidget {
   const PostCard({super.key, required this.post, required this.isMine});
 
   final Post post;
   final bool isMine;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends ConsumerState<PostCard> {
+  // Optimistic overlay on top of widget.post — flipped immediately on tap
+  // and reconciled with the server in the background, rather than the
+  // button sitting disabled for a round trip to flip one boolean.
+  late Post _post = widget.post;
+  bool _likeInFlight = false;
+
+  @override
+  void didUpdateWidget(PostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.id != widget.post.id) _post = widget.post;
+  }
+
+  Future<void> _toggleLike() async {
+    if (_likeInFlight) return;
+    final before = _post;
+    setState(() {
+      _post = _post.copyWith(
+        likedByMe: !_post.likedByMe,
+        likeCount: _post.likeCount + (_post.likedByMe ? -1 : 1),
+      );
+      _likeInFlight = true;
+    });
+    final success = await ref
+        .read(feedActionControllerProvider.notifier)
+        .toggleLike(postId: before.id, currentlyLiked: before.likedByMe);
+    if (!mounted) return;
+    setState(() {
+      _likeInFlight = false;
+      if (!success) _post = before;
+    });
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not update like.')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final actionState = ref.watch(feedActionControllerProvider);
+    final post = _post;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -27,7 +69,7 @@ class PostCard extends ConsumerWidget {
               onTap: () => context.push('/profile/${post.authorId}'),
               child: Text(post.authorUsername),
             ),
-            trailing: isMine
+            trailing: widget.isMine
                 ? IconButton(
                     icon: const Icon(Icons.delete_outline),
                     onPressed: actionState.isLoading
@@ -39,7 +81,11 @@ class PostCard extends ConsumerWidget {
           if (post.mediaUrl != null && post.mediaType == PostMediaType.video)
             _PostVideoPlayer(url: post.mediaUrl!, height: 320)
           else if (post.mediaUrl != null)
-            Image.network(post.mediaUrl!, fit: BoxFit.contain, width: double.infinity, height: 320),
+            SizedBox(
+              width: double.infinity,
+              height: 320,
+              child: AppNetworkImage(post.mediaUrl!, fit: BoxFit.contain),
+            ),
           if (post.body != null && post.body!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -50,11 +96,7 @@ class PostCard extends ConsumerWidget {
               IconButton(
                 icon: Icon(post.likedByMe ? Icons.favorite : Icons.favorite_border),
                 color: post.likedByMe ? Colors.red : null,
-                onPressed: actionState.isLoading
-                    ? null
-                    : () => ref
-                        .read(feedActionControllerProvider.notifier)
-                        .toggleLike(postId: post.id, currentlyLiked: post.likedByMe),
+                onPressed: _toggleLike,
               ),
               Text('${post.likeCount}'),
               const SizedBox(width: 16),
