@@ -163,15 +163,14 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
                       : const Text('Save'),
                 ),
                 const SizedBox(height: 32),
+                // Staff has its own bottom-nav tab now — pushing '/business/staff'
+                // from here would collide with the shell branch that already owns
+                // that route and crash the Navigator, so only Services (not a tab)
+                // gets a shortcut here.
                 ListTile(
                   title: const Text('Manage services'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/business/services'),
-                ),
-                ListTile(
-                  title: const Text('Manage staff'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/business/staff'),
                 ),
                 const SizedBox(height: 32),
                 FinanceAccessSection(business: business),
