@@ -22,6 +22,15 @@ final conversationsProvider = FutureProvider.autoDispose<List<Conversation>>((re
   return ref.watch(messagingRepositoryProvider).fetchConversations(profile.id);
 });
 
+/// Looked up from the already-fetched inbox rather than a dedicated query —
+/// used by ConversationScreen to know who it's showing a thread with (e.g.
+/// to match a business's pending leave requests against the other
+/// participant).
+final conversationByIdProvider = Provider.family<Conversation?, String>((ref, conversationId) {
+  final conversations = ref.watch(conversationsProvider).value ?? const [];
+  return conversations.where((c) => c.id == conversationId).firstOrNull;
+});
+
 /// Fetches message history, then appends each Realtime INSERT for this
 /// conversation as it arrives — including the sender's own messages, so
 /// sending doesn't need separate optimistic-append logic; the subscription
@@ -72,10 +81,15 @@ class MessagingActionController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<String> startOrGetConversation(String otherProfileId) async {
+  Future<String> startOrGetConversation(
+    String otherProfileId, {
+    ConversationType type = ConversationType.personal,
+  }) async {
     final profile = await ref.read(currentProfileProvider.future);
     if (profile == null) throw StateError('Not signed in.');
-    return ref.read(messagingRepositoryProvider).startOrGetConversation(profile.id, otherProfileId);
+    return ref
+        .read(messagingRepositoryProvider)
+        .startOrGetConversation(profile.id, otherProfileId, type: type);
   }
 
   Future<void> sendMessage(String conversationId, String body) async {

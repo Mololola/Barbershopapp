@@ -31,3 +31,7 @@ final haircutTypesRankingProvider =
 final referralsRankingProvider = FutureProvider.autoDispose<List<CustomerRankingEntry>>((ref) {
   return ref.watch(rankingsRepositoryProvider).fetchReferrals();
 });
+
+final topBarbersRankingProvider = FutureProvider.autoDispose<List<BarberRankingEntry>>((ref) {
+  return ref.watch(rankingsRepositoryProvider).fetchTopBarbers();
+});

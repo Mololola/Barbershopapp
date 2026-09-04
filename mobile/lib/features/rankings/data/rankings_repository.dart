@@ -34,4 +34,11 @@ class RankingsRepository {
     final rows = await _client.rpc('ranking_referrals');
     return (rows as List).map((row) => CustomerRankingEntry.fromRow(row as Map<String, dynamic>)).toList();
   }
+
+  /// Career-wide, not scoped to a window or a single business — see
+  /// ranking_top_barbers.
+  Future<List<BarberRankingEntry>> fetchTopBarbers() async {
+    final rows = await _client.rpc('ranking_top_barbers');
+    return (rows as List).map((row) => BarberRankingEntry.fromRow(row as Map<String, dynamic>)).toList();
+  }
 }

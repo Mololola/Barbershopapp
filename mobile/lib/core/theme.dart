@@ -124,6 +124,15 @@ class AppTheme {
         selectedColor: AppColors.brass,
         backgroundColor: AppColors.chalk,
       ),
+      // Every TabBar in the app sits inside the dark charcoal AppBar — the
+      // Material default unselected-label color is a mid-grey meant for a
+      // light surface, so on charcoal it was reading as invisible. Both
+      // states get an explicit, legible color instead.
+      tabBarTheme: TabBarThemeData(
+        labelColor: AppColors.brass,
+        unselectedLabelColor: AppColors.chalk.withValues(alpha: 0.65),
+        indicatorColor: AppColors.brass,
+      ),
       // Same considered motion on every platform — iOS/macOS keep the native
       // swipe-back feel since users expect it there, everywhere else gets
       // the subtle scale+fade instead of leaving desktop/web on Flutter's

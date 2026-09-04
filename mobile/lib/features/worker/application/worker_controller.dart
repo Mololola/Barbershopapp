@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/business.dart';
+import '../../messaging/application/messaging_controller.dart';
+import '../../messaging/domain/conversation.dart';
 import '../data/worker_repository.dart';
 import '../domain/worker_invitation.dart';
+import '../domain/worker_leave_request.dart';
 import '../domain/worker_profile.dart';
 
 final workerRepositoryProvider = Provider<WorkerRepository>((ref) {
@@ -35,6 +38,15 @@ final workerProfileByIdProvider = FutureProvider.family<WorkerProfile?, String>(
   return ref.watch(workerRepositoryProvider).fetchOwnWorkerProfile(profileId);
 });
 
+/// The most recent leave request against the current job, if any — drives
+/// the "request pending, awaiting the shop" state on worker_profile_screen.
+final pendingLeaveRequestProvider = FutureProvider<WorkerLeaveRequest?>((ref) async {
+  final profile = await ref.watch(currentProfileProvider.future);
+  if (profile == null) return null;
+  final requests = await ref.watch(workerRepositoryProvider).fetchOwnLeaveRequests(profile.id);
+  return requests.where((r) => r.status == LeaveRequestStatus.pending).firstOrNull;
+});
+
 final workerProfileControllerProvider =
     AsyncNotifierProvider<WorkerProfileController, void>(WorkerProfileController.new);
 
@@ -48,6 +60,7 @@ class WorkerProfileController extends AsyncNotifier<void> {
     String? legalSecondLastName,
     required String bio,
     required String city,
+    int? yearsExperience,
     required bool isLookingForWork,
   }) async {
     state = const AsyncLoading();
@@ -62,6 +75,7 @@ class WorkerProfileController extends AsyncNotifier<void> {
               legalSecondLastName: legalSecondLastName,
               bio: bio,
               city: city,
+              yearsExperience: yearsExperience,
               isLookingForWork: isLookingForWork,
             ),
           );
@@ -106,11 +120,34 @@ class JobController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<void> leave(String workerId) async {
+  /// Files a pending leave request and drops a message into the business's
+  /// DM inbox so it's somewhere they'll actually see it — the worker's
+  /// `workers` row stays active until the business acknowledges (see
+  /// acknowledgeLeaveRequest), so this alone doesn't free them up to accept
+  /// another job or reappear in a marketplace search.
+  Future<void> requestLeave(Worker job) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(workerRepositoryProvider).leaveCurrentJob(workerId);
-      ref.invalidate(currentJobProvider);
+      final profile = await ref.read(currentProfileProvider.future);
+      if (profile == null) throw StateError('No signed-in profile.');
+      await ref.read(workerRepositoryProvider).requestLeave(
+            workerId: job.id!,
+            businessId: job.businessId,
+            workerProfileId: profile.id,
+            // Not-null in the database (c305ecd7de27) — Worker's own field
+            // is nullable only because addWorker's local construction
+            // doesn't always have it up front.
+            businessName: job.businessName!,
+          );
+      final ownerId = await ref.read(workerRepositoryProvider).fetchBusinessOwnerId(job.businessId);
+      final conversationId = await ref
+          .read(messagingActionControllerProvider.notifier)
+          .startOrGetConversation(ownerId, type: ConversationType.business);
+      await ref.read(messagingActionControllerProvider.notifier).sendMessage(
+            conversationId,
+            '${profile.username} has requested to leave ${job.businessName}.',
+          );
+      ref.invalidate(pendingLeaveRequestProvider);
     });
   }
 }

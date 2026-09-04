@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../business/domain/business.dart';
 import '../domain/worker_invitation.dart';
+import '../domain/worker_leave_request.dart';
 import '../domain/worker_profile.dart';
 
 class AlreadyStaffElsewhereException implements Exception {
@@ -92,10 +93,41 @@ class WorkerRepository {
     return Worker.fromRow(row);
   }
 
-  /// Deactivates the worker's own `workers` row rather than deleting it,
-  /// keeping the staffing history around; frees the one-active-business-per-
-  /// profile constraint so they can join elsewhere.
-  Future<void> leaveCurrentJob(String workerId) async {
-    await _client.from('workers').update({'is_active': false}).eq('id', workerId);
+  /// Doesn't deactivate the worker's own `workers` row directly anymore —
+  /// leaving is no longer unilateral. This files the pending request; the
+  /// business acknowledging it (business_repository.dart's
+  /// acknowledgeLeaveRequest) is what actually deactivates the row and
+  /// frees the one-active-business-per-profile constraint.
+  Future<void> requestLeave({
+    required String workerId,
+    required String businessId,
+    required String workerProfileId,
+    required String businessName,
+  }) async {
+    await _client.from('worker_leave_requests').insert({
+      'worker_id': workerId,
+      'business_id': businessId,
+      'worker_profile_id': workerProfileId,
+      'business_name': businessName,
+    });
+  }
+
+  /// Resolves who to message when requesting to leave — a worker can't read
+  /// `businesses` directly under RLS (see 658403671135's recursion note),
+  /// but `businesses_public` is readable by any authenticated user and
+  /// carries owner_id.
+  Future<String> fetchBusinessOwnerId(String businessId) async {
+    final row =
+        await _client.from('businesses_public').select('owner_id').eq('id', businessId).single();
+    return row['owner_id'] as String;
+  }
+
+  Future<List<WorkerLeaveRequest>> fetchOwnLeaveRequests(String workerProfileId) async {
+    final rows = await _client
+        .from('worker_leave_requests')
+        .select()
+        .eq('worker_profile_id', workerProfileId)
+        .order('requested_at', ascending: false);
+    return rows.map(WorkerLeaveRequest.fromRow).toList();
   }
 }

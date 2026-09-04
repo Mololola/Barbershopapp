@@ -7,7 +7,7 @@ import '../application/rankings_controller.dart';
 import '../domain/ranking_entry.dart';
 import '../domain/ranking_window.dart';
 
-enum _RankingType { distinctShops, totalHaircuts, referrals, haircutTypes }
+enum _RankingType { distinctShops, totalHaircuts, referrals, haircutTypes, topBarbers }
 
 extension on _RankingType {
   String get label {
@@ -20,6 +20,8 @@ extension on _RankingType {
         return 'Top referrers';
       case _RankingType.haircutTypes:
         return 'Popular haircuts';
+      case _RankingType.topBarbers:
+        return 'Top-rated barbers';
     }
   }
 }
@@ -58,6 +60,9 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
       case _RankingType.haircutTypes:
         ref.invalidate(haircutTypesRankingProvider(_window));
         await ref.read(haircutTypesRankingProvider(_window).future);
+      case _RankingType.topBarbers:
+        ref.invalidate(topBarbersRankingProvider);
+        await ref.read(topBarbersRankingProvider.future);
     }
   }
 
@@ -88,7 +93,7 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
               ],
             ),
           ),
-          if (_type != _RankingType.referrals)
+          if (_type != _RankingType.referrals && _type != _RankingType.topBarbers)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Wrap(
@@ -130,6 +135,8 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
         );
       case _RankingType.haircutTypes:
         return _HaircutTypeRankingList(window: _window);
+      case _RankingType.topBarbers:
+        return _BarberRankingList(ranking: ref.watch(topBarbersRankingProvider));
     }
   }
 }
@@ -194,6 +201,39 @@ class _HaircutTypeRankingList extends ConsumerWidget {
               icon: Icons.content_cut,
               title: entry.haircutType,
               value: '${entry.value}',
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _BarberRankingList extends StatelessWidget {
+  const _BarberRankingList({required this.ranking});
+
+  final AsyncValue<List<BarberRankingEntry>> ranking;
+
+  @override
+  Widget build(BuildContext context) {
+    return ranking.when(
+      loading: () => const LoadingView(),
+      error: (error, _) => Center(child: Text('Error: $error')),
+      data: (entries) {
+        if (entries.isEmpty) {
+          return const Center(child: Text('No rated barbers yet.'));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          itemCount: entries.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            return _LeaderboardTile(
+              rank: index + 1,
+              avatarUrl: entry.avatarUrl,
+              title: entry.username,
+              value: '★ ${entry.value.toStringAsFixed(1)}',
             );
           },
         );

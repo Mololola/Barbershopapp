@@ -54,6 +54,19 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
   }
 
+  Future<void> _togglePin() async {
+    final before = _post;
+    setState(() => _post = _post.copyWith(isPinned: !_post.isPinned));
+    final success = await ref
+        .read(feedActionControllerProvider.notifier)
+        .togglePin(postId: before.id, currentlyPinned: before.isPinned);
+    if (!mounted) return;
+    if (!success) {
+      setState(() => _post = before);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not update portfolio.')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final actionState = ref.watch(feedActionControllerProvider);
@@ -70,11 +83,22 @@ class _PostCardState extends ConsumerState<PostCard> {
               child: Text(post.authorUsername),
             ),
             trailing: widget.isMine
-                ? IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: actionState.isLoading
-                        ? null
-                        : () => ref.read(feedActionControllerProvider.notifier).deletePost(post.id),
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(post.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                        tooltip: post.isPinned ? 'Remove from portfolio' : 'Add to portfolio',
+                        color: post.isPinned ? Theme.of(context).colorScheme.primary : null,
+                        onPressed: _togglePin,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: actionState.isLoading
+                            ? null
+                            : () => ref.read(feedActionControllerProvider.notifier).deletePost(post.id),
+                      ),
+                    ],
                   )
                 : null,
           ),

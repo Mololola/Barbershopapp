@@ -114,6 +114,22 @@ class FeedRepository {
     await _client.from('posts').delete().eq('id', postId);
   }
 
+  /// Portfolio posts on the marketplace candidate detail view — see
+  /// WorkerCandidateDetailScreen.
+  Future<List<Post>> fetchPinnedPosts(String authorId) async {
+    final rows = await _client
+        .from('posts')
+        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
+        .eq('author_id', authorId)
+        .eq('is_pinned', true)
+        .order('created_at', ascending: false);
+    return rows.map((row) => Post.fromRow(row, myProfileId: authorId)).toList();
+  }
+
+  Future<void> togglePin({required String postId, required bool currentlyPinned}) async {
+    await _client.from('posts').update({'is_pinned': !currentlyPinned}).eq('id', postId);
+  }
+
   Future<void> deleteComment(String commentId) async {
     await _client.from('comments').delete().eq('id', commentId);
   }

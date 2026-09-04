@@ -22,6 +22,7 @@ void main() {
     commentCount: 1,
     likedByMe: true,
     createdAt: DateTime.utc(2026, 8, 1),
+    isPinned: false,
   );
   final otherPost = Post(
     id: 'post-2',
@@ -34,6 +35,7 @@ void main() {
     commentCount: 0,
     likedByMe: false,
     createdAt: DateTime.utc(2026, 8, 2),
+    isPinned: false,
   );
 
   Widget buildTestable() {

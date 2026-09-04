@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/loading.dart';
+import '../../business/domain/business.dart';
 import '../application/worker_controller.dart';
 import 'invitation_status_style.dart';
 
@@ -19,6 +20,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
   final _legalSecondLastNameController = TextEditingController();
   final _bioController = TextEditingController();
   final _cityController = TextEditingController();
+  final _yearsExperienceController = TextEditingController();
   bool _isWorker = false;
   bool _isLookingForWork = true;
   bool _initialized = false;
@@ -30,6 +32,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
     _legalSecondLastNameController.dispose();
     _bioController.dispose();
     _cityController.dispose();
+    _yearsExperienceController.dispose();
     super.dispose();
   }
 
@@ -51,8 +54,23 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
               : _legalSecondLastNameController.text.trim(),
           bio: _bioController.text.trim(),
           city: _cityController.text.trim(),
+          yearsExperience: int.tryParse(_yearsExperienceController.text.trim()),
           isLookingForWork: _hasRequiredName && _isLookingForWork,
         );
+    if (!mounted) return;
+    if (!ref.read(workerProfileControllerProvider).hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile saved.')));
+    }
+  }
+
+  Future<void> _requestLeave(Worker job) async {
+    await ref.read(jobControllerProvider.notifier).requestLeave(job);
+    if (!mounted) return;
+    if (!ref.read(jobControllerProvider).hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Asked ${job.businessName ?? 'the shop'} to confirm you\'re leaving.')),
+      );
+    }
   }
 
   @override
@@ -60,6 +78,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
     final workerProfileAsync = ref.watch(currentWorkerProfileProvider);
     final invitationsAsync = ref.watch(receivedInvitationsProvider);
     final currentJobAsync = ref.watch(currentJobProvider);
+    final pendingLeaveRequest = ref.watch(pendingLeaveRequestProvider).value;
     final saveState = ref.watch(workerProfileControllerProvider);
     final invitationState = ref.watch(invitationControllerProvider);
     final jobState = ref.watch(jobControllerProvider);
@@ -75,6 +94,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
         _legalSecondLastNameController.text = profile.legalSecondLastName ?? '';
         _bioController.text = profile.bio ?? '';
         _cityController.text = profile.city ?? '';
+        _yearsExperienceController.text = profile.yearsExperience?.toString() ?? '';
       }
     });
 
@@ -118,6 +138,16 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
                   TextFormField(
                     controller: _legalSecondLastNameController,
                     decoration: const InputDecoration(labelText: 'Legal second last name (optional)'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _yearsExperienceController,
+                    decoration: const InputDecoration(labelText: 'Years of experience (optional)'),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return null;
+                      return int.tryParse(value.trim()) == null ? 'Enter a whole number' : null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -181,13 +211,18 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
               if (job == null) {
                 return const Text('Not currently working at a business.');
               }
+              // Leaving isn't unilateral — this only files the request; the
+              // job stays active (and this button stays disabled) until the
+              // business confirms it, so a misclick can't drop someone from
+              // the schedule on the spot.
+              final isPending = pendingLeaveRequest != null && pendingLeaveRequest.workerId == job.id;
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(job.businessName ?? 'A business'),
+                subtitle: isPending ? const Text('Leave request sent — awaiting confirmation') : null,
                 trailing: TextButton(
-                  onPressed:
-                      jobState.isLoading ? null : () => ref.read(jobControllerProvider.notifier).leave(job.id!),
-                  child: const Text('Leave'),
+                  onPressed: (jobState.isLoading || isPending) ? null : () => _requestLeave(job),
+                  child: const Text('Request to leave'),
                 ),
               );
             },

@@ -14,12 +14,14 @@ void main() {
       lastMessageBody: 'See you Friday!',
       lastMessageAt: DateTime.utc(2026, 8, 1),
       unreadCount: 2,
+      type: ConversationType.personal,
     ),
     const Conversation(
       id: 'conv-2',
       otherParticipantId: 'other-2',
       otherUsername: 'newshop',
       unreadCount: 0,
+      type: ConversationType.personal,
     ),
   ];
 

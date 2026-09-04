@@ -12,6 +12,7 @@ class Post {
     required this.commentCount,
     required this.likedByMe,
     required this.createdAt,
+    required this.isPinned,
   });
 
   final String id;
@@ -27,7 +28,12 @@ class Post {
   final bool likedByMe;
   final DateTime createdAt;
 
-  Post copyWith({int? likeCount, bool? likedByMe}) {
+  /// Featured on the author's worker-candidate portfolio (see
+  /// worker_candidate_detail_screen.dart) — separate from the chronological
+  /// feed, a worker's own curated highlights.
+  final bool isPinned;
+
+  Post copyWith({int? likeCount, bool? likedByMe, bool? isPinned}) {
     return Post(
       id: id,
       authorId: authorId,
@@ -39,6 +45,7 @@ class Post {
       commentCount: commentCount,
       likedByMe: likedByMe ?? this.likedByMe,
       createdAt: createdAt,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 
@@ -58,6 +65,7 @@ class Post {
       commentCount: comments.isEmpty ? 0 : comments.first['count'] as int,
       likedByMe: myProfileId != null && likes.any((like) => like['profile_id'] == myProfileId),
       createdAt: DateTime.parse(row['created_at'] as String),
+      isPinned: row['is_pinned'] as bool? ?? false,
     );
   }
 }

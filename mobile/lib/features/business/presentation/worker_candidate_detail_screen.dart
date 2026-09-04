@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/app_network_image.dart';
+import '../../../core/loading.dart';
+import '../../../core/theme.dart';
+import '../../feed/application/feed_controller.dart';
 import '../../messaging/application/messaging_controller.dart';
+import '../../messaging/domain/conversation.dart';
+import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../application/business_controller.dart';
 
@@ -11,55 +17,143 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
 
   final WorkerSearchResult candidate;
 
+  Future<void> _sendInvite(BuildContext context, WidgetRef ref) async {
+    await ref.read(workerControllerProvider.notifier).inviteWorker(candidate.profileId);
+    if (!context.mounted) return;
+    if (!ref.read(workerControllerProvider).hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invitation sent to ${candidate.legalFullName}.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actionState = ref.watch(workerControllerProvider);
+    final sentInvitations = ref.watch(sentInvitationsProvider).value ?? const [];
+    final pendingInvitation = sentInvitations
+        .where((inv) => inv.workerProfileId == candidate.profileId && inv.status == InvitationStatus.pending)
+        .firstOrNull;
+    final pinnedPosts = ref.watch(pinnedPostsProvider(candidate.profileId));
 
     return Scaffold(
       appBar: AppBar(title: Text(candidate.legalFullName)),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(24),
-        child: ListView(
-          children: [
-            if (candidate.city != null) ...[
-              Text('City', style: Theme.of(context).textTheme.titleMedium),
-              Text(candidate.city!),
-              const SizedBox(height: 16),
-            ],
-            if (candidate.bio != null) ...[
-              Text('Bio', style: Theme.of(context).textTheme.titleMedium),
-              Text(candidate.bio!),
-              const SizedBox(height: 24),
-            ],
-            if (actionState.hasError)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  actionState.error.toString(),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (candidate.averageRating != null)
+                _StatChip(icon: Icons.star, label: candidate.averageRating!.toStringAsFixed(1)),
+              if (candidate.shopsWorkedCount != null)
+                _StatChip(
+                  icon: Icons.storefront_outlined,
+                  label:
+                      '${candidate.shopsWorkedCount} shop${candidate.shopsWorkedCount == 1 ? '' : 's'}',
                 ),
-              ),
-            FilledButton(
-              onPressed: actionState.isLoading
-                  ? null
-                  : () => ref.read(workerControllerProvider.notifier).inviteWorker(candidate.profileId),
-              child: actionState.isLoading
-                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Send invite'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('Message'),
-              onPressed: () async {
-                final conversationId = await ref
-                    .read(messagingActionControllerProvider.notifier)
-                    .startOrGetConversation(candidate.profileId);
-                if (context.mounted) context.push('/messages/$conversationId');
-              },
-            ),
+              if (candidate.yearsExperience != null)
+                _StatChip(icon: Icons.work_outline, label: '${candidate.yearsExperience} yrs'),
+            ],
+          ),
+          if (candidate.city != null) ...[
+            const SizedBox(height: 20),
+            Text('City', style: Theme.of(context).textTheme.titleMedium),
+            Text(candidate.city!),
           ],
-        ),
+          if (candidate.bio != null) ...[
+            const SizedBox(height: 16),
+            Text('Bio', style: Theme.of(context).textTheme.titleMedium),
+            Text(candidate.bio!),
+          ],
+          const SizedBox(height: 24),
+          Text('Portfolio', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          pinnedPosts.when(
+            loading: () => const LoadingView(),
+            error: (error, _) => Text('Error: $error'),
+            data: (posts) {
+              if (posts.isEmpty) {
+                return const Text('No pinned work yet.', style: TextStyle(color: AppColors.steel));
+              }
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8),
+                itemCount: posts.length,
+                itemBuilder: (context, index) {
+                  final url = posts[index].mediaUrl;
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: url != null
+                        ? AppNetworkImage(url)
+                        : ColoredBox(
+                            color: AppColors.divider,
+                            child: const Icon(Icons.content_cut, color: AppColors.steel),
+                          ),
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          if (actionState.hasError)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                actionState.error.toString(),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          FilledButton(
+            onPressed: (actionState.isLoading || pendingInvitation != null)
+                ? null
+                : () => _sendInvite(context, ref),
+            child: actionState.isLoading
+                ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(pendingInvitation != null ? 'Invitation sent — awaiting response' : 'Send invite'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text('Message'),
+            onPressed: () async {
+              final conversationId = await ref
+                  .read(messagingActionControllerProvider.notifier)
+                  .startOrGetConversation(candidate.profileId, type: ConversationType.business);
+              if (context.mounted) context.push('/messages/$conversationId');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.brass),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }

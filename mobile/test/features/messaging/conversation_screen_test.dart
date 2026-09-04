@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/auth/domain/profile.dart';
 import 'package:mobile/features/messaging/application/messaging_controller.dart';
+import 'package:mobile/features/messaging/domain/conversation.dart';
 import 'package:mobile/features/messaging/domain/message.dart';
 import 'package:mobile/features/messaging/presentation/conversation_screen.dart';
 
@@ -15,7 +16,11 @@ class _FakeMessagingActionController extends MessagingActionController {
   Future<void> sendMessage(String conversationId, String body) async {}
 
   @override
-  Future<String> startOrGetConversation(String otherProfileId) async => 'fake-conversation-id';
+  Future<String> startOrGetConversation(
+    String otherProfileId, {
+    ConversationType type = ConversationType.personal,
+  }) async =>
+      'fake-conversation-id';
 }
 
 void main() {

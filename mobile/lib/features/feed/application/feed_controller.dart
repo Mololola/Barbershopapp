@@ -26,6 +26,12 @@ final postsByAuthorProvider = FutureProvider.family<List<Post>, String>((ref, au
   return ref.watch(feedRepositoryProvider).fetchPostsByAuthor(authorId: authorId, myProfileId: profile?.id);
 });
 
+/// The worker-candidate detail screen's portfolio grid — a curated subset of
+/// [postsByAuthorProvider], not the full chronological feed.
+final pinnedPostsProvider = FutureProvider.family<List<Post>, String>((ref, authorId) async {
+  return ref.watch(feedRepositoryProvider).fetchPinnedPosts(authorId);
+});
+
 final feedActionControllerProvider = AsyncNotifierProvider<FeedActionController, void>(FeedActionController.new);
 
 class FeedActionController extends AsyncNotifier<void> {
@@ -85,6 +91,17 @@ class FeedActionController extends AsyncNotifier<void> {
             profileId: profile.id,
             currentlyLiked: currentlyLiked,
           );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Same reasoning as toggleLike: an instant, per-post optimistic flip, not
+  // a global-state action that disables every other post's buttons.
+  Future<bool> togglePin({required String postId, required bool currentlyPinned}) async {
+    try {
+      await ref.read(feedRepositoryProvider).togglePin(postId: postId, currentlyPinned: currentlyPinned);
       return true;
     } catch (_) {
       return false;

@@ -9,6 +9,7 @@ import '../../auth/domain/profile.dart';
 import '../../customer/application/booking_controller.dart' show bookingsRepositoryProvider;
 import '../../customer/domain/booking.dart';
 import '../../worker/domain/worker_invitation.dart';
+import '../../worker/domain/worker_leave_request.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../data/billing_api_client.dart';
 import '../data/business_repository.dart';
@@ -130,6 +131,32 @@ final sentInvitationsProvider = FutureProvider<List<WorkerInvitation>>((ref) asy
   return ref.watch(businessRepositoryProvider).fetchSentInvitations(business.id);
 });
 
+/// autoDispose — a worker could ask to leave at any time, independent of
+/// anything the app itself does; re-fetch whenever the screen reopens, same
+/// reasoning as the marketplace/rankings.
+final pendingLeaveRequestsProvider = FutureProvider.autoDispose<List<WorkerLeaveRequest>>((ref) async {
+  final business = await ref.watch(currentBusinessProvider.future);
+  if (business == null) return [];
+  return ref.watch(businessRepositoryProvider).fetchPendingLeaveRequests(business.id);
+});
+
+final leaveRequestControllerProvider =
+    AsyncNotifierProvider<LeaveRequestController, void>(LeaveRequestController.new);
+
+class LeaveRequestController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<void> acknowledge(WorkerLeaveRequest request) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(businessRepositoryProvider).acknowledgeLeaveRequest(request);
+      ref.invalidate(pendingLeaveRequestsProvider);
+      ref.invalidate(workersProvider);
+    });
+  }
+}
+
 final businessSetupControllerProvider =
     AsyncNotifierProvider<BusinessSetupController, void>(BusinessSetupController.new);
 
@@ -225,12 +252,81 @@ class CostItemController extends AsyncNotifier<void> {
   }
 }
 
-/// autoDispose — a business browsing the marketplace needs whoever is
-/// looking for work *right now*, not whatever was cached from the last
-/// time any business viewed this screen in the current app session.
-final workersLookingForWorkProvider = FutureProvider.autoDispose<List<WorkerSearchResult>>((ref) {
-  return ref.watch(businessRepositoryProvider).fetchWorkersLookingForWork();
-});
+/// The Available Workers marketplace list — a real paginated notifier, not
+/// a single FutureProvider, since this list can run into the thousands
+/// (see fetchWorkersLookingForWork). autoDispose for the same reason as the
+/// old provider: whoever's looking for work *right now*, not a stale
+/// session cache.
+class MarketplaceFilters {
+  const MarketplaceFilters({
+    this.nameQuery,
+    this.minYearsExperience,
+    this.minShopsWorked,
+    this.minAverageRating,
+  });
+
+  final String? nameQuery;
+  final int? minYearsExperience;
+  final int? minShopsWorked;
+  final double? minAverageRating;
+}
+
+final marketplaceControllerProvider =
+    AsyncNotifierProvider.autoDispose<MarketplaceController, List<WorkerSearchResult>>(
+        MarketplaceController.new);
+
+class MarketplaceController extends AsyncNotifier<List<WorkerSearchResult>> {
+  static const _pageSize = 20;
+
+  MarketplaceFilters _filters = const MarketplaceFilters();
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+
+  bool get hasMore => _hasMore;
+  bool get isLoadingMore => _isLoadingMore;
+
+  @override
+  Future<List<WorkerSearchResult>> build() {
+    return _fetchPage(offset: 0);
+  }
+
+  // Sets _hasMore itself so every caller (the initial build(), a filter
+  // change, a scroll-triggered loadMore()) gets it right — a first page
+  // shorter than a full page already means there's nothing more to load,
+  // not just something loadMore() discovers on its own next call.
+  Future<List<WorkerSearchResult>> _fetchPage({required int offset}) async {
+    final page = await ref.read(businessRepositoryProvider).fetchWorkersLookingForWork(
+          nameQuery: _filters.nameQuery,
+          minYearsExperience: _filters.minYearsExperience,
+          minShopsWorked: _filters.minShopsWorked,
+          minAverageRating: _filters.minAverageRating,
+          offset: offset,
+          limit: _pageSize,
+        );
+    _hasMore = page.length == _pageSize;
+    return page;
+  }
+
+  Future<void> applyFilters(MarketplaceFilters filters) async {
+    _filters = filters;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _fetchPage(offset: 0));
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    final current = state.value ?? [];
+    _isLoadingMore = true;
+    try {
+      final next = await _fetchPage(offset: current.length);
+      state = AsyncData([...current, ...next]);
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
+}
 
 final workerControllerProvider = AsyncNotifierProvider<WorkerController, void>(WorkerController.new);
 
@@ -250,10 +346,10 @@ class WorkerController extends AsyncNotifier<void> {
     });
   }
 
-  Future<void> deleteWorker(String workerId) async {
+  Future<void> removeWorker(String workerId) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(businessRepositoryProvider).deleteWorker(workerId);
+      await ref.read(businessRepositoryProvider).removeWorker(workerId);
       ref.invalidate(workersProvider);
     });
   }

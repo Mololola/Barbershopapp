@@ -8,6 +8,7 @@ import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../messaging/application/messaging_controller.dart';
 import '../../rewards/application/rewards_controller.dart';
+import '../../worker/application/worker_controller.dart';
 import '../application/booking_controller.dart';
 import '../application/browse_controller.dart';
 import '../domain/booking.dart';
@@ -22,6 +23,7 @@ class CustomerHomeScreen extends ConsumerWidget {
     final bookings = ref.watch(myBookingsProvider);
     final conversations = ref.watch(conversationsProvider).value ?? const [];
     final unreadCount = conversations.fold<int>(0, (sum, c) => sum + c.unreadCount);
+    final pendingInvitations = ref.watch(receivedInvitationsProvider).value ?? const [];
 
     return Scaffold(
       appBar: AppBar(
@@ -62,6 +64,10 @@ class CustomerHomeScreen extends ConsumerWidget {
               return upcoming.isEmpty ? const _NoAppointmentCard() : _NextAppointmentCard(booking: upcoming.first);
             },
           ),
+          if (pendingInvitations.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _JobInviteBanner(count: pendingInvitations.length),
+          ],
           const SizedBox(height: 28),
           Text('Quick actions', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
@@ -245,6 +251,44 @@ class _DashedLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedLinePainter oldDelegate) => oldDelegate.color != color;
+}
+
+/// So a pending job invitation doesn't sit unnoticed on the worker-profile
+/// screen until the customer happens to open it.
+class _JobInviteBanner extends StatelessWidget {
+  const _JobInviteBanner({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.brass.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => context.push('/customer/worker-profile'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              const Icon(Icons.work_outline, color: AppColors.brass),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  count == 1
+                      ? 'A barbershop wants to hire you — 1 job invitation waiting.'
+                      : 'A barbershop wants to hire you — $count job invitations waiting.',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.brass),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _NoAppointmentCard extends StatelessWidget {

@@ -36,3 +36,28 @@ class HaircutTypeRankingEntry {
     );
   }
 }
+
+/// Ranking 5 — barbers ranked by average review rating, career-wide (not
+/// scoped to one business — see ranking_top_barbers).
+class BarberRankingEntry {
+  const BarberRankingEntry({
+    required this.workerProfileId,
+    required this.username,
+    required this.avatarUrl,
+    required this.value,
+  });
+
+  final String workerProfileId;
+  final String username;
+  final String? avatarUrl;
+  final double value;
+
+  factory BarberRankingEntry.fromRow(Map<String, dynamic> row) {
+    return BarberRankingEntry(
+      workerProfileId: row['worker_profile_id'] as String,
+      username: row['username'] as String,
+      avatarUrl: row['avatar_url'] as String?,
+      value: (row['value'] as num).toDouble(),
+    );
+  }
+}

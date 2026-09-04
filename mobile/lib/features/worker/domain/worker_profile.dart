@@ -6,6 +6,7 @@ class WorkerProfile {
     this.legalSecondLastName,
     this.bio,
     this.city,
+    this.yearsExperience,
     required this.isLookingForWork,
   });
 
@@ -19,6 +20,11 @@ class WorkerProfile {
 
   final String? bio;
   final String? city;
+
+  /// Structured, unlike `bio` — the marketplace filters on this, so it has
+  /// to be a comparable number rather than whatever a free-text bio says.
+  final int? yearsExperience;
+
   final bool isLookingForWork;
 
   String get legalFullName {
@@ -37,13 +43,18 @@ class WorkerProfile {
       legalSecondLastName: row['legal_second_last_name'] as String?,
       bio: row['bio'] as String?,
       city: row['city'] as String?,
+      yearsExperience: row['years_experience'] as int?,
       isLookingForWork: row['is_looking_for_work'] as bool,
     );
   }
 }
 
-/// A worker profile found by username, from a business's search — only ever
-/// returned for profiles with `is_looking_for_work = true` (see worker_repository).
+/// A worker profile found on a business's marketplace search — only ever
+/// returned for profiles with `is_looking_for_work = true` and no active job
+/// (see business_repository.dart). `shopsWorkedCount`/`averageRating` are
+/// server-computed aggregates (see the `worker_shops_worked_count`/
+/// `worker_average_rating` SQL functions) — never client-supplied, so a
+/// candidate can't inflate their own standing.
 class WorkerSearchResult {
   const WorkerSearchResult({
     required this.profileId,
@@ -53,6 +64,9 @@ class WorkerSearchResult {
     this.legalSecondLastName,
     this.bio,
     this.city,
+    this.yearsExperience,
+    this.shopsWorkedCount,
+    this.averageRating,
   });
 
   final String profileId;
@@ -62,6 +76,9 @@ class WorkerSearchResult {
   final String? legalSecondLastName;
   final String? bio;
   final String? city;
+  final int? yearsExperience;
+  final int? shopsWorkedCount;
+  final double? averageRating;
 
   String get legalFullName {
     final secondLastName = legalSecondLastName;

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../business/application/business_controller.dart';
+import '../../worker/domain/worker_leave_request.dart';
 import '../application/messaging_controller.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
@@ -56,11 +59,18 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final messages = ref.watch(conversationMessagesProvider(widget.conversationId));
     final myId = ref.watch(currentProfileProvider).value?.id;
     final actionState = ref.watch(messagingActionControllerProvider);
+    final conversation = ref.watch(conversationByIdProvider(widget.conversationId));
+    final leaveRequest = conversation == null
+        ? null
+        : (ref.watch(pendingLeaveRequestsProvider).value ?? const [])
+            .where((r) => r.workerProfileId == conversation.otherParticipantId)
+            .firstOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Conversation')),
       body: Column(
         children: [
+          if (leaveRequest != null) _LeaveRequestBanner(request: leaveRequest),
           Expanded(
             child: messages.when(
               loading: () => const LoadingView(),
@@ -115,6 +125,40 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaveRequestBanner extends ConsumerWidget {
+  const _LeaveRequestBanner({required this.request});
+
+  final WorkerLeaveRequest request;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actionState = ref.watch(leaveRequestControllerProvider);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: AppColors.rust.withValues(alpha: 0.12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'This worker has asked to leave. They stay on staff until you confirm.',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.rust),
+            onPressed: actionState.isLoading
+                ? null
+                : () => ref.read(leaveRequestControllerProvider.notifier).acknowledge(request),
+            child: const Text('Confirm they\'re leaving'),
           ),
         ],
       ),

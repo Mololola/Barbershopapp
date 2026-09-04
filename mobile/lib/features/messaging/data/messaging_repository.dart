@@ -11,14 +11,20 @@ class MessagingRepository {
   /// Sorting the pair before upsert (matched by the migration's `check
   /// (participant_a_id < participant_b_id)` + unique constraint) means this
   /// is safe to call from either side — it returns the same conversation
-  /// whether it already existed or was just created.
-  Future<String> startOrGetConversation(String myId, String otherId) async {
+  /// whether it already existed or was just created. `type` is part of the
+  /// conflict key, so the same two people can hold both a personal and a
+  /// business thread at once (see the migration).
+  Future<String> startOrGetConversation(
+    String myId,
+    String otherId, {
+    ConversationType type = ConversationType.personal,
+  }) async {
     final ids = [myId, otherId]..sort();
     final rows = await _client
         .from('conversations')
         .upsert(
-          {'participant_a_id': ids[0], 'participant_b_id': ids[1]},
-          onConflict: 'participant_a_id,participant_b_id',
+          {'participant_a_id': ids[0], 'participant_b_id': ids[1], 'type': type.wireValue},
+          onConflict: 'participant_a_id,participant_b_id,type',
         )
         .select();
     return rows.first['id'] as String;
@@ -35,7 +41,7 @@ class MessagingRepository {
     final rows = await _client
         .from('conversations')
         .select(
-          'id, participant_a_id, participant_b_id, '
+          'id, participant_a_id, participant_b_id, type, '
           'participant_a:profiles!conversations_participant_a_id_fkey(username, avatar_url), '
           'participant_b:profiles!conversations_participant_b_id_fkey(username, avatar_url)',
         )
@@ -76,6 +82,7 @@ class MessagingRepository {
         lastMessageBody: lastMessage?.body,
         lastMessageAt: lastMessage?.createdAt,
         unreadCount: unreadCount,
+        type: ConversationTypeX.fromWireValue(row['type'] as String),
       );
     }).toList();
 

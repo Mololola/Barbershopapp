@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../worker/domain/worker_invitation.dart';
+import '../../worker/domain/worker_leave_request.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../domain/business.dart';
 import '../domain/business_finance_access.dart';
@@ -11,10 +12,16 @@ class InvalidReferralCodeException implements Exception {
   String toString() => 'That referral code doesn\'t exist.';
 }
 
+class AlreadyInvitedException implements Exception {
+  @override
+  String toString() => "You already have a pending invitation out to this worker.";
+}
+
 class BusinessRepository {
   BusinessRepository(this._client);
 
   static const _foreignKeyViolation = '23503';
+  static const _uniqueViolation = '23505';
 
   final SupabaseClient _client;
 
@@ -213,8 +220,12 @@ class BusinessRepository {
     });
   }
 
-  Future<void> deleteWorker(String workerId) async {
-    await _client.from('workers').delete().eq('id', workerId);
+  /// Deactivates rather than deletes — same reasoning as the worker's own
+  /// leaveCurrentJob (worker_repository.dart): keeps the employment history
+  /// around so "shops worked at" stays a truthful count for this person
+  /// across every business, not just whoever hasn't fired them yet.
+  Future<void> removeWorker(String workerId) async {
+    await _client.from('workers').update({'is_active': false}).eq('id', workerId);
   }
 
   /// Looked up by real (legal) name, not account username — per-field
@@ -257,17 +268,50 @@ class BusinessRepository {
     }).toList();
   }
 
-  /// Same shape as [findWorkersByName] minus the name filters — every
-  /// profile currently looking for work, for a browsable list.
-  Future<List<WorkerSearchResult>> fetchWorkersLookingForWork() async {
-    final rows = await _client
+  /// The Available Workers marketplace: paginated (this list can run into
+  /// the thousands), name-searchable, and filterable on the server-computed
+  /// aggregates (worker_shops_worked_count/worker_average_rating are
+  /// PostgREST computed columns on worker_profiles — see the migration —
+  /// not client-side math, so a candidate can't inflate their own standing).
+  /// Also excludes anyone actively employed elsewhere even if they left
+  /// "looking for work" on (worker_is_actively_employed, same mechanism).
+  Future<List<WorkerSearchResult>> fetchWorkersLookingForWork({
+    String? nameQuery,
+    int? minYearsExperience,
+    int? minShopsWorked,
+    double? minAverageRating,
+    required int offset,
+    required int limit,
+  }) async {
+    var query = _client
         .from('profiles')
         .select(
           'id, username, '
           'worker_profiles!inner(legal_first_name, legal_last_name, legal_second_last_name, '
-          'bio, city, is_looking_for_work)',
+          'bio, city, years_experience, is_looking_for_work, '
+          'worker_shops_worked_count, worker_average_rating)',
         )
-        .eq('worker_profiles.is_looking_for_work', true);
+        .eq('worker_profiles.is_looking_for_work', true)
+        .eq('worker_profiles.worker_is_actively_employed', false);
+
+    final trimmedQuery = nameQuery?.trim();
+    if (trimmedQuery != null && trimmedQuery.isNotEmpty) {
+      query = query.or(
+        'legal_first_name.ilike.%$trimmedQuery%,legal_last_name.ilike.%$trimmedQuery%',
+        referencedTable: 'worker_profiles',
+      );
+    }
+    if (minYearsExperience != null) {
+      query = query.gte('worker_profiles.years_experience', minYearsExperience);
+    }
+    if (minShopsWorked != null) {
+      query = query.gte('worker_profiles.worker_shops_worked_count', minShopsWorked);
+    }
+    if (minAverageRating != null) {
+      query = query.gte('worker_profiles.worker_average_rating', minAverageRating);
+    }
+
+    final rows = await query.order('username').range(offset, offset + limit - 1);
 
     return rows.map((row) {
       final workerProfile = row['worker_profiles'] as Map<String, dynamic>;
@@ -279,6 +323,9 @@ class BusinessRepository {
         legalSecondLastName: workerProfile['legal_second_last_name'] as String?,
         bio: workerProfile['bio'] as String?,
         city: workerProfile['city'] as String?,
+        yearsExperience: workerProfile['years_experience'] as int?,
+        shopsWorkedCount: workerProfile['worker_shops_worked_count'] as int?,
+        averageRating: (workerProfile['worker_average_rating'] as num?)?.toDouble(),
       );
     }).toList();
   }
@@ -288,11 +335,16 @@ class BusinessRepository {
     required String businessName,
     required String workerProfileId,
   }) async {
-    await _client.from('worker_invitations').insert({
-      'business_id': businessId,
-      'business_name': businessName,
-      'worker_profile_id': workerProfileId,
-    });
+    try {
+      await _client.from('worker_invitations').insert({
+        'business_id': businessId,
+        'business_name': businessName,
+        'worker_profile_id': workerProfileId,
+      });
+    } on PostgrestException catch (e) {
+      if (e.code == _uniqueViolation) throw AlreadyInvitedException();
+      rethrow;
+    }
   }
 
   Future<List<WorkerInvitation>> fetchSentInvitations(String businessId) async {
@@ -304,5 +356,26 @@ class BusinessRepository {
         .eq('business_id', businessId)
         .order('created_at');
     return rows.map(WorkerInvitation.fromRow).toList();
+  }
+
+  Future<List<WorkerLeaveRequest>> fetchPendingLeaveRequests(String businessId) async {
+    final rows = await _client
+        .from('worker_leave_requests')
+        .select()
+        .eq('business_id', businessId)
+        .eq('status', 'pending')
+        .order('requested_at');
+    return rows.map(WorkerLeaveRequest.fromRow).toList();
+  }
+
+  /// The worker doesn't actually leave until this runs — resolving the
+  /// request and deactivating the `workers` row together, not on the
+  /// worker's own say-so (see requestLeave in worker_repository.dart).
+  Future<void> acknowledgeLeaveRequest(WorkerLeaveRequest request) async {
+    await _client.from('worker_leave_requests').update({
+      'status': 'acknowledged',
+      'resolved_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', request.id);
+    await _client.from('workers').update({'is_active': false}).eq('id', request.workerId);
   }
 }
