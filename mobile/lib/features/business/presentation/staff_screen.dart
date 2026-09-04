@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/loading.dart';
 import '../../../core/theme.dart';
+import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_leave_request.dart';
 import '../../worker/presentation/invitation_status_style.dart';
 import '../application/business_controller.dart';
@@ -232,14 +233,24 @@ class _MyWorkforceTab extends ConsumerWidget {
             if (list.isEmpty) {
               return const Padding(padding: EdgeInsets.all(16), child: Text('No invitations sent yet.'));
             }
+            // The full history can pile up across repeated invite/accept/
+            // leave cycles with the same person — what a business actually
+            // wants here is the current state per worker, not every past
+            // attempt, so only the most recent invitation to each person is
+            // shown (list is already newest-first from the repository).
+            final latestPerWorker = <String, WorkerInvitation>{};
+            for (final invitation in list) {
+              latestPerWorker.putIfAbsent(invitation.workerProfileId, () => invitation);
+            }
             return Column(
               children: [
-                for (final invitation in list)
+                for (final invitation in latestPerWorker.values)
                   Card(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: ListTile(
                       leading: Icon(invitation.status.icon, color: invitation.status.color),
                       title: Text(invitation.workerLegalFullName ?? invitation.workerUsername ?? 'Unknown'),
+                      subtitle: Text(_formatDate(invitation.createdAt.toLocal())),
                       trailing: Chip(
                         label: Text(invitation.status.label),
                         backgroundColor: invitation.status.color.withValues(alpha: 0.15),
@@ -255,6 +266,13 @@ class _MyWorkforceTab extends ConsumerWidget {
       ],
     );
   }
+}
+
+String _formatDate(DateTime d) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', //
+  ];
+  return '${months[d.month - 1]} ${d.day}, ${d.year}';
 }
 
 class _WorkforceTile extends ConsumerWidget {
@@ -296,17 +314,35 @@ class _WorkforceTile extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.rust.withValues(alpha: 0.3)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.info_outline, color: AppColors.rust, size: 18),
-                const SizedBox(width: 8),
-                const Expanded(child: Text('Has asked to leave.')),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.rust),
-                  onPressed: actionState.isLoading
-                      ? null
-                      : () => ref.read(leaveRequestControllerProvider.notifier).acknowledge(leaveRequest!),
-                  child: const Text('Acknowledge'),
+                Row(
+                  children: const [
+                    Icon(Icons.info_outline, color: AppColors.rust, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('Has asked to leave.')),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: actionState.isLoading
+                          ? null
+                          : () => ref.read(leaveRequestControllerProvider.notifier).reject(leaveRequest!),
+                      child: const Text('Reject'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: AppColors.rust),
+                      onPressed: actionState.isLoading
+                          ? null
+                          : () =>
+                              ref.read(leaveRequestControllerProvider.notifier).acknowledge(leaveRequest!),
+                      child: const Text('Acknowledge'),
+                    ),
+                  ],
                 ),
               ],
             ),

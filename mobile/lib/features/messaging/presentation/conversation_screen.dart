@@ -153,12 +153,23 @@ class _LeaveRequestBanner extends ConsumerWidget {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.rust),
-            onPressed: actionState.isLoading
-                ? null
-                : () => ref.read(leaveRequestControllerProvider.notifier).acknowledge(request),
-            child: const Text('Confirm they\'re leaving'),
+          Row(
+            children: [
+              OutlinedButton(
+                onPressed: actionState.isLoading
+                    ? null
+                    : () => ref.read(leaveRequestControllerProvider.notifier).reject(request),
+                child: const Text('Reject'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.rust),
+                onPressed: actionState.isLoading
+                    ? null
+                    : () => ref.read(leaveRequestControllerProvider.notifier).acknowledge(request),
+                child: const Text('Confirm they\'re leaving'),
+              ),
+            ],
           ),
         ],
       ),

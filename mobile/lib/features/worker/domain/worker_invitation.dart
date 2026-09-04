@@ -15,6 +15,7 @@ class WorkerInvitation {
     required this.workerProfileId,
     required this.status,
     required this.businessName,
+    required this.createdAt,
     this.workerUsername,
     this.workerLegalFullName,
   });
@@ -23,6 +24,7 @@ class WorkerInvitation {
   final String businessId;
   final String workerProfileId;
   final InvitationStatus status;
+  final DateTime createdAt;
 
   /// Denormalized onto the row at invite creation (see the migration) rather
   /// than embedded from `businesses` — a cross-table RLS policy for that
@@ -59,6 +61,7 @@ class WorkerInvitation {
       workerProfileId: row['worker_profile_id'] as String,
       status: InvitationStatusX.fromWireValue(row['status'] as String),
       businessName: row['business_name'] as String,
+      createdAt: DateTime.parse(row['created_at'] as String),
       workerUsername: profile?['username'] as String?,
       workerLegalFullName: legalFullName,
     );

@@ -48,9 +48,10 @@ class WorkerRepository {
   }
 
   /// See docs/architecture.md: the `workers` insert is the guarded step
-  /// (protected by the one-active-business-per-profile constraint). Only if
-  /// it succeeds do we flip the worker off "looking for work" and mark the
-  /// invitation accepted — if it fails, the invitation is left untouched.
+  /// (protected by the one-active-business-per-profile constraint). If it
+  /// fails, the invitation is left untouched. Taking a job doesn't touch
+  /// `is_looking_for_work` — accepting one offer doesn't mean a worker is
+  /// off the market for another; only their own explicit toggle does that.
   Future<void> acceptInvitation(WorkerInvitation invitation, String legalFullName) async {
     try {
       await _client.from('workers').insert({
@@ -66,9 +67,6 @@ class WorkerRepository {
       rethrow;
     }
 
-    await _client
-        .from('worker_profiles')
-        .update({'is_looking_for_work': false}).eq('profile_id', invitation.workerProfileId);
     await _client.from('worker_invitations').update({
       'status': 'accepted',
       'responded_at': DateTime.now().toUtc().toIso8601String(),

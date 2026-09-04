@@ -1,4 +1,4 @@
-enum LeaveRequestStatus { pending, acknowledged }
+enum LeaveRequestStatus { pending, acknowledged, rejected }
 
 extension LeaveRequestStatusX on LeaveRequestStatus {
   String get wireValue => name;
@@ -11,7 +11,10 @@ extension LeaveRequestStatusX on LeaveRequestStatus {
 /// A worker's request to leave their current job — the worker doesn't
 /// actually leave until the business acknowledges it (see
 /// business_repository.dart's `acknowledgeLeaveRequest`, which resolves this
-/// row and deactivates the `workers` row together).
+/// row and deactivates the `workers` row together). The business can
+/// instead reject it (a misclick, or the shop just isn't ready to let them
+/// go) via `rejectLeaveRequest`, which resolves the row but leaves the
+/// worker's job untouched.
 class WorkerLeaveRequest {
   const WorkerLeaveRequest({
     required this.id,

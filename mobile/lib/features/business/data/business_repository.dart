@@ -273,8 +273,9 @@ class BusinessRepository {
   /// aggregates (worker_shops_worked_count/worker_average_rating are
   /// PostgREST computed columns on worker_profiles — see the migration —
   /// not client-side math, so a candidate can't inflate their own standing).
-  /// Also excludes anyone actively employed elsewhere even if they left
-  /// "looking for work" on (worker_is_actively_employed, same mechanism).
+  /// Deliberately does NOT exclude anyone currently employed elsewhere —
+  /// taking one job doesn't take a worker off the market for another,
+  /// only their own is_looking_for_work toggle does that.
   Future<List<WorkerSearchResult>> fetchWorkersLookingForWork({
     String? nameQuery,
     int? minYearsExperience,
@@ -291,8 +292,7 @@ class BusinessRepository {
           'bio, city, years_experience, is_looking_for_work, '
           'worker_shops_worked_count, worker_average_rating)',
         )
-        .eq('worker_profiles.is_looking_for_work', true)
-        .eq('worker_profiles.worker_is_actively_employed', false);
+        .eq('worker_profiles.is_looking_for_work', true);
 
     final trimmedQuery = nameQuery?.trim();
     if (trimmedQuery != null && trimmedQuery.isNotEmpty) {
@@ -354,7 +354,7 @@ class BusinessRepository {
           '*, profiles(username, worker_profiles(legal_first_name, legal_last_name, legal_second_last_name))',
         )
         .eq('business_id', businessId)
-        .order('created_at');
+        .order('created_at', ascending: false);
     return rows.map(WorkerInvitation.fromRow).toList();
   }
 
@@ -377,5 +377,14 @@ class BusinessRepository {
       'resolved_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', request.id);
     await _client.from('workers').update({'is_active': false}).eq('id', request.workerId);
+  }
+
+  /// A misclick, or the shop isn't ready to let them go — resolves the
+  /// request without touching the `workers` row, so the job stays active.
+  Future<void> rejectLeaveRequest(WorkerLeaveRequest request) async {
+    await _client.from('worker_leave_requests').update({
+      'status': 'rejected',
+      'resolved_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', request.id);
   }
 }

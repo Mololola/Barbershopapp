@@ -155,6 +155,14 @@ class LeaveRequestController extends AsyncNotifier<void> {
       ref.invalidate(workersProvider);
     });
   }
+
+  Future<void> reject(WorkerLeaveRequest request) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(businessRepositoryProvider).rejectLeaveRequest(request);
+      ref.invalidate(pendingLeaveRequestsProvider);
+    });
+  }
 }
 
 final businessSetupControllerProvider =
