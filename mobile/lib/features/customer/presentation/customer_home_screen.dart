@@ -38,8 +38,8 @@ class CustomerHomeScreen extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/account-settings'),
           ),
         ],
       ),

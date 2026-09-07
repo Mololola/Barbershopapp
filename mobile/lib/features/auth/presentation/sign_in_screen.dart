@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../application/auth_controller.dart';
 
@@ -29,6 +30,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
+  }
+
+  Future<void> _resendConfirmation() async {
+    await ref.read(authControllerProvider.notifier).resendConfirmationEmail(_emailController.text.trim());
+    if (!mounted) return;
+    final message = ref.read(authControllerProvider).hasError ? 'Couldn\'t resend — try again shortly.' : 'Confirmation email sent.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -60,13 +68,28 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 obscureText: true,
                 validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
               ),
-              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => context.push('/forgot-password'),
+                  child: const Text('Forgot password?'),
+                ),
+              ),
+              const SizedBox(height: 8),
               if (authState.hasError)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     authState.error.toString(),
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              if (authState.error is AuthException && (authState.error as AuthException).code == 'email_not_confirmed')
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: OutlinedButton(
+                    onPressed: authState.isLoading ? null : _resendConfirmation,
+                    child: const Text('Resend confirmation email'),
                   ),
                 ),
               FilledButton(
@@ -78,6 +101,25 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               TextButton(
                 onPressed: () => context.go('/sign-up'),
                 child: const Text("Don't have an account? Sign up"),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('or')), Expanded(child: Divider())]),
+              ),
+              OutlinedButton.icon(
+                onPressed: authState.isLoading
+                    ? null
+                    : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.google),
+                icon: const Icon(Icons.g_mobiledata),
+                label: const Text('Continue with Google'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: authState.isLoading
+                    ? null
+                    : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.apple),
+                icon: const Icon(Icons.apple),
+                label: const Text('Continue with Apple'),
               ),
             ],
           ),
