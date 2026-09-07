@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.api.account import router as account_router
 from app.api.billing import router as billing_router
 from app.api.bookings import router as bookings_router
 from app.api.rewards import router as rewards_router
@@ -42,6 +43,7 @@ app.add_middleware(SlowAPIMiddleware)
 app.include_router(bookings_router)
 app.include_router(rewards_router)
 app.include_router(billing_router)
+app.include_router(account_router)
 
 
 @app.get("/health")
