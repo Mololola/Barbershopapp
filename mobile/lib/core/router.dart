@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../features/admin/presentation/admin_screen.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/domain/profile.dart';
+import '../features/auth/presentation/account_settings_screen.dart';
 import '../features/auth/presentation/edit_profile_screen.dart';
+import '../features/auth/presentation/forgot_password_screen.dart';
+import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/business/application/business_controller.dart';
@@ -43,12 +46,14 @@ import '../features/worker/presentation/worker_profile_screen.dart';
 import 'app_shell.dart';
 import 'supabase_providers.dart';
 
-const _authRoutes = {'/sign-in', '/sign-up'};
+const _authRoutes = {'/sign-in', '/sign-up', '/forgot-password'};
 const _businessSetupRoute = '/business-setup';
 
 bool _isReviewRoute(String location, String? bookingId) {
   return bookingId != null && location == '/customer/bookings/$bookingId/review';
 }
+
+const _resetPasswordRoute = '/reset-password';
 
 /// Pure routing decision, unit-testable without a live Supabase client.
 String? resolveRedirect({
@@ -57,7 +62,15 @@ String? resolveRedirect({
   required bool hasBusiness,
   required String? pendingReviewBookingId,
   required String location,
+  bool passwordRecovery = false,
 }) {
+  // The password-reset email link signs the user into a temporary recovery
+  // session — that counts as authenticated, but must not fall through to
+  // normal home routing until they've actually set a new password.
+  if (passwordRecovery) {
+    return location == _resetPasswordRoute ? null : _resetPasswordRoute;
+  }
+
   if (!isAuthenticated) {
     return _authRoutes.contains(location) ? null : '/sign-in';
   }
@@ -112,6 +125,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(currentProfileProvider, (_, __) => refresh.ping());
   ref.listen(currentBusinessProvider, (_, __) => refresh.ping());
   ref.listen(pendingReviewProvider, (_, __) => refresh.ping());
+  ref.listen(passwordRecoveryProvider, (_, __) => refresh.ping());
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -128,11 +142,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         hasBusiness: hasBusiness,
         pendingReviewBookingId: pendingReviewBookingId,
         location: state.matchedLocation,
+        passwordRecovery: ref.read(passwordRecoveryProvider),
       );
     },
     routes: [
       GoRoute(path: '/sign-in', builder: (context, state) => const SignInScreen()),
       GoRoute(path: '/sign-up', builder: (context, state) => const SignUpScreen()),
+      GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
+      GoRoute(path: _resetPasswordRoute, builder: (context, state) => const ResetPasswordScreen()),
+      GoRoute(path: '/account-settings', builder: (context, state) => const AccountSettingsScreen()),
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

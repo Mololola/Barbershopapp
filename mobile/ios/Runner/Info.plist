@@ -45,5 +45,20 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Password-reset and OAuth sign-in both redirect here via Supabase's
+	     redirectTo — see mobile/lib/core/env.dart's authCallbackUrl. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>barbershopapp</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to choose a photo for your profile, posts, or business logo.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Used to take a photo for your profile, posts, or business logo.</string>
 </dict>
 </plist>

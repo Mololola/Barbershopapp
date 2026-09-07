@@ -1,13 +1,21 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/api_client.dart';
+import '../../../core/env.dart';
 import '../../../core/supabase_providers.dart';
+import '../data/account_api_client.dart';
 import '../data/profile_repository.dart';
 import '../domain/profile.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepository(ref.watch(supabaseClientProvider));
+});
+
+final accountApiClientProvider = Provider<AccountApiClient>((ref) {
+  return AccountApiClient(ref.watch(apiClientProvider));
 });
 
 final profileByIdProvider = FutureProvider.family<Profile?, String>((ref, profileId) {
@@ -81,6 +89,66 @@ class AuthController extends AsyncNotifier<void> {
   Future<void> signOut() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      await ref.read(supabaseClientProvider).auth.signOut();
+      ref.invalidate(currentProfileProvider);
+    });
+  }
+
+  /// The OAuth-first-login path: an already-authenticated user (just
+  /// completed Google/Apple sign-in) with no `profiles` row yet, so there's
+  /// no signUp() call to make — just the row, same as email/password's lazy
+  /// insert in [currentProfileProvider] but triggered explicitly since there
+  /// was no signUp() to have carried role/username as user metadata.
+  Future<void> completeOAuthProfile({required AccountRole role, required String username}) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final userId = ref.read(supabaseClientProvider).auth.currentUser!.id;
+      await ref.read(profileRepositoryProvider).insertProfile(id: userId, role: role, username: username);
+      ref.invalidate(currentProfileProvider);
+      await ref.read(currentProfileProvider.future);
+    });
+  }
+
+  Future<void> signInWithOAuth(OAuthProvider provider) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(supabaseClientProvider)
+          .auth
+          .signInWithOAuth(provider, redirectTo: Env.authCallbackUrl);
+    });
+  }
+
+  Future<void> requestPasswordReset(String email) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(supabaseClientProvider).auth.resetPasswordForEmail(email, redirectTo: Env.authCallbackUrl);
+    });
+  }
+
+  /// Called from ResetPasswordScreen against the temporary recovery session
+  /// the emailed link signs the user into — see [passwordRecoveryProvider].
+  Future<void> updatePassword(String newPassword) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(supabaseClientProvider).auth.updateUser(UserAttributes(password: newPassword));
+      ref.read(passwordRecoveryProvider.notifier).clear();
+    });
+  }
+
+  Future<void> resendConfirmationEmail(String email) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(supabaseClientProvider).auth.resend(type: OtpType.signup, email: email);
+    });
+  }
+
+  /// Throws [ApiException] (409) if the backend blocks deletion — the caller
+  /// surfaces that message rather than treating it as a generic failure.
+  Future<void> deleteAccount() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(accountApiClientProvider).deleteAccount();
       await ref.read(supabaseClientProvider).auth.signOut();
       ref.invalidate(currentProfileProvider);
     });

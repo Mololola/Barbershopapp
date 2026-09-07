@@ -205,6 +205,45 @@ void main() {
     );
   });
 
+  test('password recovery forces the reset-password route from anywhere, even signed out', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: false,
+        profile: null,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/customer',
+        passwordRecovery: true,
+      ),
+      '/reset-password',
+    );
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: customerProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/customer',
+        passwordRecovery: true,
+      ),
+      '/reset-password',
+    );
+  });
+
+  test('password recovery leaves the user alone once on the reset-password route', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: customerProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/reset-password',
+        passwordRecovery: true,
+      ),
+      null,
+    );
+  });
+
   test('a pending review for a business account does not gate business routes', () {
     // pendingReviewBookingId only ever applies to the customer role in
     // practice, but the gate should be inert for a business account anyway.

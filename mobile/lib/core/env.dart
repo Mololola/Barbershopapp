@@ -9,4 +9,11 @@ class Env {
     'FASTAPI_BASE_URL',
     defaultValue: 'http://localhost:8000',
   );
+
+  /// Where Supabase redirects after a password-reset email link or an OAuth
+  /// sign-in completes — must match the scheme/host registered in
+  /// AndroidManifest.xml's intent-filter and iOS Info.plist's
+  /// CFBundleURLTypes, and the redirect URL allow-listed in the Supabase
+  /// dashboard (Authentication > URL Configuration).
+  static const authCallbackUrl = 'barbershopapp://auth-callback';
 }
