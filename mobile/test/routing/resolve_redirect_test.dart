@@ -7,6 +7,13 @@ void main() {
       Profile(id: 'u1', role: AccountRole.customer, username: 'alex', referralCode: 'ALEXCODE');
   const businessProfile =
       Profile(id: 'u2', role: AccountRole.business, username: 'fade_kings', referralCode: 'FADECODE');
+  const minorProfile = Profile(
+    id: 'u3',
+    role: AccountRole.customer,
+    username: 'sam',
+    referralCode: 'SAMCODE',
+    isMinor: true,
+  );
 
   test('unauthenticated user is sent to sign-in from any non-auth route', () {
     expect(
@@ -239,6 +246,54 @@ void main() {
         pendingReviewBookingId: null,
         location: '/reset-password',
         passwordRecovery: true,
+      ),
+      null,
+    );
+  });
+
+  test('an unconfirmed minor is confined to the guardian-consent screen from anywhere', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: minorProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/customer',
+      ),
+      '/guardian-consent',
+    );
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: minorProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/guardian-consent',
+      ),
+      null,
+    );
+  });
+
+  test('a minor with a confirmed guardian routes normally, like any other customer', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: minorProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/sign-up',
+        hasConfirmedGuardian: true,
+      ),
+      '/customer',
+    );
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: minorProfile,
+        hasBusiness: false,
+        pendingReviewBookingId: null,
+        location: '/customer',
+        hasConfirmedGuardian: true,
       ),
       null,
     );

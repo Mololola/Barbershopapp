@@ -17,6 +17,8 @@ class Profile {
     this.avatarUrl,
     this.isAdmin = false,
     this.isQualityReviewer = false,
+    this.dateOfBirth,
+    this.isMinor = false,
   });
 
   final String id;
@@ -37,6 +39,15 @@ class Profile {
   /// rewards pay the higher tier (see backend/app/api/rewards.py).
   final bool isQualityReviewer;
 
+  /// Set once at signup, then locked from self-editing at the DB level
+  /// (see the 832ca4a41b29 migration) — never client-supplied after that.
+  final DateTime? dateOfBirth;
+
+  /// Server-computed (the `profile_is_minor` SQL function) rather than
+  /// derived client-side from [dateOfBirth], so the client and the RLS
+  /// policies that actually enforce the restrictions always agree.
+  final bool isMinor;
+
   factory Profile.fromRow(Map<String, dynamic> row) {
     return Profile(
       id: row['id'] as String,
@@ -46,6 +57,8 @@ class Profile {
       avatarUrl: row['avatar_url'] as String?,
       isAdmin: row['is_admin'] as bool? ?? false,
       isQualityReviewer: row['is_quality_reviewer'] as bool? ?? false,
+      dateOfBirth: row['date_of_birth'] != null ? DateTime.parse(row['date_of_birth'] as String) : null,
+      isMinor: row['is_minor'] as bool? ?? false,
     );
   }
 }
