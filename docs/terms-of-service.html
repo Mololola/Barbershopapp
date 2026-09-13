@@ -1,0 +1,253 @@
+<title>Terms of Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --ink:#1c2029;
+  --ink-soft:#565f6e;
+  --paper:#f6f5f1;
+  --surface:#ffffff;
+  --surface-2:#ececE6;
+  --line:#dfdcd3;
+  --accent:#1f4b6e;
+  --accent-soft:#e7edf2;
+  --sev-warn:#8a5a10;
+  --sev-warn-bg:#f5ecd9;
+  --shadow: 0 1px 2px rgba(28,32,41,.05), 0 10px 28px -16px rgba(28,32,41,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e7e9ee;
+    --ink-soft:#9aa3b2;
+    --paper:#14171d;
+    --surface:#1b1f27;
+    --surface-2:#242933;
+    --line:#333947;
+    --accent:#7fb0d6;
+    --accent-soft:#1f2c38;
+    --sev-warn:#e0b972;
+    --sev-warn-bg:#332a14;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e7e9ee;
+  --ink-soft:#9aa3b2;
+  --paper:#14171d;
+  --surface:#1b1f27;
+  --surface-2:#242933;
+  --line:#333947;
+  --accent:#7fb0d6;
+  --accent-soft:#1f2c38;
+  --sev-warn:#e0b972;
+  --sev-warn-bg:#332a14;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box;}
+body{ background:var(--paper); color:var(--ink); font-family:"Source Serif 4", Georgia, serif; line-height:1.65; }
+h1,h2,h3,h4{ font-family:"Libre Franklin", system-ui, sans-serif; text-wrap:balance; color:var(--ink); letter-spacing:-.01em; }
+.mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; }
+a{ color:var(--accent); }
+strong{ font-weight:600; }
+
+.wrap{ max-width:780px; margin:0 auto; padding:0 20px 100px; }
+
+header.top{ padding:40px 0 20px; border-bottom:1px solid var(--line); }
+.eyebrow{ font-family:"IBM Plex Mono", monospace; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 10px; }
+h1{ font-family:"Libre Franklin"; font-size:32px; font-weight:700; margin:0 0 10px; }
+.meta{ display:flex; gap:18px; flex-wrap:wrap; font-family:"IBM Plex Mono", monospace; font-size:12.5px; color:var(--ink-soft); }
+.meta b{ color:var(--ink); font-weight:600; }
+
+nav.jump{ position:sticky; top:0; z-index:10; background:var(--paper); border-bottom:1px solid var(--line); padding:12px 0; margin-bottom:8px; }
+nav.jump details summary{ font-family:"Libre Franklin"; font-size:13px; font-weight:600; cursor:pointer; color:var(--ink); list-style:none; display:flex; align-items:center; gap:6px; }
+nav.jump details summary::-webkit-details-marker{ display:none; }
+nav.jump details summary::after{ content:"Jump to section \25BE"; }
+nav.jump details[open] summary::after{ content:"Hide sections \25B4"; }
+nav.jump ol{ margin:12px 0 0; padding-left:20px; columns:2; column-gap:24px; font-size:13.5px; }
+nav.jump li{ margin-bottom:6px; break-inside:avoid; }
+nav.jump a{ text-decoration:none; color:var(--ink-soft); }
+nav.jump a:hover{ color:var(--accent); }
+
+section{ padding:34px 0 6px; scroll-margin-top:64px; }
+section h2{ font-size:20px; font-weight:700; margin:0 0 4px; display:flex; gap:10px; align-items:baseline; }
+section h2 .num{ font-family:"IBM Plex Mono"; font-size:14px; color:var(--accent); font-weight:600; }
+section h3{ font-size:15.5px; font-weight:600; margin:20px 0 6px; }
+section p{ margin:0 0 13px; font-size:16px; }
+section ul, section ol.plain{ margin:0 0 13px; padding-left:22px; font-size:16px; }
+section li{ margin-bottom:6px; }
+
+.callout{ border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:0 10px 10px 0; padding:14px 18px; margin:0 0 16px; font-size:15px; }
+.callout p{ margin:0 0 6px; font-size:15px; }
+.callout p:last-child{ margin-bottom:0; }
+.callout.warn{ border-left-color:var(--sev-warn); background:var(--sev-warn-bg); }
+.callout.warn strong{ color:var(--sev-warn); }
+
+table.data{ width:100%; border-collapse:collapse; font-size:14.5px; margin:0 0 18px; font-family:"Libre Franklin"; }
+table.data th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; padding:0 10px 8px; border-bottom:1px solid var(--line); }
+table.data td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+table.data tr:last-child td{ border-bottom:none; }
+.data-wrap{ overflow-x:auto; }
+
+footer.doc{ margin-top:56px; padding-top:22px; border-top:1px solid var(--line); }
+footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-family:"Libre Franklin"; }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Barbershop App</p>
+  <h1>Terms of Service</h1>
+  <div class="meta">
+    <span><b>Effective</b> 13 September 2026</span>
+    <span><b>Operator</b> Luis Guillot Lozano, individually, from Spain</span>
+    <span><b>Contact</b> <a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a></span>
+  </div>
+</header>
+
+<nav class="jump">
+  <details>
+    <summary></summary>
+    <ol>
+      <li><a href="#accept">1. Acceptance</a></li>
+      <li><a href="#eligibility">2. Who can use this</a></li>
+      <li><a href="#service">3. What the service is</a></li>
+      <li><a href="#account">4. Your account</a></li>
+      <li><a href="#bookings">5. Bookings</a></li>
+      <li><a href="#reviews">6. Reviews and ratings</a></li>
+      <li><a href="#workers">7. Worker and staff relationships</a></li>
+      <li><a href="#payments">8. Payments and subscriptions</a></li>
+      <li><a href="#refunds">9. Cancellation and refund rights</a></li>
+      <li><a href="#content">10. Content you post</a></li>
+      <li><a href="#conduct">11. Acceptable use</a></li>
+      <li><a href="#ip">12. Our intellectual property</a></li>
+      <li><a href="#termination">13. Suspension and termination</a></li>
+      <li><a href="#disclaimers">14. Disclaimers</a></li>
+      <li><a href="#liability">15. Limitation of liability</a></li>
+      <li><a href="#law">16. Governing law and disputes</a></li>
+      <li><a href="#changes">17. Changes to these terms</a></li>
+      <li><a href="#contact">18. Contact</a></li>
+    </ol>
+  </details>
+</nav>
+
+<section id="accept">
+  <h2><span class="num">1</span> Acceptance</h2>
+  <p>These Terms govern your use of Barbershop App (the "Service"), operated by Luis Guillot Lozano ("we", "us"). By creating an account, you agree to these Terms and to our <a href="https://claude.ai/code/artifact/f348e6eb-ffe5-4615-8087-6ab8396295ca">Privacy Policy</a>. If you don't agree, don't create an account or use the Service.</p>
+</section>
+
+<section id="eligibility">
+  <h2><span class="num">2</span> Who can use this</h2>
+  <p>You must be at least 18 years old to create an account. If you're booking a service for someone younger — your child, for instance — you do that through your own account, as the adult responsible for the booking and payment; the person receiving the service doesn't need to be 18 themselves.</p>
+  <p>You're responsible for making sure your use of the Service complies with the laws that apply to you wherever you're located.</p>
+</section>
+
+<section id="service">
+  <h2><span class="num">3</span> What the service is</h2>
+  <p>Barbershop App is a marketplace connecting customers with barbershops and the workers who staff them. Depending on your account type, you can:</p>
+  <ul>
+    <li><strong>As a customer:</strong> browse businesses and services, book appointments, leave reviews, message businesses and workers, post to the social feed, and design and save 3D haircut concepts.</li>
+    <li><strong>As a business:</strong> list your shop, services and pricing, manage bookings and staff, invite and manage workers, and subscribe to unlock the finance planning tool.</li>
+    <li><strong>As a worker:</strong> maintain a profile visible to businesses looking for staff, accept or decline job invitations, and manage your own schedule and leave requests.</li>
+  </ul>
+  <p>We're a technology platform connecting the two sides of this marketplace — we are not a party to the actual haircut/grooming service you book, which is a direct arrangement between you and the business.</p>
+</section>
+
+<section id="account">
+  <h2><span class="num">4</span> Your account</h2>
+  <p>You agree to provide accurate information when you register, and to keep your login credentials confidential — you're responsible for anything that happens under your account. One account per person; don't create an account on someone else's behalf without their permission. You can sign in with an email and password, or with a Google account; we may add further sign-in options in the future.</p>
+</section>
+
+<section id="bookings">
+  <h2><span class="num">5</span> Bookings</h2>
+  <p>When you book a service, we guarantee — at the database level, not just in the app's interface — that two customers can never be booked into the same slot with the same worker. If a slot you're trying to book gets taken in the moment between you viewing it and confirming, you'll be told immediately and asked to pick another time.</p>
+  <p>Cancellation is available directly in the app on both the customer and business side. We don't currently enforce a universal cancellation-fee or no-show policy across all businesses — if a specific shop has its own policy, that will be communicated to you by the business directly, not baked into these Terms.</p>
+</section>
+
+<section id="reviews">
+  <h2><span class="num">6</span> Reviews and ratings</h2>
+  <p>Reviews must reflect a real, completed booking and your honest experience. Businesses and workers may not pay for, manipulate, or retaliate against reviews. Submitting a review may earn you a reward under our referral/rewards program — current terms for that are shown in the app and may change from time to time.</p>
+</section>
+
+<section id="workers">
+  <h2><span class="num">7</span> Worker and staff relationships</h2>
+  <p>A worker profile's name, bio, and years of experience are <strong>self-reported by the worker</strong> — we do not independently verify identity, qualifications, or experience claims. Businesses inviting or hiring through the marketplace should conduct their own due diligence, the same way they would for any hire made outside the app.</p>
+  <p>Leaving a job requires the business's acknowledgment before it takes effect, so a business isn't caught off guard by a worker's status changing unexpectedly; a business can also decline a leave request if it was made in error.</p>
+</section>
+
+<section id="payments">
+  <h2><span class="num">8</span> Payments and subscriptions</h2>
+  <p>All payments — business subscriptions, the finance tool, and 3D-designer extra design slots — are processed by Stripe. We never receive or store your full card details. Prices are always shown to you before you pay, in your business's chosen currency where applicable.</p>
+  <p>Business subscriptions include a one-month free trial for the finance tool where offered. If a subscription payment fails, your business account is suspended (customers won't be able to book with you) and you have <strong>60 days</strong> from the first failed payment to resolve it before the business account and its associated data are automatically deleted.</p>
+</section>
+
+<section id="refunds">
+  <h2><span class="num">9</span> Cancellation and refund rights</h2>
+  <p>If you're a consumer in the UK or EU/Spain, you generally have a statutory <strong>14-day right to withdraw</strong> from a purchase of digital content or services without giving a reason. This right can be limited once you've expressly agreed to immediate access and acknowledged that doing so may end your withdrawal right early — but we only rely on that limitation where we've actually captured your explicit agreement to it at the point of purchase.</p>
+  <div class="callout warn">
+    <p><strong>In practice today:</strong> until that explicit at-checkout consent step exists, treat the full 14-day right as available for any one-off digital purchase (finance tool unlock, extra design slots). Contact us to request a refund within that window.</p>
+  </div>
+  <p>Nothing in this section affects any other statutory consumer right you have under the law of your country of residence.</p>
+</section>
+
+<section id="content">
+  <h2><span class="num">10</span> Content you post</h2>
+  <p>You own what you post — photos, videos, reviews, messages, 3D designs. By posting content that's visible to others (feed posts, public profile info, reviews), you grant us a license to host, store, and display it within the Service for as long as your account exists. You're responsible for making sure you have the right to post whatever you post, and that it doesn't infringe anyone else's rights.</p>
+</section>
+
+<section id="conduct">
+  <h2><span class="num">11</span> Acceptable use</h2>
+  <p>Don't use the Service to:</p>
+  <ul>
+    <li>Post illegal, harassing, hateful, or sexually explicit content, or content that infringes someone else's intellectual property.</li>
+    <li>Impersonate another person or business, or misrepresent your affiliation with one.</li>
+    <li>Submit fake bookings, fake reviews, or otherwise manipulate ratings or the referral/rewards system.</li>
+    <li>Scrape, reverse-engineer, or attempt to circumvent the security of the Service.</li>
+    <li>Use the Service for anything illegal in your jurisdiction.</li>
+  </ul>
+  <p>To report content or behavior that breaks these rules, email <a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a> with as much detail as you can — we'll review and act on it, including removal and account action where warranted.</p>
+</section>
+
+<section id="ip">
+  <h2><span class="num">12</span> Our intellectual property</h2>
+  <p>The Barbershop App name, logo, and the app's own design and code are our property (or licensed to us) and aren't covered by the license you grant us in Section 10 over your own content. You don't get any rights to them beyond what's needed to use the Service normally.</p>
+</section>
+
+<section id="termination">
+  <h2><span class="num">13</span> Suspension and termination</h2>
+  <p>You can delete your account at any time from Account Settings — for customers this is immediate. For business accounts, you'll need to resolve any active subscription and upcoming confirmed bookings first, so a customer's booking doesn't disappear without warning; once clear, deletion is equally immediate and permanent.</p>
+  <p>We may suspend or terminate your account for violating these Terms, fraudulent activity, or non-payment (see Section 8's 60-day grace-period mechanic for subscription failures specifically).</p>
+</section>
+
+<section id="disclaimers">
+  <h2><span class="num">14</span> Disclaimers</h2>
+  <p>The Service is provided "as is." We don't guarantee the quality, safety, or outcome of any service booked through the platform — that's between you and the business you're booking with. Worker profile information (experience, bio) is self-reported and not independently verified by us.</p>
+</section>
+
+<section id="liability">
+  <h2><span class="num">15</span> Limitation of liability</h2>
+  <p>To the extent permitted by law, we're not liable for indirect, incidental, or consequential damages arising from your use of the Service. Nothing in these Terms excludes or limits liability for death or personal injury caused by negligence, fraud, or anything else that can't lawfully be excluded under UK or Spanish/EU consumer protection law.</p>
+</section>
+
+<section id="law">
+  <h2><span class="num">16</span> Governing law and disputes</h2>
+  <p>These Terms are governed by the laws of Spain, without regard to conflict-of-law rules. If you're a consumer resident in the UK or another EU country, this doesn't take away any mandatory consumer protections you're entitled to under the law of your own country of residence — those still apply regardless of this clause.</p>
+  <p>If a dispute comes up, contact us first at <a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a> — most things are resolvable directly without needing to go further.</p>
+</section>
+
+<section id="changes">
+  <h2><span class="num">17</span> Changes to these terms</h2>
+  <p>We may update these Terms as the Service changes. We'll update the effective date above and notify you in the app before material changes take effect. Continuing to use the Service after that means you accept the updated Terms.</p>
+</section>
+
+<section id="contact">
+  <h2><span class="num">18</span> Contact</h2>
+  <p><a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a></p>
+</section>
+
+<footer class="doc">
+  <p>See also our <a href="https://claude.ai/code/artifact/f348e6eb-ffe5-4615-8087-6ab8396295ca">Privacy Policy</a>.</p>
+  <p>These Terms were prepared to accurately reflect how Barbershop App actually works as of its effective date above. They are not a substitute for independent legal advice — have them reviewed by a qualified lawyer before relying on them for formal compliance, particularly the consumer-withdrawal-rights section, which depends on a checkout-consent step that doesn't exist in the app yet.</p>
+</footer>
+
+</div>

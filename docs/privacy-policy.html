@@ -1,0 +1,262 @@
+<title>Privacy Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --ink:#1c2029;
+  --ink-soft:#565f6e;
+  --paper:#f6f5f1;
+  --surface:#ffffff;
+  --surface-2:#ececE6;
+  --line:#dfdcd3;
+  --accent:#1f4b6e;
+  --accent-soft:#e7edf2;
+  --shadow: 0 1px 2px rgba(28,32,41,.05), 0 10px 28px -16px rgba(28,32,41,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e7e9ee;
+    --ink-soft:#9aa3b2;
+    --paper:#14171d;
+    --surface:#1b1f27;
+    --surface-2:#242933;
+    --line:#333947;
+    --accent:#7fb0d6;
+    --accent-soft:#1f2c38;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e7e9ee;
+  --ink-soft:#9aa3b2;
+  --paper:#14171d;
+  --surface:#1b1f27;
+  --surface-2:#242933;
+  --line:#333947;
+  --accent:#7fb0d6;
+  --accent-soft:#1f2c38;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box;}
+body{ background:var(--paper); color:var(--ink); font-family:"Source Serif 4", Georgia, serif; line-height:1.65; }
+h1,h2,h3,h4{ font-family:"Libre Franklin", system-ui, sans-serif; text-wrap:balance; color:var(--ink); letter-spacing:-.01em; }
+.mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; }
+a{ color:var(--accent); }
+strong{ font-weight:600; }
+
+.wrap{ max-width:780px; margin:0 auto; padding:0 20px 100px; }
+
+header.top{ padding:40px 0 20px; border-bottom:1px solid var(--line); }
+.eyebrow{ font-family:"IBM Plex Mono", monospace; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 10px; }
+h1{ font-family:"Libre Franklin"; font-size:32px; font-weight:700; margin:0 0 10px; }
+.meta{ display:flex; gap:18px; flex-wrap:wrap; font-family:"IBM Plex Mono", monospace; font-size:12.5px; color:var(--ink-soft); }
+.meta b{ color:var(--ink); font-weight:600; }
+
+nav.jump{ position:sticky; top:0; z-index:10; background:var(--paper); border-bottom:1px solid var(--line); padding:12px 0; margin-bottom:8px; }
+nav.jump details summary{ font-family:"Libre Franklin"; font-size:13px; font-weight:600; cursor:pointer; color:var(--ink); list-style:none; display:flex; align-items:center; gap:6px; }
+nav.jump details summary::-webkit-details-marker{ display:none; }
+nav.jump details summary::after{ content:"Jump to section \25BE"; }
+nav.jump details[open] summary::after{ content:"Hide sections \25B4"; }
+nav.jump ol{ margin:12px 0 0; padding-left:20px; columns:2; column-gap:24px; font-size:13.5px; }
+nav.jump li{ margin-bottom:6px; break-inside:avoid; }
+nav.jump a{ text-decoration:none; color:var(--ink-soft); }
+nav.jump a:hover{ color:var(--accent); }
+
+section{ padding:34px 0 6px; scroll-margin-top:64px; }
+section h2{ font-size:20px; font-weight:700; margin:0 0 4px; display:flex; gap:10px; align-items:baseline; }
+section h2 .num{ font-family:"IBM Plex Mono"; font-size:14px; color:var(--accent); font-weight:600; }
+section h3{ font-size:15.5px; font-weight:600; margin:20px 0 6px; }
+section p{ margin:0 0 13px; font-size:16px; }
+section ul, section ol.plain{ margin:0 0 13px; padding-left:22px; font-size:16px; }
+section li{ margin-bottom:6px; }
+
+.callout{ border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:0 10px 10px 0; padding:14px 18px; margin:0 0 16px; font-size:15px; }
+.callout p{ margin:0 0 6px; font-size:15px; }
+.callout p:last-child{ margin-bottom:0; }
+
+table.data{ width:100%; border-collapse:collapse; font-size:14.5px; margin:0 0 18px; font-family:"Libre Franklin"; }
+table.data th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; padding:0 10px 8px; border-bottom:1px solid var(--line); }
+table.data td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+table.data tr:last-child td{ border-bottom:none; }
+.data-wrap{ overflow-x:auto; }
+
+.chip{ display:inline-block; font-family:"IBM Plex Mono"; font-size:11px; font-weight:600; padding:2px 8px; border-radius:100px; background:var(--surface-2); color:var(--ink-soft); border:1px solid var(--line); }
+
+footer.doc{ margin-top:56px; padding-top:22px; border-top:1px solid var(--line); }
+footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-family:"Libre Franklin"; }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Barbershop App</p>
+  <h1>Privacy Policy</h1>
+  <div class="meta">
+    <span><b>Effective</b> 13 September 2026</span>
+    <span><b>Controller</b> Luis Guillot Lozano, operating individually from Spain</span>
+    <span><b>Contact</b> <a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a></span>
+  </div>
+</header>
+
+<nav class="jump">
+  <details>
+    <summary></summary>
+    <ol>
+      <li><a href="#who">1. Who we are</a></li>
+      <li><a href="#scope">2. Who this policy covers</a></li>
+      <li><a href="#collect">3. Information we collect</a></li>
+      <li><a href="#use">4. How we use it, and why we're allowed to</a></li>
+      <li><a href="#share">5. Who we share it with</a></li>
+      <li><a href="#transfers">6. International transfers</a></li>
+      <li><a href="#retention">7. How long we keep it</a></li>
+      <li><a href="#rights">8. Your rights</a></li>
+      <li><a href="#children">9. Age requirement</a></li>
+      <li><a href="#security">10. Security</a></li>
+      <li><a href="#storage">11. Cookies and local storage</a></li>
+      <li><a href="#automated">12. Automated decisions</a></li>
+      <li><a href="#changes">13. Changes to this policy</a></li>
+      <li><a href="#contact">14. Contact and complaints</a></li>
+    </ol>
+  </details>
+</nav>
+
+<section id="who">
+  <h2><span class="num">1</span> Who we are</h2>
+  <p>Barbershop App is operated by <strong>Luis Guillot Lozano</strong>, an individual currently based in Spain (not yet a registered company). For the purposes of the UK GDPR and the EU GDPR, I am the <strong>data controller</strong> for the personal data described in this policy.</p>
+  <p>You can reach me directly at <a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a> for anything in this policy — a small, individually-run operation like this doesn't require a formally appointed Data Protection Officer, but every request below still goes to a real person, not a queue.</p>
+</section>
+
+<section id="scope">
+  <h2><span class="num">2</span> Who this policy covers</h2>
+  <p>This policy applies to everyone who uses the Barbershop App mobile app, whether as a customer booking a service, a business owner running a shop on the platform, or a worker/barber with a profile — in the UK, Spain, or anywhere else. Where a right or rule below applies specifically to one region (the UK vs. the EU/Spain), that's called out explicitly; everything else applies to all users equally.</p>
+</section>
+
+<section id="collect">
+  <h2><span class="num">3</span> Information we collect</h2>
+  <p>Everything below is either something you gave us directly, or something generated by using a specific feature of the app — we don't run any analytics or tracking SDKs, and we don't buy or receive data about you from anyone else.</p>
+  <div class="data-wrap"><table class="data">
+    <tr><th>Category</th><th>What it includes</th><th>When it's collected</th></tr>
+    <tr><td>Account &amp; profile</td><td>Email address, password (stored hashed, we never see it in plain text), username, profile photo</td><td>When you sign up</td></tr>
+    <tr><td>Sign-in via Google</td><td>Your Google account's email, name, and profile photo — nothing else</td><td>Only if you choose "Continue with Google" instead of a password</td></tr>
+    <tr><td>Worker profile <span class="chip">optional</span></td><td>Legal name, self-reported bio, city, years of experience — shown to businesses instead of your username. This information is entirely self-reported; we do not independently verify it</td><td>Only if you opt in as a worker looking for shop work</td></tr>
+    <tr><td>Business profile</td><td>Shop name, phone number, opening hours, services and pricing, logo</td><td>When you set up a business account</td></tr>
+    <tr><td>Bookings &amp; reviews</td><td>Appointment times, the service booked, and — after a completed booking — shop/worker/haircut ratings and any comments you leave</td><td>When you book or review a service</td></tr>
+    <tr><td>Payment</td><td>We never see or store your card details. Payments are entered directly into Stripe's own secure checkout; we only receive confirmation that a payment succeeded and which plan/item it was for</td><td>When you or your business subscribes or makes a purchase</td></tr>
+    <tr><td>Posts, photos &amp; video</td><td>Anything you post to the feed, plus likes and comments</td><td>When you use the social feed</td></tr>
+    <tr><td>Messages</td><td>Direct messages between you and other users (customers, businesses, workers)</td><td>When you use in-app messaging</td></tr>
+    <tr><td>3D haircut designs</td><td>Designs you create or fork in the haircut designer tool</td><td>When you use the designer</td></tr>
+    <tr><td>Referral &amp; rewards</td><td>Your referral code, and a record of rewards earned</td><td>Automatically, as you use referral-linked features</td></tr>
+  </table></div>
+  <p>We do not collect your precise location — "city" on a worker profile is something you type in yourself, not GPS data.</p>
+</section>
+
+<section id="use">
+  <h2><span class="num">4</span> How we use it, and why we're allowed to</h2>
+  <p>Under GDPR, every use of your data needs a valid legal basis. Here's the honest mapping for this app, not a generic list:</p>
+  <div class="data-wrap"><table class="data">
+    <tr><th>What we use it for</th><th>Legal basis</th></tr>
+    <tr><td>Running your account, processing bookings, connecting you with a business or worker, showing you the app's features</td><td>Performance of a contract with you</td></tr>
+    <tr><td>Processing payments and subscriptions through Stripe</td><td>Performance of a contract with you</td></tr>
+    <tr><td>Preventing double-bookings, fraud, and abuse; keeping the service secure and working correctly</td><td>Legitimate interests (running a safe, functioning marketplace)</td></tr>
+    <tr><td>Sending you account-related emails (confirming your address, password resets, booking notifications)</td><td>Performance of a contract / legitimate interests</td></tr>
+    <tr><td>Signing in via Google</td><td>Your consent, given each time you choose that sign-in method</td></tr>
+    <tr><td>Complying with tax, accounting, or legal obligations (e.g. records Stripe retains for payment processing)</td><td>Legal obligation</td></tr>
+  </table></div>
+  <p>We do not currently send marketing emails or push notifications, and we don't do any profiling or targeted advertising. If that ever changes, we'll ask for your consent first and update this policy.</p>
+</section>
+
+<section id="share">
+  <h2><span class="num">5</span> Who we share it with</h2>
+  <p>We don't sell your data, and we don't share it with advertisers or data brokers. It's shared in exactly these situations:</p>
+  <ul>
+    <li><strong>Other users of the app</strong> — anything you choose to make visible is visible: your username and public posts on the feed, your business or worker profile, your reviews, and (if you opt into the marketplace as a worker) your rating and years of experience to businesses browsing for staff.</li>
+    <li><strong>Service providers who process data on our behalf</strong> (see the table below) — each only receives what they need to do their specific job, under a data processing agreement.</li>
+    <li><strong>Legal authorities</strong> — only if we're legally required to (e.g. a valid court order), and only to the extent required.</li>
+  </ul>
+  <div class="data-wrap"><table class="data">
+    <tr><th>Processor</th><th>What they handle</th></tr>
+    <tr><td>Supabase, Inc.</td><td>Database hosting, authentication, file storage (photos/videos), and realtime features — the infrastructure the whole app runs on</td></tr>
+    <tr><td>Stripe, Inc. / Stripe Payments Europe, Ltd.</td><td>Payment processing for subscriptions and one-off purchases. Stripe acts as an independent controller for its own regulatory/fraud-prevention obligations — see <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe's own privacy policy</a></td></tr>
+    <tr><td>Google LLC</td><td>Authenticating you if you choose "Continue with Google" — only used if you pick that sign-in method</td></tr>
+  </table></div>
+</section>
+
+<section id="transfers">
+  <h2><span class="num">6</span> International transfers</h2>
+  <p>Supabase, Stripe, and Google are all US-headquartered companies, which means some processing may happen outside the UK/EEA. Where that happens, it's protected by recognized safeguards — Standard Contractual Clauses (and the UK's International Data Transfer Addendum, for transfers from the UK) — which these providers commit to as part of their own compliance programs.</p>
+</section>
+
+<section id="retention">
+  <h2><span class="num">7</span> How long we keep it</h2>
+  <p>We keep your data for as long as your account is active, plus a short period where the app's own mechanics require it:</p>
+  <ul>
+    <li>If you delete your account (Account Settings → Delete account), deletion is <strong>immediate and permanent</strong> — your profile, bookings, reviews, posts, messages, and every other record tied to your account is removed right away, not after a waiting period.</li>
+    <li>A business account with an active subscription or upcoming confirmed bookings can't be deleted until those are resolved first (so a customer's upcoming appointment doesn't just vanish) — once cleared, deletion is equally immediate.</li>
+    <li>If a business subscription payment fails, the account is suspended and given a 60-day grace period to resolve it before the business and its data are automatically deleted.</li>
+    <li>Stripe retains payment/transaction records for its own legal and accounting obligations, independent of what we delete on our side — typically several years, per Stripe's own policy, since that's a standard financial-recordkeeping requirement neither of us can shorten.</li>
+  </ul>
+</section>
+
+<section id="rights">
+  <h2><span class="num">8</span> Your rights</h2>
+  <p>Whether you're covered by the UK GDPR or the EU GDPR, you have the same core set of rights over your data:</p>
+  <ul>
+    <li><strong>Access</strong> — ask what personal data we hold about you.</li>
+    <li><strong>Rectification</strong> — correct anything inaccurate (most of this you can already edit directly in the app).</li>
+    <li><strong>Erasure</strong> — delete your account and everything tied to it. This is self-service: Account Settings → Delete account. If you'd rather we do it for you, email us.</li>
+    <li><strong>Restriction</strong> — ask us to pause processing your data in specific circumstances.</li>
+    <li><strong>Portability</strong> — request a copy of your data in a portable format. This isn't yet a self-service, in-app feature — email us and we'll provide it manually.</li>
+    <li><strong>Objection</strong> — object to processing based on our legitimate interests.</li>
+    <li><strong>Withdraw consent</strong> — for anything based on consent (like Google sign-in), at any time.</li>
+  </ul>
+  <p>To exercise any of these beyond what's already self-service in the app, email <a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a>. We'll respond within one month, as required by law.</p>
+</section>
+
+<section id="children">
+  <h2><span class="num">9</span> Age requirement</h2>
+  <p>You must be <strong>at least 18 years old</strong> to create an account. If you're booking a service for someone younger — getting your kid a haircut, for example — that's expected and fine: you do it through your own account, as the responsible adult making and paying for the booking. We don't knowingly collect account data directly from anyone under 18.</p>
+</section>
+
+<section id="security">
+  <h2><span class="num">10</span> Security</h2>
+  <p>A few concrete things we actually do, not a generic promise:</p>
+  <ul>
+    <li>All traffic between the app and our servers is encrypted (HTTPS/TLS).</li>
+    <li>Your session is stored in your device's own secure enclave — the iOS Keychain or Android's encrypted Keystore — never in plain text.</li>
+    <li>Passwords are hashed by our authentication provider; we never see or store them in readable form.</li>
+    <li>Database access is governed by row-level security policies, so the database itself — not just the app — enforces who can see what.</li>
+  </ul>
+</section>
+
+<section id="storage">
+  <h2><span class="num">11</span> Cookies and local storage</h2>
+  <p>This is a native mobile app, not a website — there are no browser cookies. The app stores a small amount of data on your device itself (your session, so you stay signed in) using your OS's secure storage. That data never leaves your device except to make the API calls the app needs to function.</p>
+</section>
+
+<section id="automated">
+  <h2><span class="num">12</span> Automated decisions</h2>
+  <p>We don't make any decisions about you using automated profiling or algorithms that have a legal or similarly significant effect on you. Booking availability is checked against a database constraint that guarantees two people can never be double-booked into the same slot — that's a data-integrity safeguard, not a decision made about you.</p>
+</section>
+
+<section id="changes">
+  <h2><span class="num">13</span> Changes to this policy</h2>
+  <p>If we materially change how we handle your data — adding a new sign-in provider, a new analytics tool, anything that changes what's in this document in a way that matters — we'll update the effective date above and let you know in the app before it takes effect.</p>
+</section>
+
+<section id="contact">
+  <h2><span class="num">14</span> Contact and complaints</h2>
+  <p>Questions, requests, or complaints about how your data is handled: <a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a>.</p>
+  <p>You also have the right to lodge a complaint with your local data protection authority, whether or not you contact us first:</p>
+  <ul>
+    <li><strong>UK residents</strong> — the Information Commissioner's Office (ICO), <a href="https://ico.org.uk/make-a-complaint/" target="_blank" rel="noopener">ico.org.uk</a>.</li>
+    <li><strong>Spain / EU residents</strong> — the Agencia Española de Protección de Datos (AEPD), <a href="https://www.aepd.es/es/derechos-y-deberes/reclama-tu-derecho" target="_blank" rel="noopener">aepd.es</a>, or your own country's equivalent authority.</li>
+  </ul>
+</section>
+
+<footer class="doc">
+  <p>See also our <a href="https://claude.ai/code/artifact/7b0fd848-a548-46c4-9ee1-89d93f7e7b26">Terms of Service</a>.</p>
+  <p>This policy was prepared to accurately reflect how Barbershop App actually works as of its effective date above. It is not a substitute for independent legal advice — if you're relying on this for formal compliance purposes, have it reviewed by a qualified lawyer, particularly given the dual UK/Spain audience and the operator's planned relocation later this year.</p>
+</footer>
+
+</div>
