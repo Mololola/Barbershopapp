@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/app_network_image.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/feed_controller.dart';
 import '../domain/post.dart';
 
@@ -71,6 +72,7 @@ class _PostCardState extends ConsumerState<PostCard> {
   Widget build(BuildContext context) {
     final actionState = ref.watch(feedActionControllerProvider);
     final post = _post;
+    final isMinor = ref.watch(currentProfileProvider).value?.isMinor == true;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -120,7 +122,7 @@ class _PostCardState extends ConsumerState<PostCard> {
               IconButton(
                 icon: Icon(post.likedByMe ? Icons.favorite : Icons.favorite_border),
                 color: post.likedByMe ? Colors.red : null,
-                onPressed: _toggleLike,
+                onPressed: isMinor ? null : _toggleLike,
               ),
               Text('${post.likeCount}'),
               const SizedBox(width: 16),

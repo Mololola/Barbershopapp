@@ -20,7 +20,39 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   AccountRole _role = AccountRole.customer;
+  DateTime? _dateOfBirth;
   String? _confirmationMessage;
+
+  bool get _isMinorSelected {
+    final dob = _dateOfBirth;
+    if (dob == null) return false;
+    final today = DateTime.now();
+    final eighteenthBirthday = DateTime(dob.year + 18, dob.month, dob.day);
+    return eighteenthBirthday.isAfter(today);
+  }
+
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(now.year - 18, now.month, now.day),
+      firstDate: DateTime(now.year - 100),
+      lastDate: now,
+    );
+    if (picked == null) return;
+    final thirteenthBirthday = DateTime(picked.year + 13, picked.month, picked.day);
+    if (thirteenthBirthday.isAfter(now)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('You must be at least 13 to create an account.')));
+      return;
+    }
+    setState(() {
+      _dateOfBirth = picked;
+      // A minor can only ever be a customer — see profiles_minor_role_check.
+      if (_isMinorSelected) _role = AccountRole.customer;
+    });
+  }
 
   /// True once Google/Apple sign-in has already completed and the router
   /// sent us here because there's no `profiles` row yet — see
@@ -39,11 +71,17 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final dob = _dateOfBirth;
+    if (dob == null) {
+      setState(() => _confirmationMessage = null);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Date of birth is required.')));
+      return;
+    }
     setState(() => _confirmationMessage = null);
 
     final notifier = ref.read(authControllerProvider.notifier);
     if (_isOAuthCompletion) {
-      await notifier.completeOAuthProfile(role: _role, username: _usernameController.text.trim());
+      await notifier.completeOAuthProfile(role: _role, username: _usernameController.text.trim(), dateOfBirth: dob);
       return;
     }
 
@@ -52,6 +90,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       password: _passwordController.text,
       role: _role,
       username: _usernameController.text.trim(),
+      dateOfBirth: dob,
     );
 
     if (!mounted) return;
@@ -76,13 +115,36 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           child: ListView(
             children: [
               SegmentedButton<AccountRole>(
-                segments: const [
-                  ButtonSegment(value: AccountRole.customer, label: Text('Customer')),
-                  ButtonSegment(value: AccountRole.business, label: Text('Business')),
+                segments: [
+                  const ButtonSegment(value: AccountRole.customer, label: Text('Customer')),
+                  // A minor can only ever be a customer account — see
+                  // profiles_minor_role_check.
+                  if (!_isMinorSelected)
+                    const ButtonSegment(value: AccountRole.business, label: Text('Business')),
                 ],
                 selected: {_role},
                 onSelectionChanged: (selection) => setState(() => _role = selection.first),
               ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: _pickDateOfBirth,
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Date of birth'),
+                  child: Text(
+                    _dateOfBirth == null
+                        ? 'Select date'
+                        : '${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}',
+                  ),
+                ),
+              ),
+              if (_isMinorSelected)
+                const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Under 18 — you\'ll need a parent or guardian to confirm before you can start booking.',
+                    style: TextStyle(fontSize: 12.5),
+                  ),
+                ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _usernameController,

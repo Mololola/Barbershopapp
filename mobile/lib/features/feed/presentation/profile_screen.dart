@@ -64,7 +64,8 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (!isMine) ...[
+              // No DMs to or from a minor account — see the guardian-consent design.
+              if (!isMine && myProfile?.isMinor != true && value.isMinor != true) ...[
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   icon: const Icon(Icons.chat_bubble_outline),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/loading.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../business/domain/business.dart';
 import '../application/worker_controller.dart';
 import 'invitation_status_style.dart';
@@ -97,6 +98,21 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
         _yearsExperienceController.text = profile.yearsExperience?.toString() ?? '';
       }
     });
+
+    // No employment relationships for a minor account — see the
+    // guardian-consent design (profiles_minor_role_check / the
+    // owner-insert-worker-profile RLS policy actually enforce this).
+    if (ref.watch(currentProfileProvider).value?.isMinor == true) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Worker profile')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('The worker marketplace isn\'t available on this account.'),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Worker profile')),

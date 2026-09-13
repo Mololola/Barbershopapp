@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../auth/application/auth_controller.dart';
 import '../application/feed_controller.dart';
 
 const _maxVideoDuration = Duration(minutes: 1);
@@ -90,6 +91,16 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   @override
   Widget build(BuildContext context) {
     final actionState = ref.watch(feedActionControllerProvider);
+
+    // Minor accounts don't post — kept private-by-default, see the
+    // guardian-consent design. The real enforcement is RLS; this just
+    // avoids a dead-end composer that would fail on submit.
+    if (ref.watch(currentProfileProvider).value?.isMinor == true) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('New post')),
+        body: const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Posting isn\'t available on this account.'))),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('New post')),

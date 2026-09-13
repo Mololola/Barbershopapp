@@ -98,23 +98,25 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    decoration: const InputDecoration(labelText: 'Add a comment'),
+          // No commenting on a minor account — see the guardian-consent design.
+          if (myProfile?.isMinor != true)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      decoration: const InputDecoration(labelText: 'Add a comment'),
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: actionState.isLoading ? null : _submitComment,
-                ),
-              ],
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: actionState.isLoading ? null : _submitComment,
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

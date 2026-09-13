@@ -22,11 +22,13 @@ class FeedScreen extends ConsumerWidget {
         centerTitle: false,
         titleSpacing: 20,
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: null,
-        onPressed: () => context.push('/feed/new'),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: myProfile?.isMinor == true
+          ? null
+          : FloatingActionButton(
+              heroTag: null,
+              onPressed: () => context.push('/feed/new'),
+              child: const Icon(Icons.add),
+            ),
       body: feed.when(
         loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Error: $error')),
