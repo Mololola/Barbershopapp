@@ -27,7 +27,9 @@ android {
         applicationId = "com.barbershopapp.mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // flutter_secure_storage requires 23+ — Flutter's own template default (21)
+        // fails the manifest merge outright, so this can't stay at the default.
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
