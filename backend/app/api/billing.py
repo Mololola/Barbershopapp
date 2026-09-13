@@ -274,6 +274,10 @@ def create_design_slot_checkout(
     _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
     user_id: str = Depends(get_current_user_id),
 ) -> CheckoutSessionResponse:
+    is_minor = db.execute(text("select profile_is_minor(p) from profiles p where p.id = :user_id"), {"user_id": user_id}).scalar()
+    if is_minor:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Minor accounts can't make purchases.")
+
     email = db.execute(text("select email from auth.users where id = :user_id"), {"user_id": user_id}).scalar()
 
     placeholder_return_url = f"{settings.supabase_url}/"
