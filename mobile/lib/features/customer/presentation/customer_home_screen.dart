@@ -6,7 +6,6 @@ import '../../../core/loading.dart';
 import '../../../core/quick_action_tile.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../auth/presentation/guardian_invite_banner.dart';
 import '../../messaging/application/messaging_controller.dart';
 import '../../rewards/application/rewards_controller.dart';
 import '../../worker/application/worker_controller.dart';
@@ -51,7 +50,6 @@ class CustomerHomeScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text("Here's what's next.", style: TextStyle(color: AppColors.steel)),
           const SizedBox(height: 20),
-          const GuardianInviteBanner(),
           bookings.when(
             loading: () => const SizedBox(
               height: 132,

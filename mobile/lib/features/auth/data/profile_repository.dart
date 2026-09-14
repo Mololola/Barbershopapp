@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../domain/guardian_link.dart';
 import '../domain/profile.dart';
 
 class UsernameTakenException implements Exception {
@@ -33,6 +32,10 @@ class ProfileRepository {
         'role': role.wireValue,
         'username': username,
         if (dateOfBirth != null) 'date_of_birth': dateOfBirth.toIso8601String().split('T').first,
+        // Only ever called after the sign-up form's required Terms/Privacy
+        // checkbox validates, so this timestamp is a real acceptance
+        // record, not decoration.
+        'terms_accepted_at': DateTime.now().toUtc().toIso8601String(),
       });
     } on PostgrestException catch (e) {
       if (e.code == _uniqueViolation) {
@@ -88,44 +91,5 @@ class ProfileRepository {
   String _extensionOf(String path) {
     final dot = path.lastIndexOf('.');
     return dot == -1 ? '.jpg' : path.substring(dot);
-  }
-
-  /// A minor's own invitation, if they've sent one — null means they
-  /// haven't started the guardian-consent flow yet.
-  Future<GuardianLink?> fetchGuardianLinkForMinor(String minorProfileId) async {
-    final row = await _client
-        .from('profile_guardian_links')
-        .select()
-        .eq('minor_profile_id', minorProfileId)
-        .maybeSingle();
-    if (row == null) return null;
-    return GuardianLink.fromRow(row);
-  }
-
-  Future<void> inviteGuardian({required String minorProfileId, required String guardianEmail}) async {
-    await _client.from('profile_guardian_links').insert({
-      'minor_profile_id': minorProfileId,
-      'guardian_email': guardianEmail,
-    });
-  }
-
-  /// Invitations addressed to the current user as a guardian — matched via
-  /// their own email, same as the RLS policy that actually permits this
-  /// read (`guardian_email = auth.email()`).
-  Future<List<GuardianLink>> fetchPendingInvitesForGuardian(String guardianEmail) async {
-    final rows = await _client
-        .from('profile_guardian_links')
-        .select()
-        .eq('guardian_email', guardianEmail)
-        .eq('status', 'pending');
-    return rows.map(GuardianLink.fromRow).toList();
-  }
-
-  Future<void> confirmGuardianLink({required String linkId, required String guardianProfileId}) async {
-    await _client.from('profile_guardian_links').update({
-      'guardian_profile_id': guardianProfileId,
-      'status': 'confirmed',
-      'consented_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', linkId);
   }
 }

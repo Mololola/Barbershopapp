@@ -7,7 +7,6 @@ import '../../../core/loading.dart';
 import '../../../core/quick_action_tile.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../auth/presentation/guardian_invite_banner.dart';
 import '../../messaging/application/messaging_controller.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
@@ -51,7 +50,6 @@ class BusinessHomeScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              const GuardianInviteBanner(),
               const SubscriptionBanner(),
               _ShopPlaque(business: business, locations: locations, hours: hours),
               const SizedBox(height: 16),

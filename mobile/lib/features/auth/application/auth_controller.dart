@@ -8,7 +8,6 @@ import '../../../core/env.dart';
 import '../../../core/supabase_providers.dart';
 import '../data/account_api_client.dart';
 import '../data/profile_repository.dart';
-import '../domain/guardian_link.dart';
 import '../domain/profile.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
@@ -53,28 +52,6 @@ final currentProfileProvider = FutureProvider<Profile?>((ref) async {
     dateOfBirth: dobValue != null ? DateTime.parse(dobValue) : null,
   );
   return repository.fetchOwnProfile(user.id);
-});
-
-/// The minor's own guardian invitation, if they've sent one — drives the
-/// guardian-consent screen and the router's redirect gate.
-final guardianLinkForMinorProvider = FutureProvider<GuardianLink?>((ref) async {
-  final profile = await ref.watch(currentProfileProvider.future);
-  if (profile == null || !profile.isMinor) return null;
-  return ref.watch(profileRepositoryProvider).fetchGuardianLinkForMinor(profile.id);
-});
-
-final hasConfirmedGuardianProvider = Provider<bool>((ref) {
-  final link = ref.watch(guardianLinkForMinorProvider).value;
-  return link?.status == GuardianLinkStatus.confirmed;
-});
-
-/// Guardian invitations addressed to the signed-in user — surfaced as a
-/// banner (same pattern as pendingLeaveRequestsProvider) wherever someone
-/// might be signing in specifically to confirm one.
-final pendingGuardianInvitesProvider = FutureProvider<List<GuardianLink>>((ref) async {
-  final email = ref.watch(supabaseClientProvider).auth.currentUser?.email;
-  if (email == null) return const [];
-  return ref.watch(profileRepositoryProvider).fetchPendingInvitesForGuardian(email);
 });
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, void>(AuthController.new);
@@ -190,38 +167,6 @@ class AuthController extends AsyncNotifier<void> {
       await ref.read(accountApiClientProvider).deleteAccount();
       await ref.read(supabaseClientProvider).auth.signOut();
       ref.invalidate(currentProfileProvider);
-    });
-  }
-}
-
-final guardianControllerProvider = AsyncNotifierProvider<GuardianController, void>(GuardianController.new);
-
-class GuardianController extends AsyncNotifier<void> {
-  @override
-  Future<void> build() async {}
-
-  Future<void> inviteGuardian(String guardianEmail) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final profile = await ref.read(currentProfileProvider.future);
-      if (profile == null) throw StateError('No signed-in profile.');
-      await ref.read(profileRepositoryProvider).inviteGuardian(
-            minorProfileId: profile.id,
-            guardianEmail: guardianEmail,
-          );
-      ref.invalidate(guardianLinkForMinorProvider);
-    });
-  }
-
-  Future<void> confirm(GuardianLink link) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final guardianId = ref.read(supabaseClientProvider).auth.currentUser!.id;
-      await ref.read(profileRepositoryProvider).confirmGuardianLink(
-            linkId: link.id,
-            guardianProfileId: guardianId,
-          );
-      ref.invalidate(pendingGuardianInvitesProvider);
     });
   }
 }

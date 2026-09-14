@@ -251,30 +251,7 @@ void main() {
     );
   });
 
-  test('an unconfirmed minor is confined to the guardian-consent screen from anywhere', () {
-    expect(
-      resolveRedirect(
-        isAuthenticated: true,
-        profile: minorProfile,
-        hasBusiness: false,
-        pendingReviewBookingId: null,
-        location: '/customer',
-      ),
-      '/guardian-consent',
-    );
-    expect(
-      resolveRedirect(
-        isAuthenticated: true,
-        profile: minorProfile,
-        hasBusiness: false,
-        pendingReviewBookingId: null,
-        location: '/guardian-consent',
-      ),
-      null,
-    );
-  });
-
-  test('a minor with a confirmed guardian routes normally, like any other customer', () {
+  test('a minor account routes exactly like any other customer — no guardian gate', () {
     expect(
       resolveRedirect(
         isAuthenticated: true,
@@ -282,7 +259,6 @@ void main() {
         hasBusiness: false,
         pendingReviewBookingId: null,
         location: '/sign-up',
-        hasConfirmedGuardian: true,
       ),
       '/customer',
     );
@@ -293,7 +269,6 @@ void main() {
         hasBusiness: false,
         pendingReviewBookingId: null,
         location: '/customer',
-        hasConfirmedGuardian: true,
       ),
       null,
     );

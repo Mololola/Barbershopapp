@@ -8,7 +8,6 @@ import '../features/auth/domain/profile.dart';
 import '../features/auth/presentation/account_settings_screen.dart';
 import '../features/auth/presentation/edit_profile_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
-import '../features/auth/presentation/guardian_consent_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
@@ -55,7 +54,6 @@ bool _isReviewRoute(String location, String? bookingId) {
 }
 
 const _resetPasswordRoute = '/reset-password';
-const _guardianConsentRoute = '/guardian-consent';
 
 /// Pure routing decision, unit-testable without a live Supabase client.
 String? resolveRedirect({
@@ -65,7 +63,6 @@ String? resolveRedirect({
   required String? pendingReviewBookingId,
   required String location,
   bool passwordRecovery = false,
-  bool hasConfirmedGuardian = false,
 }) {
   // The password-reset email link signs the user into a temporary recovery
   // session — that counts as authenticated, but must not fall through to
@@ -84,14 +81,6 @@ String? resolveRedirect({
     return _authRoutes.contains(location) ? null : '/sign-up';
   }
 
-  // A minor's account is fully locked until a guardian has confirmed
-  // consent — nothing else runs (no bookings, no browsing) until this
-  // clears, per the verified-consent design (see the 832ca4a41b29
-  // migration and profile_guardian_links).
-  if (profile.isMinor && !hasConfirmedGuardian) {
-    return location == _guardianConsentRoute ? null : _guardianConsentRoute;
-  }
-
   if (profile.role == AccountRole.business && !hasBusiness) {
     return location == _businessSetupRoute ? null : _businessSetupRoute;
   }
@@ -106,7 +95,7 @@ String? resolveRedirect({
   }
 
   final home = profile.role == AccountRole.customer ? '/customer' : '/business';
-  final onboardingRoutes = {..._authRoutes, _businessSetupRoute, _guardianConsentRoute};
+  final onboardingRoutes = {..._authRoutes, _businessSetupRoute};
   return onboardingRoutes.contains(location) ? home : null;
 }
 
@@ -137,7 +126,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(currentBusinessProvider, (_, __) => refresh.ping());
   ref.listen(pendingReviewProvider, (_, __) => refresh.ping());
   ref.listen(passwordRecoveryProvider, (_, __) => refresh.ping());
-  ref.listen(guardianLinkForMinorProvider, (_, __) => refresh.ping());
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -155,7 +143,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         pendingReviewBookingId: pendingReviewBookingId,
         location: state.matchedLocation,
         passwordRecovery: ref.read(passwordRecoveryProvider),
-        hasConfirmedGuardian: ref.read(hasConfirmedGuardianProvider),
       );
     },
     routes: [
@@ -164,7 +151,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
       GoRoute(path: _resetPasswordRoute, builder: (context, state) => const ResetPasswordScreen()),
       GoRoute(path: '/account-settings', builder: (context, state) => const AccountSettingsScreen()),
-      GoRoute(path: _guardianConsentRoute, builder: (context, state) => const GuardianConsentScreen()),
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
