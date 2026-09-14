@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/supabase_providers.dart';
 import '../application/auth_controller.dart';
 import '../domain/profile.dart';
+
+const _privacyPolicyUrl = 'https://claude.ai/code/artifact/f348e6eb-ffe5-4615-8087-6ab8396295ca';
+const _termsOfServiceUrl = 'https://claude.ai/code/artifact/7b0fd848-a548-46c4-9ee1-89d93f7e7b26';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -21,6 +25,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _passwordController = TextEditingController();
   AccountRole _role = AccountRole.customer;
   DateTime? _dateOfBirth;
+  bool _agreedToTerms = false;
   String? _confirmationMessage;
 
   bool get _isMinorSelected {
@@ -40,11 +45,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       lastDate: now,
     );
     if (picked == null) return;
-    final thirteenthBirthday = DateTime(picked.year + 13, picked.month, picked.day);
-    if (thirteenthBirthday.isAfter(now)) {
+    // 14 clears both the UK's and Spain's GDPR digital-age-of-consent
+    // thresholds (13 / 14) — at or above it a minor can consent for
+    // themselves, no parent involved, which is why there's no guardian
+    // step anywhere in this flow. See profiles_minimum_age_check.
+    final fourteenthBirthday = DateTime(picked.year + 14, picked.month, picked.day);
+    if (fourteenthBirthday.isAfter(now)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('You must be at least 13 to create an account.')));
+          .showSnackBar(const SnackBar(content: Text('You must be at least 14 to create an account.')));
       return;
     }
     setState(() {
@@ -75,6 +84,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (dob == null) {
       setState(() => _confirmationMessage = null);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Date of birth is required.')));
+      return;
+    }
+    if (!_agreedToTerms) {
+      setState(() => _confirmationMessage = null);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('You must agree to the Terms of Service and Privacy Policy.')));
       return;
     }
     setState(() => _confirmationMessage = null);
@@ -141,7 +156,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 const Padding(
                   padding: EdgeInsets.only(top: 6),
                   child: Text(
-                    'Under 18 — you\'ll need a parent or guardian to confirm before you can start booking.',
+                    'Under 18 — messaging, posting, and business/worker features aren\'t available on your account.',
                     style: TextStyle(fontSize: 12.5),
                   ),
                 ),
@@ -179,7 +194,23 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   },
                 ),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                value: _agreedToTerms,
+                onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                title: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const Text('I agree to the '),
+                    _LegalLink(label: 'Terms of Service', url: _termsOfServiceUrl),
+                    const Text(' and '),
+                    _LegalLink(label: 'Privacy Policy', url: _privacyPolicyUrl),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               if (authState.hasError)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -226,6 +257,27 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LegalLink extends StatelessWidget {
+  const _LegalLink({required this.label, required this.url});
+
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          decoration: TextDecoration.underline,
         ),
       ),
     );
