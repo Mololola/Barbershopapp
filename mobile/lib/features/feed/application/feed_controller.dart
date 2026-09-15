@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/error_reporting.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/feed_repository.dart';
@@ -59,7 +60,8 @@ class FeedActionController extends AsyncNotifier<void> {
           .read(feedRepositoryProvider)
           .toggleLike(postId: postId, profileId: profile.id, currentlyLiked: currentlyLiked);
       return true;
-    } catch (_) {
+    } catch (error, stack) {
+      reportError(error, stack, context: 'FeedActionController.toggleLike');
       return false;
     }
   }
@@ -92,7 +94,8 @@ class FeedActionController extends AsyncNotifier<void> {
             currentlyLiked: currentlyLiked,
           );
       return true;
-    } catch (_) {
+    } catch (error, stack) {
+      reportError(error, stack, context: 'FeedActionController.toggleCommentLike');
       return false;
     }
   }
@@ -103,7 +106,8 @@ class FeedActionController extends AsyncNotifier<void> {
     try {
       await ref.read(feedRepositoryProvider).togglePin(postId: postId, currentlyPinned: currentlyPinned);
       return true;
-    } catch (_) {
+    } catch (error, stack) {
+      reportError(error, stack, context: 'FeedActionController.togglePin');
       return false;
     }
   }
