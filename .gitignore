@@ -11,10 +11,14 @@ mobile/env.json
 *.key
 *.p12
 *.pfx
+*.jks
+*.keystore
 id_rsa
 id_ed25519
 google-services.json
 GoogleService-Info.plist
+mobile/android/key.properties
+!mobile/android/key.properties.example
 
 # Python (backend/)
 __pycache__/
