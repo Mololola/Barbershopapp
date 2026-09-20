@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-mobile/env.json
+mobile/env*.json
 !mobile/env.json.example
 
 # Other common secret-file shapes — none of these exist in this repo today;
