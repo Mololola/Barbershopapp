@@ -3,16 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/loading.dart';
 import '../../auth/domain/profile.dart';
+import '../../rewards/domain/payout_request.dart';
 import '../application/admin_controller.dart';
+import '../domain/admin_business_summary.dart';
 
-class AdminScreen extends ConsumerStatefulWidget {
+class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
 
   @override
-  ConsumerState<AdminScreen> createState() => _AdminScreenState();
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Admin'),
+          bottom: const TabBar(
+            tabs: [Tab(text: 'Customers'), Tab(text: 'Businesses'), Tab(text: 'Payouts')],
+          ),
+        ),
+        body: const TabBarView(
+          children: [_CustomersTab(), _BusinessesTab(), _PayoutsTab()],
+        ),
+      ),
+    );
+  }
 }
 
-class _AdminScreenState extends ConsumerState<AdminScreen> {
+class _CustomersTab extends ConsumerStatefulWidget {
+  const _CustomersTab();
+
+  @override
+  ConsumerState<_CustomersTab> createState() => _CustomersTabState();
+}
+
+class _CustomersTabState extends ConsumerState<_CustomersTab> {
   final _queryController = TextEditingController();
   String? _query;
   Profile? _selected;
@@ -55,57 +79,54 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
     final selected = _selected;
     final actionState = ref.watch(adminActionControllerProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Admin')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _queryController,
-                    decoration: const InputDecoration(labelText: 'Search customers by username'),
-                    onSubmitted: (_) => _search(),
-                  ),
-                ),
-                IconButton(icon: const Icon(Icons.search), onPressed: _search),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (selected == null) ...[
-              if (_query != null) Expanded(child: _SearchResults(query: _query!, onSelect: _select)),
-            ] else
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => setState(() => _selected = null),
-                        ),
-                        Text(selected.username, style: Theme.of(context).textTheme.titleLarge),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    FilledButton(
-                      onPressed: actionState.isLoading ? null : _toggle,
-                      child: Text(
-                        _isQualityReviewer ? 'Deactivate \$3 rewards' : 'Activate \$3 rewards',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Review history', style: Theme.of(context).textTheme.titleMedium),
-                    Expanded(child: _ReviewHistory(customerId: selected.id)),
-                  ],
+                child: TextField(
+                  controller: _queryController,
+                  decoration: const InputDecoration(labelText: 'Search customers by username'),
+                  onSubmitted: (_) => _search(),
                 ),
               ),
-          ],
-        ),
+              IconButton(icon: const Icon(Icons.search), onPressed: _search),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (selected == null) ...[
+            if (_query != null) Expanded(child: _SearchResults(query: _query!, onSelect: _select)),
+          ] else
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => setState(() => _selected = null),
+                      ),
+                      Text(selected.username, style: Theme.of(context).textTheme.titleLarge),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: actionState.isLoading ? null : _toggle,
+                    child: Text(
+                      _isQualityReviewer ? 'Deactivate \$3 rewards' : 'Activate \$3 rewards',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Review history', style: Theme.of(context).textTheme.titleMedium),
+                  Expanded(child: _ReviewHistory(customerId: selected.id)),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -174,6 +195,156 @@ class _ReviewHistory extends ConsumerWidget {
                       if (review.shopComment != null) Text('Shop: ${review.shopComment}'),
                       if (review.workerComment != null) Text('Worker: ${review.workerComment}'),
                       if (review.haircutComment != null) Text('Haircut: ${review.haircutComment}'),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _BusinessesTab extends ConsumerWidget {
+  const _BusinessesTab();
+
+  Future<void> _grantTrial(BuildContext context, WidgetRef ref, AdminBusinessSummary business) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Grant a 1-month trial?'),
+        content: Text('${business.name} won\'t be charged for their first month once they subscribe.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Grant trial')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await ref.read(adminActionControllerProvider.notifier).grantTrial(business.id);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final businesses = ref.watch(adminBusinessesProvider);
+    final actionState = ref.watch(adminActionControllerProvider);
+
+    return businesses.when(
+      loading: () => const LoadingView(),
+      error: (error, _) => Center(child: Text('Error: $error')),
+      data: (list) {
+        if (list.isEmpty) {
+          return const Center(child: Text('No businesses yet.'));
+        }
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            for (final business in list)
+              Card(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(business.name, style: Theme.of(context).textTheme.titleMedium),
+                      Text('Owner: ${business.ownerUsername}'),
+                      Text('Signed up: ${business.createdAt.toLocal().toString().split(' ').first}'),
+                      Text('Subscription: ${business.subscriptionStatus ?? 'none yet'}'),
+                      const SizedBox(height: 8),
+                      if (business.hasActiveTrial)
+                        Text(
+                          'Trial until ${business.subscriptionTrialEndsAt!.toLocal().toString().split(' ').first}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        )
+                      else
+                        OutlinedButton(
+                          onPressed: actionState.isLoading ? null : () => _grantTrial(context, ref, business),
+                          child: const Text('Grant 1-month trial'),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PayoutsTab extends ConsumerWidget {
+  const _PayoutsTab();
+
+  Future<void> _resolve(
+    BuildContext context,
+    WidgetRef ref,
+    PayoutRequest request,
+    PayoutRequestStatus status,
+  ) async {
+    await ref.read(adminActionControllerProvider.notifier).resolvePayoutRequest(
+          requestId: request.id,
+          status: status,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final requests = ref.watch(adminPayoutRequestsProvider);
+    final actionState = ref.watch(adminActionControllerProvider);
+
+    return requests.when(
+      loading: () => const LoadingView(),
+      error: (error, _) => Center(child: Text('Error: $error')),
+      data: (list) {
+        if (list.isEmpty) {
+          return const Center(child: Text('No payout requests.'));
+        }
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            for (final request in list)
+              Card(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${request.requesterUsername ?? request.profileId} — '
+                        '\$${(request.amountCents / 100).toStringAsFixed(2)}',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text('Requested: ${request.requestedAt.toLocal().toString().split('.').first}'),
+                      Text('Status: ${request.status.wireValue}'),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (request.status == PayoutRequestStatus.pending) ...[
+                            OutlinedButton(
+                              onPressed: actionState.isLoading
+                                  ? null
+                                  : () => _resolve(context, ref, request, PayoutRequestStatus.rejected),
+                              child: const Text('Reject'),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton(
+                              onPressed: actionState.isLoading
+                                  ? null
+                                  : () => _resolve(context, ref, request, PayoutRequestStatus.approved),
+                              child: const Text('Approve'),
+                            ),
+                          ] else if (request.status == PayoutRequestStatus.approved)
+                            FilledButton(
+                              onPressed: actionState.isLoading
+                                  ? null
+                                  : () => _resolve(context, ref, request, PayoutRequestStatus.paid),
+                              child: const Text('Mark paid — I\'ve sent the money'),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

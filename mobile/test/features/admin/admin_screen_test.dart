@@ -27,6 +27,12 @@ void main() {
       overrides: [
         customerSearchProvider.overrideWith((ref, query) async => [janeStandard]),
         customerReviewsProvider.overrideWith((ref, customerId) async => [review]),
+        // TabBarView builds every tab eagerly, not just the visible one, so
+        // the Businesses/Payouts tabs' providers need overriding here too —
+        // otherwise they'd hit a real (un-overridden) Supabase call and
+        // pumpAndSettle would hang forever waiting on it.
+        adminBusinessesProvider.overrideWith((ref) async => []),
+        adminPayoutRequestsProvider.overrideWith((ref) async => []),
         if (setSucceeds) adminActionControllerProvider.overrideWith(_FakeSuccessAdminActionController.new),
       ],
       child: const MaterialApp(home: AdminScreen()),

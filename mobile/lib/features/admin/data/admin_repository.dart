@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../auth/domain/profile.dart';
 import '../../customer/domain/review.dart';
+import '../../rewards/domain/payout_request.dart';
+import '../domain/admin_business_summary.dart';
 
 /// Admin-only actions — `setQualityReviewer` relies entirely on the
 /// "admin update quality reviewer flag" RLS policy (see the migration) to
@@ -33,5 +35,43 @@ class AdminRepository {
 
   Future<void> setQualityReviewer(String customerId, bool value) async {
     await _client.from('profiles').update({'is_quality_reviewer': value}).eq('id', customerId);
+  }
+
+  /// Relies on the "admin select all businesses"/"admin select all
+  /// business_subscriptions" RLS policies — a non-admin caller would just
+  /// get their own business back (if any), same as any owner-scoped query.
+  Future<List<AdminBusinessSummary>> fetchBusinesses() async {
+    final rows = await _client
+        .from('businesses')
+        .select('id, name, created_at, subscription_trial_ends_at, profiles(username), business_subscriptions(status)')
+        .order('created_at', ascending: false);
+    return rows.map(AdminBusinessSummary.fromRow).toList();
+  }
+
+  Future<void> grantTrial(String businessId) async {
+    final trialEndsAt = DateTime.now().toUtc().add(const Duration(days: 30));
+    await _client
+        .from('businesses')
+        .update({'subscription_trial_ends_at': trialEndsAt.toIso8601String()}).eq('id', businessId);
+  }
+
+  Future<List<PayoutRequest>> fetchAllPayoutRequests() async {
+    final rows = await _client
+        .from('payout_requests')
+        .select('*, profiles(username)')
+        .order('requested_at', ascending: false);
+    return rows.map(PayoutRequest.fromRow).toList();
+  }
+
+  Future<void> resolvePayoutRequest({
+    required String requestId,
+    required PayoutRequestStatus status,
+    String? adminNote,
+  }) async {
+    await _client.from('payout_requests').update({
+      'status': status.wireValue,
+      'resolved_at': DateTime.now().toUtc().toIso8601String(),
+      if (adminNote != null) 'admin_note': adminNote,
+    }).eq('id', requestId);
   }
 }
