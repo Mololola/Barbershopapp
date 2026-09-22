@@ -1,6 +1,6 @@
 import calendar
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -59,6 +59,18 @@ def _price_from_average(avg_price_cents: float | None) -> int | None:
     return round(avg_price_cents * _PRICE_MULTIPLIER)
 
 
+def _trial_end_timestamp(trial_ends_at: datetime | None, now: datetime) -> int | None:
+    """An admin-granted trial that's already lapsed, or is too close to now,
+    should just quietly stop applying rather than surface a Stripe error —
+    Stripe itself requires trial_end at least 48h out. Returns a Unix
+    timestamp (what Stripe's API wants) or None."""
+    if trial_ends_at is None:
+        return None
+    if trial_ends_at < now + timedelta(hours=48):
+        return None
+    return int(trial_ends_at.timestamp())
+
+
 def _compute_monthly_amount_cents(db: Session, business_id: uuid.UUID) -> int:
     avg_price = db.execute(
         text("select avg(price_cents) from services where business_id = :business_id and is_active = true"),
@@ -86,7 +98,7 @@ def create_checkout_session(
     monthly_amount_cents = _compute_monthly_amount_cents(db, business_id)
 
     business = db.execute(
-        text("select owner_id, currency, name from businesses where id = :business_id"),
+        text("select owner_id, currency, name, subscription_trial_ends_at from businesses where id = :business_id"),
         {"business_id": business_id},
     ).mappings().first()
     if business is None:
@@ -133,6 +145,11 @@ def create_checkout_session(
     # actually updates subscription state, so this doesn't block correctness.
     placeholder_return_url = f"{settings.supabase_url}/"
 
+    subscription_data = {"metadata": {"business_id": str(business_id)}}
+    trial_end = _trial_end_timestamp(business["subscription_trial_ends_at"], datetime.now(timezone.utc))
+    if trial_end is not None:
+        subscription_data["trial_end"] = trial_end
+
     session = stripe.checkout.Session.create(
         customer=customer_id,
         mode="subscription",
@@ -148,7 +165,7 @@ def create_checkout_session(
             }
         ],
         metadata={"business_id": str(business_id)},
-        subscription_data={"metadata": {"business_id": str(business_id)}},
+        subscription_data=subscription_data,
         success_url=f"{placeholder_return_url}?billing=success",
         cancel_url=f"{placeholder_return_url}?billing=cancelled",
     )
