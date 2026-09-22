@@ -21,6 +21,7 @@ void main() {
         rewardBalanceProvider.overrideWith((ref) async => 500),
         rewardHistoryProvider.overrideWith((ref) async => [entry]),
         referralsRankingProvider.overrideWith((ref) async => [referral]),
+        myPayoutRequestsProvider.overrideWith((ref) async => []),
       ],
       child: const MaterialApp(home: RewardHistoryScreen()),
     );
