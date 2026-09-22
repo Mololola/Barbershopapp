@@ -46,7 +46,7 @@ class ProfileRepository {
   }
 
   Future<Profile?> fetchOwnProfile(String userId) async {
-    final row = await _client.from('profiles').select('*, is_minor').eq('id', userId).maybeSingle();
+    final row = await _client.from('profiles').select('*, is_minor:profile_is_minor').eq('id', userId).maybeSingle();
     if (row == null) return null;
     return Profile.fromRow(row);
   }
@@ -57,7 +57,7 @@ class ProfileRepository {
   Future<Profile?> fetchProfile(String profileId) => fetchOwnProfile(profileId);
 
   Future<List<Profile>> searchByUsername(String query) async {
-    final rows = await _client.from('profiles').select('*, is_minor').ilike('username', '%$query%').limit(20);
+    final rows = await _client.from('profiles').select('*, is_minor:profile_is_minor').ilike('username', '%$query%').limit(20);
     return rows.map(Profile.fromRow).toList();
   }
 

@@ -72,6 +72,7 @@ class AuthController extends AsyncNotifier<void> {
       await ref.read(supabaseClientProvider).auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: Env.authCallbackUrl,
         data: {
           'role': role.wireValue,
           'username': username,
