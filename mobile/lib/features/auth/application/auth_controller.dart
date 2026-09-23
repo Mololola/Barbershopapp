@@ -69,10 +69,14 @@ class AuthController extends AsyncNotifier<void> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      if (await ref.read(profileRepositoryProvider).isUsernameTaken(username)) {
+        throw UsernameTakenException(username);
+      }
+
       await ref.read(supabaseClientProvider).auth.signUp(
         email: email,
         password: password,
-        emailRedirectTo: Env.authCallbackUrl,
+        emailRedirectTo: Env.emailConfirmationRedirectUrl,
         data: {
           'role': role.wireValue,
           'username': username,
@@ -139,7 +143,7 @@ class AuthController extends AsyncNotifier<void> {
   Future<void> requestPasswordReset(String email) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(supabaseClientProvider).auth.resetPasswordForEmail(email, redirectTo: Env.authCallbackUrl);
+      await ref.read(supabaseClientProvider).auth.resetPasswordForEmail(email, redirectTo: Env.emailConfirmationRedirectUrl);
     });
   }
 

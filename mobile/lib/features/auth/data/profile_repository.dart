@@ -20,6 +20,14 @@ class ProfileRepository {
 
   final SupabaseClient _client;
 
+  /// Case-insensitive exact match, mirroring the DB's own
+  /// `unique index on (lower(username))` — checked before sign-up so a
+  /// taken username is rejected without ever creating an auth account.
+  Future<bool> isUsernameTaken(String username) async {
+    final row = await _client.from('profiles').select('id').ilike('username', username).maybeSingle();
+    return row != null;
+  }
+
   Future<void> insertProfile({
     required String id,
     required AccountRole role,

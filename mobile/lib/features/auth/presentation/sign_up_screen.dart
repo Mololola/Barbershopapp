@@ -26,7 +26,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   AccountRole _role = AccountRole.customer;
   DateTime? _dateOfBirth;
   bool _agreedToTerms = false;
-  String? _confirmationMessage;
 
   bool get _isMinorSelected {
     final dob = _dateOfBirth;
@@ -82,17 +81,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
     final dob = _dateOfBirth;
     if (dob == null) {
-      setState(() => _confirmationMessage = null);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Date of birth is required.')));
       return;
     }
     if (!_agreedToTerms) {
-      setState(() => _confirmationMessage = null);
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('You must agree to the Terms of Service and Privacy Policy.')));
       return;
     }
-    setState(() => _confirmationMessage = null);
 
     final notifier = ref.read(authControllerProvider.notifier);
     if (_isOAuthCompletion) {
@@ -113,7 +109,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (state.hasError) return;
 
     if (Supabase.instance.client.auth.currentSession == null) {
-      setState(() => _confirmationMessage = 'Check your email to confirm your account, then sign in.');
+      context.go('/sign-in', extra: 'Check your email to confirm your account, then sign in.');
     }
   }
 
@@ -218,11 +214,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     authState.error.toString(),
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
-                ),
-              if (_confirmationMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(_confirmationMessage!),
                 ),
               FilledButton(
                 onPressed: authState.isLoading ? null : _submit,

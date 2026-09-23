@@ -146,7 +146,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
     },
     routes: [
-      GoRoute(path: '/sign-in', builder: (context, state) => const SignInScreen()),
+      GoRoute(
+        path: '/sign-in',
+        builder: (context, state) => SignInScreen(initialMessage: state.extra as String?),
+      ),
       GoRoute(path: '/sign-up', builder: (context, state) => const SignUpScreen()),
       GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
       GoRoute(path: _resetPasswordRoute, builder: (context, state) => const ResetPasswordScreen()),

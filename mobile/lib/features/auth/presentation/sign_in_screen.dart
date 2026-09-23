@@ -6,7 +6,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../application/auth_controller.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({super.key, this.initialMessage});
+
+  /// Shown once, e.g. "Check your email to confirm your account" right
+  /// after a successful sign-up — see router.dart's '/sign-in' route.
+  final String? initialMessage;
 
   @override
   ConsumerState<SignInScreen> createState() => _SignInScreenState();
@@ -16,6 +20,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _message;
+
+  @override
+  void initState() {
+    super.initState();
+    _message = widget.initialMessage;
+  }
 
   @override
   void dispose() {
@@ -26,6 +37,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _message = null);
     await ref.read(authControllerProvider.notifier).signIn(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -76,6 +88,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+              if (_message != null && !authState.hasError)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(_message!),
+                ),
               if (authState.hasError)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
