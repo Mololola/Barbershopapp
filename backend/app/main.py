@@ -16,6 +16,7 @@ from app.core.logging import configure_logging
 from app.core.rate_limit import _rate_limit_exceeded_handler, limiter
 from app.db.session import SessionLocal
 from app.jobs.expire_grace_periods import find_and_delete_expired_businesses
+from app.jobs.purge_unconfirmed_signups import purge_unconfirmed_signups
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -37,6 +38,16 @@ def _run_expire_grace_periods() -> None:
         db.close()
 
 
+def _run_purge_unconfirmed_signups() -> None:
+    db = SessionLocal()
+    try:
+        purge_unconfirmed_signups(db)
+    except Exception:
+        logger.exception("purge_unconfirmed_signups job failed")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # No cron/deployment infra exists yet (everything runs via `uvicorn
@@ -44,6 +55,7 @@ async def lifespan(app: FastAPI):
     # for now; revisit once there's a real host with its own scheduled-task
     # feature.
     scheduler.add_job(_run_expire_grace_periods, "interval", days=1, id="expire_grace_periods")
+    scheduler.add_job(_run_purge_unconfirmed_signups, "interval", hours=6, id="purge_unconfirmed_signups")
     scheduler.start()
     yield
     scheduler.shutdown()
