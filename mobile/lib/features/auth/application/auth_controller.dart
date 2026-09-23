@@ -69,11 +69,9 @@ class AuthController extends AsyncNotifier<void> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      if (await ref.read(profileRepositoryProvider).isUsernameTaken(username)) {
-        throw UsernameTakenException(username);
-      }
+      await ref.read(accountApiClientProvider).ensureSignUpAvailable(email: email, username: username);
 
-      await ref.read(supabaseClientProvider).auth.signUp(
+      final response = await ref.read(supabaseClientProvider).auth.signUp(
         email: email,
         password: password,
         emailRedirectTo: Env.emailConfirmationRedirectUrl,
@@ -83,6 +81,12 @@ class AuthController extends AsyncNotifier<void> {
           'date_of_birth': dateOfBirth.toIso8601String().split('T').first,
         },
       );
+      // Backstop for an email registered between the check above and now:
+      // Supabase answers that with a fake, identity-less user instead of an
+      // error (its anti-enumeration behavior), and creates nothing.
+      if (response.user?.identities?.isEmpty ?? false) {
+        throw const SignUpConflictException(emailTaken: true, usernameTaken: false);
+      }
       ref.invalidate(currentProfileProvider);
       // Wait for the lazy profile insert (see currentProfileProvider) to run so
       // a taken username surfaces as an error here, not silently on the router.
@@ -143,7 +147,7 @@ class AuthController extends AsyncNotifier<void> {
   Future<void> requestPasswordReset(String email) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(supabaseClientProvider).auth.resetPasswordForEmail(email, redirectTo: Env.emailConfirmationRedirectUrl);
+      await ref.read(supabaseClientProvider).auth.resetPasswordForEmail(email, redirectTo: Env.passwordResetRedirectUrl);
     });
   }
 
@@ -160,7 +164,7 @@ class AuthController extends AsyncNotifier<void> {
   Future<void> resendConfirmationEmail(String email) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(supabaseClientProvider).auth.resend(type: OtpType.signup, email: email);
+      await ref.read(supabaseClientProvider).auth.resend(type: OtpType.signup, email: email, emailRedirectTo: Env.emailConfirmationRedirectUrl);
     });
   }
 

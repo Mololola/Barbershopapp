@@ -28,4 +28,8 @@ class Env {
   /// uses — an emailed link is clicked from anywhere, not just wherever the
   /// developer's own machine can reach.
   static const emailConfirmationRedirectUrl = 'https://barbershopapp-qrpk.onrender.com/auth/confirmed';
+
+  /// Same idea as [emailConfirmationRedirectUrl], for the password-reset
+  /// email — a separate page because what the person has to do next differs.
+  static const passwordResetRedirectUrl = 'https://barbershopapp-qrpk.onrender.com/auth/reset';
 }

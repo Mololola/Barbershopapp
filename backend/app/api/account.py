@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -59,3 +60,49 @@ def delete_account(
     # every row it owns app-wide.
     db.execute(text("delete from auth.users where id = :user_id"), {"user_id": user_id})
     db.commit()
+
+
+class SignUpAvailabilityRequest(BaseModel):
+    email: str
+    username: str
+
+
+class SignUpAvailabilityResponse(BaseModel):
+    email_available: bool
+    username_available: bool
+
+
+# Unauthenticated by necessity (the caller has no account yet), and it does
+# reveal whether an email is registered. That's accepted: usernames are
+# public anyway, so a combined "email or username taken" message would hide
+# nothing (an attacker just pairs the email with a random username), and
+# Supabase's own signUp() leaks the same fact through its response shape.
+# The real mitigation for email probing is the tight per-IP rate limit.
+@router.post("/account/signup-availability", response_model=SignUpAvailabilityResponse)
+def signup_availability(
+    body: SignUpAvailabilityRequest,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("10/minute")),
+) -> SignUpAvailabilityResponse:
+    # Unconfirmed accounts count as taken too: Supabase won't create a
+    # second account for the email either way, it just silently re-sends
+    # the original confirmation.
+    email_taken = db.execute(
+        text("select 1 from auth.users where lower(email) = lower(:email)"),
+        {"email": body.email.strip()},
+    ).first()
+    # A username is held either by a real profile or by a signup that hasn't
+    # confirmed/first-signed-in yet — its profile row only gets inserted then
+    # (see currentProfileProvider in the app), so until that happens the
+    # username only exists in the auth user's metadata.
+    username_taken = db.execute(
+        text(
+            "select 1 from profiles where lower(username) = lower(:username) "
+            "union all "
+            "select 1 from auth.users u "
+            "where lower(u.raw_user_meta_data->>'username') = lower(:username) "
+            "and not exists (select 1 from profiles p where p.id = u.id)"
+        ),
+        {"username": body.username.strip()},
+    ).first()
+    return SignUpAvailabilityResponse(email_available=not email_taken, username_available=not username_taken)
