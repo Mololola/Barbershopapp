@@ -6,7 +6,11 @@ import '../application/business_controller.dart';
 import '../domain/business.dart';
 
 class ServicesScreen extends ConsumerWidget {
-  const ServicesScreen({super.key});
+  const ServicesScreen({super.key, this.setupFooter});
+
+  /// Shown pinned to the bottom when this screen is a step of the
+  /// onboarding wizard (see BusinessSetupScreen).
+  final Widget? setupFooter;
 
   Future<void> _showAddServiceDialog(BuildContext context, WidgetRef ref) async {
     final formKey = GlobalKey<FormState>();
@@ -81,6 +85,7 @@ class ServicesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Services')),
+      bottomNavigationBar: setupFooter,
       floatingActionButton: FloatingActionButton(
         heroTag: null,
         onPressed: () => _showAddServiceDialog(context, ref),

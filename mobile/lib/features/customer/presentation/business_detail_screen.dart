@@ -38,7 +38,7 @@ class BusinessDetailScreen extends ConsumerWidget {
             error: (error, _) => Text('Error: $error'),
             data: (list) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [for (final l in list) Text('${l.addressLine}, ${l.city}')],
+              children: [for (final l in list) Text(l.displayAddress)],
             ),
           ),
           const SizedBox(height: 16),

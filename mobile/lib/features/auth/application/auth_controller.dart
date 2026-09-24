@@ -65,7 +65,8 @@ class AuthController extends AsyncNotifier<void> {
     required String password,
     required AccountRole role,
     required String username,
-    required DateTime dateOfBirth,
+    DateTime? dateOfBirth,
+    String? businessName,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -78,7 +79,10 @@ class AuthController extends AsyncNotifier<void> {
         data: {
           'role': role.wireValue,
           'username': username,
-          'date_of_birth': dateOfBirth.toIso8601String().split('T').first,
+          if (dateOfBirth != null) 'date_of_birth': dateOfBirth.toIso8601String().split('T').first,
+          // Only pre-fills the business setup wizard's name field — the
+          // business row itself can't be created until there's a session.
+          if (businessName != null) 'business_name': businessName,
         },
       );
       // Backstop for an email registered between the check above and now:
@@ -118,7 +122,7 @@ class AuthController extends AsyncNotifier<void> {
   Future<void> completeOAuthProfile({
     required AccountRole role,
     required String username,
-    required DateTime dateOfBirth,
+    DateTime? dateOfBirth,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {

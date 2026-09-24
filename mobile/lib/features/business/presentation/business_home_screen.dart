@@ -216,7 +216,7 @@ class _ShopPlaque extends StatelessWidget {
                   if (address != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      '${address.addressLine}, ${address.city}',
+                      address.displayAddress,
                       style: const TextStyle(color: AppColors.chalk, fontSize: 13),
                       overflow: TextOverflow.ellipsis,
                     ),

@@ -20,7 +20,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: false,
         profile: null,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/customer',
       ),
@@ -33,7 +33,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: false,
         profile: null,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/sign-in',
       ),
@@ -43,7 +43,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: false,
         profile: null,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/sign-up',
       ),
@@ -56,7 +56,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: null,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/customer',
       ),
@@ -66,7 +66,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: null,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/sign-up',
       ),
@@ -79,7 +79,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: customerProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/sign-in',
       ),
@@ -89,7 +89,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: customerProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/customer',
       ),
@@ -97,12 +97,12 @@ void main() {
     );
   });
 
-  test('authenticated business with no business row yet is sent to business-setup', () {
+  test('business that has not finished onboarding is sent to business-setup', () {
     expect(
       resolveRedirect(
         isAuthenticated: true,
         profile: businessProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/sign-up',
       ),
@@ -112,7 +112,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: businessProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/business-setup',
       ),
@@ -120,12 +120,12 @@ void main() {
     );
   });
 
-  test('authenticated business with a business row is routed to /business', () {
+  test('business that finished onboarding is routed to /business', () {
     expect(
       resolveRedirect(
         isAuthenticated: true,
         profile: businessProfile,
-        hasBusiness: true,
+        isBusinessSetupComplete: true,
         pendingReviewBookingId: null,
         location: '/sign-up',
       ),
@@ -135,7 +135,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: businessProfile,
-        hasBusiness: true,
+        isBusinessSetupComplete: true,
         pendingReviewBookingId: null,
         location: '/business-setup',
       ),
@@ -145,7 +145,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: businessProfile,
-        hasBusiness: true,
+        isBusinessSetupComplete: true,
         pendingReviewBookingId: null,
         location: '/business',
       ),
@@ -158,7 +158,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: businessProfile,
-        hasBusiness: true,
+        isBusinessSetupComplete: true,
         pendingReviewBookingId: null,
         location: '/business/services',
       ),
@@ -168,7 +168,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: businessProfile,
-        hasBusiness: true,
+        isBusinessSetupComplete: true,
         pendingReviewBookingId: null,
         location: '/business/staff',
       ),
@@ -181,7 +181,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: customerProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: 'booking-1',
         location: '/customer',
       ),
@@ -191,7 +191,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: customerProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: 'booking-1',
         location: '/customer/businesses',
       ),
@@ -204,7 +204,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: customerProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: 'booking-1',
         location: '/customer/bookings/booking-1/review',
       ),
@@ -217,7 +217,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: false,
         profile: null,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/customer',
         passwordRecovery: true,
@@ -228,7 +228,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: customerProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/customer',
         passwordRecovery: true,
@@ -242,7 +242,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: customerProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/reset-password',
         passwordRecovery: true,
@@ -256,7 +256,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: minorProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/sign-up',
       ),
@@ -266,7 +266,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: minorProfile,
-        hasBusiness: false,
+        isBusinessSetupComplete: false,
         pendingReviewBookingId: null,
         location: '/customer',
       ),
@@ -281,7 +281,7 @@ void main() {
       resolveRedirect(
         isAuthenticated: true,
         profile: businessProfile,
-        hasBusiness: true,
+        isBusinessSetupComplete: true,
         pendingReviewBookingId: 'booking-1',
         location: '/business',
       ),

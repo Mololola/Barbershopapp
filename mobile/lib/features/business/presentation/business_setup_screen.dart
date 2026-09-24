@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/loading.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
+import 'location_form_section.dart';
+import 'services_screen.dart';
+import 'staff_screen.dart';
 
-class _LocationFields {
-  _LocationFields()
-      : addressLine = TextEditingController(),
-        city = TextEditingController();
+final _phonePattern = RegExp(r'^\+?[0-9 ()-]{7,20}$');
 
-  final TextEditingController addressLine;
-  final TextEditingController city;
-
-  void dispose() {
-    addressLine.dispose();
-    city.dispose();
-  }
-}
-
+/// The onboarding wizard the router holds a business owner in until
+/// [Business.isSetupComplete]: details (creates the business) -> at least
+/// one service -> at least one staff member. Customers only find the
+/// business once it has both (businesses_public.is_bookable), so the last
+/// two steps are what make it bookable at all.
 class BusinessSetupScreen extends ConsumerStatefulWidget {
   const BusinessSetupScreen({super.key});
 
@@ -25,14 +22,119 @@ class BusinessSetupScreen extends ConsumerStatefulWidget {
   ConsumerState<BusinessSetupScreen> createState() => _BusinessSetupScreenState();
 }
 
+enum _Step { services, staff }
+
 class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
+  _Step? _step;
+
+  @override
+  Widget build(BuildContext context) {
+    final business = ref.watch(currentBusinessProvider);
+    if (!business.hasValue) return const Scaffold(body: LoadingView());
+    if (business.value == null) return const _DetailsStep();
+
+    final services = ref.watch(servicesProvider);
+    final workers = ref.watch(workersProvider);
+    if (!services.hasValue || !workers.hasValue) return const Scaffold(body: LoadingView());
+
+    // Resuming a half-finished setup (app closed mid-wizard) starts on
+    // whichever step still has nothing in it.
+    final step = _step ?? (services.value!.isEmpty ? _Step.services : _Step.staff);
+    final setupState = ref.watch(businessSetupControllerProvider);
+
+    if (step == _Step.services) {
+      return ServicesScreen(
+        setupFooter: _SetupFooter(
+          stepLabel: 'Step 2 of 3',
+          hint:
+              'Add at least one service with its price and duration. Your monthly subscription is '
+              '10× your average service price.',
+          continueLabel: 'Continue',
+          onContinue: services.value!.isEmpty ? null : () => setState(() => _step = _Step.staff),
+        ),
+      );
+    }
+
+    return StaffScreen(
+      setupFooter: _SetupFooter(
+        stepLabel: 'Step 3 of 3',
+        hint:
+            'Add everyone customers can book with — including yourself if you cut hair. Tap + for '
+            'staff without an app account.',
+        error: setupState.hasError ? setupState.error.toString() : null,
+        onBack: () => setState(() => _step = _Step.services),
+        continueLabel: 'Finish',
+        onContinue: setupState.isLoading || !workers.value!.any((worker) => worker.isActive)
+            ? null
+            : () => ref.read(businessSetupControllerProvider.notifier).completeSetup(),
+      ),
+    );
+  }
+}
+
+class _SetupFooter extends StatelessWidget {
+  const _SetupFooter({
+    required this.stepLabel,
+    required this.hint,
+    required this.continueLabel,
+    required this.onContinue,
+    this.onBack,
+    this.error,
+  });
+
+  final String stepLabel;
+  final String hint;
+  final String continueLabel;
+  final VoidCallback? onContinue;
+  final VoidCallback? onBack;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(stepLabel, style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 4),
+            Text(hint, style: Theme.of(context).textTheme.bodySmall),
+            if (error != null) ...[
+              const SizedBox(height: 8),
+              Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (onBack != null) TextButton(onPressed: onBack, child: const Text('Back')),
+                const Spacer(),
+                FilledButton(onPressed: onContinue, child: Text(continueLabel)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailsStep extends ConsumerStatefulWidget {
+  const _DetailsStep();
+
+  @override
+  ConsumerState<_DetailsStep> createState() => _DetailsStepState();
+}
+
+class _DetailsStepState extends ConsumerState<_DetailsStep> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  late final _nameController = TextEditingController(text: ref.read(signUpBusinessNameProvider));
   final _phoneController = TextEditingController();
   final _referralCodeController = TextEditingController();
-  final _locations = [_LocationFields()];
+  final _locations = [LocationFields()];
   final List<OpeningHours> _hours = OpeningHours.defaultWeek();
-  String _currency = supportedCurrencies.first;
+  late String _currency = currencyForCountry(_locations.first.country);
 
   @override
   void dispose() {
@@ -58,20 +160,25 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final invalidDay = _hours.where((hours) => !hours.hasValidRange).firstOrNull;
+    if (invalidDay != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${OpeningHours.dayNames[invalidDay.dayOfWeek]}: closing time must be after opening time.'),
+        ),
+      );
+      return;
+    }
 
-    final locations = [
-      for (final location in _locations)
-        BusinessLocation(addressLine: location.addressLine.text.trim(), city: location.city.text.trim()),
-    ];
-
-    await ref.read(businessSetupControllerProvider.notifier).createBusiness(
+    await ref
+        .read(businessSetupControllerProvider.notifier)
+        .createBusiness(
           name: _nameController.text.trim(),
-          phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+          phone: _phoneController.text.trim(),
           currency: _currency,
-          locations: locations,
+          locations: [for (final location in _locations) location.toLocation()],
           openingHours: _hours,
-          referredByCode:
-              _referralCodeController.text.trim().isEmpty ? null : _referralCodeController.text.trim(),
+          referredByCode: _referralCodeController.text.trim().isEmpty ? null : _referralCodeController.text.trim(),
         );
   }
 
@@ -85,118 +192,111 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Business name'),
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone (internal only, not shown publicly)',
+          child: SingleChildScrollView(
+            // Not a ListView: that unmounts off-screen fields, and Form.validate()
+            // silently skips unmounted ones.
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Step 1 of 3', style: Theme.of(context).textTheme.labelLarge),
+                const SizedBox(height: 4),
+                Text(
+                  'Your business details. Next you\'ll add your services and staff — customers can find and '
+                  'book you once both are in.',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _referralCodeController,
-                decoration: const InputDecoration(labelText: 'Referral code (optional)'),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _currency,
-                decoration: const InputDecoration(labelText: 'Currency'),
-                items: [
-                  for (final code in supportedCurrencies)
-                    DropdownMenuItem(value: code, child: Text('$code (${currencySymbol(code)})')),
-                ],
-                onChanged: (value) => setState(() => _currency = value!),
-              ),
-              const SizedBox(height: 24),
-              Text('Locations', style: Theme.of(context).textTheme.titleMedium),
-              for (var i = 0; i < _locations.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Business name'),
+                  textCapitalization: TextCapitalization.words,
+                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Business phone',
+                    helperText: 'For our records only — never shown to customers',
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'Required';
+                    if (!_phonePattern.hasMatch(value.trim())) return 'Enter a valid phone number';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _referralCodeController,
+                  decoration: const InputDecoration(labelText: 'Referral code (optional)'),
+                ),
+                const SizedBox(height: 24),
+                LocationFormSection(
+                  locations: _locations,
+                  onChanged: () => setState(() => _currency = currencyForCountry(_locations.first.country)),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _currency,
+                  decoration: const InputDecoration(labelText: 'Currency'),
+                  items: [
+                    for (final code in supportedCurrencies)
+                      DropdownMenuItem(value: code, child: Text('$code (${currencySymbol(code)})')),
+                  ],
+                  onChanged: (value) => setState(() => _currency = value!),
+                ),
+                const SizedBox(height: 24),
+                Text('Opening hours', style: Theme.of(context).textTheme.titleMedium),
+                for (var i = 0; i < _hours.length; i++)
+                  Column(
                     children: [
-                      Expanded(
-                        child: Column(
+                      Row(
+                        children: [
+                          Expanded(child: Text(OpeningHours.dayNames[i])),
+                          if (_hours[i].isClosed) const Text('Closed'),
+                          Switch(
+                            value: !_hours[i].isClosed,
+                            onChanged: (open) => setState(() => _hours[i] = _hours[i].copyWith(isClosed: !open)),
+                          ),
+                        ],
+                      ),
+                      // Own line rather than beside the day name: day + switch
+                      // + two time buttons overflow a phone-width screen.
+                      if (!_hours[i].isClosed)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            TextFormField(
-                              controller: _locations[i].addressLine,
-                              decoration: const InputDecoration(labelText: 'Address'),
-                              validator: (value) =>
-                                  (value == null || value.trim().isEmpty) ? 'Required' : null,
+                            TextButton(
+                              onPressed: () => _pickTime(i, isOpenTime: true),
+                              child: Text(_hours[i].openTime?.format(context) ?? 'Start'),
                             ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _locations[i].city,
-                              decoration: const InputDecoration(labelText: 'City'),
-                              validator: (value) =>
-                                  (value == null || value.trim().isEmpty) ? 'Required' : null,
+                            const Text('–'),
+                            TextButton(
+                              onPressed: () => _pickTime(i, isOpenTime: false),
+                              child: Text(_hours[i].closeTime?.format(context) ?? 'End'),
                             ),
                           ],
                         ),
-                      ),
-                      if (_locations.length > 1)
-                        IconButton(
-                          icon: const Icon(Icons.remove_circle_outline),
-                          onPressed: () => setState(() {
-                            _locations.removeAt(i).dispose();
-                          }),
-                        ),
                     ],
                   ),
-                ),
-              TextButton.icon(
-                onPressed: () => setState(() => _locations.add(_LocationFields())),
-                icon: const Icon(Icons.add),
-                label: const Text('Add another location'),
-              ),
-              const SizedBox(height: 16),
-              Text('Opening hours', style: Theme.of(context).textTheme.titleMedium),
-              for (var i = 0; i < _hours.length; i++)
-                Row(
-                  children: [
-                    SizedBox(width: 100, child: Text(OpeningHours.dayNames[i])),
-                    Switch(
-                      value: !_hours[i].isClosed,
-                      onChanged: (open) => setState(() => _hours[i] = _hours[i].copyWith(isClosed: !open)),
+                const SizedBox(height: 24),
+                if (setupState.hasError)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      setupState.error.toString(),
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
-                    if (!_hours[i].isClosed) ...[
-                      TextButton(
-                        onPressed: () => _pickTime(i, isOpenTime: true),
-                        child: Text(_hours[i].openTime?.format(context) ?? 'Start'),
-                      ),
-                      const Text('–'),
-                      TextButton(
-                        onPressed: () => _pickTime(i, isOpenTime: false),
-                        child: Text(_hours[i].closeTime?.format(context) ?? 'End'),
-                      ),
-                    ] else
-                      const Text('Closed'),
-                  ],
-                ),
-              const SizedBox(height: 24),
-              if (setupState.hasError)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    setupState.error.toString(),
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
+                FilledButton(
+                  onPressed: setupState.isLoading ? null : _submit,
+                  child: setupState.isLoading
+                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Save and continue'),
                 ),
-              FilledButton(
-                onPressed: setupState.isLoading ? null : _submit,
-                child: setupState.isLoading
-                    ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Save and continue'),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

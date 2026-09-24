@@ -6,6 +6,26 @@ const _currencySymbols = {'GBP': '£', 'EUR': '€', 'USD': '\$'};
 
 String currencySymbol(String currencyCode) => _currencySymbols[currencyCode] ?? '$currencyCode ';
 
+/// ISO 3166-1 alpha-2 codes for the launch markets — a location's country
+/// is stored as this code.
+const supportedCountries = {'GB': 'United Kingdom', 'ES': 'Spain'};
+
+const _countryCurrencies = {'GB': 'GBP', 'ES': 'EUR'};
+
+String currencyForCountry(String countryCode) => _countryCurrencies[countryCode] ?? supportedCurrencies.first;
+
+final _postcodePatterns = {
+  // Outward code + inward code, space optional: "SW1A 1AA", "m11ae".
+  'GB': RegExp(r'^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$', caseSensitive: false),
+  // 5 digits, first two a province code 01-52.
+  'ES': RegExp(r'^(0[1-9]|[1-4][0-9]|5[0-2])[0-9]{3}$'),
+};
+
+bool isValidPostcode(String postcode, String countryCode) {
+  final pattern = _postcodePatterns[countryCode];
+  return pattern == null || pattern.hasMatch(postcode.trim());
+}
+
 class Business {
   const Business({
     required this.id,
@@ -14,6 +34,7 @@ class Business {
     this.phone,
     required this.currency,
     this.logoUrl,
+    this.isSetupComplete = false,
   });
 
   final String id;
@@ -23,6 +44,10 @@ class Business {
   final String currency;
   final String? logoUrl;
 
+  /// False until the owner finishes the onboarding wizard (details, a
+  /// service, a staff member) — the router keeps them in it until then.
+  final bool isSetupComplete;
+
   factory Business.fromRow(Map<String, dynamic> row) {
     return Business(
       id: row['id'] as String,
@@ -31,24 +56,47 @@ class Business {
       phone: row['phone'] as String?,
       currency: row['currency'] as String,
       logoUrl: row['logo_url'] as String?,
+      isSetupComplete: row['setup_completed_at'] != null,
     );
   }
 }
 
 class BusinessLocation {
-  const BusinessLocation({this.id, required this.addressLine, required this.city});
+  const BusinessLocation({
+    this.id,
+    required this.addressLine,
+    required this.city,
+    required this.postcode,
+    required this.country,
+  });
 
   final String? id;
   final String addressLine;
   final String city;
+  final String postcode;
+
+  /// ISO 3166-1 alpha-2, one of [supportedCountries].
+  final String country;
+
+  String get displayAddress => '$addressLine, $city $postcode';
 
   factory BusinessLocation.fromRow(Map<String, dynamic> row) {
     return BusinessLocation(
       id: row['id'] as String,
       addressLine: row['address_line'] as String,
       city: row['city'] as String,
+      postcode: row['postcode'] as String,
+      country: row['country'] as String,
     );
   }
+
+  Map<String, dynamic> toRow(String businessId) => {
+        'business_id': businessId,
+        'address_line': addressLine,
+        'city': city,
+        'postcode': postcode.trim().toUpperCase(),
+        'country': country,
+      };
 }
 
 /// Parses Postgres `time` values ("09:00:00") to/from [TimeOfDay].
@@ -76,6 +124,15 @@ class OpeningHours {
   final bool isClosed;
   final TimeOfDay? openTime;
   final TimeOfDay? closeTime;
+
+  /// Mirrors the opening_hours_valid_range DB constraint.
+  bool get hasValidRange {
+    if (isClosed) return true;
+    final open = openTime;
+    final close = closeTime;
+    if (open == null || close == null) return false;
+    return close.hour * 60 + close.minute > open.hour * 60 + open.minute;
+  }
 
   static const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 

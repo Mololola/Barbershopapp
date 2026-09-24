@@ -13,7 +13,11 @@ import '../application/business_controller.dart';
 import '../domain/business.dart';
 
 class StaffScreen extends ConsumerWidget {
-  const StaffScreen({super.key});
+  const StaffScreen({super.key, this.setupFooter});
+
+  /// Shown pinned to the bottom when this screen is a step of the
+  /// onboarding wizard (see BusinessSetupScreen).
+  final Widget? setupFooter;
 
   Future<void> _showAddWorkerDialog(BuildContext context, WidgetRef ref) async {
     final formKey = GlobalKey<FormState>();
@@ -173,6 +177,7 @@ class StaffScreen extends ConsumerWidget {
             tabs: [Tab(text: 'My Workforce'), Tab(text: 'Available Workers')],
           ),
         ),
+        bottomNavigationBar: setupFooter,
         floatingActionButton: FloatingActionButton(
           heroTag: null,
           onPressed: () => _showAddWorkerDialog(context, ref),

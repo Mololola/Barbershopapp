@@ -84,10 +84,7 @@ class BusinessRepository {
     }
     final business = Business.fromRow(businessRow);
 
-    await _client.from('locations').insert([
-      for (final location in locations)
-        {'business_id': business.id, 'address_line': location.addressLine, 'city': location.city},
-    ]);
+    await _client.from('locations').insert([for (final location in locations) location.toRow(business.id)]);
 
     await _client.from('opening_hours').insert([
       for (final hours in openingHours)
@@ -113,10 +110,13 @@ class BusinessRepository {
   /// or concurrent write path that would need real diffing.
   Future<void> updateLocations(String businessId, List<BusinessLocation> locations) async {
     await _client.from('locations').delete().eq('business_id', businessId);
-    await _client.from('locations').insert([
-      for (final location in locations)
-        {'business_id': businessId, 'address_line': location.addressLine, 'city': location.city},
-    ]);
+    await _client.from('locations').insert([for (final location in locations) location.toRow(businessId)]);
+  }
+
+  Future<void> markSetupComplete(String businessId) async {
+    await _client
+        .from('businesses')
+        .update({'setup_completed_at': DateTime.now().toUtc().toIso8601String()}).eq('id', businessId);
   }
 
   Future<void> updateLogoUrl(String businessId, String logoUrl) async {

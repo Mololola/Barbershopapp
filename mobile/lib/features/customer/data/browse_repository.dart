@@ -9,7 +9,7 @@ class BrowseRepository {
   final SupabaseClient _client;
 
   Future<List<PublicBusiness>> fetchBusinesses() async {
-    final rows = await _client.from('businesses_public').select().order('name');
+    final rows = await _client.from('businesses_public').select().eq('is_bookable', true).order('name');
     return rows.map(PublicBusiness.fromRow).toList();
   }
 

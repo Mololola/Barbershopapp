@@ -21,11 +21,15 @@ class SignUpScreen extends ConsumerStatefulWidget {
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
+  final _businessNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   AccountRole _role = AccountRole.customer;
   DateTime? _dateOfBirth;
   bool _agreedToTerms = false;
+  bool _attestedAdultOwner = false;
+
+  bool get _isBusiness => _role == AccountRole.business;
 
   bool get _isMinorSelected {
     final dob = _dateOfBirth;
@@ -72,6 +76,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   void dispose() {
     _usernameController.dispose();
+    _businessNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -79,9 +84,17 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final dob = _dateOfBirth;
-    if (dob == null) {
+    // A business account records no date of birth — only the owner's
+    // attestation, the least personal data that still keeps under-18s out
+    // of running a business (profiles_minor_role_check covers the rest).
+    final dob = _isBusiness ? null : _dateOfBirth;
+    if (!_isBusiness && dob == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Date of birth is required.')));
+      return;
+    }
+    if (_isBusiness && !_attestedAdultOwner) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Confirm you're 18 or over and authorised to register this business.")));
       return;
     }
     if (!_agreedToTerms) {
@@ -102,6 +115,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       role: _role,
       username: _usernameController.text.trim(),
       dateOfBirth: dob,
+      businessName: _isBusiness ? _businessNameController.text.trim() : null,
     );
 
     if (!mounted) return;
@@ -118,135 +132,176 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isOAuthCompletion ? 'Finish setting up your account' : 'Create account')),
+      appBar: AppBar(
+        title: Text(_isOAuthCompletion
+            ? 'Finish setting up your account'
+            : _isBusiness
+                ? 'Create business account'
+                : 'Create account'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
-          child: ListView(
-            children: [
-              SegmentedButton<AccountRole>(
-                segments: [
-                  const ButtonSegment(value: AccountRole.customer, label: Text('Customer')),
-                  // A minor can only ever be a customer account — see
-                  // profiles_minor_role_check.
-                  if (!_isMinorSelected)
-                    const ButtonSegment(value: AccountRole.business, label: Text('Business')),
+          child: SingleChildScrollView(
+            // Not a ListView: that unmounts off-screen fields, and Form.validate()
+            // silently skips unmounted ones.
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SegmentedButton<AccountRole>(
+                  segments: [
+                    const ButtonSegment(value: AccountRole.customer, label: Text('Customer')),
+                    // A minor can only ever be a customer account — see
+                    // profiles_minor_role_check.
+                    if (!_isMinorSelected)
+                      const ButtonSegment(value: AccountRole.business, label: Text('Business')),
+                  ],
+                  selected: {_role},
+                  onSelectionChanged: (selection) => setState(() => _role = selection.first),
+                ),
+                if (_isBusiness)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      "Step 1 of 2: your login. After confirming your email you'll set up your business — "
+                      'locations, opening hours, services and staff.',
+                      style: TextStyle(fontSize: 12.5),
+                    ),
+                  ),
+                if (_isBusiness && !_isOAuthCompletion) ...[
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _businessNameController,
+                    decoration: const InputDecoration(labelText: 'Business name'),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
+                  ),
                 ],
-                selected: {_role},
-                onSelectionChanged: (selection) => setState(() => _role = selection.first),
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: _pickDateOfBirth,
-                child: InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Date of birth'),
-                  child: Text(
-                    _dateOfBirth == null
-                        ? 'Select date'
-                        : '${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}',
+                if (!_isBusiness) ...[
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: _pickDateOfBirth,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(labelText: 'Date of birth'),
+                      child: Text(
+                        _dateOfBirth == null
+                            ? 'Select date'
+                            : '${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}',
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              if (_isMinorSelected)
-                const Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: Text(
-                    'Under 18 — messaging, posting, and business/worker features aren\'t available on your account.',
-                    style: TextStyle(fontSize: 12.5),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(labelText: 'Username', helperText: 'Must be unique — shown on rankings and posts'),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Required';
-                  if (value.trim().length < 3) return 'At least 3 characters';
-                  return null;
-                },
-              ),
-              if (!_isOAuthCompletion) ...[
+                  if (_isMinorSelected)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Under 18 — messaging, posting, and business/worker features aren\'t available on your account.',
+                        style: TextStyle(fontSize: 12.5),
+                      ),
+                    ),
+                ],
                 const SizedBox(height: 16),
                 TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _usernameController,
+                  decoration: _isBusiness
+                      ? const InputDecoration(labelText: 'Business handle', helperText: 'Must be unique — your @name on posts')
+                      : const InputDecoration(labelText: 'Username', helperText: 'Must be unique — shown on rankings and posts'),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) return 'Required';
-                    if (!value.contains('@')) return 'Enter a valid email';
+                    if (value.trim().length < 3) return 'At least 3 characters';
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Required';
-                    if (value.length < 6) return 'At least 6 characters';
-                    return null;
-                  },
-                ),
-              ],
-              const SizedBox(height: 8),
-              CheckboxListTile(
-                value: _agreedToTerms,
-                onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-                title: Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    const Text('I agree to the '),
-                    _LegalLink(label: 'Terms of Service', url: _termsOfServiceUrl),
-                    const Text(' and '),
-                    _LegalLink(label: 'Privacy Policy', url: _privacyPolicyUrl),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (authState.hasError)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    authState.error.toString(),
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                if (!_isOAuthCompletion) ...[
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return 'Required';
+                      if (!value.contains('@')) return 'Enter a valid email';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(labelText: 'Password'),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Required';
+                      if (value.length < 6) return 'At least 6 characters';
+                      return null;
+                    },
+                  ),
+                ],
+                const SizedBox(height: 8),
+                if (_isBusiness)
+                  CheckboxListTile(
+                    value: _attestedAdultOwner,
+                    onChanged: (value) => setState(() => _attestedAdultOwner = value ?? false),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text("I'm 18 or over and authorised to register this business"),
+                  ),
+                CheckboxListTile(
+                  value: _agreedToTerms,
+                  onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  title: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text('I agree to the '),
+                      _LegalLink(label: 'Terms of Service', url: _termsOfServiceUrl),
+                      const Text(' and '),
+                      _LegalLink(label: 'Privacy Policy', url: _privacyPolicyUrl),
+                    ],
                   ),
                 ),
-              FilledButton(
-                onPressed: authState.isLoading ? null : _submit,
-                child: authState.isLoading
-                    ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(_isOAuthCompletion ? 'Finish' : 'Sign up'),
-              ),
-              if (!_isOAuthCompletion) ...[
-                TextButton(
-                  onPressed: () => context.go('/sign-in'),
-                  child: const Text('Already have an account? Sign in'),
+                const SizedBox(height: 16),
+                if (authState.hasError)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      authState.error.toString(),
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    ),
+                  ),
+                FilledButton(
+                  onPressed: authState.isLoading ? null : _submit,
+                  child: authState.isLoading
+                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(_isOAuthCompletion ? 'Finish' : 'Sign up'),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('or')), Expanded(child: Divider())]),
-                ),
-                OutlinedButton.icon(
-                  onPressed: authState.isLoading
-                      ? null
-                      : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.google),
-                  icon: const Icon(Icons.g_mobiledata),
-                  label: const Text('Continue with Google'),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: authState.isLoading
-                      ? null
-                      : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.apple),
-                  icon: const Icon(Icons.apple),
-                  label: const Text('Continue with Apple'),
-                ),
+                if (!_isOAuthCompletion) ...[
+                  TextButton(
+                    onPressed: () => context.go('/sign-in'),
+                    child: const Text('Already have an account? Sign in'),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('or')), Expanded(child: Divider())]),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: authState.isLoading
+                        ? null
+                        : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.google),
+                    icon: const Icon(Icons.g_mobiledata),
+                    label: const Text('Continue with Google'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: authState.isLoading
+                        ? null
+                        : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.apple),
+                    icon: const Icon(Icons.apple),
+                    label: const Text('Continue with Apple'),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

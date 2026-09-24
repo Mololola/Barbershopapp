@@ -165,6 +165,13 @@ class LeaveRequestController extends AsyncNotifier<void> {
   }
 }
 
+/// The business name given at sign-up — kept as auth user metadata since
+/// the business row can't exist before a session does. Pre-fills the setup
+/// wizard's name field.
+final signUpBusinessNameProvider = Provider<String?>((ref) {
+  return ref.watch(supabaseClientProvider).auth.currentUser?.userMetadata?['business_name'] as String?;
+});
+
 final businessSetupControllerProvider =
     AsyncNotifierProvider<BusinessSetupController, void>(BusinessSetupController.new);
 
@@ -193,6 +200,16 @@ class BusinessSetupController extends AsyncNotifier<void> {
             openingHours: openingHours,
             referredByCode: referredByCode,
           );
+      ref.invalidate(currentBusinessProvider);
+    });
+  }
+
+  Future<void> completeSetup() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final business = await ref.read(currentBusinessProvider.future);
+      if (business == null) throw StateError('No business set up yet.');
+      await ref.read(businessRepositoryProvider).markSetupComplete(business.id);
       ref.invalidate(currentBusinessProvider);
     });
   }

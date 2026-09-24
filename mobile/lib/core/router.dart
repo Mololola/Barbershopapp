@@ -59,7 +59,7 @@ const _resetPasswordRoute = '/reset-password';
 String? resolveRedirect({
   required bool isAuthenticated,
   required Profile? profile,
-  required bool hasBusiness,
+  required bool isBusinessSetupComplete,
   required String? pendingReviewBookingId,
   required String location,
   bool passwordRecovery = false,
@@ -81,7 +81,7 @@ String? resolveRedirect({
     return _authRoutes.contains(location) ? null : '/sign-up';
   }
 
-  if (profile.role == AccountRole.business && !hasBusiness) {
+  if (profile.role == AccountRole.business && !isBusinessSetupComplete) {
     return location == _businessSetupRoute ? null : _businessSetupRoute;
   }
 
@@ -134,12 +134,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isAuthenticated = ref.read(supabaseClientProvider).auth.currentUser != null;
       final profile = ref.read(currentProfileProvider).value;
-      final hasBusiness = ref.read(currentBusinessProvider).value != null;
+      final isBusinessSetupComplete = ref.read(currentBusinessProvider).value?.isSetupComplete ?? false;
       final pendingReviewBookingId = ref.read(pendingReviewProvider).value?.id;
       return resolveRedirect(
         isAuthenticated: isAuthenticated,
         profile: profile,
-        hasBusiness: hasBusiness,
+        isBusinessSetupComplete: isBusinessSetupComplete,
         pendingReviewBookingId: pendingReviewBookingId,
         location: state.matchedLocation,
         passwordRecovery: ref.read(passwordRecoveryProvider),
