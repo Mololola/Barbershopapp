@@ -10,6 +10,7 @@ import '../application/business_controller.dart';
 import '../domain/business.dart';
 import 'finance_access_section.dart';
 import 'location_form_section.dart';
+import 'opening_hours_editor.dart';
 
 class BusinessEditScreen extends ConsumerStatefulWidget {
   const BusinessEditScreen({super.key});
@@ -22,6 +23,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
   final _formKey = GlobalKey<FormState>();
   File? _pickedLogo;
   List<LocationFields>? _locations;
+  List<OpeningHours>? _hours;
 
   @override
   void dispose() {
@@ -44,10 +46,18 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
 
   Future<void> _save() async {
     final locations = _locations;
-    if (locations == null || !_formKey.currentState!.validate()) return;
-    final success = await ref
-        .read(businessEditControllerProvider.notifier)
-        .save(logoImage: _pickedLogo, locations: [for (final l in locations) l.toLocation()]);
+    final hours = _hours;
+    if (locations == null || hours == null || !_formKey.currentState!.validate()) return;
+    if (!hours.every((day) => day.hasValidRange)) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Fix the highlighted opening hours before saving.')));
+      return;
+    }
+    final success = await ref.read(businessEditControllerProvider.notifier).save(
+          logoImage: _pickedLogo,
+          locations: [for (final l in locations) l.toLocation()],
+          hours: hours,
+        );
     if (!mounted) return;
     if (success) setState(() => _pickedLogo = null);
   }
@@ -56,6 +66,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
   Widget build(BuildContext context) {
     final business = ref.watch(currentBusinessProvider).value;
     final locations = ref.watch(locationsProvider);
+    final storedHours = ref.watch(openingHoursProvider);
     final editState = ref.watch(businessEditControllerProvider);
 
     return Scaffold(
@@ -66,8 +77,11 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
           loading: () => const LoadingView(),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (existingLocations) {
+            if (!storedHours.hasValue) return const LoadingView();
             _seedLocationsIfNeeded(existingLocations);
+            _hours ??= OpeningHours.fullWeek(storedHours.value!);
             final fields = _locations!;
+            final hours = _hours!;
 
             return Form(
               key: _formKey,
@@ -98,6 +112,9 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
                     ),
                     const SizedBox(height: 24),
                     LocationFormSection(locations: fields, onChanged: () => setState(() {})),
+                    const SizedBox(height: 24),
+                    Text('Opening hours', style: Theme.of(context).textTheme.titleMedium),
+                    OpeningHoursEditor(hours: hours, onChanged: (i, day) => setState(() => hours[i] = day)),
                     const SizedBox(height: 16),
                     if (editState.hasError)
                       Padding(

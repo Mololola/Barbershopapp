@@ -335,7 +335,7 @@ class _HoursCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      h.isClosed ? 'Closed' : '${h.openTime?.format(context)} – ${h.closeTime?.format(context)}',
+                      h.format(context),
                       style: TextStyle(
                         fontWeight: h.dayOfWeek == today ? FontWeight.w700 : FontWeight.w400,
                       ),

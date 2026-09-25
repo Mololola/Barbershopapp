@@ -134,17 +134,18 @@ class StaffScreen extends ConsumerWidget {
                         });
                         return;
                       }
-                      try {
-                        await ref
-                            .read(workerControllerProvider.notifier)
-                            .inviteWorker(matches.first.profileId);
-                        if (context.mounted) Navigator.pop(context);
-                      } catch (error) {
+                      // inviteWorker reports failure through the controller's
+                      // state (AsyncValue.guard), not by throwing.
+                      await ref.read(workerControllerProvider.notifier).inviteWorker(matches.first.profileId);
+                      final result = ref.read(workerControllerProvider);
+                      if (result.hasError) {
                         setDialogState(() {
                           isSubmitting = false;
-                          errorText = error.toString();
+                          errorText = result.error.toString();
                         });
+                        return;
                       }
+                      if (context.mounted) Navigator.pop(context);
                     },
               child: isSubmitting
                   ? const SizedBox(
@@ -286,6 +287,33 @@ class _WorkforceTile extends ConsumerWidget {
   final Worker worker;
   final WorkerLeaveRequest? leaveRequest;
 
+  Future<void> _confirmRemove(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Remove ${worker.name} from your staff?'),
+        content: const Text("Customers won't be able to book with them. Their past bookings and history are kept."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    // Captured now: on success this tile leaves the list and unmounts.
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(workerControllerProvider.notifier).removeWorker(worker.id!);
+    final result = ref.read(workerControllerProvider);
+    if (result.hasError) messenger.showSnackBar(SnackBar(content: Text(result.error.toString())));
+  }
+
+  Future<void> _acknowledgeLeave(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(leaveRequestControllerProvider.notifier).acknowledge(leaveRequest!);
+    final result = ref.read(leaveRequestControllerProvider);
+    if (result.hasError) messenger.showSnackBar(SnackBar(content: Text(result.error.toString())));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actionState = ref.watch(leaveRequestControllerProvider);
@@ -304,7 +332,7 @@ class _WorkforceTile extends ConsumerWidget {
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Remove from staff',
-            onPressed: () => ref.read(workerControllerProvider.notifier).removeWorker(worker.id!),
+            onPressed: () => _confirmRemove(context, ref),
           ),
           onTap: worker.id == null
               ? null
@@ -343,8 +371,7 @@ class _WorkforceTile extends ConsumerWidget {
                       style: FilledButton.styleFrom(backgroundColor: AppColors.rust),
                       onPressed: actionState.isLoading
                           ? null
-                          : () =>
-                              ref.read(leaveRequestControllerProvider.notifier).acknowledge(leaveRequest!),
+                          : () => _acknowledgeLeave(context, ref),
                       child: const Text('Acknowledge'),
                     ),
                   ],

@@ -17,6 +17,21 @@ class AlreadyInvitedException implements Exception {
   String toString() => "You already have a pending invitation out to this worker.";
 }
 
+/// A change to the staff the database refused for a business reason — the
+/// message is written for the user (see the migration's BB00x triggers):
+/// a worker with upcoming bookings can't be taken off the staff, and
+/// someone already on it can't be invited again.
+class StaffChangeBlockedException implements Exception {
+  const StaffChangeBlockedException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+const _staffGuardCodes = {'BB001', 'BB002'};
+
 class BusinessRepository {
   BusinessRepository(this._client);
 
@@ -24,6 +39,15 @@ class BusinessRepository {
   static const _uniqueViolation = '23505';
 
   final SupabaseClient _client;
+
+  Future<void> _guardStaffChange(Future<void> Function() change) async {
+    try {
+      await change();
+    } on PostgrestException catch (e) {
+      if (_staffGuardCodes.contains(e.code)) throw StaffChangeBlockedException(e.message);
+      rethrow;
+    }
+  }
 
   Future<BusinessSubscription?> fetchSubscription(String businessId) async {
     final row = await _client
@@ -73,6 +97,9 @@ class BusinessRepository {
             'phone': phone,
             'currency': currency,
             'referred_by_code': referredByCode,
+            // Hours are per business, so the first location's zone is the
+            // business's — see the businesses_time_zone_check migration.
+            'time_zone': locations.first.timeZone,
           })
           .select()
           .single();
@@ -87,14 +114,7 @@ class BusinessRepository {
     await _client.from('locations').insert([for (final location in locations) location.toRow(business.id)]);
 
     await _client.from('opening_hours').insert([
-      for (final hours in openingHours)
-        {
-          'business_id': business.id,
-          'day_of_week': hours.dayOfWeek,
-          'is_closed': hours.isClosed,
-          'open_time': timeOfDayToSql(hours.openTime),
-          'close_time': timeOfDayToSql(hours.closeTime),
-        },
+      for (final hours in openingHours) {'business_id': business.id, ...hours.toRow()},
     ]);
 
     return business;
@@ -111,6 +131,14 @@ class BusinessRepository {
   Future<void> updateLocations(String businessId, List<BusinessLocation> locations) async {
     await _client.from('locations').delete().eq('business_id', businessId);
     await _client.from('locations').insert([for (final location in locations) location.toRow(businessId)]);
+    await _client.from('businesses').update({'time_zone': locations.first.timeZone}).eq('id', businessId);
+  }
+
+  Future<void> updateOpeningHours(String businessId, List<OpeningHours> hours) async {
+    await _client.from('opening_hours').upsert(
+      [for (final h in hours) {'business_id': businessId, ...h.toRow()}],
+      onConflict: 'business_id,day_of_week',
+    );
   }
 
   Future<void> markSetupComplete(String businessId) async {
@@ -137,16 +165,7 @@ class BusinessRepository {
   /// saved here, these rows are authoritative for that worker.
   Future<void> updateWorkerSchedule(String workerId, List<OpeningHours> hours) async {
     await _client.from('worker_schedules').upsert(
-      [
-        for (final h in hours)
-          {
-            'worker_id': workerId,
-            'day_of_week': h.dayOfWeek,
-            'is_closed': h.isClosed,
-            'open_time': timeOfDayToSql(h.openTime),
-            'close_time': timeOfDayToSql(h.closeTime),
-          },
-      ],
+      [for (final h in hours) {'worker_id': workerId, ...h.toRow()}],
       onConflict: 'worker_id,day_of_week',
     );
   }
@@ -203,11 +222,14 @@ class BusinessRepository {
     await _client.from('business_cost_items').delete().eq('id', costItemId);
   }
 
+  /// Current staff only — removed workers and ones who've left keep their
+  /// (inactive) row for history, but aren't staff anymore.
   Future<List<Worker>> fetchWorkers(String businessId) async {
     final rows = await _client
         .from('workers')
         .select()
         .eq('business_id', businessId)
+        .eq('is_active', true)
         .order('created_at');
     return rows.map(Worker.fromRow).toList();
   }
@@ -224,8 +246,9 @@ class BusinessRepository {
   /// leaveCurrentJob (worker_repository.dart): keeps the employment history
   /// around so "shops worked at" stays a truthful count for this person
   /// across every business, not just whoever hasn't fired them yet.
+  /// Throws [StaffChangeBlockedException] while they have upcoming bookings.
   Future<void> removeWorker(String workerId) async {
-    await _client.from('workers').update({'is_active': false}).eq('id', workerId);
+    await _guardStaffChange(() => _client.from('workers').update({'is_active': false}).eq('id', workerId));
   }
 
   /// Looked up by real (legal) name, not account username — per-field
@@ -336,11 +359,11 @@ class BusinessRepository {
     required String workerProfileId,
   }) async {
     try {
-      await _client.from('worker_invitations').insert({
-        'business_id': businessId,
-        'business_name': businessName,
-        'worker_profile_id': workerProfileId,
-      });
+      await _guardStaffChange(() => _client.from('worker_invitations').insert({
+            'business_id': businessId,
+            'business_name': businessName,
+            'worker_profile_id': workerProfileId,
+          }));
     } on PostgrestException catch (e) {
       if (e.code == _uniqueViolation) throw AlreadyInvitedException();
       rethrow;
@@ -371,12 +394,17 @@ class BusinessRepository {
   /// The worker doesn't actually leave until this runs — resolving the
   /// request and deactivating the `workers` row together, not on the
   /// worker's own say-so (see requestLeave in worker_repository.dart).
+  /// Deactivates the worker first: that's the step that can be refused
+  /// (upcoming bookings — [StaffChangeBlockedException]), and doing it first
+  /// means a refusal leaves the request pending rather than marked done
+  /// while they're still on staff. Safe to retry — deactivating an already
+  /// inactive row is a no-op.
   Future<void> acknowledgeLeaveRequest(WorkerLeaveRequest request) async {
+    await removeWorker(request.workerId);
     await _client.from('worker_leave_requests').update({
       'status': 'acknowledged',
       'resolved_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', request.id);
-    await _client.from('workers').update({'is_active': false}).eq('id', request.workerId);
   }
 
   /// A misclick, or the shop isn't ready to let them go — resolves the

@@ -26,6 +26,17 @@ bool isValidPostcode(String postcode, String countryCode) {
   return pattern == null || pattern.hasMatch(postcode.trim());
 }
 
+/// IANA zone a shop's opening hours are wall-clock times in — must be one
+/// the businesses_time_zone_check DB constraint allows. The Canary Islands
+/// (postcodes 35xxx, 38xxx) run an hour behind mainland Spain.
+String timeZoneForLocation(String countryCode, String postcode) {
+  if (countryCode == 'ES') {
+    final province = postcode.trim().length >= 2 ? postcode.trim().substring(0, 2) : '';
+    return province == '35' || province == '38' ? 'Atlantic/Canary' : 'Europe/Madrid';
+  }
+  return 'Europe/London';
+}
+
 class Business {
   const Business({
     required this.id,
@@ -90,6 +101,8 @@ class BusinessLocation {
     );
   }
 
+  String get timeZone => timeZoneForLocation(country, postcode);
+
   Map<String, dynamic> toRow(String businessId) => {
         'business_id': businessId,
         'address_line': addressLine,
@@ -111,12 +124,18 @@ String? timeOfDayToSql(TimeOfDay? value) {
   return '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}:00';
 }
 
+int _minutes(TimeOfDay time) => time.hour * 60 + time.minute;
+
+/// One day of a shop's hours or a worker's schedule, with an optional break
+/// (a lunch break, a split "jornada partida") splitting it in two.
 class OpeningHours {
   const OpeningHours({
     required this.dayOfWeek,
     required this.isClosed,
     this.openTime,
     this.closeTime,
+    this.breakStart,
+    this.breakEnd,
   });
 
   /// 0 = Monday .. 6 = Sunday
@@ -124,14 +143,33 @@ class OpeningHours {
   final bool isClosed;
   final TimeOfDay? openTime;
   final TimeOfDay? closeTime;
+  final TimeOfDay? breakStart;
+  final TimeOfDay? breakEnd;
 
-  /// Mirrors the opening_hours_valid_range DB constraint.
+  bool get hasBreak => breakStart != null && breakEnd != null;
+
+  /// Mirrors the opening_hours_valid_range / worker_schedules_valid_range
+  /// DB constraints: closing after opening, and a break (both ends or
+  /// neither) strictly inside them.
   bool get hasValidRange {
     if (isClosed) return true;
     final open = openTime;
     final close = closeTime;
-    if (open == null || close == null) return false;
-    return close.hour * 60 + close.minute > open.hour * 60 + open.minute;
+    if (open == null || close == null || _minutes(close) <= _minutes(open)) return false;
+    final start = breakStart;
+    final end = breakEnd;
+    if (start == null && end == null) return true;
+    if (start == null || end == null) return false;
+    return _minutes(start) > _minutes(open) && _minutes(end) > _minutes(start) && _minutes(close) > _minutes(end);
+  }
+
+  /// "Closed", "09:00 – 18:00", or "09:00 – 13:30, 16:00 – 20:00".
+  String format(BuildContext context, {String closedLabel = 'Closed'}) {
+    if (isClosed) return closedLabel;
+    final open = openTime?.format(context);
+    final close = closeTime?.format(context);
+    if (!hasBreak) return '$open – $close';
+    return '$open – ${breakStart!.format(context)}, ${breakEnd!.format(context)} – $close';
   }
 
   static const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -142,6 +180,21 @@ class OpeningHours {
       isClosed: isClosed ?? this.isClosed,
       openTime: openTime ?? this.openTime,
       closeTime: closeTime ?? this.closeTime,
+      breakStart: breakStart,
+      breakEnd: breakEnd,
+    );
+  }
+
+  /// Separate from [copyWith] because removing the break means setting
+  /// both ends to null, which copyWith's `??` can't express.
+  OpeningHours withBreak(TimeOfDay? start, TimeOfDay? end) {
+    return OpeningHours(
+      dayOfWeek: dayOfWeek,
+      isClosed: isClosed,
+      openTime: openTime,
+      closeTime: closeTime,
+      breakStart: start,
+      breakEnd: end,
     );
   }
 
@@ -151,7 +204,29 @@ class OpeningHours {
       isClosed: row['is_closed'] as bool,
       openTime: timeOfDayFromSql(row['open_time'] as String?),
       closeTime: timeOfDayFromSql(row['close_time'] as String?),
+      breakStart: timeOfDayFromSql(row['break_start'] as String?),
+      breakEnd: timeOfDayFromSql(row['break_end'] as String?),
     );
+  }
+
+  /// The day's columns for an opening_hours or worker_schedules row — the
+  /// caller adds the owning business_id / worker_id.
+  Map<String, dynamic> toRow() => {
+        'day_of_week': dayOfWeek,
+        'is_closed': isClosed,
+        'open_time': timeOfDayToSql(openTime),
+        'close_time': timeOfDayToSql(closeTime),
+        // A closed day keeps no break, or a later re-open would resurrect it.
+        'break_start': isClosed ? null : timeOfDayToSql(breakStart),
+        'break_end': isClosed ? null : timeOfDayToSql(breakEnd),
+      };
+
+  /// The editable 7-day week for stored rows: [defaultWeek] when nothing's
+  /// been saved yet, otherwise the saved days with any missing one closed.
+  static List<OpeningHours> fullWeek(List<OpeningHours> stored) {
+    if (stored.isEmpty) return defaultWeek();
+    final byDay = {for (final h in stored) h.dayOfWeek: h};
+    return [for (var day = 0; day < 7; day++) byDay[day] ?? OpeningHours(dayOfWeek: day, isClosed: true)];
   }
 
   static List<OpeningHours> defaultWeek() {

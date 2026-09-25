@@ -1,4 +1,5 @@
 import datetime
+from zoneinfo import ZoneInfo
 
 import psycopg
 from fastapi import status
@@ -44,28 +45,28 @@ def test_slot_in_the_past_is_rejected():
     start = _NOW - datetime.timedelta(hours=1)
     end = start + datetime.timedelta(minutes=30)
 
-    assert _slot_rejection_reason(start, end, _OPEN_HOURS, _NOW) == "Cannot book a time in the past"
+    assert _slot_rejection_reason(start, end, _OPEN_HOURS, _NOW, datetime.UTC) == "Cannot book a time in the past"
 
 
 def test_slot_within_open_hours_is_accepted():
     start = datetime.datetime(2026, 7, 27, 10, 0, tzinfo=datetime.UTC)
     end = start + datetime.timedelta(minutes=30)
 
-    assert _slot_rejection_reason(start, end, _OPEN_HOURS, _NOW) is None
+    assert _slot_rejection_reason(start, end, _OPEN_HOURS, _NOW, datetime.UTC) is None
 
 
 def test_slot_before_opening_is_rejected():
     start = datetime.datetime(2026, 7, 27, 8, 30, tzinfo=datetime.UTC)
     end = start + datetime.timedelta(minutes=30)
 
-    assert _slot_rejection_reason(start, end, _OPEN_HOURS, _NOW) == "Outside business hours"
+    assert _slot_rejection_reason(start, end, _OPEN_HOURS, _NOW, datetime.UTC) == "Outside business hours"
 
 
 def test_slot_ending_after_closing_is_rejected():
     start = datetime.datetime(2026, 7, 27, 17, 45, tzinfo=datetime.UTC)
     end = start + datetime.timedelta(minutes=30)
 
-    assert _slot_rejection_reason(start, end, _OPEN_HOURS, _NOW) == "Outside business hours"
+    assert _slot_rejection_reason(start, end, _OPEN_HOURS, _NOW, datetime.UTC) == "Outside business hours"
 
 
 def test_slot_on_a_closed_day_is_rejected():
@@ -73,4 +74,35 @@ def test_slot_on_a_closed_day_is_rejected():
     start = datetime.datetime(2026, 7, 27, 10, 0, tzinfo=datetime.UTC)
     end = start + datetime.timedelta(minutes=30)
 
-    assert _slot_rejection_reason(start, end, closed, _NOW) == "Outside business hours"
+    assert _slot_rejection_reason(start, end, closed, _NOW, datetime.UTC) == "Outside business hours"
+
+
+def test_slot_inside_a_break_is_rejected():
+    with_break = {**_OPEN_HOURS, "break_start": datetime.time(13, 0), "break_end": datetime.time(14, 0)}
+    start = datetime.datetime(2026, 7, 27, 12, 45, tzinfo=datetime.UTC)
+    end = start + datetime.timedelta(minutes=30)
+
+    assert _slot_rejection_reason(start, end, with_break, _NOW, datetime.UTC) == "Outside business hours"
+
+
+def test_slot_after_a_break_is_accepted():
+    with_break = {**_OPEN_HOURS, "break_start": datetime.time(13, 0), "break_end": datetime.time(14, 0)}
+    start = datetime.datetime(2026, 7, 27, 14, 0, tzinfo=datetime.UTC)
+    end = start + datetime.timedelta(minutes=30)
+
+    assert _slot_rejection_reason(start, end, with_break, _NOW, datetime.UTC) is None
+
+
+def test_opening_hours_are_checked_in_the_shops_local_time():
+    london = ZoneInfo("Europe/London")
+    # 08:00 UTC is 09:00 in London in July: opening time, so bookable.
+    start = datetime.datetime(2026, 7, 27, 8, 0, tzinfo=datetime.UTC)
+    end = start + datetime.timedelta(minutes=30)
+    now = datetime.datetime(2026, 7, 27, 6, 0, tzinfo=datetime.UTC)
+
+    assert _slot_rejection_reason(start, end, _OPEN_HOURS, now, london) is None
+    # 17:45 UTC is 18:45 in London — after closing.
+    late = datetime.datetime(2026, 7, 27, 17, 45, tzinfo=datetime.UTC)
+    assert _slot_rejection_reason(late, late + datetime.timedelta(minutes=30), _OPEN_HOURS, now, london) == (
+        "Outside business hours"
+    )

@@ -51,8 +51,7 @@ class BusinessDetailScreen extends ConsumerWidget {
               children: [
                 for (final h in list)
                   Text(
-                    '${OpeningHours.dayNames[h.dayOfWeek]}: '
-                    '${h.isClosed ? 'Closed' : '${h.openTime?.format(context)} – ${h.closeTime?.format(context)}'}',
+                    '${OpeningHours.dayNames[h.dayOfWeek]}: ${h.format(context)}',
                   ),
               ],
             ),

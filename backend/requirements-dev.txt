@@ -129,6 +129,7 @@ typing-inspection==0.4.3
     #   pydantic-settings
 tzdata==2026.3
     # via
+    #   barbershop-backend (pyproject.toml)
     #   psycopg
     #   tzlocal
 tzlocal==5.4.4

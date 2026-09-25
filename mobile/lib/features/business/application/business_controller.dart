@@ -396,6 +396,11 @@ class WorkerController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       final business = await ref.read(currentBusinessProvider.future);
       if (business == null) throw StateError('No business set up yet.');
+      // Friendly early answer; the DB trigger enforces it regardless.
+      final staff = await ref.read(workersProvider.future);
+      if (staff.any((worker) => worker.profileId == workerProfileId)) {
+        throw const StaffChangeBlockedException("They're already on your staff.");
+      }
       await ref.read(businessRepositoryProvider).createInvitation(
             businessId: business.id,
             businessName: business.name,
@@ -413,7 +418,11 @@ class BusinessEditController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<bool> save({File? logoImage, required List<BusinessLocation> locations}) async {
+  Future<bool> save({
+    File? logoImage,
+    required List<BusinessLocation> locations,
+    required List<OpeningHours> hours,
+  }) async {
     state = const AsyncLoading();
     var success = false;
     state = await AsyncValue.guard(() async {
@@ -428,9 +437,11 @@ class BusinessEditController extends AsyncNotifier<void> {
         await ref.read(businessRepositoryProvider).updateLogoUrl(business.id, url);
       }
       await ref.read(businessRepositoryProvider).updateLocations(business.id, locations);
+      await ref.read(businessRepositoryProvider).updateOpeningHours(business.id, hours);
 
       ref.invalidate(currentBusinessProvider);
       ref.invalidate(locationsProvider);
+      ref.invalidate(openingHoursProvider);
       ref.invalidate(currentProfileProvider);
       await ref.read(currentBusinessProvider.future);
       success = true;

@@ -5,6 +5,7 @@ import '../../../core/loading.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 import 'location_form_section.dart';
+import 'opening_hours_editor.dart';
 import 'services_screen.dart';
 import 'staff_screen.dart';
 
@@ -147,24 +148,13 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
     super.dispose();
   }
 
-  Future<void> _pickTime(int dayIndex, {required bool isOpenTime}) async {
-    final current = isOpenTime ? _hours[dayIndex].openTime : _hours[dayIndex].closeTime;
-    final picked = await showTimePicker(context: context, initialTime: current ?? TimeOfDay.now());
-    if (picked == null) return;
-    setState(() {
-      _hours[dayIndex] = isOpenTime
-          ? _hours[dayIndex].copyWith(openTime: picked)
-          : _hours[dayIndex].copyWith(closeTime: picked);
-    });
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final invalidDay = _hours.where((hours) => !hours.hasValidRange).firstOrNull;
     if (invalidDay != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${OpeningHours.dayNames[invalidDay.dayOfWeek]}: closing time must be after opening time.'),
+          content: Text('Check ${OpeningHours.dayNames[invalidDay.dayOfWeek]}\'s opening hours.'),
         ),
       );
       return;
@@ -248,38 +238,7 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
                 ),
                 const SizedBox(height: 24),
                 Text('Opening hours', style: Theme.of(context).textTheme.titleMedium),
-                for (var i = 0; i < _hours.length; i++)
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(child: Text(OpeningHours.dayNames[i])),
-                          if (_hours[i].isClosed) const Text('Closed'),
-                          Switch(
-                            value: !_hours[i].isClosed,
-                            onChanged: (open) => setState(() => _hours[i] = _hours[i].copyWith(isClosed: !open)),
-                          ),
-                        ],
-                      ),
-                      // Own line rather than beside the day name: day + switch
-                      // + two time buttons overflow a phone-width screen.
-                      if (!_hours[i].isClosed)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () => _pickTime(i, isOpenTime: true),
-                              child: Text(_hours[i].openTime?.format(context) ?? 'Start'),
-                            ),
-                            const Text('–'),
-                            TextButton(
-                              onPressed: () => _pickTime(i, isOpenTime: false),
-                              child: Text(_hours[i].closeTime?.format(context) ?? 'End'),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
+                OpeningHoursEditor(hours: _hours, onChanged: (i, day) => setState(() => _hours[i] = day)),
                 const SizedBox(height: 24),
                 if (setupState.hasError)
                   Padding(

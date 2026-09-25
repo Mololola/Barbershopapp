@@ -18,6 +18,10 @@ void main() {
   }
 
   testWidgets('renders all 7 days, seeded from an empty schedule', (tester) async {
+    // Phone width and tall enough to lay out the whole week — also guards
+    // the day rows against overflowing a phone screen.
+    tester.view.physicalSize = const Size(1080, 8000);
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 

@@ -33,7 +33,7 @@ const _candidate = WorkerSearchResult(
 void main() {
   const worker = Worker(id: 'w1', businessId: 'biz-1', name: 'Jane Doe');
 
-  Widget buildTestable() {
+  Widget buildTestable({List<Worker> staff = const [worker]}) {
     final router = GoRouter(
       initialLocation: '/business/staff',
       routes: [
@@ -51,7 +51,7 @@ void main() {
     );
     return ProviderScope(
       overrides: [
-        workersProvider.overrideWith((ref) async => [worker]),
+        workersProvider.overrideWith((ref) async => staff),
         sentInvitationsProvider.overrideWith((ref) async => <WorkerInvitation>[]),
         pendingLeaveRequestsProvider.overrideWith((ref) async => []),
         marketplaceControllerProvider.overrideWith(_FakeMarketplaceController.new),
@@ -81,5 +81,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Send invite'), findsOneWidget);
+  });
+
+  testWidgets('removing a staff member asks for confirmation first', (tester) async {
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Remove from staff'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Remove Jane Doe from your staff?'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Remove Jane Doe from your staff?'), findsNothing);
+    expect(find.text('Jane Doe'), findsOneWidget);
+  });
+
+  testWidgets('a candidate already on the staff cannot be invited again', (tester) async {
+    await tester.pumpWidget(buildTestable(staff: [
+      worker,
+      Worker(id: 'w2', businessId: 'biz-1', name: 'Mike Smith', profileId: _candidate.profileId),
+    ]));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Available Workers'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mike Smith').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Already on your staff'), findsOneWidget);
+    expect(find.text('Send invite'), findsNothing);
   });
 }

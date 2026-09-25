@@ -35,6 +35,8 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
         .where((inv) => inv.workerProfileId == candidate.profileId && inv.status == InvitationStatus.pending)
         .firstOrNull;
     final pinnedPosts = ref.watch(pinnedPostsProvider(candidate.profileId));
+    final isOnStaff =
+        ref.watch(workersProvider).value?.any((worker) => worker.profileId == candidate.profileId) ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text(candidate.legalFullName)),
@@ -108,12 +110,16 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
               ),
             ),
           FilledButton(
-            onPressed: (actionState.isLoading || pendingInvitation != null)
+            onPressed: (actionState.isLoading || pendingInvitation != null || isOnStaff)
                 ? null
                 : () => _sendInvite(context, ref),
             child: actionState.isLoading
                 ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(pendingInvitation != null ? 'Invitation sent — awaiting response' : 'Send invite'),
+                : Text(isOnStaff
+                    ? 'Already on your staff'
+                    : pendingInvitation != null
+                        ? 'Invitation sent — awaiting response'
+                        : 'Send invite'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(

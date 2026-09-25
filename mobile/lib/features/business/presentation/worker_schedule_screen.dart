@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/loading.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
+import 'opening_hours_editor.dart';
 
 class WorkerScheduleScreen extends ConsumerStatefulWidget {
   const WorkerScheduleScreen({super.key, required this.workerId, required this.workerName});
@@ -19,29 +20,17 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
   List<OpeningHours>? _hours;
 
   void _seedIfNeeded(List<OpeningHours> existing) {
-    if (_hours != null) return;
-    if (existing.isEmpty) {
-      _hours = OpeningHours.defaultWeek();
-      return;
-    }
-    final byDay = {for (final h in existing) h.dayOfWeek: h};
-    _hours = [for (var day = 0; day < 7; day++) byDay[day] ?? OpeningHours(dayOfWeek: day, isClosed: true)];
-  }
-
-  Future<void> _pickTime(int dayIndex, {required bool isOpenTime}) async {
-    final current = isOpenTime ? _hours![dayIndex].openTime : _hours![dayIndex].closeTime;
-    final picked = await showTimePicker(context: context, initialTime: current ?? TimeOfDay.now());
-    if (picked == null) return;
-    setState(() {
-      _hours![dayIndex] = isOpenTime
-          ? _hours![dayIndex].copyWith(openTime: picked)
-          : _hours![dayIndex].copyWith(closeTime: picked);
-    });
+    _hours ??= OpeningHours.fullWeek(existing);
   }
 
   Future<void> _save() async {
     final hours = _hours;
     if (hours == null) return;
+    if (!hours.every((day) => day.hasValidRange)) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Fix the highlighted days before saving.')));
+      return;
+    }
     await ref.read(workerScheduleControllerProvider.notifier).save(widget.workerId, hours);
   }
 
@@ -68,28 +57,11 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
-                for (var i = 0; i < hours.length; i++)
-                  Row(
-                    children: [
-                      SizedBox(width: 100, child: Text(OpeningHours.dayNames[i])),
-                      Switch(
-                        value: !hours[i].isClosed,
-                        onChanged: (open) => setState(() => hours[i] = hours[i].copyWith(isClosed: !open)),
-                      ),
-                      if (!hours[i].isClosed) ...[
-                        TextButton(
-                          onPressed: () => _pickTime(i, isOpenTime: true),
-                          child: Text(hours[i].openTime?.format(context) ?? 'Start'),
-                        ),
-                        const Text('–'),
-                        TextButton(
-                          onPressed: () => _pickTime(i, isOpenTime: false),
-                          child: Text(hours[i].closeTime?.format(context) ?? 'End'),
-                        ),
-                      ] else
-                        const Text('Off'),
-                    ],
-                  ),
+                OpeningHoursEditor(
+                  hours: hours,
+                  closedLabel: 'Off',
+                  onChanged: (i, day) => setState(() => hours[i] = day),
+                ),
                 const SizedBox(height: 24),
                 if (saveState.hasError)
                   Padding(

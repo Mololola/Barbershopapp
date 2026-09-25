@@ -23,6 +23,7 @@ void main() {
       overrides: [
         currentBusinessProvider.overrideWith((ref) async => business),
         locationsProvider.overrideWith((ref) async => <BusinessLocation>[]),
+        openingHoursProvider.overrideWith((ref) async => <OpeningHours>[]),
         servicesProvider.overrideWith((ref) async => <Service>[]),
         workersProvider.overrideWith((ref) async => <Worker>[]),
         sentInvitationsProvider.overrideWith((ref) async => <WorkerInvitation>[]),
@@ -35,12 +36,26 @@ void main() {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Manage services'), 300, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('Manage services'));
     await tester.pumpAndSettle();
 
     expect(find.text('No services yet — add your first one.'), findsOneWidget);
+  });
+
+  testWidgets('edits opening hours, including adding a break', (tester) async {
+    tester.view.physicalSize = const Size(1080, 8000);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Opening hours'), findsOneWidget);
+    expect(find.text('Break'), findsNothing);
+
+    await tester.tap(find.text('Add break').first);
+    await tester.pump();
+
+    expect(find.text('Break'), findsOneWidget);
   });
 
   testWidgets('does not offer a "Manage staff" shortcut (Staff has its own bottom-nav tab)', (tester) async {

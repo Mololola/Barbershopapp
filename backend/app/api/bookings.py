@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from zoneinfo import ZoneInfo
 
 import psycopg
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,7 +14,7 @@ from app.core.cache import cache
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 from app.models import Booking, Service, Worker
-from app.services.availability import compute_available_slots
+from app.services.availability import compute_available_slots, working_periods
 
 router = APIRouter()
 
@@ -65,22 +66,45 @@ def _get_active_worker(db: Session, business_id: uuid.UUID, worker_id: uuid.UUID
     return worker
 
 
-def _get_opening_hours(db: Session, business_id: uuid.UUID, day_of_week: int) -> dict | None:
-    # Cached: businesses set their hours and rarely touch them again, but
-    # this is read once per get_availability call and again per active
-    # worker inside it (see _effective_hours' caller) — the single highest-
-    # amplification read on the app's most frequently hit endpoint.
-    def fetch() -> dict | None:
-        row = db.execute(
-            text(
-                "select is_closed, open_time, close_time from opening_hours "
-                "where business_id = :business_id and day_of_week = :day_of_week"
-            ),
-            {"business_id": business_id, "day_of_week": day_of_week},
-        ).mappings().first()
-        return dict(row) if row else None
+# Each of these three reads has an uncached _query_* form and a cached
+# _get_* form. get_availability uses the cached ones; create_booking
+# deliberately doesn't — the app writes hours straight to Supabase, so the
+# backend can't invalidate on change, and a booking accepted against
+# up-to-5-minute-old hours could land inside a break the shop just added.
+# A stale availability list is harmless (create_booking rechecks); a stale
+# booking check isn't.
 
-    return cache.get_or_set(f"opening_hours:{business_id}:{day_of_week}", fetch)
+
+def _query_opening_hours(db: Session, business_id: uuid.UUID, day_of_week: int) -> dict | None:
+    row = db.execute(
+        text(
+            "select is_closed, open_time, close_time, break_start, break_end from opening_hours "
+            "where business_id = :business_id and day_of_week = :day_of_week"
+        ),
+        {"business_id": business_id, "day_of_week": day_of_week},
+    ).mappings().first()
+    return dict(row) if row else None
+
+
+def _get_opening_hours(db: Session, business_id: uuid.UUID, day_of_week: int) -> dict | None:
+    # Cached: this is read once per get_availability call and again per
+    # active worker inside it (see _effective_hours' caller) — the single
+    # highest-amplification read on the app's most frequently hit endpoint.
+    return cache.get_or_set(
+        f"opening_hours:{business_id}:{day_of_week}",
+        lambda: _query_opening_hours(db, business_id, day_of_week),
+    )
+
+
+def _query_worker_schedule(db: Session, worker_id: uuid.UUID, day_of_week: int) -> dict | None:
+    row = db.execute(
+        text(
+            "select is_closed, open_time, close_time, break_start, break_end from worker_schedules "
+            "where worker_id = :worker_id and day_of_week = :day_of_week"
+        ),
+        {"worker_id": worker_id, "day_of_week": day_of_week},
+    ).mappings().first()
+    return dict(row) if row else None
 
 
 def _get_worker_schedule(db: Session, worker_id: uuid.UUID, day_of_week: int) -> dict | None:
@@ -88,17 +112,21 @@ def _get_worker_schedule(db: Session, worker_id: uuid.UUID, day_of_week: int) ->
     # already inside a per-worker loop in get_availability, so it's the
     # actual N+1 query multiplied by however many active workers a
     # business has.
-    def fetch() -> dict | None:
-        row = db.execute(
-            text(
-                "select is_closed, open_time, close_time from worker_schedules "
-                "where worker_id = :worker_id and day_of_week = :day_of_week"
-            ),
-            {"worker_id": worker_id, "day_of_week": day_of_week},
-        ).mappings().first()
-        return dict(row) if row else None
+    return cache.get_or_set(
+        f"worker_schedule:{worker_id}:{day_of_week}",
+        lambda: _query_worker_schedule(db, worker_id, day_of_week),
+    )
 
-    return cache.get_or_set(f"worker_schedule:{worker_id}:{day_of_week}", fetch)
+
+def _query_business_time_zone(db: Session, business_id: uuid.UUID) -> ZoneInfo:
+    name = db.execute(
+        text("select time_zone from businesses where id = :business_id"), {"business_id": business_id}
+    ).scalar_one()
+    return ZoneInfo(name)
+
+
+def _get_business_time_zone(db: Session, business_id: uuid.UUID) -> ZoneInfo:
+    return cache.get_or_set(f"time_zone:{business_id}", lambda: _query_business_time_zone(db, business_id))
 
 
 def _effective_hours(worker_schedule: dict | None, business_hours: dict) -> dict:
@@ -109,7 +137,7 @@ def _effective_hours(worker_schedule: dict | None, business_hours: dict) -> dict
     return worker_schedule if worker_schedule is not None else business_hours
 
 
-_CLOSED_HOURS = {"is_closed": True, "open_time": None, "close_time": None}
+_CLOSED_HOURS = {"is_closed": True, "open_time": None, "close_time": None, "break_start": None, "break_end": None}
 
 
 def _slot_rejection_reason(
@@ -117,6 +145,7 @@ def _slot_rejection_reason(
     end_time: datetime.datetime,
     hours: dict,
     now: datetime.datetime,
+    tz: datetime.tzinfo,
 ) -> str | None:
     """None if the slot is bookable, else why not. Mirrors compute_available_slots'
     own rules (see app/services/availability.py) — the EXCLUDE constraint
@@ -125,13 +154,8 @@ def _slot_rejection_reason(
     than trusting whatever the client claims is an available slot."""
     if start_time < now:
         return "Cannot book a time in the past"
-    if hours["is_closed"] or hours["open_time"] is None or hours["close_time"] is None:
-        return "Outside business hours"
-
-    day = start_time.date()
-    open_at = datetime.datetime.combine(day, hours["open_time"], tzinfo=start_time.tzinfo)
-    close_at = datetime.datetime.combine(day, hours["close_time"], tzinfo=start_time.tzinfo)
-    if start_time < open_at or end_time > close_at:
+    periods = working_periods(start_time.astimezone(tz).date(), hours, tz)
+    if not any(period_start <= start_time and end_time <= period_end for period_start, period_end in periods):
         return "Outside business hours"
     return None
 
@@ -147,7 +171,9 @@ def get_availability(
 ) -> list[AvailableSlot]:
     service = _get_active_service(db, business_id, service_id)
 
+    # `date` is a calendar day at the shop, so it's read in the shop's zone.
     # Monday=0 to match `opening_hours.day_of_week`.
+    tz = _get_business_time_zone(db, business_id)
     day_of_week = date.weekday()
     business_hours = _get_opening_hours(db, business_id, day_of_week)
     if business_hours is None:
@@ -155,8 +181,8 @@ def get_availability(
 
     workers = db.query(Worker).filter(Worker.business_id == business_id, Worker.is_active.is_(True)).all()
 
-    day_start = datetime.datetime.combine(date, datetime.time.min, tzinfo=datetime.UTC)
-    day_end = datetime.datetime.combine(date, datetime.time.max, tzinfo=datetime.UTC)
+    day_start = datetime.datetime.combine(date, datetime.time.min, tzinfo=tz)
+    day_end = datetime.datetime.combine(date, datetime.time.max, tzinfo=tz)
     now = datetime.datetime.now(datetime.UTC)
 
     slots: list[AvailableSlot] = []
@@ -175,10 +201,7 @@ def get_availability(
         booked_ranges = [(b.start_time, b.end_time) for b in existing]
 
         for start_time in compute_available_slots(
-            date=date,
-            open_time=hours["open_time"],
-            close_time=hours["close_time"],
-            is_closed=hours["is_closed"],
+            periods=working_periods(date, hours, tz),
             duration_minutes=service.duration_minutes,
             booked_ranges=booked_ranges,
             now=now,
@@ -204,11 +227,14 @@ def create_booking(
 
     end_time = body.start_time + datetime.timedelta(minutes=service.duration_minutes)
 
-    business_hours = _get_opening_hours(db, body.business_id, body.start_time.weekday()) or _CLOSED_HOURS
-    worker_schedule = _get_worker_schedule(db, body.worker_id, body.start_time.weekday())
+    tz = _query_business_time_zone(db, body.business_id)
+    # The weekday at the shop, not in UTC — they differ around midnight.
+    day_of_week = body.start_time.astimezone(tz).weekday()
+    business_hours = _query_opening_hours(db, body.business_id, day_of_week) or _CLOSED_HOURS
+    worker_schedule = _query_worker_schedule(db, body.worker_id, day_of_week)
     hours = _effective_hours(worker_schedule, business_hours)
     rejection_reason = _slot_rejection_reason(
-        body.start_time, end_time, hours, datetime.datetime.now(datetime.UTC)
+        body.start_time, end_time, hours, datetime.datetime.now(datetime.UTC), tz
     )
     if rejection_reason:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, rejection_reason)

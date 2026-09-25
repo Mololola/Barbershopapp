@@ -75,13 +75,16 @@ class FinanceAccessSection extends ConsumerWidget {
         children: [
           const Text('Try the finance tool free for a month, or unlock it now.'),
           const SizedBox(height: 8),
-          Row(
+          // Wrap, not Row: two buttons side by side overflow a phone screen
+          // at larger text sizes.
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               OutlinedButton(
                 onPressed: () => _startTrial(context, ref),
                 child: const Text('Start free trial'),
               ),
-              const SizedBox(width: 8),
               FilledButton(
                 onPressed: () => _launchCheckout(context, ref),
                 child: Text('Pay $priceLabel to unlock'),
