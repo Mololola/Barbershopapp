@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.account import router as account_router
+from app.api.admin import router as admin_router
 from app.api.auth_bridge import router as auth_bridge_router
 from app.api.billing import router as billing_router
 from app.api.bookings import router as bookings_router
@@ -88,6 +89,7 @@ async def log_requests(request: Request, call_next):
 app.include_router(bookings_router)
 app.include_router(rewards_router)
 app.include_router(billing_router)
+app.include_router(admin_router)
 app.include_router(account_router)
 app.include_router(auth_bridge_router)
 

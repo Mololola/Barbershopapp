@@ -6,6 +6,7 @@ import '../../auth/domain/profile.dart';
 import '../../rewards/domain/payout_request.dart';
 import '../application/admin_controller.dart';
 import '../domain/admin_business_summary.dart';
+import 'admin_overview_tab.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -13,16 +14,17 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Admin'),
           bottom: const TabBar(
-            tabs: [Tab(text: 'Customers'), Tab(text: 'Businesses'), Tab(text: 'Payouts')],
+            isScrollable: true,
+            tabs: [Tab(text: 'Overview'), Tab(text: 'Customers'), Tab(text: 'Businesses'), Tab(text: 'Payouts')],
           ),
         ),
         body: const TabBarView(
-          children: [_CustomersTab(), _BusinessesTab(), _PayoutsTab()],
+          children: [AdminOverviewTab(), _CustomersTab(), _BusinessesTab(), _PayoutsTab()],
         ),
       ),
     );

@@ -33,6 +33,8 @@ void main() {
         // pumpAndSettle would hang forever waiting on it.
         adminBusinessesProvider.overrideWith((ref) async => []),
         adminPayoutRequestsProvider.overrideWith((ref) async => []),
+        // Overview is the first tab; these tests are about Customers.
+        adminMetricsProvider.overrideWith((ref) async => throw UnimplementedError()),
         if (setSucceeds) adminActionControllerProvider.overrideWith(_FakeSuccessAdminActionController.new),
       ],
       child: const MaterialApp(home: AdminScreen()),
@@ -41,6 +43,8 @@ void main() {
 
   testWidgets('search, select a customer, and view their review history', (tester) async {
     await tester.pumpWidget(buildTestable(setSucceeds: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Customers'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'jane');
@@ -58,6 +62,8 @@ void main() {
 
   testWidgets('toggling quality reviewer flips the button label on success', (tester) async {
     await tester.pumpWidget(buildTestable(setSucceeds: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Customers'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'jane');

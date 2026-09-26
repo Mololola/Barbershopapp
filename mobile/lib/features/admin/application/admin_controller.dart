@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/domain/profile.dart';
 import '../../customer/domain/review.dart';
 import '../../rewards/domain/payout_request.dart';
 import '../data/admin_repository.dart';
 import '../domain/admin_business_summary.dart';
+import '../domain/admin_metrics.dart';
 
 final adminRepositoryProvider = Provider<AdminRepository>((ref) {
   return AdminRepository(ref.watch(supabaseClientProvider));
@@ -21,6 +23,12 @@ final customerSearchProvider = FutureProvider.autoDispose.family<List<Profile>, 
 
 final customerReviewsProvider = FutureProvider.autoDispose.family<List<Review>, String>((ref, customerId) {
   return ref.watch(adminRepositoryProvider).fetchReviewsByCustomer(customerId);
+});
+
+/// autoDispose — a fresh snapshot every time the Overview tab opens.
+final adminMetricsProvider = FutureProvider.autoDispose<AdminMetrics>((ref) async {
+  final json = await ref.watch(apiClientProvider).get('/admin/metrics') as Map<String, dynamic>;
+  return AdminMetrics.fromJson(json);
 });
 
 final adminBusinessesProvider = FutureProvider.autoDispose<List<AdminBusinessSummary>>((ref) {
