@@ -130,14 +130,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 icon: const Icon(Icons.g_mobiledata),
                 label: const Text('Continue with Google'),
               ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: authState.isLoading
-                    ? null
-                    : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.apple),
-                icon: const Icon(Icons.apple),
-                label: const Text('Continue with Apple'),
-              ),
             ],
           ),
         ),

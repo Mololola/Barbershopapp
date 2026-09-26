@@ -59,6 +59,7 @@ const _resetPasswordRoute = '/reset-password';
 String? resolveRedirect({
   required bool isAuthenticated,
   required Profile? profile,
+  bool isProfileMissing = false,
   required bool isBusinessSetupComplete,
   required String? pendingReviewBookingId,
   required String location,
@@ -76,9 +77,14 @@ String? resolveRedirect({
   }
 
   if (profile == null) {
-    // Signed in (or mid email-confirmation) but no profile row yet — keep
-    // them on the auth flow rather than bouncing to an empty home screen.
-    return _authRoutes.contains(location) ? null : '/sign-up';
+    // Signed in with no profile row — a first Google sign-in, which carries
+    // no role/username to create one from. Send them to finish it even from
+    // /sign-in, where the OAuth round trip lands them.
+    if (isProfileMissing) return location == '/sign-up' ? null : '/sign-up';
+    // Profile still loading, or its fetch failed: stay on the auth flow
+    // rather than guess — sending an existing user to create a second
+    // profile over a flaky connection would be worse than waiting.
+    return _authRoutes.contains(location) ? null : '/sign-in';
   }
 
   if (profile.role == AccountRole.business && !isBusinessSetupComplete) {
@@ -133,12 +139,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) {
       final isAuthenticated = ref.read(supabaseClientProvider).auth.currentUser != null;
-      final profile = ref.read(currentProfileProvider).value;
+      final profileState = ref.read(currentProfileProvider);
       final isBusinessSetupComplete = ref.read(currentBusinessProvider).value?.isSetupComplete ?? false;
       final pendingReviewBookingId = ref.read(pendingReviewProvider).value?.id;
       return resolveRedirect(
         isAuthenticated: isAuthenticated,
-        profile: profile,
+        profile: profileState.value,
+        // Only a finished, successful fetch that found no row means "missing".
+        isProfileMissing: profileState.hasValue &&
+            !profileState.isLoading &&
+            !profileState.hasError &&
+            profileState.value == null,
         isBusinessSetupComplete: isBusinessSetupComplete,
         pendingReviewBookingId: pendingReviewBookingId,
         location: state.matchedLocation,

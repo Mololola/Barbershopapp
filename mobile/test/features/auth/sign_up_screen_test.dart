@@ -72,5 +72,6 @@ void main() {
     expect(find.text('Password'), findsNothing);
     expect(find.text('Finish'), findsOneWidget);
     expect(find.text('Continue with Google'), findsNothing);
+    expect(find.text('Use a different account'), findsOneWidget);
   });
 }

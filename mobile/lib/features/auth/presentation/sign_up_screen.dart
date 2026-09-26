@@ -66,7 +66,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     });
   }
 
-  /// True once Google/Apple sign-in has already completed and the router
+  /// True once Google sign-in has already completed and the router
   /// sent us here because there's no `profiles` row yet — see
   /// AuthController.completeOAuthProfile. In that case there's no email or
   /// password to collect, just the role and username a normal signUp()
@@ -275,6 +275,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                       : Text(_isOAuthCompletion ? 'Finish' : 'Sign up'),
                 ),
+                // Otherwise someone who picked the wrong Google account has
+                // no way off this screen: the router keeps a signed-in user
+                // without a profile here.
+                if (_isOAuthCompletion)
+                  TextButton(
+                    onPressed: authState.isLoading
+                        ? null
+                        : () async {
+                            await ref.read(authControllerProvider.notifier).signOut();
+                            if (context.mounted) context.go('/sign-in');
+                          },
+                    child: const Text('Use a different account'),
+                  ),
                 if (!_isOAuthCompletion) ...[
                   TextButton(
                     onPressed: () => context.go('/sign-in'),
@@ -290,14 +303,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.google),
                     icon: const Icon(Icons.g_mobiledata),
                     label: const Text('Continue with Google'),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: authState.isLoading
-                        ? null
-                        : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.apple),
-                    icon: const Icon(Icons.apple),
-                    label: const Text('Continue with Apple'),
                   ),
                 ],
               ],

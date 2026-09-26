@@ -8,7 +8,9 @@ class SignUpConflictException implements Exception {
 
   @override
   String toString() => [
-        if (emailTaken) 'An account with this email already exists — try signing in instead.',
+        if (emailTaken)
+          'An account with this email already exists — sign in, or use "Continue with Google" if '
+              'that\'s how you signed up.',
         if (usernameTaken) 'That username is already taken.',
       ].join('\n');
 }

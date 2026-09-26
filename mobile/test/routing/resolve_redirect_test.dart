@@ -51,7 +51,45 @@ void main() {
     );
   });
 
-  test('authenticated with no profile yet is kept on sign-up', () {
+  test('authenticated with no profile row is sent to finish sign-up, even from sign-in', () {
+    for (final location in ['/customer', '/sign-in']) {
+      expect(
+        resolveRedirect(
+          isAuthenticated: true,
+          profile: null,
+          isProfileMissing: true,
+          isBusinessSetupComplete: false,
+          pendingReviewBookingId: null,
+          location: location,
+        ),
+        '/sign-up',
+        reason: location,
+      );
+    }
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: null,
+        isProfileMissing: true,
+        isBusinessSetupComplete: false,
+        pendingReviewBookingId: null,
+        location: '/sign-up',
+      ),
+      null,
+    );
+  });
+
+  test('authenticated while the profile is still loading (or failed) is not sent to sign-up', () {
+    expect(
+      resolveRedirect(
+        isAuthenticated: true,
+        profile: null,
+        isBusinessSetupComplete: false,
+        pendingReviewBookingId: null,
+        location: '/sign-in',
+      ),
+      null,
+    );
     expect(
       resolveRedirect(
         isAuthenticated: true,
@@ -60,17 +98,7 @@ void main() {
         pendingReviewBookingId: null,
         location: '/customer',
       ),
-      '/sign-up',
-    );
-    expect(
-      resolveRedirect(
-        isAuthenticated: true,
-        profile: null,
-        isBusinessSetupComplete: false,
-        pendingReviewBookingId: null,
-        location: '/sign-up',
-      ),
-      null,
+      '/sign-in',
     );
   });
 
