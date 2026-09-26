@@ -43,7 +43,13 @@ class AdminRepository {
   Future<List<AdminBusinessSummary>> fetchBusinesses() async {
     final rows = await _client
         .from('businesses')
-        .select('id, name, created_at, subscription_trial_ends_at, profiles(username), business_subscriptions(status)')
+        // businesses has two foreign keys to profiles (owner_id, and
+        // referred_by_code -> referral_code), so the owner embed must name
+        // its FK or PostgREST refuses the query as ambiguous.
+        .select(
+          'id, name, created_at, subscription_trial_ends_at, '
+          'owner:profiles!businesses_owner_id_fkey(username), business_subscriptions(status)',
+        )
         .order('created_at', ascending: false);
     return rows.map(AdminBusinessSummary.fromRow).toList();
   }

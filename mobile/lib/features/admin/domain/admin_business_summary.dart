@@ -25,16 +25,14 @@ class AdminBusinessSummary {
   bool get hasActiveTrial => subscriptionTrialEndsAt != null && subscriptionTrialEndsAt!.isAfter(DateTime.now());
 
   factory AdminBusinessSummary.fromRow(Map<String, dynamic> row) {
-    // business_subscriptions is embedded as a list (same convention as
-    // post.dart's post_media/likes/comments) even though business_id is
-    // unique on that table — a brand-new business just has an empty list,
-    // never having gone through checkout at all.
-    final subscriptions = row['business_subscriptions'] as List;
-    final subscription = subscriptions.isEmpty ? null : subscriptions.first as Map<String, dynamic>;
+    // business_id is unique on business_subscriptions, so PostgREST embeds
+    // it one-to-one: a single object, or null for a business that has never
+    // gone through checkout — not a list.
+    final subscription = row['business_subscriptions'] as Map<String, dynamic>?;
     return AdminBusinessSummary(
       id: row['id'] as String,
       name: row['name'] as String,
-      ownerUsername: (row['profiles'] as Map<String, dynamic>)['username'] as String,
+      ownerUsername: (row['owner'] as Map<String, dynamic>)['username'] as String,
       createdAt: DateTime.parse(row['created_at'] as String),
       subscriptionStatus: subscription?['status'] as String?,
       subscriptionTrialEndsAt: row['subscription_trial_ends_at'] != null
