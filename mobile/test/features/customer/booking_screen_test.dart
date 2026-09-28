@@ -22,31 +22,41 @@ void main() {
     );
   }
 
-  testWidgets('confirm button is disabled until a slot is selected', (tester) async {
+  FilledButton confirmButton(WidgetTester tester) => tester.widget<FilledButton>(find.byType(FilledButton));
+
+  testWidgets('confirm button is disabled until a time is selected', (tester) async {
     await tester.pumpWidget(buildTestable([slotA]));
     await tester.pumpAndSettle();
 
-    final button = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Confirm booking'));
-    expect(button.onPressed, isNull);
+    expect(confirmButton(tester).onPressed, isNull);
   });
 
-  testWidgets('selecting a slot enables the confirm button', (tester) async {
+  testWidgets('selecting a time enables confirm and names the barber', (tester) async {
     await tester.pumpWidget(buildTestable([slotA]));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(ChoiceChip).first);
+    // Chips: "Any barber", "Jane", then the times.
+    await tester.tap(find.byType(ChoiceChip).last);
     await tester.pumpAndSettle();
 
-    final button = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Confirm booking'));
-    expect(button.onPressed, isNotNull);
+    expect(confirmButton(tester).onPressed, isNotNull);
+    expect(find.textContaining('with Jane'), findsOneWidget);
   });
 
-  testWidgets('two workers free at the same time render as two distinct slots', (tester) async {
-    await tester.pumpWidget(buildTestable([slotA, slotB]));
+  testWidgets('"Any barber" shows each time once; picking a barber shows theirs', (tester) async {
+    final laterB =
+        AvailableSlot(workerId: 'worker-b', workerName: 'Mike', startTime: DateTime.utc(2026, 8, 3, 9, 15));
+    await tester.pumpWidget(buildTestable([slotA, slotB, laterB]));
     await tester.pumpAndSettle();
 
-    expect(find.byType(ChoiceChip), findsNWidgets(2));
-    expect(find.textContaining('Jane'), findsOneWidget);
-    expect(find.textContaining('Mike'), findsOneWidget);
+    // Any barber, Jane, Mike + two distinct times (9:00 shared, 9:15 Mike only).
+    expect(find.byType(ChoiceChip), findsNWidgets(5));
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Mike'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ChoiceChip).last);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('with Mike'), findsOneWidget);
   });
 }

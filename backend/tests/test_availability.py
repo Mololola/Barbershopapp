@@ -48,15 +48,18 @@ def test_hours_are_wall_clock_time_in_the_shops_zone():
     assert winter_open == datetime.datetime(2026, 1, 12, 9, 0, tzinfo=UTC)
 
 
-def test_slices_open_hours_into_duration_sized_slots():
+def test_offers_every_quarter_hour_where_the_whole_service_fits_before_closing():
     slots = compute_available_slots(
         periods=working_periods(DAY, _hours(datetime.time(9, 0), datetime.time(10, 30)), UTC),
         duration_minutes=45,
         booked_ranges=[],
         now=datetime.datetime(2026, 7, 20, tzinfo=UTC),
     )
+    # 9:45 is the last start that still ends by 10:30 closing.
     assert slots == [
         datetime.datetime(2026, 7, 27, 9, 0, tzinfo=UTC),
+        datetime.datetime(2026, 7, 27, 9, 15, tzinfo=UTC),
+        datetime.datetime(2026, 7, 27, 9, 30, tzinfo=UTC),
         datetime.datetime(2026, 7, 27, 9, 45, tzinfo=UTC),
     ]
 
@@ -69,11 +72,13 @@ def test_no_slot_overlaps_the_break_and_the_afternoon_restarts_at_its_end():
         booked_ranges=[],
         now=datetime.datetime(2026, 7, 20, tzinfo=UTC),
     )
-    # 09:45 would run into the break; the afternoon starts at 11:00, not
-    # on the morning's 45-minute grid (which would have been 11:15).
+    # Nothing after 9:15 fits before the 10:00 break; the afternoon
+    # restarts at the break's end.
     assert slots == [
         datetime.datetime(2026, 7, 27, 9, 0, tzinfo=UTC),
+        datetime.datetime(2026, 7, 27, 9, 15, tzinfo=UTC),
         datetime.datetime(2026, 7, 27, 11, 0, tzinfo=UTC),
+        datetime.datetime(2026, 7, 27, 11, 15, tzinfo=UTC),
     ]
 
 
@@ -90,7 +95,22 @@ def test_excludes_slots_overlapping_an_existing_booking():
         booked_ranges=booked,
         now=datetime.datetime(2026, 7, 20, tzinfo=UTC),
     )
+    # Booked 9:45-10:30: only 9:00 ends (9:45) before that booking starts.
     assert slots == [datetime.datetime(2026, 7, 27, 9, 0, tzinfo=UTC)]
+
+
+def test_a_start_right_after_an_existing_booking_is_offered():
+    booked = [(datetime.datetime(2026, 7, 27, 9, 0, tzinfo=UTC), datetime.datetime(2026, 7, 27, 9, 30, tzinfo=UTC))]
+    slots = compute_available_slots(
+        periods=working_periods(DAY, _hours(datetime.time(9, 0), datetime.time(10, 30)), UTC),
+        duration_minutes=45,
+        booked_ranges=booked,
+        now=datetime.datetime(2026, 7, 20, tzinfo=UTC),
+    )
+    assert slots == [
+        datetime.datetime(2026, 7, 27, 9, 30, tzinfo=UTC),
+        datetime.datetime(2026, 7, 27, 9, 45, tzinfo=UTC),
+    ]
 
 
 def test_excludes_slots_already_in_the_past():
@@ -100,4 +120,5 @@ def test_excludes_slots_already_in_the_past():
         booked_ranges=[],
         now=datetime.datetime(2026, 7, 27, 9, 30, tzinfo=UTC),
     )
-    assert slots == [datetime.datetime(2026, 7, 27, 10, 0, tzinfo=UTC)]
+    assert slots == [datetime.datetime(2026, 7, 27, 9, 30, tzinfo=UTC), datetime.datetime(2026, 7, 27, 9, 45, tzinfo=UTC),
+                     datetime.datetime(2026, 7, 27, 10, 0, tzinfo=UTC)]

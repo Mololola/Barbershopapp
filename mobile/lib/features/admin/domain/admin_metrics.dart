@@ -47,20 +47,6 @@ class NamedCount {
       NamedCount(name: json['name'] as String, count: json['count'] as int);
 }
 
-class ReviewerCandidate {
-  const ReviewerCandidate({required this.username, required this.reviews, required this.reviewsWithComments});
-
-  final String username;
-  final int reviews;
-  final int reviewsWithComments;
-
-  factory ReviewerCandidate.fromJson(Map<String, dynamic> json) => ReviewerCandidate(
-        username: json['username'] as String,
-        reviews: json['reviews'] as int,
-        reviewsWithComments: json['reviews_with_comments'] as int,
-      );
-}
-
 class MonthTrend {
   const MonthTrend({
     required this.month,
@@ -120,7 +106,6 @@ class AdminMetrics {
     required this.pendingPayoutsCents,
     required this.rewardsOwedCents,
     required this.qualityReviewers,
-    required this.reviewerCandidates,
     required this.bookings,
     required this.upcomingBookings,
     required this.completedBookings,
@@ -167,7 +152,6 @@ class AdminMetrics {
   final int pendingPayoutsCents;
   final int rewardsOwedCents;
   final int qualityReviewers;
-  final List<ReviewerCandidate> reviewerCandidates;
 
   final WindowedCount bookings;
   final int upcomingBookings;
@@ -218,7 +202,6 @@ class AdminMetrics {
       pendingPayoutsCents: rewards['pending_payouts_cents'] as int,
       rewardsOwedCents: rewards['owed_cents'] as int,
       qualityReviewers: rewards['quality_reviewers'] as int,
-      reviewerCandidates: _list(rewards['reviewer_candidates'], ReviewerCandidate.fromJson),
       bookings: WindowedCount.fromJson(activity['bookings'] as Map<String, dynamic>),
       upcomingBookings: activity['upcoming_bookings'] as int,
       completedBookings: activity['completed_bookings'] as int,

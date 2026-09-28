@@ -8,6 +8,7 @@ import '../../rewards/domain/payout_request.dart';
 import '../data/admin_repository.dart';
 import '../domain/admin_business_summary.dart';
 import '../domain/admin_metrics.dart';
+import '../domain/reviewer.dart';
 
 final adminRepositoryProvider = Provider<AdminRepository>((ref) {
   return AdminRepository(ref.watch(supabaseClientProvider));
@@ -31,6 +32,14 @@ final adminMetricsProvider = FutureProvider.autoDispose<AdminMetrics>((ref) asyn
   return AdminMetrics.fromJson(json);
 });
 
+/// autoDispose — reflects a promotion or demotion as soon as the Customers
+/// tab is reopened; [AdminActionController.setQualityReviewer] also
+/// invalidates it directly.
+final adminReviewersProvider = FutureProvider.autoDispose<Reviewers>((ref) async {
+  final json = await ref.watch(apiClientProvider).get('/admin/reviewers') as Map<String, dynamic>;
+  return Reviewers.fromJson(json);
+});
+
 final adminBusinessesProvider = FutureProvider.autoDispose<List<AdminBusinessSummary>>((ref) {
   return ref.watch(adminRepositoryProvider).fetchBusinesses();
 });
@@ -51,6 +60,7 @@ class AdminActionController extends AsyncNotifier<void> {
     var success = false;
     state = await AsyncValue.guard(() async {
       await ref.read(adminRepositoryProvider).setQualityReviewer(customerId, value);
+      ref.invalidate(adminReviewersProvider);
       success = true;
     });
     return success;

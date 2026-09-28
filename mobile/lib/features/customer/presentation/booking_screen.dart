@@ -19,6 +19,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   DateTime _date = DateTime.now();
   AvailableSlot? _selectedSlot;
 
+  /// Null means "any barber".
+  String? _barberId;
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -30,6 +33,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     setState(() {
       _date = picked;
       _selectedSlot = null;
+      _barberId = null;
     });
   }
 
@@ -88,7 +92,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               onPressed: (_selectedSlot == null || bookingState.isLoading) ? null : _confirm,
               child: bookingState.isLoading
                   ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Confirm booking'),
+                  : Text(_selectedSlot == null
+                      ? 'Confirm booking'
+                      : 'Confirm ${TimeOfDay.fromDateTime(_selectedSlot!.startTime.toLocal()).format(context)} '
+                          'with ${_selectedSlot!.workerName}'),
             ),
           ],
         ),
@@ -107,18 +114,54 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         if (slots.isEmpty) {
           return const Text('No available times that day.');
         }
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        // Times come every 15 minutes per barber, so choosing the barber
+        // first keeps the list short. Slots arrive sorted by time, then
+        // barber name.
+        final barbers = <String, String>{for (final slot in slots) slot.workerId: slot.workerName};
+        final times = <DateTime>{};
+        final shown = _barberId == null
+            // "Any barber": one chip per time, booked with the first barber free then.
+            ? slots.where((slot) => times.add(slot.startTime)).toList()
+            : slots.where((slot) => slot.workerId == _barberId).toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final slot in slots)
-              ChoiceChip(
-                label: Text(
-                  '${TimeOfDay.fromDateTime(slot.startTime.toLocal()).format(context)} — ${slot.workerName}',
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('Any barber'),
+                  selected: _barberId == null,
+                  onSelected: (_) => setState(() {
+                    _barberId = null;
+                    _selectedSlot = null;
+                  }),
                 ),
-                selected: _selectedSlot == slot,
-                onSelected: (_) => setState(() => _selectedSlot = slot),
-              ),
+                for (final entry in barbers.entries)
+                  ChoiceChip(
+                    label: Text(entry.value),
+                    selected: _barberId == entry.key,
+                    onSelected: (_) => setState(() {
+                      _barberId = entry.key;
+                      _selectedSlot = null;
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final slot in shown)
+                  ChoiceChip(
+                    label: Text(TimeOfDay.fromDateTime(slot.startTime.toLocal()).format(context)),
+                    selected: _selectedSlot == slot,
+                    onSelected: (_) => setState(() => _selectedSlot = slot),
+                  ),
+              ],
+            ),
           ],
         );
       },

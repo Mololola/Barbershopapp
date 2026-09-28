@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/admin/application/admin_controller.dart';
+import 'package:mobile/features/admin/domain/reviewer.dart';
 import 'package:mobile/features/admin/presentation/admin_screen.dart';
 import 'package:mobile/features/auth/domain/profile.dart';
 import 'package:mobile/features/customer/domain/review.dart';
@@ -22,6 +23,29 @@ void main() {
     shopComment: 'Great shop, very clean.',
   );
 
+  final reviewers = Reviewers(
+    suggested: [
+      Reviewer(
+        id: 'cust-2',
+        username: 'regular_rob',
+        reviews: 7,
+        averageCommentLength: 140,
+        lastReviewAt: DateTime.utc(2026, 9, 20),
+        memberSince: DateTime.utc(2026, 5, 1),
+      ),
+    ],
+    promoted: [
+      Reviewer(
+        id: 'cust-3',
+        username: 'top_tina',
+        reviews: 12,
+        averageCommentLength: 210,
+        lastReviewAt: DateTime.utc(2026, 9, 25),
+        memberSince: DateTime.utc(2026, 3, 1),
+      ),
+    ],
+  );
+
   Widget buildTestable({required bool setSucceeds}) {
     return ProviderScope(
       overrides: [
@@ -35,11 +59,29 @@ void main() {
         adminPayoutRequestsProvider.overrideWith((ref) async => []),
         // Overview is the first tab; these tests are about Customers.
         adminMetricsProvider.overrideWith((ref) async => throw UnimplementedError()),
+        adminReviewersProvider.overrideWith((ref) async => reviewers),
         if (setSucceeds) adminActionControllerProvider.overrideWith(_FakeSuccessAdminActionController.new),
       ],
       child: const MaterialApp(home: AdminScreen()),
     );
   }
+
+  testWidgets('without a search, shows who to promote and who is promoted', (tester) async {
+    await tester.pumpWidget(buildTestable(setSucceeds: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Customers'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('@regular_rob'), findsOneWidget);
+    expect(find.textContaining('7 reviews · ~140 characters each'), findsOneWidget);
+    expect(find.text('Promoted (1)'), findsOneWidget);
+
+    await tester.tap(find.text('@top_tina'));
+    await tester.pumpAndSettle();
+
+    // Already promoted, so the action offered is demotion.
+    expect(find.text('Deactivate \$3 rewards'), findsOneWidget);
+  });
 
   testWidgets('search, select a customer, and view their review history', (tester) async {
     await tester.pumpWidget(buildTestable(setSucceeds: true));

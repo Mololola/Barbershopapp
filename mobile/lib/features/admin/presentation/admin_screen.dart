@@ -6,6 +6,7 @@ import '../../auth/domain/profile.dart';
 import '../../rewards/domain/payout_request.dart';
 import '../application/admin_controller.dart';
 import '../domain/admin_business_summary.dart';
+import '../domain/reviewer.dart';
 import 'admin_overview_tab.dart';
 
 class AdminScreen extends StatelessWidget {
@@ -41,7 +42,7 @@ class _CustomersTab extends ConsumerStatefulWidget {
 class _CustomersTabState extends ConsumerState<_CustomersTab> {
   final _queryController = TextEditingController();
   String? _query;
-  Profile? _selected;
+  ({String id, String username})? _selected;
   bool _isQualityReviewer = false;
 
   @override
@@ -50,19 +51,19 @@ class _CustomersTabState extends ConsumerState<_CustomersTab> {
     super.dispose();
   }
 
+  /// An empty search goes back to the suggested/promoted lists.
   void _search() {
     final query = _queryController.text.trim();
-    if (query.isEmpty) return;
     setState(() {
-      _query = query;
+      _query = query.isEmpty ? null : query;
       _selected = null;
     });
   }
 
-  void _select(Profile profile) {
+  void _select(String id, String username, {required bool isQualityReviewer}) {
     setState(() {
-      _selected = profile;
-      _isQualityReviewer = profile.isQualityReviewer;
+      _selected = (id: id, username: username);
+      _isQualityReviewer = isQualityReviewer;
     });
   }
 
@@ -99,9 +100,20 @@ class _CustomersTabState extends ConsumerState<_CustomersTab> {
             ],
           ),
           const SizedBox(height: 16),
-          if (selected == null) ...[
-            if (_query != null) Expanded(child: _SearchResults(query: _query!, onSelect: _select)),
-          ] else
+          if (selected == null)
+            Expanded(
+              child: _query != null
+                  ? _SearchResults(
+                      query: _query!,
+                      onSelect: (profile) =>
+                          _select(profile.id, profile.username, isQualityReviewer: profile.isQualityReviewer),
+                    )
+                  : _ReviewerLists(
+                      onSelect: (reviewer, {required isPromoted}) =>
+                          _select(reviewer.id, reviewer.username, isQualityReviewer: isPromoted),
+                    ),
+            )
+          else
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,6 +174,70 @@ class _SearchResults extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// What the Customers tab shows when you're not searching: who's worth
+/// promoting to the quality-reviewer tier, and who already has it (to
+/// demote anyone found reviewing dishonestly). Ranking is server-side —
+/// see GET /admin/reviewers.
+class _ReviewerLists extends ConsumerWidget {
+  const _ReviewerLists({required this.onSelect});
+
+  final void Function(Reviewer reviewer, {required bool isPromoted}) onSelect;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reviewers = ref.watch(adminReviewersProvider);
+    final textTheme = Theme.of(context).textTheme;
+    return reviewers.when(
+      loading: () => const LoadingView(),
+      error: (error, _) => Text('Error: $error'),
+      data: (lists) => ListView(
+        children: [
+          Text('Suggested for promotion', style: textTheme.titleMedium),
+          Text(
+            'Regulars with 3+ reviews on completed bookings — most reviews first, then most written. '
+            'Tap to read their reviews before deciding.',
+            style: textTheme.bodySmall,
+          ),
+          if (lists.suggested.isEmpty)
+            const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('No one qualifies yet.')),
+          for (final reviewer in lists.suggested)
+            _ReviewerTile(reviewer: reviewer, onTap: () => onSelect(reviewer, isPromoted: false)),
+          const SizedBox(height: 24),
+          Text('Promoted (${lists.promoted.length})', style: textTheme.titleMedium),
+          Text('On the \$3 tier. Tap to re-read their reviews or demote.', style: textTheme.bodySmall),
+          if (lists.promoted.isEmpty)
+            const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('No one promoted yet.')),
+          for (final reviewer in lists.promoted)
+            _ReviewerTile(reviewer: reviewer, onTap: () => onSelect(reviewer, isPromoted: true)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewerTile extends StatelessWidget {
+  const _ReviewerTile({required this.reviewer, required this.onTap});
+
+  final Reviewer reviewer;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final last = reviewer.lastReviewAt?.toLocal();
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text('@${reviewer.username}'),
+      subtitle: Text(
+        '${reviewer.reviews} review${reviewer.reviews == 1 ? '' : 's'} · '
+        '~${reviewer.averageCommentLength} characters each'
+        '${last == null ? '' : ' · last ${last.day}/${last.month}/${last.year}'}',
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }

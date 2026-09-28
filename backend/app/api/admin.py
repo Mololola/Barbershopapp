@@ -1,3 +1,5 @@
+import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -38,10 +40,22 @@ class NamedCount(BaseModel):
     count: int
 
 
-class ReviewerCandidate(BaseModel):
+class Reviewer(BaseModel):
+    """A customer as a candidate for (or holder of) the quality-reviewer
+    reward tier, with what the owner judges them on."""
+
+    id: str
     username: str
     reviews: int
-    reviews_with_comments: int
+    # Mean characters written across a review's three optional comments.
+    average_comment_length: int
+    last_review_at: datetime.datetime | None
+    member_since: datetime.datetime
+
+
+class Reviewers(BaseModel):
+    suggested: list[Reviewer]
+    promoted: list[Reviewer]
 
 
 class MonthTrend(BaseModel):
@@ -93,7 +107,6 @@ class RewardMetrics(BaseModel):
     pending_payouts_cents: int
     owed_cents: int
     quality_reviewers: int
-    reviewer_candidates: list[ReviewerCandidate]
 
 
 class ActivityMetrics(BaseModel):
@@ -236,19 +249,6 @@ def _revenue_metrics(db: Session) -> RevenueMetrics:
 def _reward_metrics(db: Session) -> RewardMetrics:
     earned = _scalar(db, "select coalesce(sum(amount_cents), 0) from reward_ledger")
     paid = _scalar(db, "select coalesce(sum(amount_cents), 0) from payout_requests where status = 'paid'")
-    candidates = db.execute(
-        text(
-            # Customers not yet flagged as quality reviewers, ranked by how
-            # many recent reviews actually say something — the ones worth
-            # reading in the Customers tab before bumping their reward tier.
-            "select p.username, count(*) as reviews, "
-            "count(*) filter (where coalesce(r.shop_comment, '') <> '' or coalesce(r.worker_comment, '') <> '' "
-            "or coalesce(r.haircut_comment, '') <> '') as reviews_with_comments "
-            "from reviews r join profiles p on p.id = r.customer_id "
-            "where not p.is_quality_reviewer and r.created_at >= now() - interval '60 days' "
-            "group by p.username order by reviews_with_comments desc, reviews desc limit 5"
-        )
-    )
     return RewardMetrics(
         earned_cents=earned,
         earned_last_30_days_cents=_scalar(
@@ -261,7 +261,6 @@ def _reward_metrics(db: Session) -> RewardMetrics:
         ),
         owed_cents=earned - paid,
         quality_reviewers=_scalar(db, "select count(*) from profiles where is_quality_reviewer"),
-        reviewer_candidates=[ReviewerCandidate(**row) for row in candidates.mappings()],
     )
 
 
@@ -316,4 +315,53 @@ def admin_metrics(
         revenue=_revenue_metrics(db),
         rewards=_reward_metrics(db),
         activity=_activity_metrics(db),
+    )
+
+
+# Only proven regulars are suggested: a single long review is easy to game,
+# repeat reviews on real completed bookings aren't.
+MIN_REVIEWS_FOR_SUGGESTION = 3
+
+_REVIEWER_SELECT = """
+    with stats as (
+        select r.customer_id,
+            count(*) as reviews,
+            round(avg(
+                length(btrim(coalesce(r.shop_comment, '')))
+                + length(btrim(coalesce(r.worker_comment, '')))
+                + length(btrim(coalesce(r.haircut_comment, '')))
+            ))::int as average_comment_length,
+            max(r.created_at) as last_review_at
+        from reviews r
+        join bookings b on b.id = r.booking_id and b.status = 'completed'
+        group by r.customer_id
+    )
+    select p.id::text as id, p.username, coalesce(s.reviews, 0) as reviews,
+        coalesce(s.average_comment_length, 0) as average_comment_length,
+        s.last_review_at, p.created_at as member_since
+    from profiles p left join stats s on s.customer_id = p.id
+"""
+
+
+@router.get("/admin/reviewers", response_model=Reviewers)
+def admin_reviewers(
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("30/minute")),
+    _admin: str = Depends(require_admin),
+) -> Reviewers:
+    """Who to consider for the quality-reviewer tier, and who already has
+    it (for demoting anyone the owner finds reviewing dishonestly).
+    Suggestions rank by number of reviews, then by how much they write."""
+    suggested = db.execute(
+        text(
+            _REVIEWER_SELECT
+            + "where p.role = 'customer' and not p.is_quality_reviewer and s.reviews >= :min_reviews "
+            "order by s.reviews desc, s.average_comment_length desc limit 20"
+        ),
+        {"min_reviews": MIN_REVIEWS_FOR_SUGGESTION},
+    )
+    promoted = db.execute(text(_REVIEWER_SELECT + "where p.is_quality_reviewer order by p.username"))
+    return Reviewers(
+        suggested=[Reviewer(**row) for row in suggested.mappings()],
+        promoted=[Reviewer(**row) for row in promoted.mappings()],
     )

@@ -3,6 +3,12 @@ import datetime
 BookedRange = tuple[datetime.datetime, datetime.datetime]
 Period = tuple[datetime.datetime, datetime.datetime]
 
+# Customers can start a service at any quarter hour the barber is free for
+# its whole length — not only on a grid of service-length blocks from
+# opening. 15 is the industry norm: flexible without leaving unfillable
+# few-minute gaps between bookings.
+SLOT_STEP_MINUTES = 15
+
 
 def _overlaps(start: datetime.datetime, end: datetime.datetime, booked_ranges: list[BookedRange]) -> bool:
     return any(start < booked_end and end > booked_start for booked_start, booked_end in booked_ranges)
@@ -34,17 +40,18 @@ def compute_available_slots(
     booked_ranges: list[BookedRange],
     now: datetime.datetime,
 ) -> list[datetime.datetime]:
-    """Candidate start times for a service on one day, sliced in
-    duration-sized increments from the start of each working period (so
-    the afternoon after a break starts on the break's end, not wherever
-    the morning's grid happens to land), minus already-booked ranges and
-    anything in the past.
+    """Candidate start times for a service on one day: every
+    SLOT_STEP_MINUTES from the start of each working period (so the
+    afternoon after a break starts on the break's end) where the whole
+    service fits before the period ends and overlaps no existing booking,
+    minus anything in the past.
 
     This is advisory/UX only — the real "never double-book a worker"
     guarantee is the database's exclusion constraint (see
     docs/architecture.md), not this function.
     """
     duration = datetime.timedelta(minutes=duration_minutes)
+    step = datetime.timedelta(minutes=SLOT_STEP_MINUTES)
 
     slots: list[datetime.datetime] = []
     for period_start, period_end in periods:
@@ -53,6 +60,6 @@ def compute_available_slots(
             slot_end = slot_start + duration
             if slot_start >= now and not _overlaps(slot_start, slot_end, booked_ranges):
                 slots.append(slot_start)
-            slot_start += duration
+            slot_start += step
 
     return slots

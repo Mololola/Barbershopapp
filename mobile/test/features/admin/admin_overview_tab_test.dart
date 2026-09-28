@@ -60,9 +60,6 @@ final _json = <String, dynamic>{
     'pending_payouts_cents': 2000,
     'owed_cents': 2200,
     'quality_reviewers': 1,
-    'reviewer_candidates': [
-      {'username': 'alex', 'reviews': 4, 'reviews_with_comments': 3},
-    ],
   },
   'activity': {
     'bookings': _windowed(120, 30),
@@ -86,7 +83,6 @@ void main() {
 
     expect(m.customers.total, 40);
     expect(m.monthlyRecurring.map((a) => a.currency), ['EUR', 'GBP']);
-    expect(m.reviewerCandidates.single.username, 'alex');
     expect(m.averageWorkerRating, 4.8);
     expect(m.monthlyTrend.last.completedBookings, 60);
   });
@@ -102,11 +98,37 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    for (final section in ['Revenue', 'Businesses', 'Users', 'Bookings & reviews', 'Rewards']) {
+    for (final section in ['Revenue', 'Growth', 'Businesses', 'People', 'Bookings & reviews', 'Rewards']) {
       expect(find.text(section), findsOneWidget);
     }
-    expect(find.text('€450.00 · £600.00'), findsOneWidget);
+    // Hero: paying MRR per currency, whole amounts without pence.
+    expect(find.text('€450 · £600'), findsOneWidget);
+    // Action items only for things that need doing.
+    expect(find.text('Needs your attention'), findsOneWidget);
+    expect(find.textContaining('1 payout request waiting'), findsOneWidget);
+    expect(find.textContaining('1 business suspended'), findsOneWidget);
     expect(find.text('75%'), findsOneWidget); // 3 of 4 finished trials converted
-    expect(find.text('@alex'), findsOneWidget);
+    // Customers: +12 in 30 days vs 2 the 30 before.
+    expect(find.text('+12 in 30 days (+10)'), findsOneWidget);
+  });
+
+  testWidgets('shows "all clear" when nothing needs attention', (tester) async {
+    final calm = Map<String, dynamic>.of(_json)
+      ..['rewards'] = {...(_json['rewards'] as Map<String, dynamic>), 'pending_payouts': 0}
+      ..['businesses'] = {...(_json['businesses'] as Map<String, dynamic>), 'suspended': 0, 'trials_ending_in_7_days': 0}
+      ..['users'] = {
+        ...(_json['users'] as Map<String, dynamic>),
+        'awaiting_email_confirmation': 0,
+        'confirmed_without_profile': 0,
+      };
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [adminMetricsProvider.overrideWith((ref) async => AdminMetrics.fromJson(calm))],
+        child: const MaterialApp(home: Scaffold(body: AdminOverviewTab())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nothing needs you right now'), findsOneWidget);
   });
 }
