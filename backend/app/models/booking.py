@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from sqlalchemy import DateTime, String, Uuid
+from sqlalchemy import DateTime, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -18,4 +18,7 @@ class Booking(Base):
     start_time: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String, default="confirmed")
+    # What the customer is charged, frozen at booking time so later price
+    # changes don't rewrite past revenue.
+    price_cents: Mapped[int] = mapped_column(Integer)
     completed_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=None)

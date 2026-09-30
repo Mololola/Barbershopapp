@@ -4,11 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/business_controller.dart';
 import '../domain/business.dart';
-import 'finance_access_section.dart';
 import 'location_form_section.dart';
 import 'opening_hours_editor.dart';
 
-/// Business details: locations, opening hours and finance-tool access.
+/// Business details: locations and opening hours.
 /// The shop page's look (logo, cover, colour) is edited separately — see
 /// edit_shop_page_screen.dart.
 class BusinessEditScreen extends ConsumerStatefulWidget {
@@ -55,7 +54,6 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final business = ref.watch(currentBusinessProvider).value;
     final locations = ref.watch(locationsProvider);
     final storedHours = ref.watch(openingHoursProvider);
     final editState = ref.watch(businessEditControllerProvider);
@@ -101,8 +99,6 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
                           ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Save'),
                     ),
-                    const SizedBox(height: 32),
-                    FinanceAccessSection(business: business),
                   ],
                 ),
               ),

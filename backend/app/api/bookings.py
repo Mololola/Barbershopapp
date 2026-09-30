@@ -246,6 +246,7 @@ def create_booking(
         customer_id=uuid.UUID(user_id),
         start_time=body.start_time,
         end_time=end_time,
+        price_cents=service.price_cents,
     )
     db.add(booking)
     try:

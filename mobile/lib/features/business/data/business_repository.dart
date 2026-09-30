@@ -4,7 +4,6 @@ import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_leave_request.dart';
 import '../../worker/domain/worker_profile.dart';
 import '../domain/business.dart';
-import '../domain/business_finance_access.dart';
 import '../domain/business_subscription.dart';
 
 class InvalidReferralCodeException implements Exception {
@@ -57,16 +56,6 @@ class BusinessRepository {
         .maybeSingle();
     if (row == null) return null;
     return BusinessSubscription.fromRow(row);
-  }
-
-  Future<BusinessFinanceAccess?> fetchFinanceAccess(String businessId) async {
-    final row = await _client
-        .from('business_finance_access')
-        .select()
-        .eq('business_id', businessId)
-        .maybeSingle();
-    if (row == null) return null;
-    return BusinessFinanceAccess.fromRow(row);
   }
 
   Future<Business?> fetchOwnBusiness(String ownerId) async {
@@ -215,16 +204,25 @@ class BusinessRepository {
     return rows.map(CostItem.fromRow).toList();
   }
 
-  Future<void> addCostItem(String businessId, String label, int amountCents) async {
-    await _client.from('business_cost_items').insert({
-      'business_id': businessId,
-      'label': label,
-      'amount_cents': amountCents,
-    });
+  Future<void> addCostItem(CostItem item) async {
+    await _client.from('business_cost_items').insert(item.toRow());
+  }
+
+  /// A monthly cost stops after [lastMonth] (it still counts that month).
+  Future<void> endCostItem(String costItemId, DateTime lastMonth) async {
+    await _client.from('business_cost_items').update({'ends_on': CostItem.dateToSql(lastMonth)}).eq('id', costItemId);
   }
 
   Future<void> deleteCostItem(String costItemId) async {
     await _client.from('business_cost_items').delete().eq('id', costItemId);
+  }
+
+  /// Walk-ins, cash — income from outside the app, one figure per month.
+  Future<void> setOtherIncome(String businessId, DateTime month, int amountCents) async {
+    await _client.from('business_other_income').upsert(
+      {'business_id': businessId, 'month': CostItem.dateToSql(month), 'amount_cents': amountCents},
+      onConflict: 'business_id,month',
+    );
   }
 
   /// Current staff only — removed workers and ones who've left keep their

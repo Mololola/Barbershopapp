@@ -281,20 +281,38 @@ class Service {
   }
 }
 
+enum CostKind { monthly, oneOff }
+
+/// A business cost: 'monthly' runs from [startsOn] until [endsOn]
+/// (inclusive, open-ended if null); 'one-off' belongs to [startsOn]'s month
+/// only. Months are their first day. Dated so past months stay accurate.
 class CostItem {
   const CostItem({
     this.id,
     required this.businessId,
     required this.label,
     required this.amountCents,
+    required this.kind,
+    required this.startsOn,
+    this.endsOn,
   });
 
   final String? id;
   final String businessId;
   final String label;
   final int amountCents;
+  final CostKind kind;
+  final DateTime startsOn;
+  final DateTime? endsOn;
 
-  double get amountInMajorUnits => amountCents / 100;
+  bool appliesTo(DateTime month) => kind == CostKind.oneOff
+      ? startsOn == month
+      : !startsOn.isAfter(month) && (endsOn == null || !month.isAfter(endsOn!));
+
+  static String _wire(CostKind kind) => kind == CostKind.oneOff ? 'one_off' : 'monthly';
+
+  static String dateToSql(DateTime month) =>
+      '${month.year.toString().padLeft(4, '0')}-${month.month.toString().padLeft(2, '0')}-01';
 
   factory CostItem.fromRow(Map<String, dynamic> row) {
     return CostItem(
@@ -302,8 +320,19 @@ class CostItem {
       businessId: row['business_id'] as String,
       label: row['label'] as String,
       amountCents: row['amount_cents'] as int,
+      kind: row['kind'] == 'one_off' ? CostKind.oneOff : CostKind.monthly,
+      startsOn: DateTime.parse(row['starts_on'] as String),
+      endsOn: row['ends_on'] == null ? null : DateTime.parse(row['ends_on'] as String),
     );
   }
+
+  Map<String, dynamic> toRow() => {
+        'business_id': businessId,
+        'label': label,
+        'amount_cents': amountCents,
+        'kind': _wire(kind),
+        'starts_on': dateToSql(startsOn),
+      };
 }
 
 class Worker {

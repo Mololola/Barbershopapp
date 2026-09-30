@@ -15,7 +15,7 @@ import '../../worker/domain/worker_profile.dart';
 import '../data/billing_api_client.dart';
 import '../data/business_repository.dart';
 import '../domain/business.dart';
-import '../domain/business_finance_access.dart';
+import '../domain/finance_overview.dart';
 import '../domain/business_subscription.dart';
 
 final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
@@ -41,12 +41,13 @@ final businessSubscriptionProvider = FutureProvider.autoDispose<BusinessSubscrip
   return ref.watch(businessRepositoryProvider).fetchSubscription(business.id);
 });
 
-/// autoDispose — same reasoning as [businessSubscriptionProvider]: a Stripe
-/// webhook can flip this any time, independent of the app.
-final financeAccessProvider = FutureProvider.autoDispose<BusinessFinanceAccess?>((ref) async {
+/// One month of the finance tool, keyed by the month's first day.
+/// autoDispose — premium status can flip via a Stripe webhook at any time,
+/// and revenue moves with every completed booking.
+final financeOverviewProvider = FutureProvider.autoDispose.family<FinanceOverview, DateTime>((ref, month) async {
   final business = await ref.watch(currentBusinessProvider.future);
-  if (business == null) return null;
-  return ref.watch(businessRepositoryProvider).fetchFinanceAccess(business.id);
+  if (business == null) throw StateError('No business set up yet.');
+  return ref.watch(billingApiClientProvider).fetchFinanceOverview(business.id, month);
 });
 
 final billingActionControllerProvider =
@@ -74,8 +75,7 @@ class BillingActionController extends AsyncNotifier<void> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await ref.read(billingApiClientProvider).startFinanceTrial(business.id);
-      ref.invalidate(financeAccessProvider);
-      await ref.read(financeAccessProvider.future);
+      ref.invalidate(financeOverviewProvider);
     });
   }
 
@@ -252,30 +252,46 @@ class ServiceController extends AsyncNotifier<void> {
   }
 }
 
-final costItemControllerProvider =
-    AsyncNotifierProvider<CostItemController, void>(CostItemController.new);
+final financeControllerProvider = AsyncNotifierProvider<FinanceController, void>(FinanceController.new);
 
-class CostItemController extends AsyncNotifier<void> {
+/// Costs and other income. Every change refreshes the finance figures,
+/// which the backend recomputes from them.
+class FinanceController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<void> addCostItem({required String label, required int amountCents}) async {
+  Future<void> _run(Future<void> Function(String businessId) action) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final business = await ref.read(currentBusinessProvider.future);
       if (business == null) throw StateError('No business set up yet.');
-      await ref.read(businessRepositoryProvider).addCostItem(business.id, label, amountCents);
+      await action(business.id);
       ref.invalidate(costItemsProvider);
+      ref.invalidate(financeOverviewProvider);
     });
   }
 
-  Future<void> deleteCostItem(String costItemId) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref.read(businessRepositoryProvider).deleteCostItem(costItemId);
-      ref.invalidate(costItemsProvider);
-    });
+  Future<void> addCost({
+    required String label,
+    required int amountCents,
+    required CostKind kind,
+    required DateTime month,
+  }) {
+    return _run(
+      (businessId) => ref.read(businessRepositoryProvider).addCostItem(
+            CostItem(businessId: businessId, label: label, amountCents: amountCents, kind: kind, startsOn: month),
+          ),
+    );
   }
+
+  Future<void> stopCostAfter(String costItemId, DateTime lastMonth) =>
+      _run((_) => ref.read(businessRepositoryProvider).endCostItem(costItemId, lastMonth));
+
+  Future<void> deleteCost(String costItemId) =>
+      _run((_) => ref.read(businessRepositoryProvider).deleteCostItem(costItemId));
+
+  Future<void> setOtherIncome(DateTime month, int amountCents) =>
+      _run((businessId) => ref.read(businessRepositoryProvider).setOtherIncome(businessId, month, amountCents));
 }
 
 /// The Available Workers marketplace list — a real paginated notifier, not

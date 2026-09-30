@@ -1,4 +1,5 @@
 import '../../../core/api_client.dart';
+import '../domain/finance_overview.dart';
 
 class BillingApiClient {
   BillingApiClient(this._api);
@@ -17,6 +18,12 @@ class BillingApiClient {
 
   Future<void> startFinanceTrial(String businessId) async {
     await _api.post('/businesses/$businessId/finance-access/trial');
+  }
+
+  Future<FinanceOverview> fetchFinanceOverview(String businessId, DateTime month) async {
+    final monthParam = '${month.year}-${month.month.toString().padLeft(2, '0')}';
+    final result = await _api.get('/businesses/$businessId/finance', query: {'month': monthParam});
+    return FinanceOverview.fromJson(result as Map<String, dynamic>);
   }
 
   Future<String> createFinanceAccessCheckout(String businessId) async {

@@ -66,7 +66,7 @@ Deferred to Phase 2+: `referral_codes` + ranking aggregation tables, `reward_led
 **Phase 2+** (deferred, each is its own design pass before building):
 - Ranking/leaderboard system (4 ranking types, weekly/monthly/yearly/all-time)
 - Referral code system + reward ledger + Stripe Connect payouts
-- Business finance module (monthly cost input → break-even recommendations; ML-driven)
+- Business finance module — built as a free tier (dated monthly/one-off costs, walk-in 'other income', the month's profit and bookings-to-break-even) and Premium at 9.99/month in the shop's currency with a 14-day no-card trial (forecast + break-even day, 12-month history, chair-utilisation heatmap, per-barber and customer-retention stats, priced promotion suggestions, what-if). All figures are computed server-side (`GET /businesses/{id}/finance`, `app/services/finance_analytics.py`), which also enforces the paywall; bookings store `price_cents` at booking time so history stays accurate. Suggestions are rule-based with stated assumptions — an ML model is a later step once there's data to train on
 - 3D haircut designer (save/load/share designs, paid extra storage)
 - In-app direct messaging
 - Auto-suspend/resume business accounts on failed subscription payment

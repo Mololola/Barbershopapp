@@ -80,7 +80,7 @@ class AccountSettingsScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.storefront_outlined),
               title: const Text('Business details'),
-              subtitle: const Text('Locations, opening hours, finance tool'),
+              subtitle: const Text('Locations and opening hours'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/business/edit'),
             ),

@@ -34,9 +34,8 @@ class MessagingRepository {
   /// profile (PostgREST needs an explicit FK hint since `conversations` has
   /// two FKs to `profiles`), then a second query for all messages in those
   /// conversations to derive the last-message preview and unread count in
-  /// Dart. Simple and fine at this app's scale — see finance_calculator.dart
-  /// for the same "compute in Dart" style; revisit with a view/RPC if the
-  /// message table grows large.
+  /// Dart. Simple and fine at this app's scale; revisit with a view/RPC if
+  /// the message table grows large.
   Future<List<Conversation>> fetchConversations(String myId) async {
     final rows = await _client
         .from('conversations')

@@ -1,4 +1,3 @@
-import calendar
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -13,6 +12,7 @@ from app.core.auth import get_current_user_id
 from app.core.config import settings
 from app.core.rate_limit import limiter, rate_limit
 from app.db.session import get_db
+from app.api.finance import finance_premium_state
 
 router = APIRouter()
 
@@ -20,8 +20,13 @@ router = APIRouter()
 # service price, times this multiplier, becomes its monthly subscription.
 _PRICE_MULTIPLIER = 10
 
-# Finance tool: a flat one-off unlock, not tied to service pricing.
-_FINANCE_ACCESS_PRICE_CENTS = 4500
+# Finance tool premium: a flat monthly add-on (the basic finance summary
+# is free for every business), in the shop's own currency.
+_FINANCE_PREMIUM_MONTHLY_CENTS = 999
+_FINANCE_TRIAL = timedelta(days=14)
+# Tags the premium add-on's checkout/subscription so webhook handlers don't
+# mistake it for the shop's main subscription.
+_FINANCE_PRODUCT = "finance_premium"
 
 # 3D designer: a repeatable, per-user bundle — buy again any time you fill
 # up. Fixed GBP price since profiles (unlike businesses) have no currency.
@@ -196,23 +201,6 @@ def create_portal_session(
     return PortalSessionResponse(url=portal_session.url)
 
 
-def _add_one_calendar_month(dt: datetime) -> datetime:
-    """Same day next month (Jan 1 -> Feb 1, Apr 15 -> May 15), clamped to the
-    target month's last day when it doesn't have that day (Jan 31 -> Feb
-    28/29) — the "1 month free trial" the user described by example."""
-    year = dt.year + dt.month // 12
-    month = dt.month % 12 + 1
-    day = min(dt.day, calendar.monthrange(year, month)[1])
-    return dt.replace(year=year, month=month, day=day)
-
-
-def _finance_access_row(db: Session, business_id: uuid.UUID):
-    return db.execute(
-        text("select grandfathered, paid_at from business_finance_access where business_id = :business_id"),
-        {"business_id": business_id},
-    ).mappings().first()
-
-
 @router.post("/businesses/{business_id}/finance-access/trial", response_model=OkResponse)
 def start_finance_trial(
     business_id: uuid.UUID,
@@ -222,16 +210,20 @@ def start_finance_trial(
     if not _is_business_owner(db, business_id, user_id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
 
-    if _finance_access_row(db, business_id) is not None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Finance tool access was already started for this business")
+    state = finance_premium_state(db, business_id)
+    if state.trial_used or state.has_premium:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This business has already had its free Premium trial")
 
     now = datetime.now(timezone.utc)
+    # Upsert: a legacy/grandfathered row can't reach here (has_premium), but
+    # a row can exist from an earlier, cancelled subscription.
     db.execute(
         text(
             "insert into business_finance_access (business_id, trial_started_at, trial_ends_at) "
-            "values (:business_id, :started, :ends)"
+            "values (:business_id, :started, :ends) "
+            "on conflict (business_id) do update set trial_started_at = :started, trial_ends_at = :ends"
         ),
-        {"business_id": business_id, "started": now, "ends": _add_one_calendar_month(now)},
+        {"business_id": business_id, "started": now, "ends": now + _FINANCE_TRIAL},
     )
     db.commit()
     return OkResponse()
@@ -247,9 +239,8 @@ def create_finance_access_checkout(
     if not _is_business_owner(db, business_id, user_id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
 
-    existing = _finance_access_row(db, business_id)
-    if existing and (existing["grandfathered"] or existing["paid_at"] is not None):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Finance tool is already unlocked for this business")
+    if finance_premium_state(db, business_id).subscribed:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Finance Premium is already active for this business")
 
     business = db.execute(
         text("select owner_id, currency, name from businesses where id = :business_id"),
@@ -258,27 +249,41 @@ def create_finance_access_checkout(
     if business is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Business not found")
 
-    email = db.execute(
-        text("select email from auth.users where id = :owner_id"),
-        {"owner_id": business["owner_id"]},
+    # The shop's existing Stripe customer when there is one, so Premium
+    # shows up alongside the main subscription in the one billing portal.
+    customer_id = db.execute(
+        text("select stripe_customer_id from business_subscriptions where business_id = :business_id"),
+        {"business_id": business_id},
     ).scalar()
+    customer_args = (
+        {"customer": customer_id}
+        if customer_id
+        else {
+            "customer_email": db.execute(
+                text("select email from auth.users where id = :owner_id"), {"owner_id": business["owner_id"]}
+            ).scalar()
+        }
+    )
 
     placeholder_return_url = f"{settings.supabase_url}/"
+    metadata = {"business_id": str(business_id), "product": _FINANCE_PRODUCT}
 
     session = stripe.checkout.Session.create(
-        customer_email=email,
-        mode="payment",
+        **customer_args,
+        mode="subscription",
         line_items=[
             {
                 "price_data": {
                     "currency": business["currency"].lower(),
-                    "product_data": {"name": f"{business['name']} — Finance tool (one-time unlock)"},
-                    "unit_amount": _FINANCE_ACCESS_PRICE_CENTS,
+                    "product_data": {"name": f"{business['name']} — Finance Premium"},
+                    "unit_amount": _FINANCE_PREMIUM_MONTHLY_CENTS,
+                    "recurring": {"interval": "month"},
                 },
                 "quantity": 1,
             }
         ],
-        metadata={"business_id": str(business_id)},
+        metadata=metadata,
+        subscription_data={"metadata": metadata},
         success_url=f"{placeholder_return_url}?billing=success",
         cancel_url=f"{placeholder_return_url}?billing=cancelled",
     )
@@ -323,7 +328,16 @@ def _handle_checkout_completed(db: Session, session: dict) -> None:
     mode = session.get("mode")
     metadata = session.get("metadata", {})
 
-    if mode == "subscription":
+    if mode == "subscription" and metadata.get("product") == _FINANCE_PRODUCT:
+        db.execute(
+            text(
+                "insert into business_finance_access (business_id, stripe_subscription_id, subscription_status) "
+                "values (:business_id, :sub, 'active') "
+                "on conflict (business_id) do update set stripe_subscription_id = :sub, subscription_status = 'active'"
+            ),
+            {"business_id": metadata["business_id"], "sub": session["subscription"]},
+        )
+    elif mode == "subscription":
         business_id = metadata["business_id"]
         db.execute(
             text(
@@ -334,16 +348,6 @@ def _handle_checkout_completed(db: Session, session: dict) -> None:
         )
         db.execute(
             text("update businesses set is_suspended = false where id = :business_id"), {"business_id": business_id}
-        )
-    elif mode == "payment" and "business_id" in metadata:
-        # Upsert: a business may pay without ever having started a trial, so
-        # there might be no existing business_finance_access row yet.
-        db.execute(
-            text(
-                "insert into business_finance_access (business_id, paid_at) values (:business_id, now()) "
-                "on conflict (business_id) do update set paid_at = now()"
-            ),
-            {"business_id": metadata["business_id"]},
         )
     elif mode == "payment" and "profile_id" in metadata:
         # Upsert: a user may buy a bundle before ever hitting the free cap,
@@ -376,6 +380,12 @@ def _handle_invoice_payment_failed(db: Session, invoice: dict) -> None:
     ).scalar()
     if business_id:
         db.execute(text("update businesses set is_suspended = true where id = :business_id"), {"business_id": business_id})
+    # Finance Premium stays usable while Stripe retries; it only lapses when
+    # Stripe gives up and cancels (customer.subscription.deleted).
+    db.execute(
+        text("update business_finance_access set subscription_status = 'past_due' where stripe_subscription_id = :sub"),
+        {"sub": subscription_id},
+    )
 
 
 def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
@@ -395,6 +405,10 @@ def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
     ).scalar()
     if business_id:
         db.execute(text("update businesses set is_suspended = false where id = :business_id"), {"business_id": business_id})
+    db.execute(
+        text("update business_finance_access set subscription_status = 'active' where stripe_subscription_id = :sub"),
+        {"sub": subscription_id},
+    )
 
 
 def _handle_subscription_deleted(db: Session, subscription: dict) -> None:
@@ -403,6 +417,10 @@ def _handle_subscription_deleted(db: Session, subscription: dict) -> None:
     # delete — see app/jobs/expire_grace_periods.py.
     db.execute(
         text("update business_subscriptions set status = 'canceled' where stripe_subscription_id = :sub"),
+        {"sub": subscription["id"]},
+    )
+    db.execute(
+        text("update business_finance_access set subscription_status = 'canceled' where stripe_subscription_id = :sub"),
         {"sub": subscription["id"]},
     )
 
