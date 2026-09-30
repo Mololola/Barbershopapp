@@ -128,7 +128,7 @@ class _PostCardState extends ConsumerState<PostCard> {
               const SizedBox(width: 16),
               IconButton(
                 icon: const Icon(Icons.mode_comment_outlined),
-                onPressed: () => context.push('/feed/${post.id}'),
+                onPressed: () => context.push('/posts/${post.id}'),
               ),
               Text('${post.commentCount}'),
             ],

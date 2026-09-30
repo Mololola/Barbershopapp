@@ -4,10 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/app_network_image.dart';
 import '../../../core/loading.dart';
-import '../../../core/quick_action_tile.dart';
 import '../../../core/theme.dart';
-import '../../auth/application/auth_controller.dart';
-import '../../messaging/application/messaging_controller.dart';
+import '../../messaging/presentation/messages_button.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 import '../domain/today_summary.dart';
@@ -24,14 +22,12 @@ class BusinessHomeScreen extends ConsumerWidget {
     final services = ref.watch(servicesProvider);
     final workers = ref.watch(workersProvider);
     final bookings = ref.watch(businessBookingsProvider);
-    final myProfile = ref.watch(currentProfileProvider).value;
-    final conversations = ref.watch(conversationsProvider).value ?? const [];
-    final unreadCount = conversations.fold<int>(0, (sum, c) => sum + c.unreadCount);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Barbershop for Business'),
         actions: [
+          const MessagesButton(),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings',
@@ -67,6 +63,8 @@ class BusinessHomeScreen extends ConsumerWidget {
                         if (s.id != null) s.id!: s.name,
                     },
                   ),
+                const SizedBox(height: 12),
+                const _FinanceCard(),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -119,7 +117,7 @@ class BusinessHomeScreen extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 24),
-                _SectionHeader(title: 'Staff', onManage: () => context.push('/business/staff')),
+                _SectionHeader(title: 'Staff', onManage: () => context.go('/business/staff')),
                 workers.when(
                   loading: () => const LoadingView(),
                   error: (error, _) => Text('Error: $error'),
@@ -142,32 +140,6 @@ class BusinessHomeScreen extends ConsumerWidget {
                       ),
                     );
                   },
-                ),
-                const SizedBox(height: 28),
-                Text('Quick actions', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    QuickActionTile(
-                      icon: Icons.photo_outlined,
-                      label: 'Feed',
-                      onTap: () => context.push('/feed'),
-                    ),
-                    QuickActionTile(
-                      icon: Icons.mode_comment_outlined,
-                      label: 'Messages',
-                      badgeCount: unreadCount,
-                      onTap: () => context.push('/messages'),
-                    ),
-                    if (myProfile?.isAdmin == true)
-                      QuickActionTile(
-                        icon: Icons.shield_outlined,
-                        label: 'Admin',
-                        onTap: () => context.push('/admin'),
-                      ),
-                  ],
                 ),
               ],
             ),
@@ -355,6 +327,44 @@ class _TodayCard extends StatelessWidget {
                 '${serviceNames[next.serviceId] == null ? '' : ' · ${serviceNames[next.serviceId]}'}',
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The finance tool used to be a bottom tab; it's used monthly rather than
+/// daily, so it lives here and the tab went to the feed.
+class _FinanceCard extends StatelessWidget {
+  const _FinanceCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => context.push('/business/finance'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.payments_outlined, color: AppColors.brass),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Finance', style: TextStyle(fontWeight: FontWeight.w700)),
+                  Text('Costs, break-even and how to get there', style: TextStyle(color: AppColors.steel)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: AppColors.steel),
           ],
         ),
       ),

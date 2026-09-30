@@ -128,6 +128,14 @@ class AccountSettingsScreen extends ConsumerWidget {
               },
             ),
           const _GroupHeader('Account'),
+          if (profile?.isAdmin == true)
+            ListTile(
+              leading: const Icon(Icons.shield_outlined),
+              title: const Text('Admin'),
+              subtitle: const Text('Dashboard, customers, businesses, payouts'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/admin'),
+            ),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),

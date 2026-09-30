@@ -5,6 +5,7 @@ import 'package:mobile/features/business/application/business_controller.dart';
 import 'package:mobile/features/business/domain/business.dart';
 import 'package:mobile/features/business/presentation/business_home_screen.dart';
 import 'package:mobile/features/customer/domain/booking.dart';
+import 'package:mobile/features/messaging/application/messaging_controller.dart';
 
 void main() {
   const business = Business(id: 'biz-1', ownerId: 'owner-1', name: 'Fresh Cuts', currency: 'GBP');
@@ -37,6 +38,7 @@ void main() {
         servicesProvider.overrideWith((ref) async => [service]),
         workersProvider.overrideWith((ref) async => [worker]),
         businessBookingsProvider.overrideWith((ref) async => [upcoming]),
+        conversationsProvider.overrideWith((ref) async => []),
       ],
       child: const MaterialApp(home: BusinessHomeScreen()),
     );
@@ -66,5 +68,16 @@ void main() {
 
     expect(find.text('Next booking'), findsOneWidget);
     expect(find.text('with Jane Doe · Haircut'), findsOneWidget);
+  });
+
+  testWidgets('no quick actions: messages top right, finance as a home card', (tester) async {
+    tester.view.physicalSize = const Size(1080, 6000);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quick actions'), findsNothing);
+    expect(find.byTooltip('Messages'), findsOneWidget);
+    expect(find.text('Finance'), findsOneWidget);
   });
 }

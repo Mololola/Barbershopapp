@@ -121,8 +121,8 @@ const _customerDestinations = [
 const _businessDestinations = [
   NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
   NavigationDestination(icon: Icon(Icons.event_outlined), selectedIcon: Icon(Icons.event), label: 'Bookings'),
+  NavigationDestination(icon: Icon(Icons.photo_outlined), selectedIcon: Icon(Icons.photo), label: 'Feed'),
   NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Staff'),
-  NavigationDestination(icon: Icon(Icons.payments_outlined), selectedIcon: Icon(Icons.payments), label: 'Finance'),
   NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
 ];
 
@@ -197,17 +197,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/feed',
-              builder: (context, state) => const FeedScreen(),
-              routes: [
-                GoRoute(path: 'new', builder: (context, state) => const CreatePostScreen()),
-                GoRoute(
-                  path: ':postId',
-                  builder: (context, state) => PostDetailScreen(postId: state.pathParameters['postId']!),
-                ),
-              ],
-            ),
+            GoRoute(path: '/feed', builder: (context, state) => const FeedScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
@@ -243,6 +233,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(path: '/business/bookings', builder: (context, state) => const BookingsScreen()),
           ]),
           StatefulShellBranch(routes: [
+            GoRoute(path: '/business/feed', builder: (context, state) => const FeedScreen()),
+          ]),
+          StatefulShellBranch(routes: [
             GoRoute(path: '/business/staff', builder: (context, state) => const StaffScreen()),
             GoRoute(
               path: '/business/staff/:workerId/schedule',
@@ -255,9 +248,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: '/business/browse-workers/:profileId',
               builder: (context, state) => WorkerCandidateDetailScreen(candidate: state.extra as WorkerSearchResult),
             ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/business/finance', builder: (context, state) => const FinanceScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: '/business/profile', builder: (context, state) => const MyProfileScreen()),
@@ -281,9 +271,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: _businessSetupRoute, builder: (context, state) => const BusinessSetupScreen()),
       GoRoute(path: '/business/services', builder: (context, state) => const ServicesScreen()),
       GoRoute(path: '/business/shop/edit', builder: (context, state) => const EditShopPageScreen()),
-      // Top-level so a business (which has no Feed tab) can post from its
-      // shop page without jumping into the customer tab shell.
+      // Posts are shared by both roles, so they live outside either tab
+      // shell: opened from the customer or the business feed (or a shop
+      // page), they stack over whichever shell you're in. Nested under one
+      // shell, they'd switch a business into the customer's tabs.
       GoRoute(path: '/posts/new', builder: (context, state) => const CreatePostScreen()),
+      GoRoute(
+        path: '/posts/:postId',
+        builder: (context, state) => PostDetailScreen(postId: state.pathParameters['postId']!),
+      ),
+      GoRoute(path: '/business/finance', builder: (context, state) => const FinanceScreen()),
       GoRoute(path: '/rankings', builder: (context, state) => const RankingsScreen()),
       GoRoute(path: '/rewards', builder: (context, state) => const RewardHistoryScreen()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),

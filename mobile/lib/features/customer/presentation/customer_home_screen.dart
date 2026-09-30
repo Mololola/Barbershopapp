@@ -6,6 +6,7 @@ import '../../../core/loading.dart';
 import '../../../core/quick_action_tile.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../messaging/presentation/messages_button.dart';
 import '../../messaging/application/messaging_controller.dart';
 import '../../rewards/application/rewards_controller.dart';
 import '../../worker/application/worker_controller.dart';
@@ -37,8 +38,10 @@ class CustomerHomeScreen extends ConsumerWidget {
               style: const TextStyle(color: Colors.white),
             ),
           ),
+          const MessagesButton(),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
             onPressed: () => context.push('/account-settings'),
           ),
         ],

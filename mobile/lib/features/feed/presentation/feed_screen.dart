@@ -21,12 +21,19 @@ class FeedScreen extends ConsumerWidget {
         title: const Text('Fresh Cuts'),
         centerTitle: false,
         titleSpacing: 20,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.emoji_events_outlined),
+            tooltip: 'Leaderboards',
+            onPressed: () => context.push('/rankings'),
+          ),
+        ],
       ),
       floatingActionButton: myProfile?.isMinor == true
           ? null
           : FloatingActionButton(
               heroTag: null,
-              onPressed: () => context.push('/feed/new'),
+              onPressed: () => context.push('/posts/new'),
               child: const Icon(Icons.add),
             ),
       body: feed.when(
@@ -34,7 +41,7 @@ class FeedScreen extends ConsumerWidget {
         error: (error, _) => Center(child: Text('Error: $error')),
         data: (posts) {
           if (posts.isEmpty) {
-            return _EmptyFeed(onCreate: () => context.push('/feed/new'));
+            return _EmptyFeed(onCreate: () => context.push('/posts/new'));
           }
           return ListView(
             padding: const EdgeInsets.only(top: 8, bottom: 16),
