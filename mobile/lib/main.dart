@@ -9,6 +9,7 @@ import 'core/env.dart';
 import 'core/error_reporting.dart';
 import 'core/router.dart';
 import 'core/secure_local_storage.dart';
+import 'core/system_bars.dart';
 import 'core/theme.dart';
 
 Future<void> main() async {
@@ -54,6 +55,7 @@ class BarbershopApp extends ConsumerWidget {
       title: 'Barbershop',
       theme: AppTheme.light,
       routerConfig: ref.watch(routerProvider),
+      builder: (context, child) => SystemBarsSafeArea(child: child!),
     );
   }
 }

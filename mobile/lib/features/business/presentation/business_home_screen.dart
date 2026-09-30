@@ -312,13 +312,16 @@ class _TodayCard extends StatelessWidget {
             if (next == null)
               const Text('Nothing booked yet')
             else ...[
-              Row(
+              // Wrap, not Row: "10:15 PM" + "Thu 2 Oct" overflows a phone at
+              // larger text sizes.
+              Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     TimeOfDay.fromDateTime(next.startTime.toLocal()).format(context),
                     style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(width: 8),
                   Text(_whenLabel(next.startTime, now), style: const TextStyle(color: AppColors.steel)),
                 ],
               ),
