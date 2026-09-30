@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../business/application/business_controller.dart';
 import '../application/auth_controller.dart';
+import '../domain/profile.dart';
 
+/// The one ⚙️ screen: everything about running the account. How you look
+/// to others is edited elsewhere (a customer's ✏️ on their profile, a
+/// business's shop page).
 class AccountSettingsScreen extends ConsumerWidget {
   const AccountSettingsScreen({super.key});
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     await ref.read(authControllerProvider.notifier).signOut();
+  }
+
+  Future<void> _openBilling(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final url = await ref.read(billingActionControllerProvider.notifier).openPortal();
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (error) {
+      // e.g. "No billing account yet — subscribe first" from the backend.
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+    }
   }
 
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
@@ -43,11 +62,56 @@ class AccountSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
+    final profile = ref.watch(currentProfileProvider).value;
+    final isBusiness = profile?.role == AccountRole.business;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Account')),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          if (isBusiness) ...[
+            const _GroupHeader('Your shop'),
+            ListTile(
+              leading: const Icon(Icons.brush_outlined),
+              title: const Text('Shop page'),
+              subtitle: const Text('Logo, cover photo and brand colour'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/business/shop/edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.storefront_outlined),
+              title: const Text('Business details'),
+              subtitle: const Text('Locations, opening hours, finance tool'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/business/edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_cut),
+              title: const Text('Services'),
+              subtitle: const Text('What you offer, prices and durations'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/business/services'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long_outlined),
+              title: const Text('Subscription & billing'),
+              subtitle: const Text('Payment method, invoices, cancel'),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => _openBilling(context, ref),
+            ),
+            if (profile != null)
+              ListTile(
+                leading: const Icon(Icons.card_giftcard_outlined),
+                title: const Text('Your referral code'),
+                subtitle: Text(profile.referralCode),
+                trailing: const Icon(Icons.copy),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: profile.referralCode));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Referral code copied')));
+                },
+              ),
+            const _GroupHeader('Account'),
+          ],
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),
@@ -62,6 +126,20 @@ class AccountSettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      child: Text(title, style: Theme.of(context).textTheme.labelLarge),
     );
   }
 }

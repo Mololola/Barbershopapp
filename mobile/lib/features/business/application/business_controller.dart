@@ -7,6 +7,7 @@ import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
 import '../../customer/application/booking_controller.dart' show bookingsRepositoryProvider;
+import '../../customer/application/browse_controller.dart';
 import '../../customer/domain/booking.dart';
 import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_leave_request.dart';
@@ -418,32 +419,60 @@ class BusinessEditController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<bool> save({
-    File? logoImage,
-    required List<BusinessLocation> locations,
-    required List<OpeningHours> hours,
-  }) async {
+  Future<bool> save({required List<BusinessLocation> locations, required List<OpeningHours> hours}) async {
     state = const AsyncLoading();
     var success = false;
     state = await AsyncValue.guard(() async {
       final business = await ref.read(currentBusinessProvider.future);
       if (business == null) throw StateError('No business set up yet.');
 
-      if (logoImage != null) {
-        // Same uploaded image becomes both the owner's personal avatar
-        // (shown on the feed/profile-search) and the business's public logo.
-        final url = await ref.read(profileRepositoryProvider).uploadAvatarImage(business.ownerId, logoImage);
-        await ref.read(profileRepositoryProvider).updateAvatarUrl(business.ownerId, url);
-        await ref.read(businessRepositoryProvider).updateLogoUrl(business.id, url);
-      }
       await ref.read(businessRepositoryProvider).updateLocations(business.id, locations);
       await ref.read(businessRepositoryProvider).updateOpeningHours(business.id, hours);
 
       ref.invalidate(currentBusinessProvider);
       ref.invalidate(locationsProvider);
       ref.invalidate(openingHoursProvider);
-      ref.invalidate(currentProfileProvider);
+      ref.invalidate(businessLocationsProvider(business.id));
+      ref.invalidate(businessOpeningHoursProvider(business.id));
       await ref.read(currentBusinessProvider.future);
+      success = true;
+    });
+    return success;
+  }
+}
+
+final shopBrandingControllerProvider =
+    AsyncNotifierProvider<ShopBrandingController, void>(ShopBrandingController.new);
+
+class ShopBrandingController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  /// Only what changed is uploaded/written; null means "keep as is".
+  Future<bool> save({File? logoImage, File? coverImage, String? brandColor}) async {
+    state = const AsyncLoading();
+    var success = false;
+    state = await AsyncValue.guard(() async {
+      final business = await ref.read(currentBusinessProvider.future);
+      if (business == null) throw StateError('No business set up yet.');
+      final profiles = ref.read(profileRepositoryProvider);
+
+      String? logoUrl;
+      if (logoImage != null) {
+        // The logo doubles as the owner's avatar, shown next to their posts.
+        logoUrl = await profiles.uploadAvatarImage(business.ownerId, logoImage);
+        await profiles.updateAvatarUrl(business.ownerId, logoUrl);
+      }
+      final coverUrl = coverImage == null
+          ? null
+          : await profiles.uploadAvatarImage(business.ownerId, coverImage, fileName: 'cover');
+      await ref
+          .read(businessRepositoryProvider)
+          .updateBranding(business.id, logoUrl: logoUrl, coverUrl: coverUrl, brandColor: brandColor);
+
+      ref.invalidate(currentBusinessProvider);
+      ref.invalidate(businessProvider(business.id));
+      ref.invalidate(currentProfileProvider);
       success = true;
     });
     return success;

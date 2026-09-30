@@ -147,8 +147,13 @@ class BusinessRepository {
         .update({'setup_completed_at': DateTime.now().toUtc().toIso8601String()}).eq('id', businessId);
   }
 
-  Future<void> updateLogoUrl(String businessId, String logoUrl) async {
-    await _client.from('businesses').update({'logo_url': logoUrl}).eq('id', businessId);
+  /// Only the fields passed are changed.
+  Future<void> updateBranding(String businessId, {String? logoUrl, String? coverUrl, String? brandColor}) async {
+    await _client.from('businesses').update({
+      if (logoUrl != null) 'logo_url': logoUrl,
+      if (coverUrl != null) 'cover_url': coverUrl,
+      if (brandColor != null) 'brand_color': brandColor,
+    }).eq('id', businessId);
   }
 
   Future<List<OpeningHours>> fetchWorkerSchedule(String workerId) async {

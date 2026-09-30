@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
+import '../../customer/application/browse_controller.dart';
+import '../../customer/presentation/shop_page.dart';
 import '../../messaging/application/messaging_controller.dart';
 import '../../worker/application/worker_controller.dart';
 import '../application/feed_controller.dart';
@@ -21,6 +23,14 @@ class ProfileScreen extends ConsumerWidget {
     final myProfile = ref.watch(currentProfileProvider).value;
     final posts = ref.watch(postsByAuthorProvider(profileId));
     final isMine = profileId == myProfile?.id;
+
+    // A business's profile is its shop page — the same one customers book
+    // from — wherever it's reached from (a post's author, profile search).
+    if (profile.value?.role == AccountRole.business) {
+      final businessId = ref.watch(businessIdByOwnerProvider(profileId));
+      if (businessId.isLoading) return const Scaffold(body: LoadingView());
+      if (businessId.value != null) return ShopPage(businessId: businessId.value!, isOwner: isMine);
+    }
 
     return Scaffold(
       appBar: AppBar(

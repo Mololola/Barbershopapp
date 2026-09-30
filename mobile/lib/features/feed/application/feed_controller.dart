@@ -44,6 +44,8 @@ class FeedActionController extends AsyncNotifier<void> {
       final profile = await ref.read(currentProfileProvider.future);
       if (profile == null) throw StateError('No signed-in profile.');
       await ref.read(feedRepositoryProvider).createPost(authorId: profile.id, body: body, image: image, video: video);
+      // The author's own list (their profile / a business's shop page).
+      ref.invalidate(postsByAuthorProvider(profile.id));
     });
   }
 

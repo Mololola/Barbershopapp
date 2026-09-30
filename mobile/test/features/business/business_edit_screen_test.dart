@@ -32,17 +32,6 @@ void main() {
     );
   }
 
-  testWidgets('"Manage services" navigates to the services screen', (tester) async {
-    await tester.pumpWidget(buildTestable());
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(find.text('Manage services'), 300, scrollable: find.byType(Scrollable).first);
-    await tester.tap(find.text('Manage services'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('No services yet — add your first one.'), findsOneWidget);
-  });
-
   testWidgets('edits opening hours, including adding a break', (tester) async {
     tester.view.physicalSize = const Size(1080, 8000);
     addTearDown(tester.view.reset);

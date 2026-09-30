@@ -33,11 +33,8 @@ class BusinessHomeScreen extends ConsumerWidget {
         title: const Text('Barbershop for Business'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => context.push('/business/edit'),
-          ),
-          IconButton(
             icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
             onPressed: () => context.push('/account-settings'),
           ),
         ],

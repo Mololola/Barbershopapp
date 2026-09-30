@@ -4,6 +4,7 @@ import '../../../core/supabase_providers.dart';
 import '../../business/domain/business.dart';
 import '../data/browse_repository.dart';
 import '../domain/public_business.dart';
+import '../domain/shop_review.dart';
 
 final browseRepositoryProvider = Provider<BrowseRepository>((ref) {
   return BrowseRepository(ref.watch(supabaseClientProvider));
@@ -31,4 +32,12 @@ final businessServicesProvider = FutureProvider.family<List<Service>, String>((r
 
 final businessWorkersProvider = FutureProvider.family<List<Worker>, String>((ref, businessId) {
   return ref.watch(browseRepositoryProvider).fetchWorkers(businessId);
+});
+
+final businessReviewsProvider = FutureProvider.family<List<ShopReview>, String>((ref, businessId) {
+  return ref.watch(browseRepositoryProvider).fetchRecentReviews(businessId);
+});
+
+final businessIdByOwnerProvider = FutureProvider.family<String?, String>((ref, ownerId) {
+  return ref.watch(browseRepositoryProvider).fetchBusinessIdByOwner(ownerId);
 });

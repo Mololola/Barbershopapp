@@ -42,7 +42,7 @@ void main() {
     );
   }
 
-  testWidgets('shows services and staff, edit icon, and no management buttons', (tester) async {
+  testWidgets('shows services and staff, one settings icon, and no management buttons', (tester) async {
     // Phone width, tall enough to lay out the whole (lazily built) list.
     tester.view.physicalSize = const Size(1080, 6000);
     addTearDown(tester.view.reset);
@@ -51,7 +51,9 @@ void main() {
 
     expect(find.textContaining('Haircut'), findsWidgets);
     expect(find.text('Jane Doe'), findsOneWidget);
-    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+    // Everything account/shop-related lives behind the single ⚙️.
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsNothing);
 
     expect(find.text('Manage services'), findsNothing);
     expect(find.text('Manage staff'), findsNothing);

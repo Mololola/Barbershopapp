@@ -12,6 +12,7 @@ import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/business/application/business_controller.dart';
+import '../features/business/presentation/edit_shop_page_screen.dart';
 import '../features/business/presentation/business_edit_screen.dart';
 import '../features/business/presentation/business_home_screen.dart';
 import '../features/business/presentation/business_setup_screen.dart';
@@ -22,7 +23,7 @@ import '../features/business/presentation/staff_screen.dart';
 import '../features/business/presentation/worker_candidate_detail_screen.dart';
 import '../features/business/presentation/worker_schedule_screen.dart';
 import '../features/customer/application/review_controller.dart';
-import '../features/customer/presentation/business_detail_screen.dart';
+import '../features/customer/presentation/shop_page.dart';
 import '../features/customer/presentation/business_list_screen.dart';
 import '../features/customer/presentation/booking_screen.dart';
 import '../features/customer/presentation/customer_home_screen.dart';
@@ -181,7 +182,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                   path: ':businessId',
                   builder: (context, state) =>
-                      BusinessDetailScreen(businessId: state.pathParameters['businessId']!),
+                      ShopPage(businessId: state.pathParameters['businessId']!),
                   routes: [
                     GoRoute(
                       path: 'book',
@@ -279,6 +280,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/business/edit', builder: (context, state) => const BusinessEditScreen()),
       GoRoute(path: _businessSetupRoute, builder: (context, state) => const BusinessSetupScreen()),
       GoRoute(path: '/business/services', builder: (context, state) => const ServicesScreen()),
+      GoRoute(path: '/business/shop/edit', builder: (context, state) => const EditShopPageScreen()),
+      // Top-level so a business (which has no Feed tab) can post from its
+      // shop page without jumping into the customer tab shell.
+      GoRoute(path: '/posts/new', builder: (context, state) => const CreatePostScreen()),
       GoRoute(path: '/rankings', builder: (context, state) => const RankingsScreen()),
       GoRoute(path: '/rewards', builder: (context, state) => const RewardHistoryScreen()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),

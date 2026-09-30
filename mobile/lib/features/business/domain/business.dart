@@ -45,6 +45,8 @@ class Business {
     this.phone,
     required this.currency,
     this.logoUrl,
+    this.coverUrl,
+    this.brandColor,
     this.isSetupComplete = false,
   });
 
@@ -54,6 +56,10 @@ class Business {
   final String? phone;
   final String currency;
   final String? logoUrl;
+  final String? coverUrl;
+
+  /// "#RRGGBB", or null until chosen — see brandColorOf.
+  final String? brandColor;
 
   /// False until the owner finishes the onboarding wizard (details, a
   /// service, a staff member) — the router keeps them in it until then.
@@ -67,6 +73,8 @@ class Business {
       phone: row['phone'] as String?,
       currency: row['currency'] as String,
       logoUrl: row['logo_url'] as String?,
+      coverUrl: row['cover_url'] as String?,
+      brandColor: row['brand_color'] as String?,
       isSetupComplete: row['setup_completed_at'] != null,
     );
   }

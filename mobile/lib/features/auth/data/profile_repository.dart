@@ -71,8 +71,9 @@ class ProfileRepository {
   /// whoever owns the `avatars/<uid>/...` folder under storage RLS — not
   /// necessarily the profile the resulting URL gets written to (a business
   /// logo upload uses the owner's own uid but also updates `businesses`).
-  Future<String> uploadAvatarImage(String uid, File image) async {
-    final path = '$uid/avatar${_extensionOf(image.path)}';
+  /// [fileName] keeps a shop's cover photo from overwriting its logo.
+  Future<String> uploadAvatarImage(String uid, File image, {String fileName = 'avatar'}) async {
+    final path = '$uid/$fileName${_extensionOf(image.path)}';
     await _client.storage.from('avatars').upload(
           path,
           image,

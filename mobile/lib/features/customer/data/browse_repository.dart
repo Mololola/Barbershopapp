@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../business/domain/business.dart';
 import '../domain/public_business.dart';
+import '../domain/shop_review.dart';
 
 class BrowseRepository {
   BrowseRepository(this._client);
@@ -18,6 +19,24 @@ class BrowseRepository {
         await _client.from('businesses_public').select().eq('id', businessId).maybeSingle();
     if (row == null) return null;
     return PublicBusiness.fromRow(row);
+  }
+
+  /// A business profile's shop — lets a post's author link lead to the
+  /// shop page rather than a bare profile.
+  Future<String?> fetchBusinessIdByOwner(String ownerId) async {
+    final row = await _client.from('businesses_public').select('id').eq('owner_id', ownerId).maybeSingle();
+    return row?['id'] as String?;
+  }
+
+  Future<List<ShopReview>> fetchRecentReviews(String businessId, {int limit = 5}) async {
+    final rows = await _client
+        .from('reviews')
+        .select('shop_rating, shop_comment, created_at, customer:profiles!reviews_customer_id_fkey(username)')
+        .eq('business_id', businessId)
+        .not('shop_rating', 'is', null)
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return rows.map(ShopReview.fromRow).toList();
   }
 
   Future<List<BusinessLocation>> fetchLocations(String businessId) async {
