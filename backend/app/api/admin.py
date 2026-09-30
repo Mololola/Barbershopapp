@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -365,3 +366,32 @@ def admin_reviewers(
         suggested=[Reviewer(**row) for row in suggested.mappings()],
         promoted=[Reviewer(**row) for row in promoted.mappings()],
     )
+
+
+class QualityReviewerUpdate(BaseModel):
+    is_quality_reviewer: bool
+
+
+@router.post("/admin/customers/{customer_id}/quality-reviewer", status_code=status.HTTP_204_NO_CONTENT)
+def set_quality_reviewer(
+    customer_id: uuid.UUID,
+    body: QualityReviewerUpdate,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("30/minute")),
+    _admin: str = Depends(require_admin),
+) -> None:
+    """Promote a customer to (or demote from) the $3 reward tier. Done here,
+    not as a client-side update: the app's database role deliberately has
+    no UPDATE grant on is_quality_reviewer (see 'lock down profile
+    privilege columns'), so nobody can promote themselves — which also
+    means an admin's own client can't write it either."""
+    updated = db.execute(
+        text(
+            "update profiles set is_quality_reviewer = :value "
+            "where id = :customer_id and role = 'customer' returning id"
+        ),
+        {"value": body.is_quality_reviewer, "customer_id": customer_id},
+    ).first()
+    if updated is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Customer not found")
+    db.commit()

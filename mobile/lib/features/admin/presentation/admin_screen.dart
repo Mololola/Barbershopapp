@@ -134,6 +134,14 @@ class _CustomersTabState extends ConsumerState<_CustomersTab> {
                       _isQualityReviewer ? 'Deactivate \$3 rewards' : 'Activate \$3 rewards',
                     ),
                   ),
+                  if (actionState.hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        actionState.error.toString(),
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   Text('Review history', style: Theme.of(context).textTheme.titleMedium),
                   Expanded(child: _ReviewHistory(customerId: selected.id)),

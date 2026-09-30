@@ -1,18 +1,20 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/api_client.dart';
+
 import '../../auth/domain/profile.dart';
 import '../../customer/domain/review.dart';
 import '../../rewards/domain/payout_request.dart';
 import '../domain/admin_business_summary.dart';
 
-/// Admin-only actions — `setQualityReviewer` relies entirely on the
-/// "admin update quality reviewer flag" RLS policy (see the migration) to
-/// reject the write server-side for any caller whose own profile isn't
-/// flagged `is_admin`; this repository does no authorization itself.
+/// Admin-only actions. This repository does no authorization itself: the
+/// database's RLS policies (reads, trials, payouts) and the backend's admin
+/// check (`setQualityReviewer`) reject any caller who isn't `is_admin`.
 class AdminRepository {
-  AdminRepository(this._client);
+  AdminRepository(this._client, this._api);
 
   final SupabaseClient _client;
+  final ApiClient _api;
 
   Future<List<Profile>> searchCustomers(String query) async {
     final rows = await _client
@@ -33,8 +35,11 @@ class AdminRepository {
     return rows.map(Review.fromRow).toList();
   }
 
+  /// Through the backend: the app's database role has no UPDATE grant on
+  /// is_quality_reviewer (so no one can promote themselves), which means a
+  /// direct update from here is refused even for an admin.
   Future<void> setQualityReviewer(String customerId, bool value) async {
-    await _client.from('profiles').update({'is_quality_reviewer': value}).eq('id', customerId);
+    await _api.post('/admin/customers/$customerId/quality-reviewer', body: {'is_quality_reviewer': value});
   }
 
   /// Relies on the "admin select all businesses"/"admin select all

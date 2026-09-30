@@ -11,7 +11,7 @@ import '../domain/admin_metrics.dart';
 import '../domain/reviewer.dart';
 
 final adminRepositoryProvider = Provider<AdminRepository>((ref) {
-  return AdminRepository(ref.watch(supabaseClientProvider));
+  return AdminRepository(ref.watch(supabaseClientProvider), ref.watch(apiClientProvider));
 });
 
 // autoDispose — a stale cached search result would show the customer's
