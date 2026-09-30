@@ -84,11 +84,12 @@ void main() {
     expect(find.byIcon(Icons.edit_outlined), findsNothing);
   });
 
-  testWidgets('edit icon appears when viewing your own profile', (tester) async {
+  testWidgets('your own profile has the settings gear (no separate edit pencil)', (tester) async {
     await tester.pumpWidget(
       buildTestable(customerProfile, signedInAs: customerProfile, workerData: null),
     );
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsNothing);
   });
 }

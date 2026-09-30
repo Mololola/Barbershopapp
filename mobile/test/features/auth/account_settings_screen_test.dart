@@ -26,15 +26,25 @@ void main() {
     expect(find.text('Delete account'), findsOneWidget);
   });
 
-  testWidgets('a customer gets only the account actions', (tester) async {
+  testWidgets('a customer manages their profile and account in the same place', (tester) async {
     await tester.pumpWidget(buildTestable(
       const Profile(id: 'c', role: AccountRole.customer, username: 'alex', referralCode: 'CODE'),
     ));
     await tester.pumpAndSettle();
 
+    for (final item in ['Your profile', 'Profile photo', 'Worker profile', 'CODE', 'Sign out', 'Delete account']) {
+      expect(find.text(item), findsOneWidget, reason: item);
+    }
     expect(find.text('Your shop'), findsNothing);
-    expect(find.text('Shop page'), findsNothing);
-    expect(find.text('Sign out'), findsOneWidget);
-    expect(find.text('Delete account'), findsOneWidget);
+  });
+
+  testWidgets('an under-18 customer is not offered a worker profile', (tester) async {
+    await tester.pumpWidget(buildTestable(
+      const Profile(id: 'm', role: AccountRole.customer, username: 'sam', referralCode: 'CODE', isMinor: true),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Profile photo'), findsOneWidget);
+    expect(find.text('Worker profile'), findsNothing);
   });
 }

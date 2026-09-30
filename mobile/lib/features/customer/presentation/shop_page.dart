@@ -255,7 +255,6 @@ class _ShopBody extends ConsumerWidget {
           ),
         _Section(title: 'Services', child: _Services(shop: shop, isOwner: isOwner, brand: brand)),
         _Section(title: 'Barbers', child: _Barbers(businessId: shop.id, brand: brand)),
-        _Section(title: 'Reviews', child: _Reviews(businessId: shop.id)),
         if (hours != null)
           _Section(
             title: 'Opening hours',
@@ -283,6 +282,7 @@ class _ShopBody extends ConsumerWidget {
             ),
           ),
         _Section(title: 'Posts', child: _Posts(ownerId: shop.ownerId)),
+        _Section(title: 'Reviews', child: _Reviews(businessId: shop.id)),
       ],
     );
   }

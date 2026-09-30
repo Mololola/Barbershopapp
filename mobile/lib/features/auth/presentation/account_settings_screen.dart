@@ -8,9 +8,8 @@ import '../../business/application/business_controller.dart';
 import '../application/auth_controller.dart';
 import '../domain/profile.dart';
 
-/// The one ⚙️ screen: everything about running the account. How you look
-/// to others is edited elsewhere (a customer's ✏️ on their profile, a
-/// business's shop page).
+/// The one ⚙️ screen for managing an account — reached from the home
+/// screen's gear and from the gear on your own profile.
 class AccountSettingsScreen extends ConsumerWidget {
   const AccountSettingsScreen({super.key});
 
@@ -99,19 +98,36 @@ class AccountSettingsScreen extends ConsumerWidget {
               trailing: const Icon(Icons.open_in_new),
               onTap: () => _openBilling(context, ref),
             ),
-            if (profile != null)
+          ] else if (profile != null) ...[
+            const _GroupHeader('Your profile'),
+            ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: const Text('Profile photo'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/profile/edit'),
+            ),
+            // Worker features aren't available to under-18 accounts.
+            if (profile.isMinor != true)
               ListTile(
-                leading: const Icon(Icons.card_giftcard_outlined),
-                title: const Text('Your referral code'),
-                subtitle: Text(profile.referralCode),
-                trailing: const Icon(Icons.copy),
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: profile.referralCode));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Referral code copied')));
-                },
+                leading: const Icon(Icons.content_cut),
+                title: const Text('Worker profile'),
+                subtitle: const Text('Legal name, bio and availability to work at a shop'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/customer/worker-profile'),
               ),
-            const _GroupHeader('Account'),
           ],
+          if (profile != null)
+            ListTile(
+              leading: const Icon(Icons.card_giftcard_outlined),
+              title: const Text('Your referral code'),
+              subtitle: Text(profile.referralCode),
+              trailing: const Icon(Icons.copy),
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: profile.referralCode));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Referral code copied')));
+              },
+            ),
+          const _GroupHeader('Account'),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),

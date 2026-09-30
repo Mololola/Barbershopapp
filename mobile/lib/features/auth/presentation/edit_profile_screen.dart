@@ -1,9 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../application/auth_controller.dart';
@@ -38,7 +36,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final editState = ref.watch(profileEditControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit profile')),
+      appBar: AppBar(title: const Text('Profile photo')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: ListView(
@@ -76,28 +74,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: editState.isLoading
                   ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('Save'),
-            ),
-            const SizedBox(height: 32),
-            if (profile != null)
-              ListTile(
-                title: const Text('Your referral code'),
-                subtitle: Text(profile.referralCode),
-                trailing: IconButton(
-                  icon: const Icon(Icons.copy),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: profile.referralCode));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Referral code copied')),
-                    );
-                  },
-                ),
-              ),
-            const SizedBox(height: 8),
-            ListTile(
-              title: const Text('Manage worker profile'),
-              subtitle: const Text('Set up legal name, bio, and availability to work at a shop'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/customer/worker-profile'),
             ),
           ],
         ),

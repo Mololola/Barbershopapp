@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/auth/domain/profile.dart';
-import 'package:mobile/features/auth/presentation/edit_profile_screen.dart';
+import 'package:mobile/features/auth/presentation/account_settings_screen.dart';
 import 'package:mobile/features/worker/application/worker_controller.dart';
 import 'package:mobile/features/worker/domain/worker_invitation.dart';
 import 'package:mobile/features/worker/presentation/worker_profile_screen.dart';
@@ -15,9 +15,9 @@ void main() {
 
   Widget buildTestable() {
     final router = GoRouter(
-      initialLocation: '/edit',
+      initialLocation: '/settings',
       routes: [
-        GoRoute(path: '/edit', builder: (context, state) => const EditProfileScreen()),
+        GoRoute(path: '/settings', builder: (context, state) => const AccountSettingsScreen()),
         GoRoute(
           path: '/customer/worker-profile',
           builder: (context, state) => const WorkerProfileScreen(),
@@ -34,20 +34,17 @@ void main() {
     );
   }
 
-  testWidgets('"Manage worker profile" navigates to the worker profile screen', (tester) async {
+  testWidgets('Settings > "Worker profile" navigates to the worker profile screen', (tester) async {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    expect(find.text('Manage worker profile'), findsOneWidget);
-
-    await tester.tap(find.text('Manage worker profile'));
+    await tester.tap(find.text('Worker profile'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Worker profile'), findsOneWidget);
     expect(find.text('Available as worker'), findsOneWidget);
   });
 
-  testWidgets('shows the referral code', (tester) async {
+  testWidgets('Settings shows the referral code', (tester) async {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
