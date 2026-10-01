@@ -68,7 +68,7 @@ class AdminOverviewTab extends ConsumerWidget {
               if (_countOf(m.monthlyRecurringAtRisk) > 0)
                 (Icons.credit_card_off_outlined, '${_countOf(m.monthlyRecurringAtRisk)} failed payment'
                     '${_countOf(m.monthlyRecurringAtRisk) == 1 ? '' : 's'} (${_perCurrency(m.monthlyRecurringAtRisk)}/mo at risk)'),
-              if (m.suspended > 0) (Icons.block, '${m.suspended} business${m.suspended == 1 ? '' : 'es'} suspended'),
+              if (m.suspended > 0) (Icons.block, '${m.suspended} business${m.suspended == 1 ? '' : 'es'} hidden (unpaid)'),
               if (m.awaitingEmailConfirmation + m.confirmedWithoutProfile > 0)
                 (Icons.person_off_outlined, '${m.awaitingEmailConfirmation + m.confirmedWithoutProfile} '
                     'sign-up${m.awaitingEmailConfirmation + m.confirmedWithoutProfile == 1 ? '' : 's'} not finished'),
@@ -109,7 +109,7 @@ class AdminOverviewTab extends ConsumerWidget {
               _Tile('Trials running', '${m.trialsActive}', caption: '${m.trialsEndingIn7Days} end this week'),
               _Tile('Trial → paying', _percent(m.trialsConvertedToPaying, m.trialsEnded),
                   caption: '${m.trialsConvertedToPaying} of ${m.trialsEnded} finished trials'),
-              _Tile('Suspended', '${m.suspended}', caption: 'Hidden for non-payment'),
+              _Tile('Hidden', '${m.suspended}', caption: 'Unpaid — not shown to customers'),
               if (m.grandfathered > 0) _Tile('Free (grandfathered)', '${m.grandfathered}', caption: 'Never billed'),
             ]),
             _Breakdown(

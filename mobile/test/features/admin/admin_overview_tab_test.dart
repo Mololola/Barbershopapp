@@ -106,7 +106,7 @@ void main() {
     // Action items only for things that need doing.
     expect(find.text('Needs your attention'), findsOneWidget);
     expect(find.textContaining('1 payout request waiting'), findsOneWidget);
-    expect(find.textContaining('1 business suspended'), findsOneWidget);
+    expect(find.textContaining('1 business hidden (unpaid)'), findsOneWidget);
     expect(find.text('75%'), findsOneWidget); // 3 of 4 finished trials converted
     // Customers: +12 in 30 days vs 2 the 30 before.
     expect(find.text('+12 in 30 days (+10)'), findsOneWidget);

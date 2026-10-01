@@ -48,6 +48,7 @@ class Business {
     this.coverUrl,
     this.brandColor,
     this.isSetupComplete = false,
+    this.createdAt,
   });
 
   final String id;
@@ -65,6 +66,8 @@ class Business {
   /// service, a staff member) — the router keeps them in it until then.
   final bool isSetupComplete;
 
+  final DateTime? createdAt;
+
   factory Business.fromRow(Map<String, dynamic> row) {
     return Business(
       id: row['id'] as String,
@@ -76,6 +79,7 @@ class Business {
       coverUrl: row['cover_url'] as String?,
       brandColor: row['brand_color'] as String?,
       isSetupComplete: row['setup_completed_at'] != null,
+      createdAt: row['created_at'] != null ? DateTime.parse(row['created_at'] as String) : null,
     );
   }
 }

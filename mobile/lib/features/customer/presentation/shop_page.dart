@@ -40,7 +40,7 @@ class ShopPage extends ConsumerWidget {
                   padding: const EdgeInsets.all(24),
                   child: Text(
                     isOwner
-                        ? 'Your shop page is hidden from customers while your account is suspended.'
+                        ? 'Your shop page is hidden from customers until your subscription is active.'
                         : 'This shop isn\'t available right now.',
                     textAlign: TextAlign.center,
                   ),
@@ -354,7 +354,7 @@ class _OpenNow extends StatelessWidget {
       children: [
         Icon(open ? Icons.schedule : Icons.do_not_disturb_on_outlined, size: 16, color: color),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(color: color, fontWeight: open ? FontWeight.w600 : null)),
+        Flexible(child: Text(label, style: TextStyle(color: color, fontWeight: open ? FontWeight.w600 : null))),
       ],
     );
   }

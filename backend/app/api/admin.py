@@ -197,7 +197,7 @@ def _business_metrics(db: Session) -> BusinessMetrics:
         businesses=_windowed(db, "businesses", "created_at"),
         setup_complete=_scalar(db, "select count(*) from businesses where setup_completed_at is not null"),
         bookable=_scalar(db, "select count(*) from businesses_public where is_bookable"),
-        suspended=_scalar(db, "select count(*) from businesses where is_suspended"),
+        suspended=_scalar(db, "select count(*) from businesses where not business_is_listed(id)"),
         subscriptions_by_status=_named_counts(
             db,
             "select coalesce(s.status, 'never subscribed'), count(*) from businesses b "

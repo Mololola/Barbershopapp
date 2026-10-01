@@ -338,16 +338,12 @@ def _handle_checkout_completed(db: Session, session: dict) -> None:
             {"business_id": metadata["business_id"], "sub": session["subscription"]},
         )
     elif mode == "subscription":
-        business_id = metadata["business_id"]
         db.execute(
             text(
-                "update business_subscriptions set stripe_subscription_id = :sub, status = 'active' "
+                "update business_subscriptions set stripe_subscription_id = :sub, status = 'active', suspended_at = null "
                 "where business_id = :business_id"
             ),
-            {"sub": session["subscription"], "business_id": business_id},
-        )
-        db.execute(
-            text("update businesses set is_suspended = false where id = :business_id"), {"business_id": business_id}
+            {"sub": session["subscription"], "business_id": metadata["business_id"]},
         )
     elif mode == "payment" and "profile_id" in metadata:
         # Upsert: a user may buy a bundle before ever hitting the free cap,
@@ -365,8 +361,9 @@ def _handle_invoice_payment_failed(db: Session, invoice: dict) -> None:
     subscription_id = invoice.get("subscription")
     if not subscription_id:
         return
-    # coalesce: the 2-month grace clock starts on the *first* failure, not
-    # reset by every Stripe retry against the same still-unpaid invoice.
+    # coalesce: the grace clock (business_hidden_since in f1c9a7d3e5b2)
+    # starts on the *first* failure, not reset by every Stripe retry
+    # against the same still-unpaid invoice.
     db.execute(
         text(
             "update business_subscriptions set status = 'suspended', suspended_at = coalesce(suspended_at, now()) "
@@ -374,12 +371,6 @@ def _handle_invoice_payment_failed(db: Session, invoice: dict) -> None:
         ),
         {"sub": subscription_id},
     )
-    business_id = db.execute(
-        text("select business_id from business_subscriptions where stripe_subscription_id = :sub"),
-        {"sub": subscription_id},
-    ).scalar()
-    if business_id:
-        db.execute(text("update businesses set is_suspended = true where id = :business_id"), {"business_id": business_id})
     # Finance Premium stays usable while Stripe retries; it only lapses when
     # Stripe gives up and cancels (customer.subscription.deleted).
     db.execute(
@@ -399,12 +390,6 @@ def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
         ),
         {"sub": subscription_id},
     )
-    business_id = db.execute(
-        text("select business_id from business_subscriptions where stripe_subscription_id = :sub"),
-        {"sub": subscription_id},
-    ).scalar()
-    if business_id:
-        db.execute(text("update businesses set is_suspended = false where id = :business_id"), {"business_id": business_id})
     db.execute(
         text("update business_finance_access set subscription_status = 'active' where stripe_subscription_id = :sub"),
         {"sub": subscription_id},
@@ -412,11 +397,14 @@ def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
 
 
 def _handle_subscription_deleted(db: Session, subscription: dict) -> None:
-    # Stripe gave up retrying and canceled the subscription itself. Our own
-    # 60-day clock from suspended_at (not this event) still drives the hard
-    # delete — see app/jobs/expire_grace_periods.py.
+    # Either Stripe gave up retrying (suspended_at already set by the first
+    # failure — keep it) or the owner canceled and the paid period ran out
+    # (starts the grace clock now).
     db.execute(
-        text("update business_subscriptions set status = 'canceled' where stripe_subscription_id = :sub"),
+        text(
+            "update business_subscriptions set status = 'canceled', suspended_at = coalesce(suspended_at, now()) "
+            "where stripe_subscription_id = :sub"
+        ),
         {"sub": subscription["id"]},
     )
     db.execute(

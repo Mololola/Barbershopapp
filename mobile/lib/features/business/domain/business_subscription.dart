@@ -32,15 +32,13 @@ class BusinessSubscription {
   final int monthlyAmountCents;
   final DateTime? suspendedAt;
 
-  /// Matches the backend's 60-day clock in
-  /// backend/app/jobs/expire_grace_periods.py — null once that's passed
-  /// (the business would already be gone by then).
-  int? get graceDaysRemaining {
-    if (suspendedAt == null) return null;
-    final elapsed = DateTime.now().toUtc().difference(suspendedAt!).inDays;
-    final remaining = 60 - elapsed;
-    return remaining < 0 ? 0 : remaining;
-  }
+  /// How long an unpaid shop's data is kept after it's hidden — mirrors
+  /// GRACE_PERIOD_DAYS in backend/app/jobs/expire_grace_periods.py.
+  static const dataRetention = Duration(days: 60);
+
+  /// When a lapsed shop stops being shown to customers — mirrors the
+  /// backend's business_hidden_since (migration f1c9a7d3e5b2).
+  DateTime? get hiddenAt => suspendedAt?.add(const Duration(days: 3));
 
   factory BusinessSubscription.fromRow(Map<String, dynamic> row) {
     return BusinessSubscription(

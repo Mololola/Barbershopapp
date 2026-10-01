@@ -219,7 +219,7 @@ def create_booking(
     _rate_limit: None = Depends(rate_limit("10/minute")),  # a human can't legitimately create more than this
     user_id: str = Depends(get_current_user_id),
 ) -> Booking:
-    if _is_business_suspended(db, body.business_id):
+    if not _is_business_listed(db, body.business_id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This business is currently unavailable")
 
     service = _get_active_service(db, body.business_id, body.service_id)
@@ -270,10 +270,10 @@ def _map_booking_integrity_error(exc: IntegrityError) -> HTTPException:
     return HTTPException(status.HTTP_400_BAD_REQUEST, "Could not create booking")
 
 
-def _is_business_suspended(db: Session, business_id: uuid.UUID) -> bool:
+def _is_business_listed(db: Session, business_id: uuid.UUID) -> bool:
     return bool(
         db.execute(
-            text("select is_suspended from businesses where id = :business_id"),
+            text("select business_is_listed(:business_id)"),
             {"business_id": business_id},
         ).scalar()
     )
