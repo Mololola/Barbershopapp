@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../business/application/business_controller.dart';
 import '../application/auth_controller.dart';
 import '../domain/profile.dart';
 
@@ -15,17 +13,6 @@ class AccountSettingsScreen extends ConsumerWidget {
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     await ref.read(authControllerProvider.notifier).signOut();
-  }
-
-  Future<void> _openBilling(BuildContext context, WidgetRef ref) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final url = await ref.read(billingActionControllerProvider.notifier).openPortal();
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } catch (error) {
-      // e.g. "No billing account yet — subscribe first" from the backend.
-      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
-    }
   }
 
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
@@ -94,9 +81,9 @@ class AccountSettingsScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.receipt_long_outlined),
               title: const Text('Subscription & billing'),
-              subtitle: const Text('Payment method, invoices, cancel'),
-              trailing: const Icon(Icons.open_in_new),
-              onTap: () => _openBilling(context, ref),
+              subtitle: const Text('Your plan, free trial, cancel, invoices'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/business/subscription'),
             ),
           ] else if (profile != null) ...[
             const _GroupHeader('Your profile'),

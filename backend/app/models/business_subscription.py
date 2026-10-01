@@ -19,6 +19,8 @@ class BusinessSubscription(Base):
     grandfathered: Mapped[bool] = mapped_column(Boolean, default=False)
     suspended_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     current_period_end: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    trial_ends_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    cancel_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     # server_default, not a Python-side default — see reward_ledger.py for
     # why (omits the column from INSERT so the DB's `default now()` fills
     # it in, instead of SQLAlchemy sending an explicit NULL).

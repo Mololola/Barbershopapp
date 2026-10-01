@@ -5,6 +5,7 @@ import 'package:mobile/features/business/application/business_controller.dart';
 import 'package:mobile/features/business/domain/business.dart';
 import 'package:mobile/features/business/domain/business_subscription.dart';
 import 'package:mobile/features/business/presentation/subscription_banner.dart';
+import 'package:mobile/features/business/presentation/subscription_screen.dart';
 
 void main() {
   Widget buildTestable(BusinessSubscription? subscription, {DateTime? businessCreatedAt}) {
@@ -28,6 +29,26 @@ void main() {
     expect(find.byType(SubscriptionBanner), findsOneWidget);
     expect(find.text('Subscribe'), findsNothing);
     expect(find.textContaining('deleted'), findsNothing);
+  });
+
+  testWidgets('during a free trial, says when it ends and that cancelling before then costs nothing', (tester) async {
+    final trialEnd = DateTime.now().toUtc().add(const Duration(days: 5));
+    await tester.pumpWidget(buildTestable(
+      BusinessSubscription(
+        status: SubscriptionStatus.active,
+        grandfathered: false,
+        monthlyAmountCents: 10000,
+        trialEndsAt: trialEnd,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Free trial until ${formatSubscriptionDate(trialEnd)}. '
+          'Cancel any time before then and you won\'t be charged.'),
+      findsOneWidget,
+    );
+    expect(find.text('Manage'), findsOneWidget);
   });
 
   testWidgets('renders nothing for a grandfathered subscription', (tester) async {

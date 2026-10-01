@@ -16,6 +16,14 @@ class BillingApiClient {
     return (result as Map<String, dynamic>)['url'] as String;
   }
 
+  Future<void> cancelSubscription(String businessId) async {
+    await _api.post('/businesses/$businessId/subscription/cancel');
+  }
+
+  Future<void> resumeSubscription(String businessId) async {
+    await _api.post('/businesses/$businessId/subscription/resume');
+  }
+
   Future<void> startFinanceTrial(String businessId) async {
     await _api.post('/businesses/$businessId/finance-access/trial');
   }

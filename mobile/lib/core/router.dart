@@ -19,6 +19,7 @@ import '../features/business/presentation/business_setup_screen.dart';
 import '../features/business/presentation/services_screen.dart';
 import '../features/business/presentation/bookings_screen.dart';
 import '../features/business/presentation/finance_screen.dart';
+import '../features/business/presentation/subscription_screen.dart';
 import '../features/business/presentation/staff_screen.dart';
 import '../features/business/presentation/worker_candidate_detail_screen.dart';
 import '../features/business/presentation/worker_schedule_screen.dart';
@@ -281,6 +282,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => PostDetailScreen(postId: state.pathParameters['postId']!),
       ),
       GoRoute(path: '/business/finance', builder: (context, state) => const FinanceScreen()),
+      GoRoute(path: '/business/subscription', builder: (context, state) => const SubscriptionScreen()),
       GoRoute(path: '/rankings', builder: (context, state) => const RankingsScreen()),
       GoRoute(path: '/rewards', builder: (context, state) => const RewardHistoryScreen()),
       GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),

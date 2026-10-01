@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../application/business_controller.dart';
 import '../domain/business_subscription.dart';
+import 'subscription_screen.dart';
 
 /// Shown on the business home screen. Nothing renders for an active or
 /// grandfathered (pre-billing) subscription — only when action is needed
 /// (never subscribed, suspended, or canceled): an unpaid shop is hidden from
-/// customers and, 60 days after that, deleted.
+/// customers and, 60 days after that, deleted. During a free trial, or once
+/// a cancellation is scheduled, it says so and links to where to cancel or
+/// undo it.
 class SubscriptionBanner extends ConsumerWidget {
   const SubscriptionBanner({super.key});
 
@@ -46,8 +50,31 @@ class SubscriptionBanner extends ConsumerWidget {
         // "Subscribe" prompt as an explicit 'incomplete' status, not to be
         // silently hidden — otherwise a new business could never discover
         // it needs to subscribe at all.
-        if (sub != null && (sub.grandfathered || sub.status == SubscriptionStatus.active)) {
-          return const SizedBox.shrink();
+        if (sub != null && sub.grandfathered) return const SizedBox.shrink();
+        if (sub != null && sub.status == SubscriptionStatus.active) {
+          final String message;
+          if (sub.cancelAt != null) {
+            message =
+                'Subscription cancelled — you keep full access until '
+                '${formatSubscriptionDate(sub.cancelAt!)} and won\'t be charged.';
+          } else if (sub.isInTrial) {
+            message =
+                'Free trial until ${formatSubscriptionDate(sub.trialEndsAt!)}. '
+                'Cancel any time before then and you won\'t be charged.';
+          } else {
+            return const SizedBox.shrink();
+          }
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: ListTile(
+              leading: const Icon(Icons.event_available),
+              title: Text(message),
+              trailing: TextButton(
+                onPressed: () => context.push('/business/subscription'),
+                child: const Text('Manage'),
+              ),
+            ),
+          );
         }
 
         final now = DateTime.now().toUtc();
@@ -112,10 +139,8 @@ class SubscriptionBanner extends ConsumerWidget {
               ],
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: () => _launch(
-                  context,
-                  () => ref.read(billingActionControllerProvider.notifier).startCheckout(),
-                ),
+                onPressed: () =>
+                    _launch(context, () => ref.read(billingActionControllerProvider.notifier).startCheckout()),
                 child: const Text('Subscribe'),
               ),
             ],

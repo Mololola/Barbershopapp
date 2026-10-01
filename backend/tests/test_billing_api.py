@@ -1,6 +1,11 @@
 from datetime import datetime, timedelta, timezone
 
-from app.api.billing import _price_from_average, _trial_end_timestamp
+from app.api.billing import (
+    _invoice_subscription_id,
+    _price_from_average,
+    _scheduled_cancellation,
+    _trial_end_timestamp,
+)
 
 
 def test_price_is_ten_times_the_average_active_service_price():
@@ -52,3 +57,32 @@ def test_trial_exactly_at_the_48h_boundary_is_accepted():
     now = datetime(2026, 1, 1, tzinfo=timezone.utc)
     trial_ends_at = now + timedelta(hours=48)
     assert _trial_end_timestamp(trial_ends_at, now) == int(trial_ends_at.timestamp())
+
+
+def test_invoice_subscription_is_read_from_parent_on_current_api_versions():
+    invoice = {"parent": {"type": "subscription_details", "subscription_details": {"subscription": "sub_1"}}}
+    assert _invoice_subscription_id(invoice) == "sub_1"
+
+
+def test_invoice_subscription_falls_back_to_the_pre_2025_top_level_field():
+    assert _invoice_subscription_id({"subscription": "sub_1"}) == "sub_1"
+
+
+def test_invoice_without_a_subscription_returns_none():
+    assert _invoice_subscription_id({"parent": None}) is None
+
+
+def _subscription(**fields):
+    return {"cancel_at": None, "cancel_at_period_end": False, "items": {"data": [{"current_period_end": 1800}]}, **fields}
+
+
+def test_no_cancellation_scheduled():
+    assert _scheduled_cancellation(_subscription()) is None
+
+
+def test_cancellation_uses_stripes_cancel_at_when_set():
+    assert _scheduled_cancellation(_subscription(cancel_at=1700, cancel_at_period_end=True)) == 1700
+
+
+def test_cancel_at_period_end_without_cancel_at_uses_the_period_end():
+    assert _scheduled_cancellation(_subscription(cancel_at_period_end=True)) == 1800

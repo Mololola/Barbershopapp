@@ -201,6 +201,50 @@ def create_portal_session(
     return PortalSessionResponse(url=portal_session.url)
 
 
+def _set_cancel_at_period_end(db: Session, business_id: uuid.UUID, user_id: str, cancel: bool) -> OkResponse:
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+
+    subscription_id = db.execute(
+        text(
+            "select stripe_subscription_id from business_subscriptions "
+            "where business_id = :business_id and status = 'active'"
+        ),
+        {"business_id": business_id},
+    ).scalar()
+    if not subscription_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No active subscription")
+
+    # At period end, not now: during a trial the period ends with the trial,
+    # so the owner keeps everything until then and is never charged.
+    subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=cancel)
+    # The webhook will record the same thing; doing it now means the app
+    # shows the change as soon as this returns.
+    _handle_subscription_updated(db, subscription)
+    db.commit()
+    return OkResponse()
+
+
+@router.post("/businesses/{business_id}/subscription/cancel", response_model=OkResponse)
+def cancel_subscription(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    return _set_cancel_at_period_end(db, business_id, user_id, cancel=True)
+
+
+@router.post("/businesses/{business_id}/subscription/resume", response_model=OkResponse)
+def resume_subscription(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    return _set_cancel_at_period_end(db, business_id, user_id, cancel=False)
+
+
 @router.post("/businesses/{business_id}/finance-access/trial", response_model=OkResponse)
 def start_finance_trial(
     business_id: uuid.UUID,
@@ -357,8 +401,20 @@ def _handle_checkout_completed(db: Session, session: dict) -> None:
         )
 
 
+def _invoice_subscription_id(invoice: dict) -> str | None:
+    """Stripe API 2025-03-31 moved an invoice's subscription under
+    `parent`; a webhook endpoint pinned to an older API version still sends
+    the top-level field."""
+    details = (invoice.get("parent") or {}).get("subscription_details") or {}
+    return details.get("subscription") or invoice.get("subscription")
+
+
+def _from_unix(timestamp: int | None) -> datetime | None:
+    return datetime.fromtimestamp(timestamp, timezone.utc) if timestamp else None
+
+
 def _handle_invoice_payment_failed(db: Session, invoice: dict) -> None:
-    subscription_id = invoice.get("subscription")
+    subscription_id = _invoice_subscription_id(invoice)
     if not subscription_id:
         return
     # coalesce: the grace clock (business_hidden_since in f1c9a7d3e5b2)
@@ -380,7 +436,7 @@ def _handle_invoice_payment_failed(db: Session, invoice: dict) -> None:
 
 
 def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
-    subscription_id = invoice.get("subscription")
+    subscription_id = _invoice_subscription_id(invoice)
     if not subscription_id:
         return
     db.execute(
@@ -393,6 +449,42 @@ def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
     db.execute(
         text("update business_finance_access set subscription_status = 'active' where stripe_subscription_id = :sub"),
         {"sub": subscription_id},
+    )
+
+
+def _scheduled_cancellation(subscription: dict) -> int | None:
+    """Stripe documents cancel_at as the scheduled date but not that
+    cancel_at_period_end fills it in; the period end (on the item since API
+    2025-03-31, and the trial end during a trial) is the same moment."""
+    if subscription.get("cancel_at"):
+        return subscription["cancel_at"]
+    if not subscription.get("cancel_at_period_end"):
+        return None
+    return subscription["items"]["data"][0]["current_period_end"]
+
+
+def _handle_subscription_updated(db: Session, subscription: dict) -> None:
+    """Records the main subscription's trial end and scheduled cancellation.
+    Keyed on the business (metadata set at checkout), not the subscription
+    id: `created` can arrive before checkout.session.completed has stored
+    that id. A canceled subscription is left to the deleted handler — it
+    may be an old one the business has since replaced."""
+    metadata = subscription.get("metadata") or {}
+    if metadata.get("product") == _FINANCE_PRODUCT or "business_id" not in metadata:
+        return
+    if subscription["status"] in ("canceled", "incomplete_expired"):
+        return
+    db.execute(
+        text(
+            "update business_subscriptions set stripe_subscription_id = :sub, "
+            "trial_ends_at = :trial_ends_at, cancel_at = :cancel_at where business_id = :business_id"
+        ),
+        {
+            "sub": subscription["id"],
+            "trial_ends_at": _from_unix(subscription.get("trial_end")),
+            "cancel_at": _from_unix(_scheduled_cancellation(subscription)),
+            "business_id": metadata["business_id"],
+        },
     )
 
 
@@ -417,6 +509,8 @@ _WEBHOOK_HANDLERS = {
     "checkout.session.completed": _handle_checkout_completed,
     "invoice.payment_failed": _handle_invoice_payment_failed,
     "invoice.payment_succeeded": _handle_invoice_payment_succeeded,
+    "customer.subscription.created": _handle_subscription_updated,
+    "customer.subscription.updated": _handle_subscription_updated,
     "customer.subscription.deleted": _handle_subscription_deleted,
 }
 

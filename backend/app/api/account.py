@@ -22,7 +22,11 @@ def _block_reason(db: Session, user_id: str) -> str | None:
         return None
 
     has_active_subscription = db.execute(
-        text("select 1 from business_subscriptions where business_id = :business_id and status = 'active'"),
+        # One already set to cancel at period end will never charge again.
+        text(
+            "select 1 from business_subscriptions "
+            "where business_id = :business_id and status = 'active' and cancel_at is null"
+        ),
         {"business_id": business["id"]},
     ).first()
     if has_active_subscription:

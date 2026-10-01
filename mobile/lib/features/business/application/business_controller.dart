@@ -69,6 +69,21 @@ class BillingActionController extends AsyncNotifier<void> {
     return ref.read(billingApiClientProvider).createPortalSession(business.id);
   }
 
+  /// Cancels at the end of the trial or paid month, never immediately.
+  Future<void> cancelSubscription() => _changeSubscription((api, id) => api.cancelSubscription(id));
+
+  Future<void> resumeSubscription() => _changeSubscription((api, id) => api.resumeSubscription(id));
+
+  Future<void> _changeSubscription(Future<void> Function(BillingApiClient api, String businessId) change) async {
+    final business = await ref.read(currentBusinessProvider.future);
+    if (business == null) throw StateError('No business set up yet.');
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await change(ref.read(billingApiClientProvider), business.id);
+      ref.invalidate(businessSubscriptionProvider);
+    });
+  }
+
   Future<void> startFinanceTrial() async {
     final business = await ref.read(currentBusinessProvider.future);
     if (business == null) throw StateError('No business set up yet.');
