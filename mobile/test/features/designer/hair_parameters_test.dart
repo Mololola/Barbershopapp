@@ -70,6 +70,13 @@ void main() {
     expect(restored.length, 10.0);
     expect(restored.faceParams.skinTone, const FaceParameters().skinTone);
     expect(restored.strokes, isEmpty);
+    // Unversioned means v1, so designer.js converts its strokes to the v2 scalp map.
+    expect(restored.version, 1);
+  });
+
+  test('new designs are the current version, and the version round-trips', () {
+    expect(const HairParameters().version, currentDesignVersion);
+    expect(HairParameters.fromJson(const HairParameters().toJson()).version, currentDesignVersion);
   });
 
   test('copyWith only overrides the given fields', () {

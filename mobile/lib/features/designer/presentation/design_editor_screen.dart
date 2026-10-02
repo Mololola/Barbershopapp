@@ -135,6 +135,11 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     _pushToolMode();
   }
 
+  void _setView(String view) {
+    if (!_webViewReady) return;
+    _webViewController.runJavaScript("setView('$view')");
+  }
+
   void _undo() {
     if (!_webViewReady) return;
     _webViewController.runJavaScript('undoLastStroke()');
@@ -213,7 +218,15 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       ),
       body: Column(
         children: [
-          Expanded(flex: 3, child: WebViewWidget(controller: _webViewController)),
+          Expanded(
+            flex: 5,
+            child: Stack(
+              children: [
+                WebViewWidget(controller: _webViewController),
+                Positioned(left: 8, right: 8, bottom: 8, child: _ViewButtons(onSelect: _setView)),
+              ],
+            ),
+          ),
           _ToolBar(
             tool: _tool,
             onSelectTool: _selectTool,
@@ -221,7 +234,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
             onClear: _clearDrawing,
           ),
           Expanded(
-            flex: 4,
+            flex: 3,
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -389,7 +402,10 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       default:
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: 8),
-          child: Text('Drag to rotate the head. Pick a tool above to start drawing on it.'),
+          child: Text(
+            'Drag to rotate · pinch to zoom · two fingers to move · double-tap to reset. '
+            'Pick a tool above to draw on the hair — two fingers still zoom while drawing.',
+          ),
         );
     }
   }
@@ -441,6 +457,36 @@ class _ToolBar extends StatelessWidget {
           IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Clear drawing', onPressed: onClear),
         ],
       ),
+    );
+  }
+}
+
+/// Jumps the camera to a standard angle — the ones a barber checks a cut from.
+class _ViewButtons extends StatelessWidget {
+  const _ViewButtons({required this.onSelect});
+
+  final ValueChanged<String> onSelect;
+
+  static const _views = [('front', 'Front'), ('left', 'Left'), ('right', 'Right'), ('back', 'Back'), ('top', 'Top')];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (final (id, label) in _views)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: ActionChip(
+              label: Text(label),
+              visualDensity: VisualDensity.compact,
+              backgroundColor: Colors.black54,
+              labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
+              side: BorderSide.none,
+              onPressed: () => onSelect(id),
+            ),
+          ),
+      ],
     );
   }
 }

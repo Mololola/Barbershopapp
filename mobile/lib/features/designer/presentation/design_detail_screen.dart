@@ -61,8 +61,9 @@ class _DesignDetailScreenState extends ConsumerState<DesignDetailScreen> {
           }
           if (_webViewReady && !_pushedParameters) {
             _pushedParameters = true;
-            final jsonString = jsonEncode(jsonEncode(value.parameters.toJson()));
-            _webViewController.runJavaScript('updateParameters($jsonString)');
+            final parameters = jsonEncode(jsonEncode(value.parameters.toJson()));
+            final strokes = jsonEncode(jsonEncode(value.parameters.strokes.map((s) => s.toJson()).toList()));
+            _webViewController.runJavaScript('updateParameters($parameters); loadStrokes($strokes)');
           }
           return Column(
             children: [

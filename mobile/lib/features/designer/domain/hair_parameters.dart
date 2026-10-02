@@ -2,8 +2,13 @@
 /// `assets/haircut_designer/designer.js` — this is the one typed shape both
 /// the WebView JS bridge and the `haircut_designs.parameters` JSONB column
 /// go through, instead of passing raw maps around.
+/// Bumped when the meaning of stored values changes; designer.js converts
+/// older designs on load (v2: the scalp map reaches down to the nape).
+const currentDesignVersion = 2;
+
 class HairParameters {
   const HairParameters({
+    this.version = currentDesignVersion,
     this.length = 8,
     this.volume = 1,
     this.curl = 0,
@@ -13,6 +18,8 @@ class HairParameters {
     this.faceParams = const FaceParameters(),
     this.strokes = const [],
   });
+
+  final int version;
 
   /// 0 (shaved) .. 20 (long).
   final double length;
@@ -49,6 +56,7 @@ class HairParameters {
     List<HairStroke>? strokes,
   }) {
     return HairParameters(
+      version: version,
       length: length ?? this.length,
       volume: volume ?? this.volume,
       curl: curl ?? this.curl,
@@ -62,6 +70,7 @@ class HairParameters {
 
   Map<String, dynamic> toJson() {
     return {
+      'version': version,
       'length': length,
       'volume': volume,
       'curl': curl,
@@ -75,6 +84,8 @@ class HairParameters {
 
   factory HairParameters.fromJson(Map<String, dynamic> json) {
     return HairParameters(
+      // Designs saved before versioning are v1.
+      version: (json['version'] as num?)?.toInt() ?? 1,
       length: (json['length'] as num?)?.toDouble() ?? 8,
       volume: (json['volume'] as num?)?.toDouble() ?? 1,
       curl: (json['curl'] as num?)?.toDouble() ?? 0,
