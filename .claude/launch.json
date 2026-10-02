@@ -12,6 +12,12 @@
       "runtimeExecutable": "backend/.venv/Scripts/python.exe",
       "runtimeArgs": ["-m", "http.server", "8765", "--directory", "mobile/assets/haircut_designer"],
       "port": 8765
+    },
+    {
+      "name": "hair-physics",
+      "runtimeExecutable": "backend/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "prototypes/hair-physics"],
+      "port": 8766
     }
   ]
 }
