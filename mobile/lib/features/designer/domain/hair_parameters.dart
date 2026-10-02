@@ -1,14 +1,15 @@
-/// Mirrors the `DEFAULT_PARAMS` shape in
-/// `assets/haircut_designer/designer.js` — this is the one typed shape both
-/// the WebView JS bridge and the `haircut_designs.parameters` JSONB column
-/// go through, instead of passing raw maps around.
 /// Bumped when the meaning of stored values changes; designer.js converts
-/// older designs on load (v2: the scalp map reaches down to the nape).
-const currentDesignVersion = 2;
+/// older designs on load (v2: the scalp map reaches down to the nape; v3:
+/// haircut presets — older designs become the 'custom' preset).
+const currentDesignVersion = 3;
 
+/// A design as `assets/haircut_designer/designer.js` describes it — the one
+/// typed shape both the WebView bridge and the `haircut_designs.parameters`
+/// JSONB column go through, instead of passing raw maps around.
 class HairParameters {
   const HairParameters({
     this.version = currentDesignVersion,
+    this.preset = 'custom',
     this.length = 8,
     this.volume = 1,
     this.curl = 0,
@@ -21,7 +22,11 @@ class HairParameters {
 
   final int version;
 
-  /// 0 (shaved) .. 20 (long).
+  /// One of [haircutPresets]' ids — the cut the design starts from.
+  final String preset;
+
+  /// The top's length in 0.5 cm units: 0 (shaved) .. 100 (50 cm). The
+  /// preset sets the other regions relative to it.
   final double length;
 
   /// 0.2 (sparse) .. 2 (very thick).
@@ -35,7 +40,8 @@ class HairParameters {
   /// -1 (left) .. 1 (right), 0 = no part.
   final double partOffset;
 
-  /// 0 (no fade, even length) .. 1 (high, tight fade).
+  /// 0 (no fade) .. 1 (high fade). Presets fade down to skin; 'custom'
+  /// (designs from before presets) tapers without reaching skin.
   final double fadeHeight;
 
   final FaceParameters faceParams;
@@ -46,6 +52,7 @@ class HairParameters {
   final List<HairStroke> strokes;
 
   HairParameters copyWith({
+    String? preset,
     double? length,
     double? volume,
     double? curl,
@@ -57,6 +64,7 @@ class HairParameters {
   }) {
     return HairParameters(
       version: version,
+      preset: preset ?? this.preset,
       length: length ?? this.length,
       volume: volume ?? this.volume,
       curl: curl ?? this.curl,
@@ -71,6 +79,7 @@ class HairParameters {
   Map<String, dynamic> toJson() {
     return {
       'version': version,
+      'preset': preset,
       'length': length,
       'volume': volume,
       'curl': curl,
@@ -84,8 +93,9 @@ class HairParameters {
 
   factory HairParameters.fromJson(Map<String, dynamic> json) {
     return HairParameters(
-      // Designs saved before versioning are v1.
+      // Designs saved before versioning are v1, and before presets 'custom'.
       version: (json['version'] as num?)?.toInt() ?? 1,
+      preset: json['preset'] as String? ?? 'custom',
       length: (json['length'] as num?)?.toDouble() ?? 8,
       volume: (json['volume'] as num?)?.toDouble() ?? 1,
       curl: (json['curl'] as num?)?.toDouble() ?? 0,
@@ -135,14 +145,15 @@ class HairStroke {
     this.colorHex,
   });
 
-  /// 'clipper' | 'scissors' | 'razor' | 'dye'.
+  /// 'clipper' | 'razor' | 'dye' | 'cut' (the scissors), or 'scissors' — a
+  /// brush to a set length, from designs before the physics scissors.
   final String tool;
 
-  /// Clipper guard size, 0 (skin) .. 8 — fixed guard→length table lives in
-  /// designer.js. Only set when tool == 'clipper'.
+  /// Clipper guard, 0 (skin) .. 8 — the real guard lengths live in
+  /// groom.js (CLIPPER_GUARD_LENGTHS). Only set when tool == 'clipper'.
   final int? guard;
 
-  /// Continuous target length, 0..20. Only set when tool == 'scissors'.
+  /// Target length in 0.5 cm units. Only set when tool == 'scissors'.
   final double? length;
 
   /// Only set when tool == 'dye'.
@@ -151,7 +162,8 @@ class HairStroke {
   /// Brush radius in UV space (0..1).
   final double radius;
 
-  /// [[u, v], ...] sampled along the drag gesture.
+  /// [[u, v], ...] sampled along the drag gesture — or for 'cut',
+  /// [[u, v, length], ...]: each strand the scissors cut, at its new length.
   final List<List<double>> points;
 
   Map<String, dynamic> toJson() {
@@ -178,3 +190,24 @@ class HairStroke {
     );
   }
 }
+
+/// The cuts a design can start from — ids match PRESETS in
+/// `assets/haircut_designer/groom.js`.
+const haircutPresets = [
+  (id: 'buzz', label: 'Buzz Cut', group: 'Barbershop'),
+  (id: 'crew', label: 'Crew Cut', group: 'Barbershop'),
+  (id: 'fade', label: 'Fade', group: 'Barbershop'),
+  (id: 'undercut', label: 'Undercut', group: 'Barbershop'),
+  (id: 'pompadour', label: 'Pompadour', group: 'Barbershop'),
+  (id: 'quiff', label: 'Quiff', group: 'Barbershop'),
+  (id: 'slickBack', label: 'Slick Back', group: 'Barbershop'),
+  (id: 'texturedCrop', label: 'Textured Crop', group: 'Barbershop'),
+  (id: 'mullet', label: 'Mullet', group: 'Barbershop'),
+  (id: 'afro', label: 'Afro', group: 'Barbershop'),
+  (id: 'bald', label: 'Bald/Shaved', group: 'Barbershop'),
+  (id: 'longLayers', label: 'Long Layers', group: 'Longer cuts'),
+  (id: 'bob', label: 'Bob', group: 'Longer cuts'),
+  (id: 'pixie', label: 'Pixie', group: 'Longer cuts'),
+  (id: 'curtains', label: 'Curtains', group: 'Longer cuts'),
+  (id: 'curly', label: 'Curly', group: 'Longer cuts'),
+];

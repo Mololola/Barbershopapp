@@ -79,6 +79,25 @@ void main() {
     expect(HairParameters.fromJson(const HairParameters().toJson()).version, currentDesignVersion);
   });
 
+  test('the preset round-trips, and designs from before presets are custom', () {
+    expect(HairParameters.fromJson(const HairParameters(preset: 'pompadour').toJson()).preset, 'pompadour');
+    expect(HairParameters.fromJson({'length': 10.0, 'version': 2}).preset, 'custom');
+  });
+
+  test('scissors cuts keep each strand\'s new length as a third coordinate', () {
+    const original = HairParameters(strokes: [
+      HairStroke(tool: 'cut', radius: 0.004, points: [
+        [0.25, 0.4, 12.5],
+      ]),
+    ]);
+    expect(HairParameters.fromJson(original.toJson()).strokes.single.points.single, [0.25, 0.4, 12.5]);
+  });
+
+  test('preset ids are unique', () {
+    final ids = haircutPresets.map((p) => p.id).toList();
+    expect(ids.toSet(), hasLength(ids.length));
+  });
+
   test('copyWith only overrides the given fields', () {
     const original = HairParameters(length: 5, colorHex: '#000000');
     final updated = original.copyWith(length: 10);

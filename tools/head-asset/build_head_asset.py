@@ -1,0 +1,181 @@
+"""Builds mobile/assets/haircut_designer/head_asset.js from the head scan.
+
+The designer's WebView loads from file:// and can't fetch() local files, so
+everything ships embedded in one script: the mesh (quantised), its textures
+as data URIs, the collision shapes fitted to it, and a precomputed scalp map.
+
+Units: 1 = 10 cm. The scan is scaled so crown to chin is 23 cm, and moved
+so the fitted cranium ellipsoid is centred on the origin; it faces +z.
+
+Scalp map: for a grid over scalp UV (u = azimuth / 2pi, v = polar / 130deg,
+angles taken on the cranium ellipsoid, azimuth pi/2 = the face), the point
+where a ray from the cranium centre meets the skin, and the skin normal
+there. Hair roots and the short-hair shells sit on it.
+
+Run with the system Python (needs numpy):  python build_head_asset.py
+"""
+import base64
+import json
+import math
+import pathlib
+
+import numpy as np
+
+from glb import load_glb
+
+HERE = pathlib.Path(__file__).parent
+SOURCE = HERE / "source"
+OUTPUT = HERE.parent.parent / "mobile" / "assets" / "haircut_designer" / "head_asset.js"
+
+CROWN_TO_CHIN = 2.3  # 23 cm
+SCAN_CROWN_Y = 3.97
+SCAN_CHIN_Y = -0.70  # where the face profile (front-most z at each height) drops into the neck
+MAX_POLAR = math.radians(130)
+SCALP_MAP_WIDTH = 128
+SCALP_MAP_HEIGHT = 64
+
+
+def fit_ellipsoid(points, center, radii, iterations=30):
+    """Axis-aligned ellipsoid best fitting the points (Gauss-Newton on each
+    point's normalised radius minus 1), from a starting guess. The algebraic
+    least-squares fit is unstable on a partial cap like the cranium."""
+    params = np.concatenate([center, radii]).astype(np.float64)
+
+    def residuals(p):
+        return np.linalg.norm((points - p[:3]) / p[3:], axis=1) - 1
+
+    for _ in range(iterations):
+        r = residuals(params)
+        jacobian = np.empty((len(points), 6))
+        for k in range(6):
+            step = np.zeros(6)
+            step[k] = 1e-5
+            jacobian[:, k] = (residuals(params + step) - r) / 1e-5
+        params -= np.linalg.lstsq(jacobian, r, rcond=None)[0]
+    return params[:3], np.abs(params[3:])
+
+
+
+def ray_mesh(origin, direction, v0, e1, e2):
+    """Nearest hit (t, triangle index, u, v) of one ray against all triangles
+    (Moller-Trumbore, vectorised over triangles); None if it misses."""
+    p = np.cross(direction, e2)
+    det = np.einsum("ij,ij->i", e1, p)
+    ok = np.abs(det) > 1e-12
+    inv = np.where(ok, 1.0 / np.where(ok, det, 1), 0)
+    s = origin - v0
+    u = np.einsum("ij,ij->i", s, p) * inv
+    q = np.cross(s, e1)
+    v = (q @ direction) * inv
+    t = np.einsum("ij,ij->i", e2, q) * inv
+    hit = ok & (u >= 0) & (v >= 0) & (u + v <= 1) & (t > 1e-6)
+    if not hit.any():
+        return None
+    index = np.where(hit)[0][np.argmin(t[hit])]
+    return t[index], index, u[index], v[index]
+
+
+def b64(array):
+    return base64.b64encode(np.ascontiguousarray(array).tobytes()).decode("ascii")
+
+
+def data_uri(path):
+    return "data:image/jpeg;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+
+
+def main():
+    positions, normals, uvs, triangles = load_glb(SOURCE / "LeePerrySmith.glb")
+    scale = CROWN_TO_CHIN / (SCAN_CROWN_Y - SCAN_CHIN_Y)
+    positions = positions * scale
+    sx, sy, sz = positions.T / scale  # back in scan units, for region selection
+
+    # Cranium: above the brows, plus the back of the skull down to the ears,
+    # leaving out the face and the ears themselves.
+    # Starting guess from the measured profile: brow-level length 4.2 and
+    # temple width 3.15 scan units, crown at 3.97.
+    cranium_points = (sy > 1.9) | ((sy > 0.4) & (sz < 0.3) & (np.abs(sx) < 1.55))
+    cranium_center, cranium_radii = fit_ellipsoid(
+        positions[cranium_points], np.array([0, 1.87, 0.1]) * scale, np.array([1.58, 2.1, 2.1]) * scale
+    )
+    positions -= cranium_center
+
+    # Everything below is in the final frame (cranium centre at the origin).
+    x, y, z = positions.T
+    # The face is too flat for a fit to converge: an ellipsoid spanning its
+    # extents, reaching forward to the nose, keeps long hair off the cheeks.
+    face_points = (sz > 1.0) & (sy > -0.85) & (sy < 1.9) & (np.abs(sx) < 1.3)
+    face_low, face_high = positions[face_points].min(axis=0), positions[face_points].max(axis=0)
+    face_radii = (face_high - face_low) / 2 * np.array([1.0, 1.0, 1.6])
+    face_center = np.array([(face_low[0] + face_high[0]) / 2, (face_low[1] + face_high[1]) / 2, face_high[2] - face_radii[2]])
+    neck_points = (sy < -0.9) & (sy > -1.45) & (sz < 0.9)
+    neck_center = positions[neck_points].mean(axis=0)
+    neck_radius = float(np.median(np.hypot(x[neck_points] - neck_center[0], z[neck_points] - neck_center[2])))
+    shoulder_points = sy < -1.9
+    shoulders_center, shoulders_radii = fit_ellipsoid(positions[shoulder_points], positions[shoulder_points].mean(axis=0), np.ptp(positions[shoulder_points], axis=0) / 2)
+
+    # Scalp map: rays from the cranium centre out through the ellipsoid.
+    v0 = positions[triangles[:, 0]]
+    e1 = positions[triangles[:, 1]] - v0
+    e2 = positions[triangles[:, 2]] - v0
+    scalp = np.zeros((SCALP_MAP_HEIGHT, SCALP_MAP_WIDTH, 6), dtype=np.float32)
+    misses = 0
+    for row in range(SCALP_MAP_HEIGHT):
+        polar = row / (SCALP_MAP_HEIGHT - 1) * MAX_POLAR
+        for col in range(SCALP_MAP_WIDTH):
+            azimuth = col / SCALP_MAP_WIDTH * 2 * math.pi
+            unit = np.array([math.sin(polar) * math.cos(azimuth), math.cos(polar), math.sin(polar) * math.sin(azimuth)])
+            direction = unit * cranium_radii
+            direction /= np.linalg.norm(direction)
+            hit = ray_mesh(np.zeros(3), direction, v0, e1, e2)
+            if hit is None:
+                misses += 1
+                point, normal = unit * cranium_radii, unit / cranium_radii
+            else:
+                t, index, bu, bv = hit
+                point = direction * t
+                a, b, c = triangles[index]
+                normal = normals[a] * (1 - bu - bv) + normals[b] * bu + normals[c] * bv
+            scalp[row, col, :3] = point
+            scalp[row, col, 3:] = normal / np.linalg.norm(normal)
+
+    # Quantise: positions to int16 over the bounding box, normals to int8,
+    # uvs to uint16.
+    low, high = positions.min(axis=0), positions.max(axis=0)
+    position_scale = (high - low) / 65535
+    quantised_positions = np.round((positions - low) / position_scale - 32768).astype(np.int16)
+    quantised_normals = np.round(normals / np.linalg.norm(normals, axis=1, keepdims=True) * 127).astype(np.int8)
+    quantised_uvs = np.round(np.clip(uvs, 0, 1) * 65535).astype(np.uint16)
+
+    asset = {
+        "credit": "Infinite, 3D Head Scan by Lee Perry-Smith (www.ir-ltd.net), CC BY 3.0, based on a work at www.triplegangers.com",
+        "mesh": {
+            "count": int(len(positions)),
+            "positions": b64(quantised_positions),
+            "positionLow": low.round(6).tolist(),
+            "positionScale": position_scale.round(9).tolist(),
+            "normals": b64(quantised_normals),
+            "uvs": b64(quantised_uvs),
+            "indices": b64(triangles.astype(np.uint16)),
+        },
+        "colorMap": data_uri(SOURCE / "Map-COL.jpg"),
+        "normalMap": data_uri(SOURCE / "Infinite-Level_02_Tangent_SmoothUV.jpg"),
+        "scalpMap": {"width": SCALP_MAP_WIDTH, "height": SCALP_MAP_HEIGHT, "maxPolar": MAX_POLAR, "data": b64(scalp)},
+        "collision": {
+            "cranium": {"center": [0, 0, 0], "radii": cranium_radii.round(4).tolist()},
+            "face": {"center": face_center.round(4).tolist(), "radii": face_radii.round(4).tolist()},
+            "neck": {"center": neck_center.round(4).tolist(), "radius": round(neck_radius, 4)},
+            "shoulders": {"center": shoulders_center.round(4).tolist(), "radii": shoulders_radii.round(4).tolist()},
+        },
+    }
+    OUTPUT.write_text(
+        "// Generated by tools/head-asset/build_head_asset.py — do not edit.\n"
+        "// " + asset["credit"] + "\n"
+        "window.HEAD_ASSET = " + json.dumps(asset, separators=(",", ":")) + ";\n",
+        encoding="utf-8",
+    )
+    print(json.dumps(asset["collision"], indent=1))
+    print("scalp map misses:", misses, "| output:", OUTPUT, f"{OUTPUT.stat().st_size / 1024:.0f} KB")
+
+
+if __name__ == "__main__":
+    main()

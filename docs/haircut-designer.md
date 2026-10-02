@@ -1,31 +1,91 @@
 # 3D haircut designer
 
-Customers design a cut in 3D to show their barber exactly what they want. Product decisions (Oct 2026): a polished **stylized** look that's accurate in barber terms (guard numbers, fade height) rather than photoreal; presets for **all styles** (barbershop and long/women's cuts); later extras: beards, razor line designs, braids/cornrows/locs, head/face shape and hairline.
+Customers design a cut in 3D, with real hair physics, to show their barber exactly what they want. The reference is [Digital Salon](https://digital-salon.github.io/) (SIGGRAPH Asia 2024): strand physics, cutting, and simulated motion, scaled down to run on a phone.
 
-## Architecture
+Product decisions (Oct 2026):
+- Physics and editing run **on the phone**. Photoreal pictures of the result will come from a cloud AI image service, on a generic model and never on the customer's own face.
+- **Starting cuts are our own** procedural presets. Digital Salon's code is MIT-licensed, but its hairstyle data (USC-HairSalon, CT2Hair) is non-commercial only, so we don't use it.
+- Full quality targets ~2021+ mid-range phones. Others step down automatically.
+- **Measured on a Galaxy with a Mali-G68** (the proof of concept, 2022 mid-range): 37 fps with 1,500 simulated / 12,000 drawn strands, and 25 fps with 3,000 / 24,000.
 
-three.js (r160, classic build) runs in a WebView: `mobile/assets/haircut_designer/designer.js`, hosted by `design_editor_screen.dart` and `design_detail_screen.dart` through a small JS bridge (documented at the top of `designer.js`).
+## Files (`mobile/assets/haircut_designer/`)
 
-**Everything about the hair is a field over the scalp**, indexed by scalp UV: `u = azimuth / 2π`, `v = polar / 130°` (polar measured from the crown; 130° reaches the nape). The base style (length, fade, part, hairlines) is a formula over UV, and the tools paint into 2D canvases in the same UV space (`lengthMask`, `colorMask`). The GPU reads the fields directly, so a slider change or a brush stroke only updates a uniform or re-uploads a texture. No geometry is rebuilt on the CPU.
+The WebView loads these over `file://`, which can't `fetch()`, so everything ships as classic scripts loaded in order:
 
-There are two hair layers, both shaped entirely in shaders:
-- **Shells** (fur technique): 14 offset copies of the scalp, cut into individual hairs in the fragment shader, on a cube-projected jittered grid. They draw all hair up to `SHELL_MAX_LENGTH` (≈ guard 3): buzz cuts, fades, razor lines, stubble. They also serve as the undercoat beneath longer hair. When zoomed out, each pixel keeps the share of the cell a hair covers, so fades lighten correctly at any zoom.
-- **Strands**: camera-facing ribbons (16 segments) for longer hair. Each one is bent by gravity, kept outside the head ellipsoid, combed away from the crown and the part, and curled into a helix. Lighting is Kajiya-Kay (band-shaped hair shine).
+| File | What |
+|---|---|
+| `three.min.js` | three.js r160 (classic build) |
+| `head_asset.js` | **Generated** by `tools/head-asset/build_head_asset.py`. Contains the scan (quantised mesh, textures as data URIs), the collision shapes fitted to it, and the scalp map. |
+| `groom.js` | What the hair is: presets, the fields over the scalp, and guide strands (CPU). |
+| `hair_engine.js` | The hair on the GPU: physics, strands, short-hair shells, and the scissors. |
+| `designer.js` | Scene, head, gestures, tools, quality tiers, and the Flutter bridge (documented at its top). |
 
-**Performance:** frames are drawn only when something changes (render on demand), so an idle designer costs nothing. Up to 20k strands are built once; if consecutive frames run below ~40 fps the visible count steps down (never back up), with a floor of 4k. The pixel ratio is capped at 2.
+**The head** is "Infinite, 3D Head Scan" by Lee Perry-Smith (ir-ltd.net), **CC BY 3.0**. The credit appears in the editor's ⓘ dialog. Source files and the licence are in `tools/head-asset/source/`. The scan is scaled to 23 cm from crown to chin; 1 scene unit = 10 cm.
 
-**Gestures:** one finger rotates (with fling inertia), or paints when a tool is selected. Two fingers pinch to zoom and pan; a second finger landing mid-stroke cancels that stroke. Double-tap resets the view, and `setView()` animates to front/left/right/back/top.
+## How the hair works
+
+**Scalp UV:** `u = azimuth / 2π` and `v = polar / 130°`, with angles taken on the cranium ellipsoid fitted to the scan. The polar angle is measured from the crown, and azimuth π/2 is the face. Everything about the hair is a field in this space:
+- **The base length** is a formula of the preset and its parameters, times the hairline.
+- **Painted fields** are 2D canvases holding the length and the dye that the tools paint.
+
+The **scalp map** (in `head_asset.js`) gives the skin position and normal for each UV point. Roots and shells sit on it, and it also gives the head's real shape for collisions.
+
+**Hair has two layers:**
+- **Shells** (the fur technique) draw everything up to 2 cm: buzz cuts, fades, razor lines and stubble. They also act as the undercoat beneath longer hair.
+  - The hair cells are jittered on a cube-projected grid.
+  - When zoomed out, each pixel shows the share of the cell a hair covers.
+  - Each hair gets its own lighting direction.
+  - Hairs thin toward the hairline, and the upper layers thin when seen edge-on.
+- **Guide strands** cover anything longer: up to ~3,000 guides of 24 points, each drawn as up to 8 child strands. The children are ordered layer by layer, so drawing fewer instances thins the hair evenly.
+
+**Physics** runs entirely in fragment passes, with state textures that are 2V wide (position and previous position):
+- `integrate`: a Verlet step with gravity, gusty wind, damping and global shape memory.
+- `constrain`: follow-the-leader (Müller et al. 2012). It handles local shape memory, collisions (the scan's real skin, then the face, neck and shoulders), friction, and the paper's velocity correction, without which strands whip.
+- Two substeps run per frame at 1/120 s. A new groom settles quickly first, and the settled shape then becomes its rest shape.
+
+**Scissors** run on the GPU:
+1. A pass finds where the swipe crosses each strand.
+2. The CPU reads back one value per strand.
+3. Another pass resamples the cut strands, so the kept part keeps its shape.
+
+A strand is cut at most once per swipe. Each cut strand is recorded as a point `[u, v, length]` on a `cut` stroke, so the cut rebuilds the same on any phone whatever its strand count. Clipper and razor strokes shorten strands in place; anything that would need to grow triggers a rebuild.
+
+**Rendering is on demand:** frames are drawn only while something moves, and for 3 s after while the hair settles.
+
+**Quality tiers** step down (never up) while back-to-back frames run under ~27 fps. Each tier lowers the pixel ratio (2, 1.5, 1.25, 1), then the child layers (8, 6, 5, 4), then the guide budget (3,000, 2,200, 1,500).
 
 ## Saved format
 
-`haircut_designs.parameters` JSONB is `HairParameters` (Dart) and `currentParams + strokes` (JS). Strokes are UV polylines, not pixels, so mask resolution can change freely. `version` records the scalp mapping: v1 (no key) mapped polar 0–100°, and v2 maps 0–130°. `loadStrokes` converts v1 strokes on load, and the next save writes v2. Any future change to what stored values mean must bump the version and add a conversion there.
+`haircut_designs.parameters` JSONB is `HairParameters` in Dart and `design` in `designer.js`:
+- `version`, `preset`, `length` (the top's length, in 0.5 cm units), `volume`, `curl`, `colorHex`, `partOffset`, `fadeHeight`, `faceParams.skinTone`;
+- `strokes`: `clipper`/`razor` (guard), `dye` (colorHex) and `cut` (per-strand lengths). `scissors` (a brush to a length) only appears in pre-v3 designs.
+
+**Versions:**
+- v1 mapped polar 0–100° onto `v`; v2 onward map 0–130°.
+- Designs before v3 had no presets, so they load as the `custom` preset (one length, a parting gap, a taper).
+- Any future change to what stored values mean must bump the version and add a conversion in `designer.js`'s `upgrade()`.
+
+**Clipper guards are real sizes:** skin, then #1 3 mm, #2 6 mm, #3 10 mm, #4 13 mm, #5 16 mm, #6 19 mm, #7 22 mm and #8 25 mm.
+
+## Presets
+
+All presets are defined in `groom.js` `PRESETS`; the Dart list is `haircutPresets`.
+- **Barbershop:** buzz, crew, fade, undercut, pompadour, quiff, slick back, textured crop, mullet, afro, bald.
+- **Longer cuts:** long layers, bob, pixie, curtains, curly.
+
+Each preset is parameters only, with no stored geometry:
+- the region length ratios;
+- the fade (`skin`, or `taper` for `custom`) and an optional undercut line;
+- the comb (`down`, `back`, `up`, `forward`, `side`, `center`, `out`);
+- root lift, product hold and bend;
+- physics stiffness.
 
 ## Roadmap
 
-Each stage ships on its own and is checked on a real phone before the next one starts.
-
-1. **Engine:** GPU field renderer, gestures, view presets, v1→v2 conversion. *(done)*
-2. **Presets:** pick a cut from the review haircut list (plus long and women's styles) and the fields are seeded with that cut. This needs a comb-direction field so slick backs, quiffs and side parts can be expressed.
-3. **Tools:** comb (sets direction), thinning/density, grow, mirror (symmetric) painting, soft brushes, redo, an exact colour picker (wheel + hex), dye gradients and highlights, and a brush cursor on the head.
-4. **Hair types:** per-region curl pattern along the straight → wavy → curly → coily scale, fine vs thick strands, and coily/afro volume.
-5. **Extras:** beard and facial-hair area, razor line designs, braids/cornrows/locs (structured geometry, not strands), and head/face shape plus hairline.
+1. *(done)* Physics engine, realistic head, presets, scissors / clipper / razor / dye with mirror, wind and shake, quality tiers, and the editor UI.
+2. **Hair-hair interaction:** volume preservation and collective motion, via a coarse velocity/density grid.
+3. **More tools:** comb (direction), grow, thinning, a brush cursor on the head, and redo.
+4. **Hair types:** per-region curl patterns along the straight → coily scale, and coily/afro volume.
+5. **AI photoreal image:** render a control image, then a cloud image model on a generic model. This needs a provider account.
+6. **"Describe your cut":** an AI maps text to a preset and parameters.
+7. **Extras:** beards, razor line designs, braids/cornrows/locs (structured geometry, not strands), and head/face shapes.
