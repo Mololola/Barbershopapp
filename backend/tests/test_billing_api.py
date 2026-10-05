@@ -86,3 +86,65 @@ def test_cancellation_uses_stripes_cancel_at_when_set():
 
 def test_cancel_at_period_end_without_cancel_at_uses_the_period_end():
     assert _scheduled_cancellation(_subscription(cancel_at_period_end=True)) == 1800
+
+
+class _RecordingSession:
+    def __init__(self):
+        self.params = []
+
+    def execute(self, statement, params=None):
+        self.params.append(params)
+        return self
+
+    def first(self):
+        return None
+
+    def commit(self):
+        pass
+
+
+def test_webhook_hands_handlers_plain_dicts(monkeypatch):
+    # stripe-python 13+ objects have no .get, so a real signed event (not a
+    # dict passed straight to a handler) is what catches a regression here.
+    import json
+    import time
+
+    import stripe
+    from fastapi.testclient import TestClient
+
+    from app.core.config import settings
+    from app.db.session import get_db
+    from app.main import app
+
+    secret = "whsec_test"
+    monkeypatch.setattr(settings, "stripe_webhook_secret", secret)
+    session = _RecordingSession()
+    app.dependency_overrides[get_db] = lambda: session
+    payload = json.dumps(
+        {
+            "id": "evt_test",
+            "object": "event",
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "object": "checkout.session",
+                    "mode": "subscription",
+                    "subscription": "sub_test",
+                    "metadata": {"business_id": "b1"},
+                }
+            },
+        }
+    )
+    timestamp = int(time.time())
+    signature = stripe.WebhookSignature._compute_signature(f"{timestamp}.{payload}", secret)
+    try:
+        response = TestClient(app).post(
+            "/webhooks/stripe",
+            content=payload,
+            headers={"stripe-signature": f"t={timestamp},v1={signature}"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert {"sub": "sub_test", "business_id": "b1"} in session.params

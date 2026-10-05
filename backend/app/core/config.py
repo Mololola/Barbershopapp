@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    # This API's own https address, for pages Stripe redirects the browser to.
+    public_base_url: str = "https://barbershopapp-qrpk.onrender.com"
 
     # Deliberately small — Supabase's free/small-tier max_connections is 60
     # total, shared with its own internal services (Supavisor, PostgREST,

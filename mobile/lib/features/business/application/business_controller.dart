@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_client.dart';
@@ -36,6 +37,10 @@ final currentBusinessProvider = FutureProvider<Business?>((ref) async {
 /// time, independent of anything the app itself does; re-fetch whenever the
 /// home screen is opened, same reasoning as rankings/marketplace elsewhere.
 final businessSubscriptionProvider = FutureProvider.autoDispose<BusinessSubscription?>((ref) async {
+  // Checkout and the billing portal run in the browser; when the owner comes
+  // back, the webhook has usually updated the subscription already.
+  final lifecycle = AppLifecycleListener(onResume: ref.invalidateSelf);
+  ref.onDispose(lifecycle.dispose);
   final business = await ref.watch(currentBusinessProvider.future);
   if (business == null) return null;
   return ref.watch(businessRepositoryProvider).fetchSubscription(business.id);

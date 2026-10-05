@@ -34,6 +34,12 @@ _DESIGN_SLOT_BUNDLE_SIZE = 2
 _DESIGN_SLOT_BUNDLE_PRICE_CENTS = 200
 
 
+def _return_url(outcome: str) -> str:
+    """Where Stripe sends the browser after checkout or the billing portal —
+    see app/api/billing_return.py."""
+    return f"{settings.public_base_url}/billing/return?outcome={outcome}"
+
+
 class CheckoutSessionResponse(BaseModel):
     url: str
 
@@ -145,11 +151,6 @@ def create_checkout_session(
             )
     db.commit()
 
-    # Known v1 gap: no deep link back into the app yet, so success/cancel
-    # just land on a generic page — the webhook (not this redirect) is what
-    # actually updates subscription state, so this doesn't block correctness.
-    placeholder_return_url = f"{settings.supabase_url}/"
-
     subscription_data = {"metadata": {"business_id": str(business_id)}}
     trial_end = _trial_end_timestamp(business["subscription_trial_ends_at"], datetime.now(timezone.utc))
     if trial_end is not None:
@@ -171,8 +172,8 @@ def create_checkout_session(
         ],
         metadata={"business_id": str(business_id)},
         subscription_data=subscription_data,
-        success_url=f"{placeholder_return_url}?billing=success",
-        cancel_url=f"{placeholder_return_url}?billing=cancelled",
+        success_url=_return_url("success"),
+        cancel_url=_return_url("cancelled"),
     )
     return CheckoutSessionResponse(url=session.url)
 
@@ -196,7 +197,7 @@ def create_portal_session(
 
     portal_session = stripe.billing_portal.Session.create(
         customer=customer_id,
-        return_url=f"{settings.supabase_url}/",
+        return_url=_return_url("portal"),
     )
     return PortalSessionResponse(url=portal_session.url)
 
@@ -309,7 +310,6 @@ def create_finance_access_checkout(
         }
     )
 
-    placeholder_return_url = f"{settings.supabase_url}/"
     metadata = {"business_id": str(business_id), "product": _FINANCE_PRODUCT}
 
     session = stripe.checkout.Session.create(
@@ -328,8 +328,8 @@ def create_finance_access_checkout(
         ],
         metadata=metadata,
         subscription_data={"metadata": metadata},
-        success_url=f"{placeholder_return_url}?billing=success",
-        cancel_url=f"{placeholder_return_url}?billing=cancelled",
+        success_url=_return_url("success"),
+        cancel_url=_return_url("cancelled"),
     )
     return CheckoutSessionResponse(url=session.url)
 
@@ -346,8 +346,6 @@ def create_design_slot_checkout(
 
     email = db.execute(text("select email from auth.users where id = :user_id"), {"user_id": user_id}).scalar()
 
-    placeholder_return_url = f"{settings.supabase_url}/"
-
     session = stripe.checkout.Session.create(
         customer_email=email,
         mode="payment",
@@ -362,8 +360,8 @@ def create_design_slot_checkout(
             }
         ],
         metadata={"profile_id": str(user_id)},
-        success_url=f"{placeholder_return_url}?billing=success",
-        cancel_url=f"{placeholder_return_url}?billing=cancelled",
+        success_url=_return_url("success"),
+        cancel_url=_return_url("cancelled"),
     )
     return CheckoutSessionResponse(url=session.url)
 
@@ -536,7 +534,9 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)) -> dic
 
     handler = _WEBHOOK_HANDLERS.get(event["type"])
     if handler:
-        handler(db, event["data"]["object"])
+        # Since stripe-python 13 its objects are no longer dicts (no .get);
+        # the handlers, like their tests, work on plain dicts.
+        handler(db, event["data"]["object"].to_dict())
 
     db.execute(
         text("insert into stripe_events (id, type) values (:id, :type)"),
