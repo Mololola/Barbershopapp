@@ -218,7 +218,7 @@ def _set_cancel_at_period_end(db: Session, business_id: uuid.UUID, user_id: str,
 
     # At period end, not now: during a trial the period ends with the trial,
     # so the owner keeps everything until then and is never charged.
-    subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=cancel)
+    subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=cancel).to_dict()
     # The webhook will record the same thing; doing it now means the app
     # shows the change as soon as this returns.
     _handle_subscription_updated(db, subscription)
