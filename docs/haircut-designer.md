@@ -61,9 +61,19 @@ The **scalp map** (in `head_asset.js`) gives the skin position and normal for ea
 
 A strand is cut at most once per swipe. Each cut strand is recorded as a point `[u, v, length]` on a `cut` stroke, so the cut rebuilds the same on any phone whatever its strand count. Clipper and razor strokes shorten strands in place; anything that would need to grow triggers a rebuild.
 
+**Keeping it responsive on a phone.** Each of these caused visible lag before it was fixed:
+- **Rebuilding the hair:** `buildGuides` is a generator. The designer runs it in slices of about 8 ms per frame while the old hair stays on screen, then swaps the new hair in. A new groom settles over 12 frames.
+- **Garbage collection:** the guide builder's helpers (`uvOf`, `collide`, `combDirection`) write into scratch objects, because hundreds of thousands of throwaway vectors make the phone pause to collect garbage.
+- **Touch input:** pointer events only record positions; the work happens once per frame.
+  - Brush strokes resolve at most 4 points per frame through `pickScalp`, a ray march through the scalp map that takes ~0.06 ms, instead of raycasting the mesh's 17k triangles.
+  - Scissors run entirely on the GPU during a swipe: a per-swipe texture remembers which strands are already cut. The results are read back once, when the finger lifts; reading back on every move stalls the GPU.
+- **Sliders:** they recompute the base field (with the hairline cached) at most every 90 ms. The strands rebuild 180 ms after the slider rests.
+- **Shells:** beneath strands, only the bottom shell layer is drawn; the rest are discarded before any work.
+- **Collision:** strand points far from the skull skip the scalp-map lookup.
+
 **Rendering is on demand:** frames are drawn only while something moves, and for 3 s after while the hair settles.
 
-**Quality tiers** step down (never up) while back-to-back frames run under ~27 fps. Each tier lowers the pixel ratio (2, 1.5, 1.25, 1), then the child layers (8, 6, 5, 4), then the guide budget (3,000, 2,200, 1,500).
+**Quality tiers** step down (never up) while back-to-back frames run under ~38 fps, since below that, touch already feels laggy. Each tier lowers the pixel ratio (2, 1.5, 1.25, 1), then the child layers (8, 6, 5, 4), then the guide budget (3,000, 2,200, 1,500).
 
 ## Saved format
 

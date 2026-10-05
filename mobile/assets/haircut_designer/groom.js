@@ -67,8 +67,10 @@
     const y1 = Math.min(y0 + 1, height - 1);
     const fx = x - Math.floor(x);
     const fy = y - y0;
-    const at = (col, row) => data[(row * width + col) * channels + channel];
-    return (at(x0, y0) * (1 - fx) + at(x1, y0) * fx) * (1 - fy) + (at(x0, y1) * (1 - fx) + at(x1, y1) * fx) * fy;
+    const r0 = y0 * width;
+    const r1 = y1 * width;
+    return (data[(r0 + x0) * channels + channel] * (1 - fx) + data[(r0 + x1) * channels + channel] * fx) * (1 - fy)
+      + (data[(r1 + x0) * channels + channel] * (1 - fx) + data[(r1 + x1) * channels + channel] * fx) * fy;
   }
 
   function scalpPoint(u, v) {
@@ -85,29 +87,42 @@
     return new THREE.Vector3(Math.sin(polar) * Math.cos(azimuth), Math.cos(polar), Math.sin(polar) * Math.sin(azimuth));
   }
 
-  // Scalp UV of the direction of point p (on the cranium ellipsoid).
-  function uvOf(p) {
-    const e = p.clone().divide(CRANIUM).normalize();
-    let azimuth = Math.atan2(e.z, e.x);
+  // Scalp UV of the direction of point p (on the cranium ellipsoid), and
+  // that direction (`unit`) and p's distance from the centre in cranium
+  // units (`radius`). Writes into `out` — the guide builder calls this for
+  // every strand vertex, and fresh objects each time make the phone pause
+  // to collect garbage.
+  function uvOf(p, out = { u: 0, v: 0, radius: 0, unit: new THREE.Vector3() }) {
+    const unit = out.unit.set(p.x / CRANIUM.x, p.y / CRANIUM.y, p.z / CRANIUM.z);
+    out.radius = unit.length();
+    unit.divideScalar(Math.max(out.radius, 1e-9));
+    let azimuth = Math.atan2(unit.z, unit.x);
     if (azimuth < 0) azimuth += 2 * Math.PI;
-    return { u: azimuth / (2 * Math.PI), v: Math.acos(Math.min(1, Math.max(-1, e.y))) / MAX_POLAR, unit: e };
+    out.u = azimuth / (2 * Math.PI);
+    out.v = Math.acos(Math.min(1, Math.max(-1, unit.y))) / MAX_POLAR;
+    return out;
   }
+
+  function skinRadiusAt(u, v) {
+    return sampleGrid(skinRadius, 1, scalpInfo.width, scalpInfo.height, u, v, 0);
+  }
+
+  const collideScratch = { u: 0, v: 0, radius: 0, unit: new THREE.Vector3() };
 
   // Pushes p out of the head, face, neck and shoulders by `margin` (scene
   // units). Mirrors collide() in hair_engine.js.
   function collide(p, margin) {
-    const { u, v, unit } = uvOf(p);
+    const { u, v, radius, unit } = uvOf(p, collideScratch);
     if (v <= 1) {
-      const e = p.clone().divide(CRANIUM);
-      const minimum = sampleGrid(skinRadius, 1, scalpInfo.width, scalpInfo.height, u, v, 0) + margin;
-      if (e.length() < minimum) p.copy(unit.multiplyScalar(minimum).multiply(CRANIUM));
+      const minimum = skinRadiusAt(u, v) + margin;
+      if (radius < minimum) p.set(unit.x * minimum * CRANIUM.x, unit.y * minimum * CRANIUM.y, unit.z * minimum * CRANIUM.z);
     }
     pushOutOfEllipsoid(p, collision.face.center, collision.face.radii, 1 + margin);
     const neck = collision.neck;
     if (p.y < neck.center[1] + 0.6 && p.y > neck.center[1] - 0.9) {
       const dx = p.x - neck.center[0];
       const dz = p.z - neck.center[2];
-      const r = Math.hypot(dx, dz);
+      const r = Math.sqrt(dx * dx + dz * dz);
       const minimum = neck.radius + margin;
       if (r < minimum && r > 1e-6) {
         p.x = neck.center[0] + (dx / r) * minimum;
@@ -118,16 +133,59 @@
   }
 
   function pushOutOfEllipsoid(p, center, radii, minimum) {
-    const e = new THREE.Vector3(
-      (p.x - center[0]) / radii[0],
-      (p.y - center[1]) / radii[1],
-      (p.z - center[2]) / radii[2],
-    );
-    const r = e.length();
+    const ex = (p.x - center[0]) / radii[0];
+    const ey = (p.y - center[1]) / radii[1];
+    const ez = (p.z - center[2]) / radii[2];
+    const r = Math.sqrt(ex * ex + ey * ey + ez * ez);
     if (r < minimum && r > 1e-6) {
-      e.multiplyScalar(minimum / r);
-      p.set(center[0] + e.x * radii[0], center[1] + e.y * radii[1], center[2] + e.z * radii[2]);
+      const k = minimum / r;
+      p.set(center[0] + ex * k * radii[0], center[1] + ey * k * radii[1], center[2] + ez * k * radii[2]);
     }
+  }
+
+  function insideEllipsoid(p, center, radii) {
+    const ex = (p.x - center[0]) / radii[0];
+    const ey = (p.y - center[1]) / radii[1];
+    const ez = (p.z - center[2]) / radii[2];
+    return ex * ex + ey * ey + ez * ez < 1;
+  }
+
+  const pickScratch = { u: 0, v: 0, radius: 0, unit: new THREE.Vector3() };
+  const pickPoint = new THREE.Vector3();
+
+  // Where a ray (body space) first meets the scalp, as [u, v] — or null if
+  // it misses, or meets the face or neck first. Marches through the scalp
+  // map: a fraction of a millisecond, against tens of milliseconds for
+  // testing the head mesh's 17,000 triangles on a phone.
+  function pickScalp(origin, direction) {
+    const reach = 1.6; // a sphere around the head
+    const b = origin.dot(direction);
+    const discriminant = b * b - (origin.lengthSq() - reach * reach);
+    if (discriminant < 0) return null;
+    const exit = -b + Math.sqrt(discriminant);
+    let outside = Math.max(0, -b - Math.sqrt(discriminant));
+    const hits = (t) => {
+      pickPoint.copy(origin).addScaledVector(direction, t);
+      const { u, v, radius } = uvOf(pickPoint, pickScratch);
+      if (v <= 1) return radius < skinRadiusAt(u, v) ? 'scalp' : null;
+      return insideEllipsoid(pickPoint, collision.face.center, collision.face.radii) || radius < 0.95 ? 'body' : null;
+    };
+    for (let t = outside; t <= exit; t += 0.01) {
+      const hit = hits(t);
+      if (hit === 'body') return null;
+      if (hit === 'scalp') {
+        let inside = t;
+        for (let i = 0; i < 6; i++) {
+          const middle = (outside + inside) / 2;
+          if (hits(middle)) inside = middle;
+          else outside = middle;
+        }
+        hits(inside);
+        return [pickScratch.u, pickScratch.v];
+      }
+      outside = t;
+    }
+    return null;
   }
 
   // --- Hairline ------------------------------------------------------------------
@@ -318,7 +376,7 @@
     const preset = presetOf(presetId);
     const polar = v * MAX_POLAR;
     const azimuth = u * 2 * Math.PI;
-    const unit = unitFromUV(u, v);
+    const unitZ = Math.sin(polar) * Math.sin(azimuth); // front (+) to back (-)
     const top = Math.max(0, params.length) * LENGTH_TO_SCENE;
     const ratios = preset.ratios;
 
@@ -333,8 +391,8 @@
       return top * part * Math.max(0.05, 1 - fade * params.fadeHeight);
     }
 
-    const front = smoothstep(0.25, 0.8, unit.z);
-    const back = smoothstep(0.05, 0.7, -unit.z);
+    const front = smoothstep(0.25, 0.8, unitZ);
+    const back = smoothstep(0.05, 0.7, -unitZ);
     const topRatio = 1 + (ratios.fringe - 1) * front;
     const lowerRatio = ratios.sides + (ratios.back - ratios.sides) * back;
     const napeRatio = lowerRatio + (ratios.nape - lowerRatio) * back * smoothstep(100 * deg, 120 * deg, polar);
@@ -379,12 +437,22 @@
     };
   }
 
+  let hairlineGrid = null;
+
   function computeBase(fields, presetId, params) {
+    if (!hairlineGrid) {
+      hairlineGrid = new Float32Array(BASE_WIDTH * BASE_HEIGHT);
+      for (let row = 0; row < BASE_HEIGHT; row++) {
+        for (let col = 0; col < BASE_WIDTH; col++) {
+          hairlineGrid[row * BASE_WIDTH + col] = hairline((col + 0.5) / BASE_WIDTH, (row + 0.5) / BASE_HEIGHT);
+        }
+      }
+    }
     for (let row = 0; row < BASE_HEIGHT; row++) {
       const v = (row + 0.5) / BASE_HEIGHT;
       for (let col = 0; col < BASE_WIDTH; col++) {
         const u = (col + 0.5) / BASE_WIDTH;
-        const h = hairline(u, v);
+        const h = hairlineGrid[row * BASE_WIDTH + col];
         const i = (row * BASE_WIDTH + col) * 2;
         fields.base[i] = h > 0 ? baseLength(presetId, params, u, v) * h : 0;
         fields.base[i + 1] = h;
@@ -475,38 +543,42 @@
 
   // --- Combing and guide strands -----------------------------------------------
 
-  // Where hair at scalp direction `unit` is combed, flat along the scalp.
-  // partX: the parting's x (-1..1 across the head); partSide: which side of
-  // it this strand's root is on.
-  function combDirection(unit, comb, partX, partSide) {
-    const polar = Math.acos(Math.min(1, Math.max(-1, unit.y)));
-    const azimuth = Math.atan2(unit.z, unit.x);
-    const normal = unit.clone().divide(CRANIUM).normalize();
-    const down = new THREE.Vector3(Math.cos(polar) * Math.cos(azimuth), -Math.sin(polar), Math.cos(polar) * Math.sin(azimuth));
-    if (comb === 'out') return normal;
+  const combNormal = new THREE.Vector3();
+  const combTarget = new THREE.Vector3();
+
+  // Where hair at scalp direction `unit` is combed, flat along the scalp,
+  // written into `out`. partX: the parting's x (-1..1 across the head);
+  // partSide: which side of it this strand's root is on.
+  function combDirection(unit, comb, partX, partSide, out) {
+    const cosPolar = Math.min(1, Math.max(-1, unit.y));
+    const polar = Math.acos(cosPolar);
+    const normal = combNormal.set(unit.x / CRANIUM.x, unit.y / CRANIUM.y, unit.z / CRANIUM.z).normalize();
+    if (comb === 'out') return out.copy(normal);
+    // Down and away from the crown (the polar direction): (cosP cosA, -sinP,
+    // cosP sinA), from the unit vector (sinP cosA, cosP, sinP sinA).
+    const sinPolar = Math.sqrt(1 - cosPolar * cosPolar);
+    if (sinPolar < 1e-4) out.set(1, 0, 0); // the crown itself: any way out
+    else out.set((cosPolar * unit.x) / sinPolar, -sinPolar, (cosPolar * unit.z) / sinPolar);
     const styled = 1 - smoothstep(60 * deg, 98 * deg, polar); // the top and front take the comb
-    const result = down.clone();
     switch (comb) {
       case 'back':
-      case 'up': {
+      case 'up':
         // Swept back over the whole upper head, sides included, not just the top.
-        const sweptBack = 1 - smoothstep(85 * deg, 112 * deg, polar);
-        result.lerp(new THREE.Vector3(0, -0.12, -1), sweptBack * 0.95);
+        out.lerp(combTarget.set(0, -0.12, -1), (1 - smoothstep(85 * deg, 112 * deg, polar)) * 0.95);
         break;
-      }
       case 'forward':
-        result.lerp(new THREE.Vector3(0, -0.2, 1), styled * 0.85);
+        out.lerp(combTarget.set(0, -0.2, 1), styled * 0.85);
         break;
       case 'side':
-        result.lerp(new THREE.Vector3(partSide, -0.3, -0.15), styled * 0.9 * smoothstep(-0.6, 0.2, unit.z));
+        out.lerp(combTarget.set(partSide, -0.3, -0.15), styled * 0.9 * smoothstep(-0.6, 0.2, unit.z));
         break;
       case 'center':
-        result.lerp(new THREE.Vector3(Math.sign(unit.x - partX) || 1, -0.35, 0.05), styled * 0.9 * smoothstep(-0.5, 0.3, unit.z));
+        out.lerp(combTarget.set(Math.sign(unit.x - partX) || 1, -0.35, 0.05), styled * 0.9 * smoothstep(-0.5, 0.3, unit.z));
         break;
       default:
         break;
     }
-    return result.addScaledVector(normal, -result.dot(normal)).normalize();
+    return out.addScaledVector(normal, -out.dot(normal)).normalize();
   }
 
   // Deterministic randomness, so a design rebuilds the same everywhere.
@@ -542,7 +614,11 @@
   // Guide strands where the hair is long enough for strands (shorter hair is
   // drawn by the shells). `budget` is how many root positions to try — the
   // quality tier; bald areas and short hair take none of it.
-  function buildGuides(fields, presetId, params, budget) {
+  //
+  // A generator: it yields every few dozen guides and returns the groom, so
+  // the designer can build in slices across frames — all at once takes
+  // hundreds of milliseconds on a phone and freezes the view.
+  function* buildGuides(fields, presetId, params, budget) {
     const preset = presetOf(presetId);
     const lengthAt = lengthSampler(fields);
     const rng = random(1234567);
@@ -556,7 +632,11 @@
     const rest = [];
     const lengths = [];
     const roots = [];
+    const rootNormals = [];
+    const here = { u: 0, v: 0, radius: 0, unit: new THREE.Vector3() };
+    const comb = new THREE.Vector3();
     for (let i = 0; i < candidates; i++) {
+      if (i % 32 === 31) yield;
       const jitter = rng();
       const polar = Math.acos(1 - ((i + jitter) / candidates) * cap);
       let azimuth = (i * golden + (rng() - 0.5) * 0.01) % (2 * Math.PI);
@@ -578,7 +658,7 @@
       const holdUntil = preset.hold * (V - 1);
 
       const direction = normal.clone().multiplyScalar(lift)
-        .addScaledVector(combDirection(unit, preset.comb, partX, partSide), 1 - lift)
+        .addScaledVector(combDirection(unit, preset.comb, partX, partSide, comb), 1 - lift)
         .add(new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).multiplyScalar(0.14))
         .normalize();
       const p = root.clone();
@@ -588,9 +668,9 @@
           if (j > 1) {
             // On the head (or held by product) hair follows the comb; free
             // hair falls. Curly hair holds itself up more.
-            const here = uvOf(p);
-            const gap = here.v <= 1 ? p.clone().divide(CRANIUM).length() - sampleGrid(skinRadius, 1, scalpInfo.width, scalpInfo.height, here.u, here.v, 0) : 1;
-            const comb = combDirection(here.unit, preset.comb, partX, partSide);
+            uvOf(p, here);
+            const gap = here.v <= 1 ? here.radius - skinRadiusAt(here.u, here.v) : 1;
+            combDirection(here.unit, preset.comb, partX, partSide, comb);
             if (j <= holdUntil || (gap < 0.06 && comb.y > -0.75)) direction.lerp(comb, 0.3);
             else direction.y -= preset.bend * segment * (1 - 0.65 * curl);
             direction.normalize();
@@ -607,6 +687,7 @@
       }
       lengths.push(length);
       roots.push(u, v);
+      rootNormals.push(normal);
     }
 
     const rows = lengths.length;
@@ -616,10 +697,12 @@
     let k = 0;
     const tangent = new THREE.Vector3();
     const bitangent = new THREE.Vector3();
+    const up = new THREE.Vector3(0, 1, 0.001);
     for (let c = 0; c < CHILDREN; c++) {
       for (let row = 0; row < rows; row++) {
-        const { normal } = scalpPoint(roots[row * 2], roots[row * 2 + 1]);
-        tangent.crossVectors(normal, new THREE.Vector3(0, 1, 0.001)).normalize();
+        if (row % 512 === 511) yield;
+        const normal = rootNormals[row];
+        tangent.crossVectors(normal, up).normalize();
         bitangent.crossVectors(normal, tangent);
         const angle = rng() * Math.PI * 2;
         const radius = c === 0 ? 0 : spacing * Math.sqrt(rng());
@@ -677,6 +760,7 @@
     lengthSampler,
     buildGuides,
     uvOf,
+    pickScalp,
     decodeBase64,
   };
 })();

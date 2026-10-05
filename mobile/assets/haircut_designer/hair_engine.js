@@ -26,6 +26,10 @@
   const SUBSTEPS = 2;
   const DT = 1 / 120;
   const SHELL_LAYERS = 14;
+  // A new groom settles over this many frames, a few steps each — all at
+  // once would freeze the view for a second on a mid-range phone.
+  const SETTLE_FRAMES = 12;
+  const SETTLE_STEPS = 14;
 
   const FULLSCREEN_VERTEX = 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }';
 
@@ -51,7 +55,7 @@
       vec3 e = p / uCranium;
       float r = length(e);
       vec3 direction = e / max(r, 1e-6);
-      float polar = acos(clamp(direction.y, -1.0, 1.0));
+      float polar = r < 1.35 ? acos(clamp(direction.y, -1.0, 1.0)) : 10.0; // far from the skull: skip
       if (polar <= uMaxPolar) {
         float azimuth = atan(direction.z, direction.x);
         if (azimuth < 0.0) azimuth += TAU;
@@ -346,9 +350,11 @@
       );
 
       // One fragment per strand: where (as a fraction of its length) the
-      // swipe A→B crosses it, or 1. Only hair on the camera's side is cut.
+      // swipe A→B crosses it, or 1. Only hair on the camera's side is cut,
+      // and a strand is cut once per swipe (uSwipe): its new tip sits under
+      // the finger and would otherwise lose a sliver on every move.
       this.passes.findCut = makePass(
-        `uniform sampler2D uState;
+        `uniform sampler2D uState, uSwipe;
          uniform mat4 uViewProjection;
          uniform vec2 uViewport, uA, uB;
          uniform float uRadius;
@@ -361,6 +367,7 @@
          void main() {
            int row = int(gl_FragCoord.y);
            float cut = 1.0;
+           if (texelFetch(uSwipe, ivec2(0, row), 0).x < 0.999) { gl_FragColor = vec4(1.0); return; }
            for (int j = 3; j < ${V - 1}; j++) { // never the very tip: a cut takes a real piece off
              vec3 p = texelFetch(uState, ivec2(j, row), 0).xyz;
              if (dot(p - uCenter, uCameraDirection) < -0.35) continue;
@@ -375,11 +382,23 @@
            gl_FragColor = vec4(cut, 0.0, 0.0, 1.0);
          }`,
         {
-          uState: { value: null }, uViewProjection: { value: new THREE.Matrix4() }, uViewport: { value: new THREE.Vector2() },
+          uState: { value: null }, uSwipe: { value: null }, uViewProjection: { value: new THREE.Matrix4() }, uViewport: { value: new THREE.Vector2() },
           uA: { value: new THREE.Vector2() }, uB: { value: new THREE.Vector2() }, uRadius: { value: 16 },
           uCameraDirection: { value: new THREE.Vector3() }, uCenter: { value: new THREE.Vector3() },
         },
       );
+
+      // This swipe's cuts so far: each strand keeps the first fraction it was cut to.
+      this.passes.markSwipe = makePass(
+        `uniform sampler2D uSwipe, uCut;
+         void main() {
+           ivec2 c = ivec2(gl_FragCoord.xy);
+           float swipe = texelFetch(uSwipe, c, 0).x;
+           gl_FragColor = vec4(swipe < 0.999 ? swipe : texelFetch(uCut, c, 0).x, 0.0, 0.0, 1.0);
+         }`,
+        { uSwipe: { value: null }, uCut: { value: null } },
+      );
+      this.passes.fillOne = makePass('void main() { gl_FragColor = vec4(1.0); }', {});
 
       // Shortens strands by their cut fraction (1 = untouched); the kept part
       // keeps its shape, resampled over all V vertices. Rest is V wide,
@@ -448,6 +467,8 @@
         rest: this.makeTarget(V, rows),
         restScratch: this.makeTarget(V, rows),
         cut: this.makeTarget(1, rows),
+        swipe: this.makeTarget(1, rows),
+        swipeNext: this.makeTarget(1, rows),
       };
       this.restTexture = new THREE.DataTexture(groom.rest, V, rows, THREE.RGBAFormat, THREE.FloatType);
       this.restTexture.needsUpdate = true;
@@ -462,7 +483,7 @@
       geometry.setAttribute('aChildA', new THREE.InterleavedBufferAttribute(children, 4, 0));
       geometry.setAttribute('aChildB', new THREE.InterleavedBufferAttribute(children, 4, 4));
       this.updateInstanceCount();
-      this.settling = 4; // frames of fast settling, then the settled shape becomes the rest shape
+      this.settling = SETTLE_FRAMES; // fast settling, then the settled shape becomes the rest shape
     }
 
     setLayers(layers) {
@@ -495,7 +516,7 @@
       if (this.settling > 0) {
         const damping = this.passes.integrate.uniforms.uDamping;
         damping.value = 0.25;
-        this.simulate(40);
+        this.simulate(SETTLE_STEPS);
         damping.value = 0.05;
         this.settling--;
         if (this.settling === 0) {
@@ -530,14 +551,19 @@
 
     // --- Cutting -----------------------------------------------------------------
 
-    // Scissors along a swipe segment (CSS pixels, y down). Returns the
-    // strands it cut as [{ row, length }] with their new lengths (scene
-    // units). A strand is cut once per swipe (`cutThisSwipe`): its new tip
-    // sits under the finger, and would otherwise lose a sliver on every move.
-    cutAlong(a, b, camera, viewport, cutThisSwipe) {
-      if (!this.targets) return [];
+    // Scissors. A swipe runs entirely on the GPU — reading results back
+    // stalls it until all its work is done, far too slow to do on every
+    // finger move — and is read back once, when the finger lifts.
+    beginSwipe() {
+      if (this.targets) this.run(this.passes.fillOne, this.targets.swipe);
+    }
+
+    // One segment of the swipe (CSS pixels, y down).
+    cutAlong(a, b, camera, viewport) {
+      if (!this.targets) return;
       const find = this.passes.findCut.uniforms;
       find.uState.value = this.targets.state.texture;
+      find.uSwipe.value = this.targets.swipe.texture;
       find.uViewProjection.value.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
       find.uViewport.value.set(viewport.width, viewport.height);
       find.uA.value.set(a.x, viewport.height - a.y);
@@ -546,27 +572,30 @@
       find.uCenter.value.copy(center);
       find.uCameraDirection.value.copy(camera.position).sub(center).normalize();
       this.run(this.passes.findCut, this.targets.cut);
+      this.resample(this.targets.cut.texture);
+      this.runWith(this.passes.markSwipe, { uSwipe: this.targets.swipe.texture, uCut: this.targets.cut.texture }, this.targets.swipeNext);
+      [this.targets.swipe, this.targets.swipeNext] = [this.targets.swipeNext, this.targets.swipe];
+    }
 
+    // The swipe's cuts, as [{ row, length }] with new lengths (scene units).
+    endSwipe() {
+      if (!this.targets) return [];
       const fractions = new Float32Array(this.rows * 4);
       if (this.floatTargets) {
-        this.renderer.readRenderTargetPixels(this.targets.cut, 0, 0, 1, this.rows, fractions);
+        this.renderer.readRenderTargetPixels(this.targets.swipe, 0, 0, 1, this.rows, fractions);
       } else {
         const halves = new Uint16Array(this.rows * 4);
-        this.renderer.readRenderTargetPixels(this.targets.cut, 0, 0, 1, this.rows, halves);
+        this.renderer.readRenderTargetPixels(this.targets.swipe, 0, 0, 1, this.rows, halves);
         for (let i = 0; i < halves.length; i++) fractions[i] = THREE.DataUtils.fromHalfFloat(halves[i]);
       }
       const cuts = [];
       for (let row = 0; row < this.rows; row++) {
-        const i = row * 4;
-        if (fractions[i] < 0.999 && !cutThisSwipe.has(row)) {
-          cutThisSwipe.add(row);
-          this.lengths[row] *= fractions[i];
+        const fraction = fractions[row * 4];
+        if (fraction < 0.999) {
+          this.lengths[row] *= fraction;
           cuts.push({ row, length: this.lengths[row] });
-        } else {
-          fractions[i] = 1;
         }
       }
-      if (cuts.length > 0) this.applyFractions(fractions);
       return cuts;
     }
 
@@ -798,8 +827,11 @@
           varying vec3 vNormal;
           varying vec3 vDirection;
           varying vec3 vWorld;
+          varying float vUndercoat;
           void main() {
-            float height = shellLength(hairLength(uv)) * (aLayer + 1.0) / ${SHELL_LAYERS.toFixed(1)};
+            float hairLen = hairLength(uv);
+            vUndercoat = step(${G.SHELL_MAX_LENGTH.toFixed(3)}, hairLen);
+            float height = shellLength(hairLen) * (aLayer + 1.0) / ${SHELL_LAYERS.toFixed(1)};
             vec4 world = modelMatrix * vec4(position + aNormal * (height + 0.002), 1.0);
             vUv = uv;
             vLayer = aLayer;
@@ -816,8 +848,12 @@
           varying vec3 vNormal;
           varying vec3 vDirection;
           varying vec3 vWorld;
+          varying float vUndercoat;
 
           void main() {
+            // Beneath strands only the bottom layer (the roots) is drawn: skip
+            // the other 13 before any work, they're most of the fill cost.
+            if (vLayer > 0.5 && vUndercoat > 0.99) discard;
             float capped = shellLength(hairLength(vUv));
             if (capped < 0.004) discard;
             float hairlineDensity = texture2D(uBaseField, vUv).g;

@@ -32,7 +32,7 @@
   const DESIGN_VERSION = 3;
   const V1_MAX_POLAR = (100 * Math.PI) / 180;
 
-  let renderer, scene, camera, bodyGroup, headMesh, engine, fields;
+  let renderer, scene, camera, bodyGroup, engine, fields;
   let keyLight;
   let design = {
     version: DESIGN_VERSION,
@@ -48,8 +48,9 @@
   let activeMirror = null;
   let activeRasterized = 0;
   let pendingPoints = [];
+  let pendingScreenPoints = [];
+  let cutTarget = null;
   let lastCutPoint = null;
-  let cutThisSwipe = new Set();
   let rebuildTimer = null;
   let bodyYaw = 0;
   let bodyPitch = 0;
@@ -58,7 +59,8 @@
 
   // --- Quality -----------------------------------------------------------------
   //
-  // Starts high and steps down (never up) while frames run below ~27 fps.
+  // Starts high and steps down (never up) while frames run below ~38 fps —
+  // under that, dragging and painting already feel laggy.
   const TIERS = [
     { pixelRatio: 2, maxLayers: 8, budget: 3000 },
     { pixelRatio: 1.5, maxLayers: 6, budget: 3000 },
@@ -198,8 +200,7 @@
            }`,
         );
     };
-    headMesh = new THREE.Mesh(geometry, material);
-    bodyGroup.add(headMesh);
+    bodyGroup.add(new THREE.Mesh(geometry, material));
   }
 
   const skinToneUniform = { value: new THREE.Color('#c68e62') };
@@ -226,6 +227,12 @@
     window.EditChannel?.postMessage(String(design.strokes.length));
   }
 
+  // Rebuilds everything from the design. The fields update at once; the
+  // guides are built in slices across frames (see buildGuides) while the
+  // current hair stays on screen, then swapped in.
+  let guideBuild = null;
+  const BUILD_SLICE_MS = 8;
+
   function rebuild() {
     clearTimeout(rebuildTimer);
     rebuildTimer = null;
@@ -233,21 +240,42 @@
     engine.baseFieldChanged();
     G.repaint(fields, design.strokes);
     engine.masksChanged();
-    groom = G.buildGuides(fields, design.preset, design, TIERS[tier].budget);
-    engine.setGroom(groom);
+    guideBuild = G.buildGuides(fields, design.preset, design, TIERS[tier].budget);
     applyLook();
     measuredFrames = 0;
     wake();
   }
 
-  // Sliders move often: the shells follow at once, the strands rebuild when
-  // the slider rests.
+  function continueBuild() {
+    if (!guideBuild) return;
+    const start = performance.now();
+    let step;
+    do step = guideBuild.next();
+    while (!step.done && performance.now() - start < BUILD_SLICE_MS);
+    if (!step.done) return;
+    guideBuild = null;
+    groom = step.value;
+    engine.setGroom(groom);
+    applyLook();
+  }
+
+  // Sliders move often: the shells follow as the slider moves (at most every
+  // 90 ms — recomputing the field on every event lags the slider), the
+  // strands rebuild when it rests.
+  let lastBaseUpdate = 0;
+  let baseTimer = null;
   function scheduleRebuild() {
-    G.computeBase(fields, design.preset, design);
-    engine.baseFieldChanged();
     clearTimeout(rebuildTimer);
     rebuildTimer = setTimeout(rebuild, 180);
-    requestRender();
+    if (baseTimer) return;
+    const wait = Math.max(0, 90 - (performance.now() - lastBaseUpdate));
+    baseTimer = setTimeout(() => {
+      baseTimer = null;
+      lastBaseUpdate = performance.now();
+      G.computeBase(fields, design.preset, design);
+      engine.baseFieldChanged();
+      requestRender();
+    }, wait);
   }
 
   function applyLook() {
@@ -262,17 +290,16 @@
 
   const raycaster = new THREE.Raycaster();
   const pointerNDC = new THREE.Vector2();
+  const bodyInverse = new THREE.Matrix4();
 
-  // Scalp UV under a screen point, or null off the head.
+  // Scalp UV under a screen point, or null off the scalp.
   function raycastToUV(clientX, clientY) {
     pointerNDC.x = (clientX / window.innerWidth) * 2 - 1;
     pointerNDC.y = -(clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(pointerNDC, camera);
-    const hits = raycaster.intersectObject(headMesh, false);
-    if (hits.length === 0) return null;
-    const local = bodyGroup.worldToLocal(hits[0].point.clone());
-    const { u, v } = G.uvOf(local);
-    return v <= 1 ? [u, v] : null;
+    bodyInverse.copy(bodyGroup.matrix).invert();
+    const ray = raycaster.ray.applyMatrix4(bodyInverse);
+    return G.pickScalp(ray.origin, ray.direction.normalize());
   }
 
   // The same point on the other side of the head (x mirrored).
@@ -291,12 +318,24 @@
     activeMirror = toolConfig.mirror ? { ...stroke, points: [] } : null;
     activeRasterized = 0;
     pendingPoints = [uv];
+    pendingScreenPoints = [];
   }
 
   // Points gathered since the last frame go onto the stroke once per frame
   // (pointer events can arrive far faster than frames).
   function flushBrush() {
-    if (!activeStroke || pendingPoints.length === 0) return;
+    if (!activeStroke) return;
+    // Finger positions since the last frame: resolve at most four, evenly
+    // spread, always including the latest.
+    const screen = pendingScreenPoints;
+    pendingScreenPoints = [];
+    const count = Math.min(4, screen.length);
+    for (let i = 1; i <= count; i++) {
+      const point = screen[Math.round((i / count) * (screen.length - 1))];
+      const uv = raycastToUV(point.x, point.y);
+      if (uv) pendingPoints.push(uv);
+    }
+    if (pendingPoints.length === 0) return;
     activeStroke.points.push(...pendingPoints);
     G.paintStroke(fields, activeStroke, activeRasterized);
     if (activeMirror) {
@@ -322,7 +361,8 @@
   // After a clipper/razor stroke: strands under it take the painted length.
   // Shortening happens in place; anything that would need to grow rebuilds.
   function applyLengthsToStrands() {
-    if (!groom || groom.rows === 0) {
+    // A build in progress read the fields before this stroke: start again.
+    if (guideBuild || !groom || groom.rows === 0) {
       rebuild(); // a longer guard over bare/short hair can create strands
       return;
     }
@@ -335,27 +375,32 @@
 
   // Scissors: cut strands along the swipe; each cut strand is recorded as a
   // point on a 'cut' stroke so the design rebuilds the cut later.
-  function cutTo(point) {
-    if (!activeStroke) {
-      activeStroke = { tool: 'cut', radius: groom.cutRadius, points: [] };
-      cutThisSwipe = new Set();
-    }
-    const viewport = { width: window.innerWidth, height: window.innerHeight };
-    const cuts = engine.cutAlong(lastCutPoint, point, camera, viewport, cutThisSwipe);
+  function startCut(point) {
+    activeStroke = { tool: 'cut', radius: groom ? groom.cutRadius : 0.004, points: [] };
     lastCutPoint = point;
-    if (cuts.length === 0) return;
-    const from = activeStroke.points.length;
-    for (const { row, length } of cuts) {
-      activeStroke.points.push([groom.roots[row * 2], groom.roots[row * 2 + 1], length / G.LENGTH_TO_SCENE]);
-    }
-    G.paintStroke(fields, activeStroke, from);
-    engine.masksChanged();
+    cutTarget = null;
+    engine.beginSwipe();
+  }
+
+  // The swipe since the last frame, as one segment.
+  function flushCut() {
+    if (!activeStroke || activeStroke.tool !== 'cut' || !cutTarget) return;
+    engine.cutAlong(lastCutPoint, cutTarget, camera, { width: window.innerWidth, height: window.innerHeight });
+    lastCutPoint = cutTarget;
+    cutTarget = null;
   }
 
   function endCut() {
-    if (activeStroke && activeStroke.points.length > 0) {
+    flushCut();
+    for (const { row, length } of engine.endSwipe()) {
+      activeStroke.points.push([groom.roots[row * 2], groom.roots[row * 2 + 1], length / G.LENGTH_TO_SCENE]);
+    }
+    if (activeStroke.points.length > 0) {
       design.strokes.push(activeStroke);
+      G.paintStroke(fields, activeStroke);
+      engine.masksChanged();
       editsChanged();
+      if (guideBuild) rebuild(); // it read the fields before this cut
     }
     activeStroke = null;
     lastCutPoint = null;
@@ -429,13 +474,12 @@
         } else if (activeStroke) {
           endCut();
         }
-        lastCutPoint = null;
         pinch = pinchState();
         return;
       }
       if (pointers.size > 2) return;
       if (isBrush(toolConfig.tool)) startBrush(event.clientX, event.clientY);
-      if (toolConfig.tool === 'cut') lastCutPoint = { x: event.clientX, y: event.clientY };
+      if (toolConfig.tool === 'cut') startCut({ x: event.clientX, y: event.clientY });
     });
 
     el.addEventListener('pointermove', (event) => {
@@ -458,12 +502,11 @@
       if (pointers.size !== 1) return;
 
       if (activeStroke && isBrush(activeStroke.tool)) {
-        const uv = raycastToUV(event.clientX, event.clientY);
-        if (uv) pendingPoints.push(uv);
+        pendingScreenPoints.push({ x: event.clientX, y: event.clientY });
         return;
       }
-      if (toolConfig.tool === 'cut' && lastCutPoint) {
-        cutTo({ x: event.clientX, y: event.clientY });
+      if (activeStroke && activeStroke.tool === 'cut') {
+        cutTarget = { x: event.clientX, y: event.clientY };
         return;
       }
       if (isBrush(toolConfig.tool)) return; // the stroke started off the head
@@ -499,7 +542,6 @@
         endCut();
         return;
       }
-      lastCutPoint = null;
       // A fling keeps spinning only if the finger was still moving at release.
       if (performance.now() - lastMoveTime > 80) orbit.yawVelocity = orbit.pitchVelocity = 0;
       const moved = Math.hypot(event.clientX - pointer.downX, event.clientY - pointer.downY);
@@ -627,6 +669,8 @@
     }
 
     flushBrush();
+    flushCut();
+    continueBuild();
     engine.wind = wind;
     const settling = engine.step();
     const key = keyLight.getWorldDirection(new THREE.Vector3()).negate();
@@ -637,7 +681,7 @@
     else lastFrameTime = 0;
 
     const physicsActive = engine.rows > 0 && (wind > 0 || shakeStart !== null || settling || now - lastDisturbance < 3000);
-    if (animating || physicsActive || pointers.size > 0) {
+    if (animating || physicsActive || pointers.size > 0 || guideBuild) {
       requestAnimationFrame(frame);
     } else {
       running = false;
@@ -650,8 +694,8 @@
     lastFrameTime = now;
     if (frameTime === 0 || frameTime > 200) return; // not back-to-back frames
     measuredFrames++;
-    slowFrames = frameTime > 37 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
-    if (slowFrames > 25 && tier < TIERS.length - 1) {
+    slowFrames = frameTime > 26 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
+    if (slowFrames > 18 && tier < TIERS.length - 1) {
       const budgetBefore = TIERS[tier].budget;
       tier++;
       slowFrames = 0;
