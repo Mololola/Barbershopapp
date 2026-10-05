@@ -16,7 +16,7 @@ class Cache:
 
     In-process only — correct today because this app runs as a single
     `uvicorn` process (same assumption already documented for the
-    scheduler in app/main.py and the connection pool in
+    rate limiter in app/core/rate_limit.py and the connection pool in
     app/db/session.py). If this ever runs as more than one process or
     replica, each would keep its own separate cache and could show a
     different, independently-stale view for up to `ttl_seconds` after a

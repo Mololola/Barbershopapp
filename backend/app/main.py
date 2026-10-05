@@ -1,8 +1,7 @@
 import logging
 import time
-from contextlib import asynccontextmanager
 
-from apscheduler.schedulers.background import BackgroundScheduler
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
@@ -14,58 +13,24 @@ from app.api.auth_bridge import router as auth_bridge_router
 from app.api.billing import router as billing_router
 from app.api.billing_return import router as billing_return_router
 from app.api.finance import router as finance_router
+from app.api.jobs import router as jobs_router
 from app.api.bookings import router as bookings_router
 from app.api.rewards import router as rewards_router
+from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.rate_limit import _rate_limit_exceeded_handler, limiter
-from app.db.session import SessionLocal
-from app.jobs.expire_grace_periods import find_and_delete_expired_businesses
-from app.jobs.purge_unconfirmed_signups import purge_unconfirmed_signups
 
 configure_logging()
 logger = logging.getLogger(__name__)
 
-scheduler = BackgroundScheduler()
+# Off without a DSN (local dev, tests). Errors only, no performance tracing,
+# to stay in Sentry's free tier. Sentry's logging integration sends every
+# logger.exception() as an event, which covers the unhandled-exception
+# catch in log_requests below — FastAPI never sees those exceptions itself.
+if settings.sentry_dsn:
+    sentry_sdk.init(dsn=settings.sentry_dsn)
 
-
-def _run_expire_grace_periods() -> None:
-    db = SessionLocal()
-    try:
-        find_and_delete_expired_businesses(db)
-    except Exception:
-        # A scheduled job's exception never reaches a request/response
-        # cycle, so nothing else in this app would ever surface it —
-        # without this, a failing day-one billing-cleanup run just goes
-        # silently missing, every day, with no trace anywhere.
-        logger.exception("expire_grace_periods job failed")
-    finally:
-        db.close()
-
-
-def _run_purge_unconfirmed_signups() -> None:
-    db = SessionLocal()
-    try:
-        purge_unconfirmed_signups(db)
-    except Exception:
-        logger.exception("purge_unconfirmed_signups job failed")
-    finally:
-        db.close()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # No cron/deployment infra exists yet (everything runs via `uvicorn
-    # --reload` locally) — an in-process scheduler is the pragmatic choice
-    # for now; revisit once there's a real host with its own scheduled-task
-    # feature.
-    scheduler.add_job(_run_expire_grace_periods, "interval", days=1, id="expire_grace_periods")
-    scheduler.add_job(_run_purge_unconfirmed_signups, "interval", hours=6, id="purge_unconfirmed_signups")
-    scheduler.start()
-    yield
-    scheduler.shutdown()
-
-
-app = FastAPI(title="Barbershop API", lifespan=lifespan)
+app = FastAPI(title="Barbershop API")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -96,6 +61,7 @@ app.include_router(admin_router)
 app.include_router(account_router)
 app.include_router(auth_bridge_router)
 app.include_router(billing_return_router)
+app.include_router(jobs_router)
 
 
 @app.get("/health")

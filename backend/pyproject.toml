@@ -12,8 +12,8 @@ dependencies = [
     "pydantic-settings>=2.6",
     "pyjwt[crypto]>=2.9",
     "stripe>=11.1",
-    "apscheduler>=3.10",
     "slowapi>=0.1.10",
+    "sentry-sdk[fastapi]>=2.0",
     "cachetools>=7.1",
     # zoneinfo needs IANA data; slim Linux images (and Windows) lack a system copy.
     "tzdata>=2024.1",

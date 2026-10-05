@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     # This API's own https address, for pages Stripe redirects the browser to.
     public_base_url: str = "https://barbershopapp-qrpk.onrender.com"
+    # Bearer token the scheduled-jobs workflow sends (see app/api/jobs.py);
+    # empty disables the job endpoints.
+    jobs_secret: str = ""
+    sentry_dsn: str = ""
 
     # Deliberately small — Supabase's free/small-tier max_connections is 60
     # total, shared with its own internal services (Supavisor, PostgREST,

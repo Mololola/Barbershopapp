@@ -1,0 +1,35 @@
+# Runs the backend's housekeeping jobs (see backend/app/api/jobs.py). Render's
+# free tier sleeps, so the backend can't schedule them itself; the request
+# wakes it, hence the long timeout and retries. Needs the repository secret
+# JOBS_SECRET, equal to the backend's JOBS_SECRET. A failed run emails the
+# repo owner. Can also be started by hand from the Actions tab.
+#
+# GitHub pauses scheduled workflows after 60 days without commits; re-enable
+# it from the Actions tab if that happens.
+name: Scheduled jobs
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      API: https://barbershopapp-qrpk.onrender.com
+      JOBS_SECRET: ${{ secrets.JOBS_SECRET }}
+    steps:
+      - name: Purge unconfirmed sign-ups
+        run: >-
+          curl --fail-with-body --silent --show-error --max-time 120
+          --retry 3 --retry-delay 30 --retry-all-errors
+          -X POST -H "Authorization: Bearer $JOBS_SECRET"
+          "$API/internal/jobs/purge-unconfirmed-signups"
+      - name: Delete businesses hidden for 60 days
+        if: always()
+        run: >-
+          curl --fail-with-body --silent --show-error --max-time 120
+          --retry 3 --retry-delay 30 --retry-all-errors
+          -X POST -H "Authorization: Bearer $JOBS_SECRET"
+          "$API/internal/jobs/expire-grace-periods"

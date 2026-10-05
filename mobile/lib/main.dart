@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/env.dart';
@@ -13,22 +14,30 @@ import 'core/system_bars.dart';
 import 'core/theme.dart';
 
 Future<void> main() async {
-  // Catches anything not already caught by a feature's own AsyncValue.guard
-  // — a raw exception outside a guarded context, a Flutter framework error
-  // during a widget build, or an async error on a zone that isn't awaited
-  // anywhere. Without this, any of those crash silently to a blank/frozen
-  // screen with no trace of what happened.
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    reportError(details.exception, details.stack ?? StackTrace.current, context: 'FlutterError');
-  };
-  PlatformDispatcher.instance.onError = (error, stack) {
-    reportError(error, stack, context: 'PlatformDispatcher');
-    return true;
-  };
-
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    // Off without a DSN (local dev). Native crashes are caught by Sentry
+    // itself; Dart errors go through reportError below.
+    if (Env.sentryDsn.isNotEmpty) {
+      await SentryFlutter.init((options) => options.dsn = Env.sentryDsn);
+    }
+
+    // Catches anything not already caught by a feature's own AsyncValue.guard
+    // — a raw exception outside a guarded context, a Flutter framework error
+    // during a widget build, or an async error on a zone that isn't awaited
+    // anywhere. Without this, any of those crash silently to a blank/frozen
+    // screen with no trace of what happened. Set after Sentry's init, which
+    // installs its own versions of these two: replacing them keeps each
+    // error reported once, via reportError.
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      reportError(details.exception, details.stack ?? StackTrace.current, context: 'FlutterError');
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      reportError(error, stack, context: 'PlatformDispatcher');
+      return true;
+    };
+
     await Supabase.initialize(
       url: Env.supabaseUrl,
       publishableKey: Env.supabaseAnonKey,

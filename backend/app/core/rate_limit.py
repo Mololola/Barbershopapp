@@ -37,7 +37,7 @@ def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JS
 
 
 # In-memory storage — fine for the current single `uvicorn --reload`
-# process (same caveat as the scheduler in app/main.py). Pass a Redis
+# process (same caveat as the cache in app/core/cache.py). Pass a Redis
 # storage_uri here if this ever runs as more than one process, since each
 # process would otherwise track its own separate counters.
 #
