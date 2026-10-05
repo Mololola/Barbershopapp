@@ -15,7 +15,7 @@ The WebView loads these over `file://`, which can't `fetch()`, so everything shi
 | File | What |
 |---|---|
 | `three.min.js` | three.js r160 (classic build) |
-| `head_asset.js` | **Generated** by `tools/head-asset/build_head_asset.py`. Contains the scan (quantised mesh, textures as data URIs), the collision shapes fitted to it, and the scalp map. |
+| `head_asset.js` | **Generated** by `tools/head-asset/build_head_asset.py`. Contains the scan's shape (quantised mesh), the collision shapes fitted to it, and the scalp map. |
 | `groom.js` | What the hair is: presets, the fields over the scalp, and guide strands (CPU). |
 | `hair_sim.js` | The physics, on the CPU in a Web Worker: stepping, settling a new groom, scissors and shortening. |
 | `hair_engine.js` | The hair on the GPU: strands, short-hair shells, and the bridge to the simulator. |
@@ -46,7 +46,7 @@ The **scalp map** (in `head_asset.js`) gives the skin position and normal for ea
   - Hair lying close to the scalp is darker (`clearOfScalp`).
 - **Child data layout** (in `groom.js` and `hair_engine.js` together) is `aChildA = (row, random, tipTrim, rootU)`, `aChildB = (offset xyz, rootV)`. A mismatch here once shifted the strands into the head.
 
-**The head** is a softened scan: a blurred (low-mip) read of the skin texture, its colour moved to the chosen skin tone and mostly evened out, and a softer normal map. It reads as a neutral model, not a particular person.
+**The head** is a plain mannequin: the scan's shape only, in one matte skin tone (the design's `skinTone`). The scan's skin textures aren't shipped. Pores, stubble, wrinkles and veins made it read as a particular, real person, which customers found creepy (Oct 2026).
 
 **Fades** follow the lower hairline all the way round. They graduate evenly from `fadeHeight`'s start line (low ~19°, mid ~29°, high ~40° above the hairline) down to skin just above it.
 

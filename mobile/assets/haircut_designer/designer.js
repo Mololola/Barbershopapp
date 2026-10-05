@@ -212,14 +212,15 @@
     rebuild();
   }
 
-  // The scan, with its skin tinted toward the design's skin tone and the
+  // A plain mannequin: the scan's shape in one matte skin tone, with the
   // scalp tinted with the hair colour where hair grows, so gaps between
-  // strands read as dense hair.
+  // strands read as dense hair. No skin texture: pores, stubble, wrinkles
+  // and veins made it read as a particular, real person, which customers
+  // found creepy (Oct 2026).
   function buildHead() {
     const mesh = window.HEAD_ASSET.mesh;
     const positions = G.decodeBase64(mesh.positions, Int16Array);
     const normals = G.decodeBase64(mesh.normals, Int8Array);
-    const uvs = G.decodeBase64(mesh.uvs, Uint16Array);
     const indices = G.decodeBase64(mesh.indices, Uint16Array);
     const position = new Float32Array(mesh.count * 3);
     for (let i = 0; i < mesh.count * 3; i++) {
@@ -228,28 +229,12 @@
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3, true));
-    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2, true));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
-    const loader = new THREE.TextureLoader();
-    const map = loader.load(window.HEAD_ASSET.colorMap, (texture) => {
-      scanAverage.value.copy(averageColor(texture.image));
-      requestRender();
-    });
-    map.flipY = false;
-    map.colorSpace = THREE.SRGBColorSpace;
-    const normalMap = loader.load(window.HEAD_ASSET.normalMap, requestRender);
-    normalMap.flipY = false;
-
-    // A softened scan: the skin's fine detail (pores, blemishes, the red
-    // of the lips) is blurred away and its colour evened out, so the head
-    // reads as a neutral model, not a particular person.
-    const material = new THREE.MeshStandardMaterial({ map, normalMap, roughness: 0.72, metalness: 0 });
-    material.normalScale.set(0.45, 0.45);
+    const material = new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0 });
+    material.color = skinTone; // the same object, so applyLook's tone change shows
     material.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, engine.fieldUniforms, {
-        uSkinTone: skinToneUniform,
-        uScanAverage: scanAverage,
         uCranium: { value: G.CRANIUM },
         uMaxPolar: { value: G.MAX_POLAR },
       });
@@ -262,20 +247,12 @@
           `#include <common>
            ${HairEngine.FIELDS_GLSL}
            varying vec3 vBodyPosition;
-           uniform vec3 uSkinTone, uScanAverage, uCranium;
+           uniform vec3 uCranium;
            uniform float uMaxPolar;`,
         )
         .replace(
           '#include <map_fragment>',
-          `// A blurred read of the scan (a low mip level): its shading and
-           // broad tone, without fine detail.
-           diffuseColor *= texture2D(map, vMapUv, 3.5);
-           // Skin tone: the scan's variation moved to the chosen tone, then
-           // mostly evened out to that tone's hue.
-           vec3 toned = clamp(diffuseColor.rgb * uSkinTone / uScanAverage, 0.0, 1.0);
-           float shade = dot(toned, vec3(0.2126, 0.7152, 0.0722)) / max(dot(uSkinTone, vec3(0.2126, 0.7152, 0.0722)), 1e-3);
-           diffuseColor.rgb = mix(toned, uSkinTone * shade, 0.75);
-           vec3 direction = normalize(vBodyPosition / uCranium);
+          `vec3 direction = normalize(vBodyPosition / uCranium);
            float polar = acos(clamp(direction.y, -1.0, 1.0));
            if (polar < uMaxPolar) {
              float azimuth = atan(direction.z, direction.x);
@@ -291,22 +268,7 @@
     bodyGroup.add(new THREE.Mesh(geometry, material));
   }
 
-  const skinToneUniform = { value: new THREE.Color('#c68e62') };
-  const scanAverage = { value: new THREE.Color(0.5, 0.35, 0.28) };
-
-  // The scan texture's average colour (linear), so a chosen skin tone can
-  // replace it while keeping the skin's detail.
-  function averageColor(image) {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 32;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(image, 0, 0, 32, 32);
-    const data = ctx.getImageData(0, 0, 32, 32).data;
-    const sum = [0, 0, 0];
-    for (let i = 0; i < data.length; i += 4) for (let c = 0; c < 3; c++) sum[c] += data[i + c];
-    const n = data.length / 4;
-    return new THREE.Color().setRGB(sum[0] / n / 255, sum[1] / n / 255, sum[2] / n / 255, THREE.SRGBColorSpace);
-  }
+  const skinTone = new THREE.Color('#c68e62');
 
   // --- Building the hair from the design ------------------------------------------
 
@@ -374,7 +336,7 @@
     engine.setColor(design.colorHex);
     engine.setCurl(design.curl);
     engine.setLayers(Math.round(Math.min(8, Math.max(1, design.volume * 5))));
-    skinToneUniform.value.set(design.faceParams.skinTone);
+    skinTone.set(design.faceParams.skinTone);
     requestRender();
   }
 

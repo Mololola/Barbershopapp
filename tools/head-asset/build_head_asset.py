@@ -1,8 +1,9 @@
 """Builds mobile/assets/haircut_designer/head_asset.js from the head scan.
 
 The designer's WebView loads from file:// and can't fetch() local files, so
-everything ships embedded in one script: the mesh (quantised), its textures
-as data URIs, the collision shapes fitted to it, and a precomputed scalp map.
+everything ships embedded in one script: the mesh (quantised), the collision
+shapes fitted to it, and a precomputed scalp map. The scan's skin textures
+aren't shipped: the designer draws the head as a plain mannequin.
 
 Units: 1 = 10 cm. The scan is scaled so crown to chin is 23 cm, and moved
 so the fitted cranium ellipsoid is centred on the origin; it faces +z.
@@ -79,12 +80,8 @@ def b64(array):
     return base64.b64encode(np.ascontiguousarray(array).tobytes()).decode("ascii")
 
 
-def data_uri(path):
-    return "data:image/jpeg;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
-
-
 def main():
-    positions, normals, uvs, triangles = load_glb(SOURCE / "LeePerrySmith.glb")
+    positions, normals, _, triangles = load_glb(SOURCE / "LeePerrySmith.glb")
     scale = CROWN_TO_CHIN / (SCAN_CROWN_Y - SCAN_CHIN_Y)
     positions = positions * scale
     sx, sy, sz = positions.T / scale  # back in scan units, for region selection
@@ -138,13 +135,11 @@ def main():
             scalp[row, col, :3] = point
             scalp[row, col, 3:] = normal / np.linalg.norm(normal)
 
-    # Quantise: positions to int16 over the bounding box, normals to int8,
-    # uvs to uint16.
+    # Quantise: positions to int16 over the bounding box, normals to int8.
     low, high = positions.min(axis=0), positions.max(axis=0)
     position_scale = (high - low) / 65535
     quantised_positions = np.round((positions - low) / position_scale - 32768).astype(np.int16)
     quantised_normals = np.round(normals / np.linalg.norm(normals, axis=1, keepdims=True) * 127).astype(np.int8)
-    quantised_uvs = np.round(np.clip(uvs, 0, 1) * 65535).astype(np.uint16)
 
     asset = {
         "credit": "Infinite, 3D Head Scan by Lee Perry-Smith (www.ir-ltd.net), CC BY 3.0, based on a work at www.triplegangers.com",
@@ -154,11 +149,8 @@ def main():
             "positionLow": low.round(6).tolist(),
             "positionScale": position_scale.round(9).tolist(),
             "normals": b64(quantised_normals),
-            "uvs": b64(quantised_uvs),
             "indices": b64(triangles.astype(np.uint16)),
         },
-        "colorMap": data_uri(SOURCE / "Map-COL.jpg"),
-        "normalMap": data_uri(SOURCE / "Infinite-Level_02_Tangent_SmoothUV.jpg"),
         "scalpMap": {"width": SCALP_MAP_WIDTH, "height": SCALP_MAP_HEIGHT, "maxPolar": MAX_POLAR, "data": b64(scalp)},
         "collision": {
             "cranium": {"center": [0, 0, 0], "radii": cranium_radii.round(4).tolist()},
