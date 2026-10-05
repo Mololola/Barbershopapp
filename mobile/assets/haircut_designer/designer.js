@@ -24,6 +24,8 @@
 //   undoLastStroke() / clearStrokes()
 //   requestDesignState()      posts the design on "DesignStateChannel"
 //   captureSnapshot()         posts a PNG data URL on "SnapshotChannel"
+//   enableProfiling()         debug/profile builds: logs where frame time
+//                             goes to the console (see `perf` below)
 // Whenever the number of strokes changes it is posted on "EditChannel", so
 // Flutter knows whether switching cut would throw work away.
 
@@ -57,6 +59,87 @@
   let shakeStart = null;
   let lastDisturbance = 0;
 
+  // --- Profiling ----------------------------------------------------------------
+  //
+  // Off unless Flutter calls enableProfiling() (debug and profile builds),
+  // which logs to the console: every frame over 45 ms with where its time
+  // went, and a summary every 3 s of drawing. WebGL calls return before the
+  // GPU has done the work, so while profiling the render waits for it (a
+  // 1-pixel read) to show its real cost, at the price of slightly slower
+  // frames. The physics runs in a worker: its time is reported separately.
+
+  const perf = {
+    on: false,
+    sections: {},
+    frameSections: {},
+    frameTimes: [],
+    lastFrame: 0,
+    lastSummary: 0,
+    syncBytes: new Uint8Array(4),
+    initMs: 0,
+    firstFrameMs: 0,
+  };
+
+  function timed(name, fn) {
+    if (!perf.on) return fn();
+    const start = performance.now();
+    try {
+      return fn();
+    } finally {
+      const ms = performance.now() - start;
+      perf.frameSections[name] = (perf.frameSections[name] || 0) + ms;
+    }
+  }
+
+  // Waits for the GPU to finish everything queued so far.
+  function gpuSync() {
+    if (!perf.on) return;
+    const gl = renderer.getContext();
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, perf.syncBytes);
+  }
+
+  function perfEvent(text) {
+    if (perf.on) console.log(`[perf] ${text}`);
+  }
+
+  function perfFrame(now) {
+    if (!perf.on) return;
+    const frameMs = perf.lastFrame ? now - perf.lastFrame : 0;
+    perf.lastFrame = now;
+    const sections = perf.frameSections;
+    perf.frameSections = {};
+    for (const [name, ms] of Object.entries(sections)) perf.sections[name] = (perf.sections[name] || 0) + ms;
+    if (frameMs === 0 || frameMs > 1000) return; // first frame after idle
+    perf.frameTimes.push(frameMs);
+    const breakdown = () => Object.entries(sections).map(([name, ms]) => `${name} ${ms.toFixed(1)}`).join(', ');
+    if (frameMs > 45) perfEvent(`slow frame ${frameMs.toFixed(0)} ms: ${breakdown()}`);
+    if (now - perf.lastSummary > 3000 && perf.frameTimes.length > 5) {
+      const times = [...perf.frameTimes].sort((a, b) => a - b);
+      const at = (q) => times[Math.min(times.length - 1, Math.floor(q * times.length))].toFixed(0);
+      const average = Object.entries(perf.sections).map(([name, ms]) => `${name} ${(ms / times.length).toFixed(1)}`).join(', ');
+      perfEvent(
+        `${times.length} frames, ${(1000 / (times.reduce((a, b) => a + b, 0) / times.length)).toFixed(0)} fps, `
+        + `median ${at(0.5)} ms, 95% ${at(0.95)} ms | per frame: ${average} | `
+        + `simulator step ${engine.simMs.toFixed(1)} ms | tier ${tier}, strands ${engine.rows}`,
+      );
+      perf.frameTimes = [];
+      perf.sections = {};
+      perf.lastSummary = now;
+    }
+  }
+
+  window.enableProfiling = function () {
+    perf.on = true;
+    perf.lastSummary = performance.now();
+    const gl = renderer.getContext();
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    perfEvent(`profiling on: ${debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'GPU unknown'}, `
+      + `${window.innerWidth}x${window.innerHeight} @${window.devicePixelRatio}, `
+      + `physics ${engine.sim.inWorker ? 'in a worker' : 'on the main thread'}; `
+      + `startup: scripts ${performance.now().toFixed(0)} ms after page start, init ${perf.initMs.toFixed(0)} ms, `
+      + `first frame ${perf.firstFrameMs.toFixed(0)} ms`);
+  };
+
   // --- Quality -----------------------------------------------------------------
   //
   // Starts high and steps down (never up) while frames run below ~38 fps —
@@ -74,6 +157,7 @@
 
   function applyTier(rebuildIfNeeded) {
     const t = TIERS[tier];
+    perfEvent(`quality tier ${tier}`);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, t.pixelRatio));
     renderer.setSize(window.innerWidth, window.innerHeight);
     engine.setMaxLayers(t.maxLayers);
@@ -116,6 +200,10 @@
 
     fields = G.createFields();
     engine = new HairEngine(renderer, scene, bodyGroup, fields);
+    engine.onChange = (message) => {
+      if (message.type === 'groomReady') perfEvent(`groom settled: ${message.settleMs.toFixed(0)} ms in the simulator`);
+      requestRender();
+    };
     buildHead();
     setupControls();
     fitView();
@@ -236,9 +324,10 @@
   function rebuild() {
     clearTimeout(rebuildTimer);
     rebuildTimer = null;
-    G.computeBase(fields, design.preset, design);
-    engine.baseFieldChanged();
-    G.repaint(fields, design.strokes);
+    perfEvent(`rebuild: ${design.preset}, ${design.strokes.length} strokes`);
+    timed('computeBase', () => G.computeBase(fields, design.preset, design));
+    timed('uploadBase', () => engine.baseFieldChanged());
+    timed('repaint', () => G.repaint(fields, design.strokes));
     engine.masksChanged();
     guideBuild = G.buildGuides(fields, design.preset, design, TIERS[tier].budget);
     applyLook();
@@ -250,12 +339,15 @@
     if (!guideBuild) return;
     const start = performance.now();
     let step;
-    do step = guideBuild.next();
-    while (!step.done && performance.now() - start < BUILD_SLICE_MS);
+    timed('buildGuides', () => {
+      do step = guideBuild.next();
+      while (!step.done && performance.now() - start < BUILD_SLICE_MS);
+    });
     if (!step.done) return;
     guideBuild = null;
     groom = step.value;
-    engine.setGroom(groom);
+    timed('setGroom', () => engine.setGroom(groom));
+    perfEvent(`groom built: ${groom.rows} strands`);
     applyLook();
   }
 
@@ -272,8 +364,8 @@
     baseTimer = setTimeout(() => {
       baseTimer = null;
       lastBaseUpdate = performance.now();
-      G.computeBase(fields, design.preset, design);
-      engine.baseFieldChanged();
+      timed('computeBase', () => G.computeBase(fields, design.preset, design));
+      timed('uploadBase', () => engine.baseFieldChanged());
       requestRender();
     }, wait);
   }
@@ -348,6 +440,10 @@
   }
 
   function endBrush() {
+    timed('endStroke', endBrushNow);
+  }
+
+  function endBrushNow() {
     flushBrush();
     if (activeStroke && activeStroke.points.length > 0) {
       design.strokes.push(activeStroke);
@@ -392,18 +488,23 @@
 
   function endCut() {
     flushCut();
-    for (const { row, length } of engine.endSwipe()) {
-      activeStroke.points.push([groom.roots[row * 2], groom.roots[row * 2 + 1], length / G.LENGTH_TO_SCENE]);
-    }
-    if (activeStroke.points.length > 0) {
-      design.strokes.push(activeStroke);
-      G.paintStroke(fields, activeStroke);
+    const stroke = activeStroke;
+    const cutGroom = groom;
+    activeStroke = null;
+    lastCutPoint = null;
+    engine.endSwipe((cuts) => {
+      if (groom !== cutGroom) return; // the hair was rebuilt meanwhile
+      for (const { row, length } of cuts) {
+        stroke.points.push([groom.roots[row * 2], groom.roots[row * 2 + 1], length / G.LENGTH_TO_SCENE]);
+      }
+      if (stroke.points.length === 0) return;
+      design.strokes.push(stroke);
+      G.paintStroke(fields, stroke);
       engine.masksChanged();
       editsChanged();
       if (guideBuild) rebuild(); // it read the fields before this cut
-    }
-    activeStroke = null;
-    lastCutPoint = null;
+      requestRender();
+    });
   }
 
   // --- Gestures -----------------------------------------------------------------
@@ -668,14 +769,19 @@
       lastDisturbance = now;
     }
 
-    flushBrush();
-    flushCut();
+    timed('brush', flushBrush);
+    timed('cut', flushCut);
     continueBuild();
     engine.wind = wind;
-    const settling = engine.step();
+    timed('physics', () => engine.step(now));
+    const settling = engine.settling;
     const key = keyLight.getWorldDirection(new THREE.Vector3()).negate();
     engine.setKeyLight(key);
-    renderer.render(scene, camera);
+    timed('render', () => {
+      renderer.render(scene, camera);
+      gpuSync();
+    });
+    perfFrame(now);
 
     if (!settling) adaptQuality(now);
     else lastFrameTime = 0;
@@ -751,6 +857,7 @@
 
   window.setPreset = function (id) {
     if (!G.PRESETS[id]) return;
+    perfEvent(`preset ${id}`);
     design = { ...design, preset: id, ...G.presetDefaults(id), strokes: [] };
     rebuild();
     editsChanged();
@@ -761,6 +868,7 @@
   window.setToolMode = function (json) {
     try {
       toolConfig = parse(json);
+      perfEvent(`tool ${toolConfig.tool}`);
     } catch (error) {
       console.error('setToolMode failed', error);
     }
@@ -819,5 +927,11 @@
     return dataUrl;
   };
 
+  const initStart = performance.now();
   init();
+  perf.initMs = performance.now() - initStart;
+  requestAnimationFrame(() => {
+    const start = performance.now();
+    requestAnimationFrame(() => (perf.firstFrameMs = performance.now() - start));
+  });
 })();

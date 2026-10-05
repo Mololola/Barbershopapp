@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,6 +70,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         NavigationDelegate(
           onPageFinished: (_) {
             setState(() => _webViewReady = true);
+            if (!kReleaseMode) _run('enableProfiling()');
             if (widget.designId == null) {
               _run("setPreset('${_parameters.preset}')");
             } else if (_initializedFromExisting) {
@@ -78,6 +80,11 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         ),
       )
       ..loadFlutterAsset('assets/haircut_designer/index.html');
+    // The designer's own log (errors, and frame timings — see enableProfiling
+    // in designer.js) in `flutter run`'s output.
+    if (!kReleaseMode) {
+      _webViewController.setOnConsoleMessage((message) => debugPrint('[designer] ${message.message}'));
+    }
   }
 
   void _run(String script) {

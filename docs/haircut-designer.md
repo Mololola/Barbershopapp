@@ -17,7 +17,8 @@ The WebView loads these over `file://`, which can't `fetch()`, so everything shi
 | `three.min.js` | three.js r160 (classic build) |
 | `head_asset.js` | **Generated** by `tools/head-asset/build_head_asset.py`. Contains the scan (quantised mesh, textures as data URIs), the collision shapes fitted to it, and the scalp map. |
 | `groom.js` | What the hair is: presets, the fields over the scalp, and guide strands (CPU). |
-| `hair_engine.js` | The hair on the GPU: physics, strands, short-hair shells, and the scissors. |
+| `hair_sim.js` | The physics, on the CPU in a Web Worker: stepping, settling a new groom, scissors and shortening. |
+| `hair_engine.js` | The hair on the GPU: strands, short-hair shells, and the bridge to the simulator. |
 | `designer.js` | Scene, head, gestures, tools, quality tiers, and the Flutter bridge (documented at its top). |
 
 **The head** is "Infinite, 3D Head Scan" by Lee Perry-Smith (ir-ltd.net), **CC BY 3.0**. The credit appears in the editor's ⓘ dialog. Source files and the licence are in `tools/head-asset/source/`. The scan is scaled to 23 cm from crown to chin; 1 scene unit = 10 cm.
@@ -49,24 +50,25 @@ The **scalp map** (in `head_asset.js`) gives the skin position and normal for ea
 
 **Fades** follow the lower hairline all the way round. They graduate evenly from `fadeHeight`'s start line (low ~19°, mid ~29°, high ~40° above the hairline) down to skin just above it.
 
-**Physics** runs entirely in fragment passes, with state textures that are 2V wide (position and previous position):
-- `integrate`: a Verlet step with gravity, gusty wind, damping and global shape memory.
-- `constrain`: follow-the-leader (Müller et al. 2012). It handles local shape memory, collisions (the scan's real skin, then the face, neck and shoulders), friction, and the paper's velocity correction, without which strands whip.
-- Two substeps run per frame at 1/120 s. A new groom settles quickly first, and the settled shape then becomes its rest shape.
+**Physics** runs on the CPU in a Web Worker (`hair_sim.js`), built from the file's own source as a blob, because a `file://` page can't load a worker by URL. If that fails, the same code runs on the main thread.
+- Each step is a Verlet prediction (gravity, gusty wind, damping, global shape memory), then follow-the-leader (Müller et al. 2012) out from the pinned root. That pass handles local shape memory, collisions (the scan's real skin, then the face, neck and shoulders), friction, and the paper's velocity correction, without which strands whip.
+- It runs at 1/120 s steps, at most two per frame, so a slow step doesn't snowball.
+- **Everything is in body space**, so collision and rest shapes need no per-vertex transforms. When the bust turns, the strands move by the inverse turn (they keep their place in the world and lag behind the head), and gravity and wind are turned into body space. The strand shader applies the bust's transform.
+- The skin collision reads a 64² **cube map** of the skin radius by direction. That's divisions only, where the scalp map's polar/azimuth needed `acos` and `atan2` for every vertex.
+- A **new groom settles in the worker** (36 big, heavily damped steps) while the old hair stays on screen, and the settled shape becomes its rest shape.
+- The main thread asks for one step per frame, never two at once. Positions come back as a transferred `Float32Array` (RGBA rows, V texels per strand), are uploaded as a float texture, and the buffer goes back to the worker with the next request.
+- Why not the GPU: it was the original design, with fragment passes. A fragment writes one vertex, so each one walked its strand from the root (V² work). On the Galaxy A33 that cost 10–50 ms of GPU per frame, competed with drawing, and froze the view for over a second on every new groom.
 
-**Scissors** run on the GPU:
-1. A pass finds where the swipe crosses each strand.
-2. The CPU reads back one value per strand.
-3. Another pass resamples the cut strands, so the kept part keeps its shape.
+**Scissors** run in the simulator. Each swipe segment projects the strands on the camera's side to the screen and cuts each one where the swipe crosses it, resampling the kept part so it keeps its shape. When the finger lifts, the simulator sends the swipe's cuts back.
 
 A strand is cut at most once per swipe. Each cut strand is recorded as a point `[u, v, length]` on a `cut` stroke, so the cut rebuilds the same on any phone whatever its strand count. Clipper and razor strokes shorten strands in place; anything that would need to grow triggers a rebuild.
 
 **Keeping it responsive on a phone.** Each of these caused visible lag before it was fixed:
-- **Rebuilding the hair:** `buildGuides` is a generator. The designer runs it in slices of about 8 ms per frame while the old hair stays on screen, then swaps the new hair in. A new groom settles over 12 frames.
+- **Rebuilding the hair:** `buildGuides` is a generator. The designer runs it in slices of about 8 ms per frame while the old hair stays on screen. The new groom then settles in the worker and swaps in when it's done.
+- **Profiling:** in debug and profile builds, Flutter calls `enableProfiling()`, and the designer's console (including frame-time breakdowns and the simulator's step time) appears in `flutter run`'s output. Run `flutter run --profile` with the phone on USB to measure.
 - **Garbage collection:** the guide builder's helpers (`uvOf`, `collide`, `combDirection`) write into scratch objects, because hundreds of thousands of throwaway vectors make the phone pause to collect garbage.
 - **Touch input:** pointer events only record positions; the work happens once per frame.
   - Brush strokes resolve at most 4 points per frame through `pickScalp`, a ray march through the scalp map that takes ~0.06 ms, instead of raycasting the mesh's 17k triangles.
-  - Scissors run entirely on the GPU during a swipe: a per-swipe texture remembers which strands are already cut. The results are read back once, when the finger lifts; reading back on every move stalls the GPU.
 - **Sliders:** they recompute the base field (with the hairline cached) at most every 90 ms. The strands rebuild 180 ms after the slider rests.
 - **Shells:** beneath strands, only the bottom shell layer is drawn; the rest are discarded before any work.
 - **Collision:** strand points far from the skull skip the scalp-map lookup.

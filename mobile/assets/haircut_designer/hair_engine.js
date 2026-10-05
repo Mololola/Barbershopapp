@@ -1,80 +1,21 @@
-// The hair on the GPU: physics, strands, short-hair shells, and scissors.
+// The hair on the GPU: strands, short-hair shells, and the bridge to the
+// physics (hair_sim.js, in a Web Worker).
 //
-// Guide strands (from groom.js) live in float textures, one row per strand.
-// The state texture is 2V wide: columns 0..V-1 hold each vertex's position,
-// V..2V-1 its previous position. Each simulation step is two fragment
-// passes:
-//   integrate   Verlet: gravity, wind, damping, global shape memory
-//   constrain   follow-the-leader (Müller et al. 2012): every segment keeps
-//               its rest length, walked out from the pinned root, with local
-//               shape memory, collisions (the scan's real skin from the
-//               scalp map, then face, neck and shoulders) and friction; it
-//               also writes previous positions with the paper's velocity
-//               correction, without which strands whip.
-// Each guide is drawn as CHILDREN strands around it, straight from the
-// state texture. Hair shorter than SHELL_MAX_LENGTH is drawn by shells:
-// stacked copies of the scalp cut into individual hairs (fur technique).
-// Scissors: a pass finds where a swipe crosses each strand, another
-// resamples cut strands to their new length.
+// Guide strands come from groom.js. The simulator steps them and sends back
+// their positions each frame, uploaded as a float texture: one row per
+// strand, V texels of body-space positions (the shader applies the bust's
+// transform). Each guide is drawn as CHILDREN
+// strands around it, straight from that texture. Hair shorter than
+// SHELL_MAX_LENGTH is drawn by shells: stacked copies of the scalp cut into
+// individual hairs (fur technique). Scissors and brush tools shorten
+// strands in the simulator.
 //
-// Positions are in world space; the whole bust can turn (bodyMatrix), and
-// rest shapes are in body space.
+// The whole bust can turn (bodyGroup.matrix); hair is simulated in its frame.
 
 (function () {
   const G = window.HairGroom;
   const V = G.V;
-  const SUBSTEPS = 2;
-  const DT = 1 / 120;
   const SHELL_LAYERS = 14;
-  // A new groom settles over this many frames, a few steps each — all at
-  // once would freeze the view for a second on a mid-range phone.
-  const SETTLE_FRAMES = 12;
-  const SETTLE_STEPS = 14;
-
-  const FULLSCREEN_VERTEX = 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }';
-
-  const COLLIDE_GLSL = `
-    #define TAU 6.283185307179586
-    uniform mat4 uBody;
-    uniform mat4 uBodyInverse;
-    uniform sampler2D uSkinRadius;
-    uniform vec3 uCranium;
-    uniform float uMaxPolar;
-    uniform vec3 uFaceCenter, uFaceRadii, uNeckCenter, uShouldersCenter, uShouldersRadii;
-    uniform float uNeckRadius;
-
-    vec3 pushOutOfEllipsoid(vec3 p, vec3 center, vec3 radii, float minimum) {
-      vec3 e = (p - center) / radii;
-      float r = length(e);
-      return r < minimum && r > 1e-6 ? center + e / r * minimum * radii : p;
-    }
-
-    // World position pushed out of the body by margin.
-    vec3 collide(vec3 world, float margin) {
-      vec3 p = (uBodyInverse * vec4(world, 1.0)).xyz;
-      vec3 e = p / uCranium;
-      float r = length(e);
-      vec3 direction = e / max(r, 1e-6);
-      float polar = r < 1.35 ? acos(clamp(direction.y, -1.0, 1.0)) : 10.0; // far from the skull: skip
-      if (polar <= uMaxPolar) {
-        float azimuth = atan(direction.z, direction.x);
-        if (azimuth < 0.0) azimuth += TAU;
-        // The scalp map's rows sit at polar row/(H-1), columns at azimuth col/W.
-        vec2 size = vec2(${G.scalpInfo.width.toFixed(1)}, ${G.scalpInfo.height.toFixed(1)});
-        vec2 uv = vec2(azimuth / TAU + 0.5 / size.x, (polar / uMaxPolar * (size.y - 1.0) + 0.5) / size.y);
-        float minimum = texture2D(uSkinRadius, uv).r + margin;
-        if (r < minimum) p = direction * minimum * uCranium;
-      }
-      p = pushOutOfEllipsoid(p, uFaceCenter, uFaceRadii, 1.0 + margin);
-      vec2 neck = p.xz - uNeckCenter.xz;
-      float neckDistance = length(neck);
-      if (p.y < uNeckCenter.y + 0.6 && p.y > uNeckCenter.y - 0.9 && neckDistance < uNeckRadius + margin && neckDistance > 1e-6) {
-        p.xz = uNeckCenter.xz + neck / neckDistance * (uNeckRadius + margin);
-      }
-      p = pushOutOfEllipsoid(p, uShouldersCenter, uShouldersRadii, 1.0 + margin);
-      return (uBody * vec4(p, 1.0)).xyz;
-    }
-  `;
 
   // Length and colour of the hair at a scalp UV, from groom.js's fields.
   const FIELDS_GLSL = `
@@ -137,38 +78,89 @@
       return color * (0.3 + 0.8 * wrap + 0.3 * rim) * occlusion;
     }
   `;
-
-  function makePass(fragmentShader, uniforms) {
-    return new THREE.ShaderMaterial({ vertexShader: FULLSCREEN_VERTEX, fragmentShader, uniforms, depthTest: false, depthWrite: false });
-  }
-
   class HairEngine {
     constructor(renderer, scene, bodyGroup, fields) {
       this.renderer = renderer;
       this.scene = scene;
       this.bodyGroup = bodyGroup;
       this.fields = fields;
-      this.floatTargets = renderer.extensions.has('EXT_color_buffer_float');
       this.body = { matrix: bodyGroup.matrix, inverse: new THREE.Matrix4(), rotation: new THREE.Matrix3() };
-      this.targets = null;
       this.rows = 0;
+      this.lengths = new Float32Array(0);
+      this.roots = new Float32Array(0);
       this.layers = 8;
       this.maxLayers = 8;
       this.wind = 0;
-      this.time = 0;
-      this.settling = 0;
-
-      this.quadScene = new THREE.Scene();
-      this.quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-      this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
-      this.quad.frustumCulled = false;
-      this.quadScene.add(this.quad);
+      this.puff = 0.03;
+      this.pendingGroom = null; // sent to the simulator, not settled yet
+      this.groomId = 0;
+      this.stepInFlight = false;
+      this.lastStep = 0;
+      this.spare = null; // a positions buffer to hand back to the simulator
+      this.swipeDone = null;
+      this.simMs = 0; // the simulator's own time for its last step
+      this.settleMs = 0;
+      this.onChange = null; // called with each simulator message that changes what to draw
 
       this.buildFieldTextures();
-      this.buildPasses();
       this.buildStrandMaterial();
       this.buildShells();
       this.updateBody();
+      this.connectSimulator();
+    }
+
+    connectSimulator() {
+      this.sim = connectHairSimulator((message) => this.onSimMessage(message));
+      const c = G.collision;
+      this.sim.send({
+        type: 'init',
+        V,
+        config: {
+          skin: { data: G.skinRadius, width: G.scalpInfo.width, height: G.scalpInfo.height },
+          cranium: G.CRANIUM.toArray(),
+          maxPolar: G.MAX_POLAR,
+          lift: G.STRAND_LIFT,
+          collision: { face: c.face, neck: c.neck, shoulders: c.shoulders },
+        },
+      });
+    }
+
+    onSimMessage(message) {
+      switch (message.type) {
+        case 'groomReady':
+          if (message.id !== this.groomId) return; // superseded by a newer groom
+          this.settleMs = message.settleMs;
+          this.applyGroom(this.pendingGroom, message.positions);
+          this.pendingGroom = null;
+          break;
+        case 'positions':
+          this.stepInFlight = false;
+          this.simMs = message.stepMs;
+          if (this.pendingGroom || message.positions.length !== this.rows * V * 4) return;
+          this.showPositions(message.positions);
+          break;
+        case 'swipe':
+          this.swipeDone?.(message.cuts);
+          this.swipeDone = null;
+          break;
+        default:
+          return;
+      }
+      this.onChange?.(message);
+    }
+
+    showPositions(positions) {
+      const texture = this.positionsTexture;
+      if (texture.image.width === V && texture.image.height === this.rows) {
+        this.spare = texture.image.data;
+        texture.image.data = positions;
+      } else {
+        texture.dispose();
+        this.positionsTexture = new THREE.DataTexture(positions, V, Math.max(1, this.rows), THREE.RGBAFormat, THREE.FloatType);
+        this.strandMaterial.uniforms.uPositions.value = this.positionsTexture;
+        this.spare = null;
+      }
+      this.positionsTexture.needsUpdate = true;
     }
 
     // --- Fields -------------------------------------------------------------
@@ -200,6 +192,8 @@
       this.lengthMaskTexture = mask(this.fields.length.canvas);
       this.colorMaskTexture = mask(this.fields.color.canvas);
 
+      this.positionsTexture = new THREE.DataTexture(new Float32Array(4), 1, 1, THREE.RGBAFormat, THREE.FloatType);
+
       this.fieldUniforms = {
         uBaseField: { value: this.baseTexture },
         uLengthMask: { value: this.lengthMaskTexture },
@@ -220,270 +214,41 @@
       this.colorMaskTexture.needsUpdate = true;
     }
 
-    // --- Simulation passes ---------------------------------------------------
+    // --- Groom -----------------------------------------------------------------
 
-    collisionUniforms() {
-      const c = G.collision;
-      return {
-        uBody: { value: this.body.matrix },
-        uBodyInverse: { value: this.body.inverse },
-        uSkinRadius: { value: this.skinTexture },
-        uCranium: { value: G.CRANIUM },
-        uMaxPolar: { value: G.MAX_POLAR },
-        uFaceCenter: { value: new THREE.Vector3().fromArray(c.face.center) },
-        uFaceRadii: { value: new THREE.Vector3().fromArray(c.face.radii) },
-        uNeckCenter: { value: new THREE.Vector3().fromArray(c.neck.center) },
-        uNeckRadius: { value: c.neck.radius },
-        uShouldersCenter: { value: new THREE.Vector3().fromArray(c.shoulders.center) },
-        uShouldersRadii: { value: new THREE.Vector3().fromArray(c.shoulders.radii) },
-      };
-    }
-
-    buildPasses() {
-      this.passes = {};
-      this.passes.copy = makePass(
-        `uniform sampler2D uSource;
-         void main() { gl_FragColor = texelFetch(uSource, ivec2(gl_FragCoord.xy), 0); }`,
-        { uSource: { value: null } },
-      );
-      // Rest positions (V wide, body space) into a state (2V wide, world): still.
-      this.passes.fillState = makePass(
-        `uniform sampler2D uSource;
-         uniform mat4 uBody;
-         void main() {
-           ivec2 c = ivec2(gl_FragCoord.xy);
-           gl_FragColor = vec4((uBody * vec4(texelFetch(uSource, ivec2(c.x % ${V}, c.y), 0).xyz, 1.0)).xyz, 1.0);
-         }`,
-        { uSource: { value: null }, uBody: { value: this.body.matrix } },
-      );
-      // The state's positions (world) back into body space, as a rest shape.
-      this.passes.toRest = makePass(
-        `uniform sampler2D uSource;
-         uniform mat4 uBodyInverse;
-         void main() {
-           gl_FragColor = vec4((uBodyInverse * vec4(texelFetch(uSource, ivec2(gl_FragCoord.xy), 0).xyz, 1.0)).xyz, 1.0);
-         }`,
-        { uSource: { value: null }, uBodyInverse: { value: this.body.inverse } },
-      );
-
-      this.passes.integrate = makePass(
-        `uniform sampler2D uState, uRest;
-         uniform mat4 uBody;
-         uniform float uDt, uDamping, uTime, uWind;
-         uniform vec2 uGlobal;
-         void main() {
-           ivec2 c = ivec2(gl_FragCoord.xy);
-           vec3 target = (uBody * vec4(texelFetch(uRest, c, 0).xyz, 1.0)).xyz;
-           if (c.x < 2) { gl_FragColor = vec4(target, 1.0); return; }
-           vec3 x = texelFetch(uState, c, 0).xyz;
-           vec3 xp = texelFetch(uState, ivec2(c.x + ${V}, c.y), 0).xyz;
-           float along = float(c.x) / ${(V - 1).toFixed(1)};
-           // Gusty wind from front-left, varying across the head and over time.
-           float gust = 0.6 + 0.4 * sin(uTime * 1.9 + x.y * 2.1 + x.x * 1.3) * sin(uTime * 0.7 + float(c.y) * 0.017);
-           vec3 wind = normalize(vec3(0.6, 0.15, -1.0)) * uWind * 140.0 * gust * sqrt(along);
-           vec3 predicted = x + (x - xp) * (1.0 - uDamping) + (vec3(0.0, -98.0, 0.0) + wind) * uDt * uDt;
-           float rootward = (1.0 - along) * (1.0 - along);
-           gl_FragColor = vec4(mix(predicted, target, mix(uGlobal.y, uGlobal.x, rootward)), 1.0);
-         }`,
-        {
-          uState: { value: null }, uRest: { value: null }, uBody: { value: this.body.matrix },
-          uDt: { value: DT }, uDamping: { value: 0.05 }, uTime: { value: 0 }, uWind: { value: 0 },
-          uGlobal: { value: new THREE.Vector2() },
-        },
-      );
-
-      this.passes.constrain = makePass(
-        `uniform sampler2D uPredicted, uRest, uState;
-         uniform mat3 uBodyRotation;
-         uniform vec2 uLocal;
-         uniform float uFriction, uVelocityCorrection, uPuff;
-         ${COLLIDE_GLSL}
-         void main() {
-           ivec2 c = ivec2(gl_FragCoord.xy);
-           bool writesPrevious = c.x >= ${V};
-           int i = c.x % ${V};
-           vec3 restPrevious = texelFetch(uRest, ivec2(1, c.y), 0).xyz;
-           if (i < 2) { gl_FragColor = vec4((uBody * vec4(texelFetch(uRest, ivec2(i, c.y), 0).xyz, 1.0)).xyz, 1.0); return; }
-           // Walk out to vertex i — one further for the previous-position half,
-           // which needs the correction the next vertex received.
-           int last = writesPrevious ? min(i + 1, ${V - 1}) : i;
-           vec3 q = (uBody * vec4(restPrevious, 1.0)).xyz;
-           vec3 qi = q;
-           vec3 nextCorrection = vec3(0.0);
-           for (int j = 2; j < ${V}; j++) {
-             if (j > last) break;
-             vec3 restJ = texelFetch(uRest, ivec2(j, c.y), 0).xyz;
-             vec3 restSegment = restJ - restPrevious;
-             float segmentLength = length(restSegment);
-             vec3 restDirection = uBodyRotation * (restSegment / max(segmentLength, 1e-6));
-             vec3 predicted = texelFetch(uPredicted, ivec2(j, c.y), 0).xyz;
-             vec3 toPredicted = predicted - q;
-             vec3 direction = length(toPredicted) > 1e-6 ? normalize(toPredicted) : restDirection;
-             float along = float(j) / ${(V - 1).toFixed(1)};
-             float rootward = (1.0 - along) * (1.0 - along);
-             direction = normalize(mix(direction, restDirection, mix(uLocal.y, uLocal.x, rootward)));
-             vec3 free = q + direction * segmentLength;
-             float margin = ${G.STRAND_LIFT.toFixed(3)} + uPuff * along;
-             vec3 collided = collide(free, margin);
-             // Friction: hair touching the body mostly stays put.
-             if (distance(collided, free) > 1e-5) {
-               vec3 before = texelFetch(uState, ivec2(j, c.y), 0).xyz;
-               collided = collide(mix(collided, before, uFriction), margin);
-             }
-             if (j == i + 1) nextCorrection = collided - predicted;
-             q = collided;
-             if (j == i) qi = q;
-             restPrevious = restJ;
-           }
-           if (!writesPrevious) { gl_FragColor = vec4(qi, 1.0); return; }
-           // Velocity correction (Muller et al. 2012): next step's velocity is
-           // this vertex's move minus a share of the next vertex's correction.
-           vec3 x = texelFetch(uState, ivec2(i, c.y), 0).xyz;
-           gl_FragColor = vec4(x + uVelocityCorrection * nextCorrection, 1.0);
-         }`,
-        {
-          ...this.collisionUniforms(),
-          uPredicted: { value: null }, uRest: { value: null }, uState: { value: null },
-          uBodyRotation: { value: this.body.rotation }, uLocal: { value: new THREE.Vector2() },
-          uFriction: { value: 0.5 }, uVelocityCorrection: { value: 0.9 }, uPuff: { value: 0.03 },
-        },
-      );
-
-      // One fragment per strand: where (as a fraction of its length) the
-      // swipe A→B crosses it, or 1. Only hair on the camera's side is cut,
-      // and a strand is cut once per swipe (uSwipe): its new tip sits under
-      // the finger and would otherwise lose a sliver on every move.
-      this.passes.findCut = makePass(
-        `uniform sampler2D uState, uSwipe;
-         uniform mat4 uViewProjection;
-         uniform vec2 uViewport, uA, uB;
-         uniform float uRadius;
-         uniform vec3 uCameraDirection, uCenter;
-         float distanceToSegment(vec2 p, vec2 a, vec2 b) {
-           vec2 ab = b - a;
-           float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
-           return length(p - a - ab * t);
-         }
-         void main() {
-           int row = int(gl_FragCoord.y);
-           float cut = 1.0;
-           if (texelFetch(uSwipe, ivec2(0, row), 0).x < 0.999) { gl_FragColor = vec4(1.0); return; }
-           for (int j = 3; j < ${V - 1}; j++) { // never the very tip: a cut takes a real piece off
-             vec3 p = texelFetch(uState, ivec2(j, row), 0).xyz;
-             if (dot(p - uCenter, uCameraDirection) < -0.35) continue;
-             vec4 clip = uViewProjection * vec4(p, 1.0);
-             if (clip.w <= 0.0) continue;
-             vec2 screen = (clip.xy / clip.w * 0.5 + 0.5) * uViewport;
-             if (distanceToSegment(screen, uA, uB) < uRadius) {
-               cut = (float(j) - 0.5) / ${(V - 1).toFixed(1)};
-               break;
-             }
-           }
-           gl_FragColor = vec4(cut, 0.0, 0.0, 1.0);
-         }`,
-        {
-          uState: { value: null }, uSwipe: { value: null }, uViewProjection: { value: new THREE.Matrix4() }, uViewport: { value: new THREE.Vector2() },
-          uA: { value: new THREE.Vector2() }, uB: { value: new THREE.Vector2() }, uRadius: { value: 16 },
-          uCameraDirection: { value: new THREE.Vector3() }, uCenter: { value: new THREE.Vector3() },
-        },
-      );
-
-      // This swipe's cuts so far: each strand keeps the first fraction it was cut to.
-      this.passes.markSwipe = makePass(
-        `uniform sampler2D uSwipe, uCut;
-         void main() {
-           ivec2 c = ivec2(gl_FragCoord.xy);
-           float swipe = texelFetch(uSwipe, c, 0).x;
-           gl_FragColor = vec4(swipe < 0.999 ? swipe : texelFetch(uCut, c, 0).x, 0.0, 0.0, 1.0);
-         }`,
-        { uSwipe: { value: null }, uCut: { value: null } },
-      );
-      this.passes.fillOne = makePass('void main() { gl_FragColor = vec4(1.0); }', {});
-
-      // Shortens strands by their cut fraction (1 = untouched); the kept part
-      // keeps its shape, resampled over all V vertices. Rest is V wide,
-      // state 2V wide (resampled per half).
-      this.passes.resample = makePass(
-        `uniform sampler2D uSource, uCut;
-         void main() {
-           ivec2 c = ivec2(gl_FragCoord.xy);
-           float cut = texelFetch(uCut, ivec2(0, c.y), 0).x;
-           if (cut > 0.999) { gl_FragColor = texelFetch(uSource, c, 0); return; }
-           int base = (c.x / ${V}) * ${V};
-           float s = float(c.x - base) * cut;
-           int j0 = int(floor(s));
-           int j1 = min(j0 + 1, ${V - 1});
-           gl_FragColor = mix(texelFetch(uSource, ivec2(base + j0, c.y), 0), texelFetch(uSource, ivec2(base + j1, c.y), 0), s - float(j0));
-         }`,
-        { uSource: { value: null }, uCut: { value: null } },
-      );
-    }
-
-    makeTarget(width, height) {
-      return new THREE.WebGLRenderTarget(width, height, {
-        type: this.floatTargets ? THREE.FloatType : THREE.HalfFloatType,
-        format: THREE.RGBAFormat,
-        minFilter: THREE.NearestFilter,
-        magFilter: THREE.NearestFilter,
-        depthBuffer: false,
-        stencilBuffer: false,
-        generateMipmaps: false,
+    // Replaces the strands with a new set of guides. They settle in the
+    // simulator while the current hair stays on screen, then swap in.
+    setGroom(groom) {
+      this.groomId++;
+      this.pendingGroom = groom;
+      this.sim.send({
+        type: 'groom',
+        id: this.groomId,
+        rows: groom.rows,
+        rest: groom.rest,
+        stiffness: groom.stiffness,
+        puff: this.puff,
+        body: this.body.matrix.elements,
+        inverse: this.body.inverse.elements,
       });
     }
 
-    run(material, target) {
-      this.quad.material = material;
-      const previous = this.renderer.getRenderTarget();
-      this.renderer.setRenderTarget(target);
-      this.renderer.render(this.quadScene, this.quadCamera);
-      this.renderer.setRenderTarget(previous);
-    }
-
-    runWith(material, uniforms, target) {
-      for (const [name, value] of Object.entries(uniforms)) material.uniforms[name].value = value;
-      this.run(material, target);
-    }
-
-    // --- Groom -----------------------------------------------------------------
-
-    // Replaces the strands with a new set of guides and lets them settle.
-    setGroom(groom) {
-      if (this.targets) for (const target of Object.values(this.targets)) target.dispose();
-      this.restTexture?.dispose();
+    applyGroom(groom, positions) {
       this.rows = groom.rows;
       this.lengths = groom.lengths;
       this.roots = groom.roots;
       this.strandMesh.visible = groom.rows > 0;
-      if (groom.rows === 0) {
-        this.targets = null;
-        return;
-      }
-      const rows = groom.rows;
-      this.targets = {
-        state: this.makeTarget(2 * V, rows),
-        nextState: this.makeTarget(2 * V, rows),
-        stateScratch: this.makeTarget(2 * V, rows),
-        predicted: this.makeTarget(V, rows),
-        rest: this.makeTarget(V, rows),
-        restScratch: this.makeTarget(V, rows),
-        cut: this.makeTarget(1, rows),
-        swipe: this.makeTarget(1, rows),
-        swipeNext: this.makeTarget(1, rows),
-      };
-      this.restTexture = new THREE.DataTexture(groom.rest, V, rows, THREE.RGBAFormat, THREE.FloatType);
-      this.restTexture.needsUpdate = true;
-      this.runWith(this.passes.copy, { uSource: this.restTexture }, this.targets.rest);
-      this.runWith(this.passes.fillState, { uSource: this.restTexture }, this.targets.state);
-
-      this.passes.integrate.uniforms.uGlobal.value.fromArray(groom.stiffness.global);
-      this.passes.constrain.uniforms.uLocal.value.fromArray(groom.stiffness.local);
-
+      this.showPositions(positions);
       const geometry = this.strandMesh.geometry;
       const children = new THREE.InstancedInterleavedBuffer(groom.children, 8, 1);
       geometry.setAttribute('aChildA', new THREE.InterleavedBufferAttribute(children, 4, 0));
       geometry.setAttribute('aChildB', new THREE.InterleavedBufferAttribute(children, 4, 4));
       this.updateInstanceCount();
-      this.settling = SETTLE_FRAMES; // fast settling, then the settled shape becomes the rest shape
+    }
+
+    // Whether a groom is still settling in the simulator.
+    get settling() {
+      return this.pendingGroom !== null;
     }
 
     setLayers(layers) {
@@ -511,128 +276,84 @@
 
     // --- Stepping --------------------------------------------------------------
 
-    step() {
-      if (!this.targets) return false;
-      if (this.settling > 0) {
-        const damping = this.passes.integrate.uniforms.uDamping;
-        damping.value = 0.25;
-        this.simulate(SETTLE_STEPS);
-        damping.value = 0.05;
-        this.settling--;
-        if (this.settling === 0) {
-          // The settled shape becomes the style's rest shape.
-          this.runWith(this.passes.toRest, { uSource: this.targets.state.texture }, this.targets.rest);
-          this.runWith(this.passes.fillState, { uSource: this.targets.rest.texture }, this.targets.state);
-        }
-      } else {
-        this.simulate(SUBSTEPS);
-      }
-      this.strandMaterial.uniforms.uPositions.value = this.targets.state.texture;
-      return this.settling > 0;
-    }
-
-    simulate(steps) {
-      const integrate = this.passes.integrate.uniforms;
-      const constrain = this.passes.constrain.uniforms;
-      integrate.uWind.value = this.wind;
-      for (let i = 0; i < steps; i++) {
-        this.time += DT;
-        integrate.uTime.value = this.time;
-        integrate.uState.value = this.targets.state.texture;
-        integrate.uRest.value = this.targets.rest.texture;
-        this.run(this.passes.integrate, this.targets.predicted);
-        constrain.uPredicted.value = this.targets.predicted.texture;
-        constrain.uRest.value = this.targets.rest.texture;
-        constrain.uState.value = this.targets.state.texture;
-        this.run(this.passes.constrain, this.targets.nextState);
-        [this.targets.state, this.targets.nextState] = [this.targets.nextState, this.targets.state];
-      }
+    // Asks the simulator for the next positions. One request at a time: a
+    // slow step skips frames rather than queueing up behind them.
+    step(now) {
+      if (this.stepInFlight || this.rows === 0 || this.pendingGroom) return;
+      const elapsed = this.lastStep && now - this.lastStep < 200 ? (now - this.lastStep) / 1000 : 1 / 60;
+      this.lastStep = now;
+      this.stepInFlight = true;
+      const buffer = this.spare;
+      this.spare = null;
+      this.sim.send({
+        type: 'step',
+        elapsed,
+        wind: this.wind,
+        puff: this.puff,
+        body: this.body.matrix.elements,
+        inverse: this.body.inverse.elements,
+        buffer,
+      }, buffer ? [buffer.buffer] : []);
     }
 
     // --- Cutting -----------------------------------------------------------------
 
-    // Scissors. A swipe runs entirely on the GPU — reading results back
-    // stalls it until all its work is done, far too slow to do on every
-    // finger move — and is read back once, when the finger lifts.
     beginSwipe() {
-      if (this.targets) this.run(this.passes.fillOne, this.targets.swipe);
+      this.sim.send({ type: 'beginSwipe' });
     }
 
-    // One segment of the swipe (CSS pixels, y down).
+    // One segment of a scissor swipe (CSS pixels, y down).
     cutAlong(a, b, camera, viewport) {
-      if (!this.targets) return;
-      const find = this.passes.findCut.uniforms;
-      find.uState.value = this.targets.state.texture;
-      find.uSwipe.value = this.targets.swipe.texture;
-      find.uViewProjection.value.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-      find.uViewport.value.set(viewport.width, viewport.height);
-      find.uA.value.set(a.x, viewport.height - a.y);
-      find.uB.value.set(b.x, viewport.height - b.y);
-      const center = new THREE.Vector3().setFromMatrixPosition(this.body.matrix);
-      find.uCenter.value.copy(center);
-      find.uCameraDirection.value.copy(camera.position).sub(center).normalize();
-      this.run(this.passes.findCut, this.targets.cut);
-      this.resample(this.targets.cut.texture);
-      this.runWith(this.passes.markSwipe, { uSwipe: this.targets.swipe.texture, uCut: this.targets.cut.texture }, this.targets.swipeNext);
-      [this.targets.swipe, this.targets.swipeNext] = [this.targets.swipeNext, this.targets.swipe];
+      if (this.rows === 0) return;
+      const modelViewProjection = new THREE.Matrix4()
+        .multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+        .multiply(this.body.matrix);
+      this.sim.send({
+        type: 'cut',
+        modelViewProjection: modelViewProjection.elements,
+        viewport: [viewport.width, viewport.height],
+        a: [a.x, viewport.height - a.y],
+        b: [b.x, viewport.height - b.y],
+        radius: 16,
+        cameraDirection: camera.position.clone().applyMatrix4(this.body.inverse).normalize().toArray(),
+      });
     }
 
-    // The swipe's cuts, as [{ row, length }] with new lengths (scene units).
-    endSwipe() {
-      if (!this.targets) return [];
-      const fractions = new Float32Array(this.rows * 4);
-      if (this.floatTargets) {
-        this.renderer.readRenderTargetPixels(this.targets.swipe, 0, 0, 1, this.rows, fractions);
-      } else {
-        const halves = new Uint16Array(this.rows * 4);
-        this.renderer.readRenderTargetPixels(this.targets.swipe, 0, 0, 1, this.rows, halves);
-        for (let i = 0; i < halves.length; i++) fractions[i] = THREE.DataUtils.fromHalfFloat(halves[i]);
-      }
-      const cuts = [];
-      for (let row = 0; row < this.rows; row++) {
-        const fraction = fractions[row * 4];
-        if (fraction < 0.999) {
-          this.lengths[row] *= fraction;
-          cuts.push({ row, length: this.lengths[row] });
+    // The swipe's cuts, as [{ row, length }] with new lengths (scene units),
+    // passed to `done` once the simulator has them.
+    endSwipe(done) {
+      this.swipeDone = (cuts) => {
+        const result = [];
+        for (let i = 0; i < cuts.length; i += 2) {
+          const row = cuts[i];
+          this.lengths[row] *= cuts[i + 1];
+          result.push({ row, length: this.lengths[row] });
         }
-      }
-      return cuts;
-    }
-
-    applyFractions(fractions) {
-      const texture = new THREE.DataTexture(fractions, 1, this.rows, THREE.RGBAFormat, THREE.FloatType);
-      texture.needsUpdate = true;
-      this.resample(texture);
-      texture.dispose();
+        done(result);
+      };
+      this.sim.send({ type: 'endSwipe' });
     }
 
     // Shortens guides to new lengths (scene units) where those are shorter —
     // brush tools painting a length. Returns whether any guide would have
     // to grow instead (which needs a rebuild).
     shortenTo(newLengths) {
-      if (!this.targets) return false;
-      const fractions = new Float32Array(this.rows * 4).fill(1);
+      if (this.rows === 0) return false;
+      const fractions = new Float32Array(this.rows).fill(1);
       let shortened = false;
       let grows = false;
       for (let row = 0; row < this.rows; row++) {
         const target = newLengths[row];
         if (target < this.lengths[row] * 0.97) {
-          fractions[row * 4] = Math.max(2 / (V - 1), target / this.lengths[row]);
-          this.lengths[row] *= fractions[row * 4];
+          fractions[row] = Math.max(2 / (V - 1), target / this.lengths[row]);
+          this.lengths[row] *= fractions[row];
           shortened = true;
         } else if (target > this.lengths[row] * 1.05) {
           grows = true;
         }
       }
-      if (shortened) this.applyFractions(fractions);
+      if (shortened) this.sim.send({ type: 'shorten', fractions });
       return grows;
-    }
-
-    resample(cutTexture) {
-      for (const [name, scratch] of [['state', 'stateScratch'], ['rest', 'restScratch']]) {
-        this.runWith(this.passes.resample, { uSource: this.targets[name].texture, uCut: cutTexture }, this.targets[scratch]);
-        [this.targets[name], this.targets[scratch]] = [this.targets[scratch], this.targets[name]];
-      }
     }
 
     // --- Rendering -----------------------------------------------------------------
@@ -652,7 +373,8 @@
       this.strandMaterial = new THREE.ShaderMaterial({
         uniforms: {
           ...this.fieldUniforms,
-          uPositions: { value: null },
+          uPositions: { value: this.positionsTexture },
+          uBody: { value: this.body.matrix },
           uBodyRotation: { value: this.body.rotation },
           uCurl: { value: 0 },
           uWidth: { value: 1 },
@@ -666,7 +388,7 @@
           ${FIELDS_GLSL}
           uniform sampler2D uPositions, uSkinRadius;
           uniform mat3 uBodyRotation;
-          uniform mat4 uBodyInverse;
+          uniform mat4 uBody, uBodyInverse;
           uniform vec3 uCranium;
           uniform float uCurl, uWidth, uMaxPolar;
           attribute vec4 aChildA; // guide row, random, tip trim, root u
@@ -699,8 +421,8 @@
             float along = position.y / ${(V - 1).toFixed(1)};
             float k = along * aChildA.z * ${(V - 1).toFixed(1)};
             int j0 = min(int(floor(k)), ${V - 2});
-            vec3 p0 = texelFetch(uPositions, ivec2(j0, row), 0).xyz;
-            vec3 p1 = texelFetch(uPositions, ivec2(j0 + 1, row), 0).xyz;
+            vec3 p0 = (uBody * vec4(texelFetch(uPositions, ivec2(j0, row), 0).xyz, 1.0)).xyz;
+            vec3 p1 = (uBody * vec4(texelFetch(uPositions, ivec2(j0 + 1, row), 0).xyz, 1.0)).xyz;
             vec3 p = mix(p0, p1, k - float(j0));
             vec3 tangent = normalize(p1 - p0 + vec3(0.0, -1e-6, 0.0));
 
@@ -947,7 +669,7 @@
 
     setCurl(curl) {
       this.strandMaterial.uniforms.uCurl.value = curl;
-      this.passes.constrain.uniforms.uPuff.value = 0.03 + 0.08 * curl;
+      this.puff = 0.03 + 0.08 * curl;
     }
 
     setKeyLight(direction) {
