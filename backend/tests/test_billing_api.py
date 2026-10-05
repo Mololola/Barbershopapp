@@ -148,3 +148,15 @@ def test_webhook_hands_handlers_plain_dicts(monkeypatch):
 
     assert response.status_code == 200
     assert {"sub": "sub_test", "business_id": "b1"} in session.params
+
+
+def test_finance_premium_cancellation_is_recorded_on_its_own_row():
+    from app.api.billing import _handle_subscription_updated
+
+    session = _RecordingSession()
+    _handle_subscription_updated(
+        session,
+        _subscription(id="sub_fin", status="active", cancel_at=1_800_000_000, metadata={"product": "finance_premium"}),
+    )
+
+    assert session.params == [{"sub": "sub_fin", "cancel_at": datetime.fromtimestamp(1_800_000_000, timezone.utc)}]

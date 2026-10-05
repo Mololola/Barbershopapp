@@ -46,6 +46,14 @@ final businessSubscriptionProvider = FutureProvider.autoDispose<BusinessSubscrip
   return ref.watch(businessRepositoryProvider).fetchSubscription(business.id);
 });
 
+final financePremiumSubscriptionProvider = FutureProvider.autoDispose<FinancePremiumSubscription?>((ref) async {
+  final lifecycle = AppLifecycleListener(onResume: ref.invalidateSelf);
+  ref.onDispose(lifecycle.dispose);
+  final business = await ref.watch(currentBusinessProvider.future);
+  if (business == null) return null;
+  return ref.watch(businessRepositoryProvider).fetchFinancePremiumSubscription(business.id);
+});
+
 /// One month of the finance tool, keyed by the month's first day.
 /// autoDispose — premium status can flip via a Stripe webhook at any time,
 /// and revenue moves with every completed booking.
@@ -79,6 +87,11 @@ class BillingActionController extends AsyncNotifier<void> {
 
   Future<void> resumeSubscription() => _changeSubscription((api, id) => api.resumeSubscription(id));
 
+  /// Like [cancelSubscription], for the Finance Premium add-on.
+  Future<void> cancelFinancePremium() => _changeSubscription((api, id) => api.cancelFinancePremium(id));
+
+  Future<void> resumeFinancePremium() => _changeSubscription((api, id) => api.resumeFinancePremium(id));
+
   Future<void> _changeSubscription(Future<void> Function(BillingApiClient api, String businessId) change) async {
     final business = await ref.read(currentBusinessProvider.future);
     if (business == null) throw StateError('No business set up yet.');
@@ -86,6 +99,7 @@ class BillingActionController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       await change(ref.read(billingApiClientProvider), business.id);
       ref.invalidate(businessSubscriptionProvider);
+      ref.invalidate(financePremiumSubscriptionProvider);
     });
   }
 

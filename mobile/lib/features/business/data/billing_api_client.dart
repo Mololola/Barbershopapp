@@ -24,6 +24,14 @@ class BillingApiClient {
     await _api.post('/businesses/$businessId/subscription/resume');
   }
 
+  Future<void> cancelFinancePremium(String businessId) async {
+    await _api.post('/businesses/$businessId/finance-access/cancel');
+  }
+
+  Future<void> resumeFinancePremium(String businessId) async {
+    await _api.post('/businesses/$businessId/finance-access/resume');
+  }
+
   Future<void> startFinanceTrial(String businessId) async {
     await _api.post('/businesses/$businessId/finance-access/trial');
   }

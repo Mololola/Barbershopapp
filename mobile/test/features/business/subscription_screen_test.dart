@@ -17,6 +17,9 @@ class _FakeBillingApi implements BillingApiClient {
   Future<void> resumeSubscription(String businessId) async => calls.add('resume');
 
   @override
+  Future<void> cancelFinancePremium(String businessId) async => calls.add('cancel premium');
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -31,10 +34,15 @@ void main() {
         cancelAt: cancelAt,
       );
 
-  Widget buildTestable(BusinessSubscription Function() current, _FakeBillingApi api) {
+  Widget buildTestable(
+    BusinessSubscription Function() current,
+    _FakeBillingApi api, {
+    FinancePremiumSubscription? Function()? premium,
+  }) {
     return ProviderScope(
       overrides: [
         businessSubscriptionProvider.overrideWith((ref) async => current()),
+        financePremiumSubscriptionProvider.overrideWith((ref) async => premium?.call()),
         currentBusinessProvider.overrideWith(
           (ref) async => const Business(id: 'b1', ownerId: 'o1', name: 'Shop', currency: 'GBP'),
         ),
@@ -103,5 +111,29 @@ void main() {
     expect(find.text('You\'re subscribed again'), findsOneWidget);
     expect(find.text('Free trial'), findsOneWidget);
     expect(find.text('Cancel subscription'), findsOneWidget);
+  });
+
+  testWidgets('Finance Premium has its own card and can be cancelled on its own', (tester) async {
+    final api = _FakeBillingApi();
+    var premium = const FinancePremiumSubscription();
+    await tester.pumpWidget(buildTestable(subscription, api, premium: () => premium));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Finance Premium'), findsOneWidget);
+    expect(find.text('£9.99 / month'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel subscription').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel Finance Premium?'), findsOneWidget);
+
+    final premiumEnd = DateTime.now().toUtc().add(const Duration(days: 20));
+    premium = FinancePremiumSubscription(cancelAt: premiumEnd);
+    await tester.tap(find.text('Cancel Premium'));
+    await tester.pumpAndSettle();
+
+    expect(api.calls, ['cancel premium']);
+    expect(find.text('Ends ${formatSubscriptionDate(premiumEnd)}'), findsOneWidget);
+    // The shop's own subscription is untouched.
+    expect(find.text('Free trial'), findsOneWidget);
   });
 }

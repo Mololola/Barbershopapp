@@ -58,6 +58,18 @@ class BusinessRepository {
     return BusinessSubscription.fromRow(row);
   }
 
+  Future<FinancePremiumSubscription?> fetchFinancePremiumSubscription(String businessId) async {
+    final row = await _client
+        .from('business_finance_access')
+        .select('cancel_at')
+        .eq('business_id', businessId)
+        .not('stripe_subscription_id', 'is', null)
+        .inFilter('subscription_status', ['active', 'past_due'])
+        .maybeSingle();
+    if (row == null) return null;
+    return FinancePremiumSubscription.fromRow(row);
+  }
+
   Future<Business?> fetchOwnBusiness(String ownerId) async {
     final row = await _client.from('businesses').select().eq('owner_id', ownerId).maybeSingle();
     if (row == null) return null;

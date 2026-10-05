@@ -202,17 +202,22 @@ def create_portal_session(
     return PortalSessionResponse(url=portal_session.url)
 
 
-def _set_cancel_at_period_end(db: Session, business_id: uuid.UUID, user_id: str, cancel: bool) -> OkResponse:
+_ACTIVE_SHOP_SUBSCRIPTION = (
+    "select stripe_subscription_id from business_subscriptions where business_id = :business_id and status = 'active'"
+)
+_ACTIVE_FINANCE_SUBSCRIPTION = (
+    "select stripe_subscription_id from business_finance_access "
+    "where business_id = :business_id and subscription_status in ('active', 'past_due')"
+)
+
+
+def _set_cancel_at_period_end(
+    db: Session, business_id: uuid.UUID, user_id: str, active_subscription_sql: str, cancel: bool
+) -> OkResponse:
     if not _is_business_owner(db, business_id, user_id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
 
-    subscription_id = db.execute(
-        text(
-            "select stripe_subscription_id from business_subscriptions "
-            "where business_id = :business_id and status = 'active'"
-        ),
-        {"business_id": business_id},
-    ).scalar()
+    subscription_id = db.execute(text(active_subscription_sql), {"business_id": business_id}).scalar()
     if not subscription_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No active subscription")
 
@@ -233,7 +238,7 @@ def cancel_subscription(
     _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
     user_id: str = Depends(get_current_user_id),
 ) -> OkResponse:
-    return _set_cancel_at_period_end(db, business_id, user_id, cancel=True)
+    return _set_cancel_at_period_end(db, business_id, user_id, _ACTIVE_SHOP_SUBSCRIPTION, cancel=True)
 
 
 @router.post("/businesses/{business_id}/subscription/resume", response_model=OkResponse)
@@ -243,7 +248,27 @@ def resume_subscription(
     _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
     user_id: str = Depends(get_current_user_id),
 ) -> OkResponse:
-    return _set_cancel_at_period_end(db, business_id, user_id, cancel=False)
+    return _set_cancel_at_period_end(db, business_id, user_id, _ACTIVE_SHOP_SUBSCRIPTION, cancel=False)
+
+
+@router.post("/businesses/{business_id}/finance-access/cancel", response_model=OkResponse)
+def cancel_finance_premium(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    return _set_cancel_at_period_end(db, business_id, user_id, _ACTIVE_FINANCE_SUBSCRIPTION, cancel=True)
+
+
+@router.post("/businesses/{business_id}/finance-access/resume", response_model=OkResponse)
+def resume_finance_premium(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("5/minute")),  # each call is a real Stripe API round-trip
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    return _set_cancel_at_period_end(db, business_id, user_id, _ACTIVE_FINANCE_SUBSCRIPTION, cancel=False)
 
 
 @router.post("/businesses/{business_id}/finance-access/trial", response_model=OkResponse)
@@ -375,7 +400,8 @@ def _handle_checkout_completed(db: Session, session: dict) -> None:
             text(
                 "insert into business_finance_access (business_id, stripe_subscription_id, subscription_status) "
                 "values (:business_id, :sub, 'active') "
-                "on conflict (business_id) do update set stripe_subscription_id = :sub, subscription_status = 'active'"
+                "on conflict (business_id) do update set stripe_subscription_id = :sub, subscription_status = 'active', "
+                "cancel_at = null"
             ),
             {"business_id": metadata["business_id"], "sub": session["subscription"]},
         )
@@ -462,15 +488,23 @@ def _scheduled_cancellation(subscription: dict) -> int | None:
 
 
 def _handle_subscription_updated(db: Session, subscription: dict) -> None:
-    """Records the main subscription's trial end and scheduled cancellation.
-    Keyed on the business (metadata set at checkout), not the subscription
-    id: `created` can arrive before checkout.session.completed has stored
-    that id. A canceled subscription is left to the deleted handler — it
-    may be an old one the business has since replaced."""
-    metadata = subscription.get("metadata") or {}
-    if metadata.get("product") == _FINANCE_PRODUCT or "business_id" not in metadata:
-        return
+    """Records the main subscription's trial end and scheduled cancellation,
+    and Finance Premium's scheduled cancellation. The main one is keyed on
+    the business (metadata set at checkout), not the subscription id:
+    `created` can arrive before checkout.session.completed has stored that
+    id. A canceled subscription is left to the deleted handler — it may be
+    an old one the business has since replaced."""
     if subscription["status"] in ("canceled", "incomplete_expired"):
+        return
+    metadata = subscription.get("metadata") or {}
+    cancel_at = _from_unix(_scheduled_cancellation(subscription))
+    if metadata.get("product") == _FINANCE_PRODUCT:
+        db.execute(
+            text("update business_finance_access set cancel_at = :cancel_at where stripe_subscription_id = :sub"),
+            {"sub": subscription["id"], "cancel_at": cancel_at},
+        )
+        return
+    if "business_id" not in metadata:
         return
     db.execute(
         text(
@@ -480,7 +514,7 @@ def _handle_subscription_updated(db: Session, subscription: dict) -> None:
         {
             "sub": subscription["id"],
             "trial_ends_at": _from_unix(subscription.get("trial_end")),
-            "cancel_at": _from_unix(_scheduled_cancellation(subscription)),
+            "cancel_at": cancel_at,
             "business_id": metadata["business_id"],
         },
     )

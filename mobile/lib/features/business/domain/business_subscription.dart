@@ -63,3 +63,19 @@ class BusinessSubscription {
     );
   }
 }
+
+/// A running Finance Premium subscription paid through Stripe (not a free
+/// trial or a grandfathered unlock — those have nothing to cancel).
+class FinancePremiumSubscription {
+  const FinancePremiumSubscription({this.cancelAt});
+
+  /// Mirrors the backend's _FINANCE_PREMIUM_MONTHLY_CENTS.
+  static const monthlyAmountCents = 999;
+
+  /// Set once the owner cancels: Premium stays on until this moment.
+  final DateTime? cancelAt;
+
+  factory FinancePremiumSubscription.fromRow(Map<String, dynamic> row) => FinancePremiumSubscription(
+        cancelAt: row['cancel_at'] != null ? DateTime.parse(row['cancel_at'] as String) : null,
+      );
+}
