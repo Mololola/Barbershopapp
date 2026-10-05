@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/theme.dart';
 import '../application/business_controller.dart';
 import '../domain/business_subscription.dart';
 import '../domain/finance_overview.dart';
@@ -22,40 +23,76 @@ String formatSubscriptionDate(DateTime date) {
 class SubscriptionScreen extends ConsumerWidget {
   const SubscriptionScreen({super.key});
 
-  Future<void> _run(BuildContext context, WidgetRef ref, Future<void> Function() action) async {
+  Future<void> _run(BuildContext context, WidgetRef ref, Future<void> Function() action, String doneMessage) async {
     await action();
     if (!context.mounted) return;
     final state = ref.read(billingActionControllerProvider);
-    if (state.hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error.toString())));
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(state.hasError ? state.error.toString() : doneMessage)),
+    );
   }
 
   Future<void> _confirmCancel(BuildContext context, WidgetRef ref, BusinessSubscription sub) async {
-    final trial = sub.isInTrial;
+    // A trial isn't cancelled on its own: cancelling ends the subscription
+    // when the trial (or paid month) runs out, and the shop is hidden until
+    // the owner subscribes again.
+    final until = sub.isInTrial
+        ? 'Your free trial still runs until ${formatSubscriptionDate(sub.trialEndsAt!)}'
+        : 'You keep full access until the end of the month you\'ve paid for';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(trial ? 'Cancel your free trial?' : 'Cancel your subscription?'),
+        title: const Text('Cancel your subscription?'),
         content: Text(
-          trial
-              ? 'You keep full access until ${formatSubscriptionDate(sub.trialEndsAt!)} and won\'t be charged '
-                    'anything. You can change your mind any time before then.'
-              : 'You keep full access until the end of the month you\'ve paid for, and won\'t be charged '
-                    'again. You can change your mind any time before then.',
+          '$until and won\'t be charged again. After that your shop is hidden from customers until you '
+          'subscribe again.',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep it')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(trial ? 'Cancel trial' : 'Cancel subscription'),
+            child: const Text('Cancel subscription'),
           ),
         ],
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    await _run(context, ref, () => ref.read(billingActionControllerProvider.notifier).cancelSubscription());
+    await _run(
+      context,
+      ref,
+      () => ref.read(billingActionControllerProvider.notifier).cancelSubscription(),
+      'Subscription cancelled',
+    );
+  }
+
+  Future<void> _confirmResubscribe(BuildContext context, WidgetRef ref, BusinessSubscription sub, String? price) async {
+    // Undoes the scheduled cancellation on the same Stripe subscription, so
+    // the card already on file is used — there's nothing to enter in Stripe.
+    final plan = price == null ? 'your subscription' : 'your subscription ($price / month)';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Subscribe again?'),
+        content: Text(
+          sub.isInTrial
+              ? 'Your free trial continues until ${formatSubscriptionDate(sub.trialEndsAt!)}. After that, '
+                    '$plan is charged to the card you already added.'
+              : 'We\'ll keep charging $plan to the card you already added. Nothing extra is charged today.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Not now')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Subscribe')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await _run(
+      context,
+      ref,
+      () => ref.read(billingActionControllerProvider.notifier).resumeSubscription(),
+      'You\'re subscribed again',
+    );
   }
 
   Future<void> _openPortal(BuildContext context, WidgetRef ref) async {
@@ -88,24 +125,30 @@ class SubscriptionScreen extends ConsumerWidget {
           } else if (sub == null || sub.status != SubscriptionStatus.active) {
             children.add(const SubscriptionBanner());
           } else {
+            final price = currency == null ? null : formatMoney(sub.monthlyAmountCents, currency);
+            final String badge;
+            final Color badgeColor;
             final String title;
             final String message;
             if (sub.cancelAt != null) {
-              title = sub.isInTrial ? 'Free trial cancelled' : 'Subscription cancelled';
+              badge = 'Cancelled';
+              badgeColor = AppColors.rust;
+              title = 'Ends ${formatSubscriptionDate(sub.cancelAt!)}';
               message =
-                  'You keep full access until ${formatSubscriptionDate(sub.cancelAt!)} and won\'t be '
-                  'charged. After that your shop is hidden from customers, and its data is kept for 60 days '
-                  'in case you come back.';
+                  'Your shop stays visible to customers until then and you won\'t be charged again. After '
+                  'that it\'s hidden until you subscribe again, and its data is kept for 60 days.';
             } else if (sub.isInTrial) {
+              badge = 'Free trial';
+              badgeColor = AppColors.brass;
               title = 'Free trial until ${formatSubscriptionDate(sub.trialEndsAt!)}';
               message =
-                  'Nothing is charged before then. Not happy? Cancel any time before the trial ends — '
-                  'you keep everything until then and pay nothing.';
+                  'Nothing is charged before then. After that it renews every month — cancel any time '
+                  'before the trial ends and you pay nothing.';
             } else {
-              title = 'Active';
-              message =
-                  'Renews every month. Cancel any time — you keep access until the end of the month '
-                  'you\'ve paid for.';
+              badge = 'Active';
+              badgeColor = AppColors.brass;
+              title = 'Renews every month';
+              message = 'Cancel any time — you keep access until the end of the month you\'ve paid for.';
             }
             children.add(
               Card(
@@ -114,29 +157,38 @@ class SubscriptionScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (currency != null)
-                        Text('${formatMoney(sub.monthlyAmountCents, currency)} / month', style: textTheme.bodyMedium),
-                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(999)),
+                            child: Text(
+                              badge,
+                              style: textTheme.labelMedium?.copyWith(
+                                color: badgeColor == AppColors.rust ? AppColors.onRust : AppColors.onBrass,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          if (price != null) Text('$price / month', style: textTheme.bodyMedium),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
                       Text(title, style: textTheme.titleLarge),
                       const SizedBox(height: 8),
                       Text(message),
                       const SizedBox(height: 16),
                       if (sub.cancelAt != null)
                         FilledButton(
-                          onPressed: busy
-                              ? null
-                              : () => _run(
-                                  context,
-                                  ref,
-                                  () => ref.read(billingActionControllerProvider.notifier).resumeSubscription(),
-                                ),
-                          child: const Text('Keep my subscription'),
+                          onPressed: busy ? null : () => _confirmResubscribe(context, ref, sub, price),
+                          child: const Text('Subscribe again'),
                         )
                       else
                         OutlinedButton(
                           style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
                           onPressed: busy ? null : () => _confirmCancel(context, ref, sub),
-                          child: Text(sub.isInTrial ? 'Cancel free trial' : 'Cancel subscription'),
+                          child: const Text('Cancel subscription'),
                         ),
                     ],
                   ),

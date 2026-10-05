@@ -44,7 +44,7 @@ void main() {
     );
   }
 
-  testWidgets('during the trial, cancelling asks first and then shows access until the trial ends', (tester) async {
+  testWidgets('during the trial, cancelling asks first and then shows when it ends', (tester) async {
     final api = _FakeBillingApi();
     var current = subscription();
     await tester.pumpWidget(buildTestable(() => current, api));
@@ -52,21 +52,23 @@ void main() {
 
     final date = formatSubscriptionDate(trialEnd);
     expect(find.text('£150 / month'), findsOneWidget);
+    expect(find.text('Free trial'), findsOneWidget);
     expect(find.text('Free trial until $date'), findsOneWidget);
 
-    await tester.tap(find.text('Cancel free trial'));
+    await tester.tap(find.text('Cancel subscription'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('You keep full access until $date and won\'t be charged anything'), findsOneWidget);
+    expect(find.textContaining('Your free trial still runs until $date and won\'t be charged again'), findsOneWidget);
 
     // The backend schedules the cancellation for the trial's end.
     current = subscription(cancelAt: trialEnd);
-    await tester.tap(find.text('Cancel trial'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Cancel subscription'));
     await tester.pumpAndSettle();
 
     expect(api.calls, ['cancel']);
-    expect(find.text('Free trial cancelled'), findsOneWidget);
-    expect(find.textContaining('You keep full access until $date and won\'t be charged.'), findsOneWidget);
-    expect(find.text('Keep my subscription'), findsOneWidget);
+    expect(find.text('Cancelled'), findsOneWidget);
+    expect(find.text('Ends $date'), findsOneWidget);
+    expect(find.text('Subscription cancelled'), findsOneWidget);
+    expect(find.text('Subscribe again'), findsOneWidget);
   });
 
   testWidgets('backing out of the dialog cancels nothing', (tester) async {
@@ -74,26 +76,32 @@ void main() {
     await tester.pumpWidget(buildTestable(subscription, api));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Cancel free trial'));
+    await tester.tap(find.text('Cancel subscription'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Keep it'));
     await tester.pumpAndSettle();
 
     expect(api.calls, isEmpty);
-    expect(find.text('Cancel free trial'), findsOneWidget);
+    expect(find.text('Cancel subscription'), findsOneWidget);
   });
 
-  testWidgets('a cancelled trial can be undone', (tester) async {
+  testWidgets('a cancelled subscription restarts after confirming, and says so', (tester) async {
     final api = _FakeBillingApi();
     var current = subscription(cancelAt: trialEnd);
     await tester.pumpWidget(buildTestable(() => current, api));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Subscribe again'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('your subscription (£150 / month) is charged to the card you already added'), findsOneWidget);
+
     current = subscription();
-    await tester.tap(find.text('Keep my subscription'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Subscribe'));
     await tester.pumpAndSettle();
 
     expect(api.calls, ['resume']);
-    expect(find.text('Cancel free trial'), findsOneWidget);
+    expect(find.text('You\'re subscribed again'), findsOneWidget);
+    expect(find.text('Free trial'), findsOneWidget);
+    expect(find.text('Cancel subscription'), findsOneWidget);
   });
 }
