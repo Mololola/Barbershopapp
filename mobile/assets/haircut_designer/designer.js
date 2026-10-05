@@ -151,7 +151,11 @@
     const normalMap = loader.load(window.HEAD_ASSET.normalMap, requestRender);
     normalMap.flipY = false;
 
-    const material = new THREE.MeshStandardMaterial({ map, normalMap, roughness: 0.62, metalness: 0 });
+    // A softened scan: the skin's fine detail (pores, blemishes, the red
+    // of the lips) is blurred away and its colour evened out, so the head
+    // reads as a neutral model, not a particular person.
+    const material = new THREE.MeshStandardMaterial({ map, normalMap, roughness: 0.72, metalness: 0 });
+    material.normalScale.set(0.45, 0.45);
     material.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, engine.fieldUniforms, {
         uSkinTone: skinToneUniform,
@@ -173,16 +177,23 @@
         )
         .replace(
           '#include <map_fragment>',
-          `#include <map_fragment>
-           // Skin tone: the scan's own variation, shifted to the chosen tone.
-           diffuseColor.rgb = clamp(diffuseColor.rgb * uSkinTone / uScanAverage, 0.0, 1.0);
+          `// A blurred read of the scan (a low mip level): its shading and
+           // broad tone, without fine detail.
+           diffuseColor *= texture2D(map, vMapUv, 3.5);
+           // Skin tone: the scan's variation moved to the chosen tone, then
+           // mostly evened out to that tone's hue.
+           vec3 toned = clamp(diffuseColor.rgb * uSkinTone / uScanAverage, 0.0, 1.0);
+           float shade = dot(toned, vec3(0.2126, 0.7152, 0.0722)) / max(dot(uSkinTone, vec3(0.2126, 0.7152, 0.0722)), 1e-3);
+           diffuseColor.rgb = mix(toned, uSkinTone * shade, 0.75);
            vec3 direction = normalize(vBodyPosition / uCranium);
            float polar = acos(clamp(direction.y, -1.0, 1.0));
            if (polar < uMaxPolar) {
              float azimuth = atan(direction.z, direction.x);
              if (azimuth < 0.0) azimuth += PI2;
              vec2 scalpUv = vec2(azimuth / PI2, polar / uMaxPolar);
-             float hair = smoothstep(0.0, 0.03, hairLength(scalpUv));
+             // Fades in with the hairline itself — stopping where the length
+             // does would draw a hard, wig-like line round the face.
+             float hair = smoothstep(0.0, 0.03, hairLength(scalpUv)) * smoothstep(0.1, 0.9, texture2D(uBaseField, scalpUv).g);
              diffuseColor.rgb = mix(diffuseColor.rgb, hairColor(scalpUv) * 0.5, hair * 0.9);
            }`,
         );

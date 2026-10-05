@@ -269,10 +269,12 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
               length: 5,
               child: Column(
                 children: [
-                  const TabBar(
+                  TabBar(
                     isScrollable: true,
                     tabAlignment: TabAlignment.start,
-                    tabs: [Tab(text: 'Cut'), Tab(text: 'Shape'), Tab(text: 'Tools'), Tab(text: 'Colour'), Tab(text: 'Motion')],
+                    // The app's tab theme is for its dark app bars; this panel is light.
+                    unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    tabs: const [Tab(text: 'Cut'), Tab(text: 'Shape'), Tab(text: 'Tools'), Tab(text: 'Colour'), Tab(text: 'Motion')],
                   ),
                   Expanded(
                     child: TabBarView(

@@ -89,6 +89,22 @@
       return mix(base.r, paintedLength, painted.a);
     }
 
+    // Sine-free hash: fract(sin()) loses precision on cell and pixel
+    // coordinates and draws lines across the hair.
+    float hash(vec3 p) {
+      p = fract(p * 0.1031);
+      p += dot(p, p.zyx + 31.32);
+      return fract((p.x + p.y) * p.z);
+    }
+
+    // How tall the shells are: the hair itself where it's short; beneath
+    // strands, only a thin undercoat at the roots — a full-height one would
+    // swallow the strands lying on the head.
+    float shellLength(float hairLen) {
+      float shortHair = min(hairLen, ${G.SHELL_MAX_LENGTH.toFixed(3)});
+      return mix(shortHair, 0.015, smoothstep(${(G.STRAND_MIN_LENGTH * 0.85).toFixed(3)}, ${G.SHELL_MAX_LENGTH.toFixed(3)}, hairLen));
+    }
+
     vec3 hairColor(vec2 uv) {
       vec4 dye = texture2D(uColorMask, uv);
       return mix(uBaseColor, pow(dye.rgb / max(dye.a, 0.001), vec3(2.2)), dye.a);
@@ -106,7 +122,15 @@
       float h2 = dot(t2, halfway);
       float primary = pow(sqrt(max(0.0, 1.0 - h1 * h1)), 90.0);
       float secondary = pow(sqrt(max(0.0, 1.0 - h2 * h2)), 22.0);
-      return (color * diffuse + vec3(0.1) * primary + color * 0.7 * secondary) * occlusion;
+      return (color * diffuse + (vec3(0.03) + color * 0.25) * primary + color * 0.55 * secondary) * occlusion;
+    }
+
+    // Short hair seen from a distance has no single strand direction to
+    // light: soft wrap-around light, brighter at the outline, as fur reads.
+    vec3 shadeShortHair(vec3 color, vec3 normal, vec3 view, vec3 key, float occlusion) {
+      float wrap = clamp((dot(normal, key) + 0.5) / 1.5, 0.0, 1.0);
+      float rim = pow(1.0 - abs(dot(normal, view)), 3.0);
+      return color * (0.3 + 0.8 * wrap + 0.3 * rim) * occlusion;
     }
   `;
 
@@ -295,7 +319,7 @@
              float rootward = (1.0 - along) * (1.0 - along);
              direction = normalize(mix(direction, restDirection, mix(uLocal.y, uLocal.x, rootward)));
              vec3 free = q + direction * segmentLength;
-             float margin = 0.012 + uPuff * along;
+             float margin = ${G.STRAND_LIFT.toFixed(3)} + uPuff * along;
              vec3 collided = collide(free, margin);
              // Friction: hair touching the body mostly stays put.
              if (distance(collided, free) > 1e-5) {
@@ -604,12 +628,18 @@
           uCurl: { value: 0 },
           uWidth: { value: 1 },
           uKey: { value: new THREE.Vector3(0.4, 0.6, 0.7).normalize() },
+          uSkinRadius: { value: this.skinTexture },
+          uCranium: { value: G.CRANIUM },
+          uMaxPolar: { value: G.MAX_POLAR },
+          uBodyInverse: { value: this.body.inverse },
         },
         vertexShader: `
           ${FIELDS_GLSL}
-          uniform sampler2D uPositions;
+          uniform sampler2D uPositions, uSkinRadius;
           uniform mat3 uBodyRotation;
-          uniform float uCurl, uWidth;
+          uniform mat4 uBodyInverse;
+          uniform vec3 uCranium;
+          uniform float uCurl, uWidth, uMaxPolar;
           attribute vec4 aChildA; // guide row, random, tip trim, root u
           attribute vec4 aChildB; // root offset from the guide (body space), root v
           varying vec3 vTangent;
@@ -617,6 +647,23 @@
           varying vec3 vColor;
           varying float vAlong;
           varying float vShade;
+          varying float vAcross;
+          varying float vSeed;
+
+          // How deep in the hair a point is: hair lying near the scalp is
+          // under the rest and gets less light. 0 at the skin, 1 well clear.
+          float clearOfScalp(vec3 world) {
+            vec3 e = (uBodyInverse * vec4(world, 1.0)).xyz / uCranium;
+            float r = length(e);
+            vec3 d = e / max(r, 1e-6);
+            float polar = acos(clamp(d.y, -1.0, 1.0));
+            if (polar > uMaxPolar) return 1.0;
+            float azimuth = atan(d.z, d.x);
+            if (azimuth < 0.0) azimuth += 6.2831853;
+            vec2 size = vec2(${G.scalpInfo.width.toFixed(1)}, ${G.scalpInfo.height.toFixed(1)});
+            vec2 uv = vec2(azimuth / 6.2831853 + 0.5 / size.x, (polar / uMaxPolar * (size.y - 1.0) + 0.5) / size.y);
+            return smoothstep(0.0, 0.06, r - texture2D(uSkinRadius, uv).r);
+          }
 
           void main() {
             int row = int(aChildA.x);
@@ -642,14 +689,18 @@
               tangent = normalize(tangent + radius * frequency * (-sin(phase) * b1 + cos(phase) * b2));
             }
 
+            // A card: a strip a few millimetres wide holding several fine
+            // hairs (drawn in the fragment shader), facing the camera.
             vec3 side = normalize(cross(tangent, cameraPosition - p));
-            p += side * position.x * 0.0085 * uWidth * mix(1.0, 0.25, along);
+            p += side * position.x * 0.016 * uWidth * mix(1.0, 0.45, along);
 
             vTangent = tangent;
             vWorld = p;
-            vColor = hairColor(vec2(aChildA.w, aChildB.w)) * (0.88 + 0.24 * aChildA.y);
+            vColor = hairColor(vec2(aChildA.w, aChildB.w)) * (0.9 + 0.2 * aChildA.y);
             vAlong = along;
-            vShade = mix(0.75, 1.0, aChildA.y);
+            vShade = mix(0.42, 1.0, clearOfScalp(p)) * mix(0.8, 1.0, aChildA.y);
+            vAcross = position.x;
+            vSeed = aChildA.y;
             gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
           }`,
         fragmentShader: `
@@ -660,10 +711,38 @@
           varying vec3 vColor;
           varying float vAlong;
           varying float vShade;
+          varying float vAcross;
+          varying float vSeed;
+
+          const float HAIRS_PER_CARD = 7.0;
+
           void main() {
+            // Which of the card's hairs this pixel is in, and how far from
+            // its centre line.
+            float x = (vAcross * 0.5 + 0.5) * HAIRS_PER_CARD;
+            float id = floor(x);
+            vec3 hairSeed = vec3(id, vSeed * 97.0, 1.0);
+            float wobble = 0.12 * sin(vAlong * 31.0 + hash(hairSeed) * 40.0);
+            float centre = 0.5 + (hash(hairSeed + 1.0) - 0.5) * 0.5 + wobble;
+            float halfWidth = mix(0.16, 0.32, hash(hairSeed + 2.0));
+            // Close up the card's hairs separate, with gaps between them.
+            // Once they're thinner than a pixel the card reads as a dense
+            // lock (nearly opaque — partial coverage doesn't build up across
+            // overlapping cards) and the hairs show as shading instead.
+            float pixel = fwidth(x);
+            float far = smoothstep(0.35, 1.0, pixel);
+            float sharp = 1.0 - smoothstep(halfWidth - pixel, halfWidth + pixel, abs(fract(x) - centre));
+            // Each hair ends at its own length (on average, from a distance).
+            float tip = mix(0.62, 1.0, hash(hairSeed + 3.0));
+            float ends = mix(1.0 - smoothstep(tip - 0.1, tip, vAlong), 1.0 - smoothstep(0.7, 1.0, vAlong), far);
+            float alpha = mix(sharp, 0.95, far) * ends * (1.0 - smoothstep(0.7, 1.0, abs(vAcross)));
+            if (alpha < 0.02) discard;
+
             vec3 view = normalize(cameraPosition - vWorld);
-            float occlusion = mix(0.35, 1.0, smoothstep(0.0, 0.55, vAlong)) * vShade;
-            gl_FragColor = vec4(shadeHair(vColor, normalize(vTangent), view, uKey, occlusion), 1.0 - smoothstep(0.8, 1.0, vAlong));
+            float occlusion = mix(0.5, 1.0, smoothstep(0.0, 0.4, vAlong)) * vShade;
+            float lockShade = 0.82 + 0.3 * hash(vec3(floor(vAlong * 5.0 + vSeed * 3.0), vSeed * 97.0, 7.0));
+            vec3 color = vColor * mix(mix(0.78, 1.15, hash(hairSeed + 4.0)), lockShade * (0.85 + 0.25 * sharp), far);
+            gl_FragColor = vec4(shadeHair(color, normalize(vTangent), view, uKey, occlusion), alpha);
             #include <colorspace_fragment>
           }`,
         side: THREE.DoubleSide,
@@ -720,7 +799,7 @@
           varying vec3 vDirection;
           varying vec3 vWorld;
           void main() {
-            float height = min(hairLength(uv), ${G.SHELL_MAX_LENGTH.toFixed(3)}) * (aLayer + 1.0) / ${SHELL_LAYERS.toFixed(1)};
+            float height = shellLength(hairLength(uv)) * (aLayer + 1.0) / ${SHELL_LAYERS.toFixed(1)};
             vec4 world = modelMatrix * vec4(position + aNormal * (height + 0.002), 1.0);
             vUv = uv;
             vLayer = aLayer;
@@ -738,16 +817,8 @@
           varying vec3 vDirection;
           varying vec3 vWorld;
 
-          // Sine-free hash: fract(sin()) loses precision on cell and pixel
-          // coordinates and draws lines across the hair.
-          float hash(vec3 p) {
-            p = fract(p * 0.1031);
-            p += dot(p, p.zyx + 31.32);
-            return fract((p.x + p.y) * p.z);
-          }
-
           void main() {
-            float capped = min(hairLength(vUv), ${G.SHELL_MAX_LENGTH.toFixed(3)});
+            float capped = shellLength(hairLength(vUv));
             if (capped < 0.004) discard;
             float hairlineDensity = texture2D(uBaseField, vUv).g;
 
@@ -766,39 +837,68 @@
             // stacked layers line up into rows you can see through.
             vec2 jitter = vec2(hash(cell + 3.0), hash(cell + 5.0)) - 0.5;
             vec2 offset = fract(cellSpace) - 0.5 - jitter * 0.6;
+            // Close up each cell draws its own hair; zoomed out (cells below a
+            // pixel) the layer is drawn at the coverage those hairs would
+            // average to. Blended, never random per pixel — no static.
+            float far = smoothstep(0.35, 0.9, length(fwidth(cellSpace)));
+            float layerFraction = (vLayer + 1.0) / ${SHELL_LAYERS.toFixed(1)};
+            float relative = 0.7 + 0.3 * hash(cell); // this hair's height, relative to the length
+            float thickness = mix(0.5, 0.18, clamp(layerFraction / relative, 0.0, 1.0))
+              * mix(0.4, 1.0, smoothstep(0.004, 0.05, capped)); // stubble shows skin between hairs
+            float edge = fwidth(offset.x) + 0.02;
+            float near = (layerFraction <= relative ? 1.0 : 0.0) * (1.0 - smoothstep(thickness - edge, thickness + edge, length(offset)));
+            // Averages. How much skin short hair hides grows with its length
+            // (~15% at 2 mm, ~60% at 6 mm, nearly all at 12 mm) — that's what
+            // makes a fade read as a fade. Each layer takes an equal share of
+            // that, and only hairs tall enough reach the upper layers.
+            float reaching = clamp((1.0 - layerFraction) / 0.3, 0.0, 1.0);
+            float stackOpacity = 0.97 * smoothstep(0.0, 0.12, capped);
+            float averaged = reaching * (1.0 - pow(1.0 - stackOpacity, 1.0 / ${SHELL_LAYERS.toFixed(1)}));
+            // At a distance, clumps and streaks fixed on the head give short
+            // hair its texture (stable as the view moves, unlike per-pixel
+            // noise): a coarse cell noise across, and growth-wise streaks.
+            vec2 clumpSpace = cellSpace / 7.0;
+            float clump = mix(hash(vec3(floor(clumpSpace), faceId + 31.0)), hash(vec3(floor(clumpSpace + 0.5), faceId + 37.0)), 0.5);
+            float streak = hash(vec3(floor(cellSpace.x / 2.0), floor(cellSpace.y / 9.0), faceId + 41.0));
+            float grain = 0.55 + 0.7 * clump * (0.7 + 0.3 * streak);
+            float alpha = mix(near, averaged * (0.6 + 0.6 * grain), far);
+            // The bottom layer carries the stack's opacity, so the scalp shows
+            // through short hair exactly as much as it should.
+            if (vLayer < 0.5) alpha = max(alpha, stackOpacity * 0.6);
             // Fewer hairs toward the hairline: a soft edge, not a helmet line.
-            if (hash(cell + 9.0) > hairlineDensity * hairlineDensity) discard;
-            float hairHeight = capped * (0.7 + 0.3 * hash(cell));
-            float layerHeight = capped * (vLayer + 1.0) / ${SHELL_LAYERS.toFixed(1)};
-            if (layerHeight > hairHeight) discard;
-            // Hairs thin toward the tip; stubble shows skin between hairs.
-            float thickness = mix(0.5, 0.18, layerHeight / hairHeight) * mix(0.4, 1.0, smoothstep(0.004, 0.05, capped));
-            // Zoomed out, cells shrink below a pixel: keep the share of the
-            // cell a hair covers instead of drawing (shimmering) dots.
-            float cellsPerPixel = length(fwidth(cellSpace));
-            float coverage = clamp(3.14159 * thickness * thickness, 0.0, 1.0);
-            float noise = hash(vec3(gl_FragCoord.xy, vLayer));
-            bool useCoverage = hash(vec3(gl_FragCoord.yx, vLayer + 11.0)) < smoothstep(0.45, 0.9, cellsPerPixel);
-            bool covered = useCoverage ? noise < coverage : length(offset) < thickness;
-            // Past stubble, the bottom layer hides the scalp as dense hair does.
-            if (vLayer < 0.5) covered = covered || noise < smoothstep(0.02, 0.08, capped);
-            if (!covered) discard;
+            float density = hairlineDensity * hairlineDensity;
+            alpha *= mix(hash(cell + 9.0) < density ? 1.0 : 0.0, density, far);
 
             vec3 view = normalize(cameraPosition - vWorld);
             // Seen edge-on, upper layers thin out so the outline reads as fuzz
             // rather than a stack of slices.
             float facing = abs(dot(normalize(vNormal), view));
-            if (vLayer > 0.5 && hash(vec3(gl_FragCoord.xy, vLayer + 23.0)) > smoothstep(0.05, 0.45, facing)) discard;
-            // Each hair leans its own way: a shared direction would light the
-            // whole cap as one smooth, helmet-like highlight.
-            vec3 lean = vec3(hash(cell + 13.0), hash(cell + 17.0), hash(cell + 19.0)) - 0.5;
+            if (vLayer > 0.5) alpha *= smoothstep(0.05, 0.45, facing);
+            if (alpha < 0.01) discard;
+
+            // Each hair leans its own way (close up): a shared direction would
+            // light the whole cap as one smooth, helmet-like highlight.
+            vec3 lean = (vec3(hash(cell + 13.0), hash(cell + 17.0), hash(cell + 19.0)) - 0.5) * (1.0 - far);
             vec3 tangent = normalize(vNormal + vec3(0.0, -0.3, 0.0) + lean * 1.6);
-            float occlusion = mix(0.35, 1.0, layerHeight / hairHeight);
-            vec3 color = hairColor(vUv) * (0.88 + 0.24 * hash(cell + 7.0));
-            gl_FragColor = vec4(shadeHair(color, tangent, view, uKey, occlusion), 1.0);
+            float occlusion = mix(0.35, 1.0, layerFraction);
+            vec3 color = hairColor(vUv) * mix(0.88 + 0.24 * hash(cell + 7.0), 0.62 + 0.55 * grain, far);
+            vec3 shaded = mix(
+              shadeHair(color, tangent, view, uKey, occlusion),
+              shadeShortHair(color, normalize(vNormal), view, uKey, mix(0.55, 1.0, layerFraction)),
+              far);
+            // Beneath strands the shells are only roots in the hair's shade:
+            // matte and dark, never a shiny cap of their own.
+            float undercoat = smoothstep(${(G.STRAND_MIN_LENGTH * 0.85).toFixed(3)}, ${G.SHELL_MAX_LENGTH.toFixed(3)}, hairLength(vUv));
+            shaded = mix(shaded, color * 0.3, undercoat);
+            gl_FragColor = vec4(shaded, clamp(alpha, 0.0, 1.0));
             #include <colorspace_fragment>
           }`,
         side: THREE.DoubleSide,
+        // Blended, layer by layer from the scalp out (instance order), after
+        // the opaque strands: no depth writes, so it never hides a strand
+        // that's in front of it.
+        transparent: true,
+        depthWrite: false,
       });
       this.shellMesh = new THREE.Mesh(geometry, this.shellMaterial);
       this.shellMesh.frustumCulled = false;

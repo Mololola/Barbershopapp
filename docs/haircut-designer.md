@@ -31,12 +31,23 @@ The WebView loads these over `file://`, which can't `fetch()`, so everything shi
 The **scalp map** (in `head_asset.js`) gives the skin position and normal for each UV point. Roots and shells sit on it, and it also gives the head's real shape for collisions.
 
 **Hair has two layers:**
-- **Shells** (the fur technique) draw everything up to 2 cm: buzz cuts, fades, razor lines and stubble. They also act as the undercoat beneath longer hair.
-  - The hair cells are jittered on a cube-projected grid.
-  - When zoomed out, each pixel shows the share of the cell a hair covers.
-  - Each hair gets its own lighting direction.
-  - Hairs thin toward the hairline, and the upper layers thin when seen edge-on.
-- **Guide strands** cover anything longer: up to ~3,000 guides of 24 points, each drawn as up to 8 child strands. The children are ordered layer by layer, so drawing fewer instances thins the hair evenly.
+- **Shells** (the fur technique) draw everything up to 2 cm: buzz cuts, fades, razor lines and stubble. They're blended layer by layer from the scalp out, drawn after the strands and with no depth writes.
+  - **Up close**, each cell of a jittered cube-projected grid draws its own antialiased hair.
+  - **At a distance**, each layer is drawn at the coverage those hairs average to, textured by clumps and streaks fixed on the head. It is never random per pixel, which shows as static.
+  - **Opacity follows length**: about 15% at 2 mm and nearly full at 12 mm. That's what makes a fade read as a fade.
+  - **Beneath strands**, the shells are only a 1.5 mm undercoat of matte, dark roots. At full height they would swallow the strands lying on the head.
+- **Guide strands** cover anything longer: exactly the tier's budget of guides (~3,000), 24 points each.
+  - Each guide is drawn as up to 8 children, ordered layer by layer, so drawing fewer instances thins the hair evenly.
+  - Strands rest `STRAND_LIFT` (≈3 mm) off the scalp, above the undercoat.
+- **Each child is a hair card**: a camera-facing strip ~3 mm wide, inside which the fragment shader draws 7 fine hairs, each with its own width, wobble, tip and shade.
+  - Up close, the hairs separate with antialiased edges.
+  - At a distance, the card reads as a nearly opaque lock, with the hairs shown as shading. This matters because alpha-to-coverage doesn't accumulate across overlapping layers that share an alpha, so thin, semi-transparent cards let the head show through.
+  - Hair lying close to the scalp is darker (`clearOfScalp`).
+- **Child data layout** (in `groom.js` and `hair_engine.js` together) is `aChildA = (row, random, tipTrim, rootU)`, `aChildB = (offset xyz, rootV)`. A mismatch here once shifted the strands into the head.
+
+**The head** is a softened scan: a blurred (low-mip) read of the skin texture, its colour moved to the chosen skin tone and mostly evened out, and a softer normal map. It reads as a neutral model, not a particular person.
+
+**Fades** follow the lower hairline all the way round. They graduate evenly from `fadeHeight`'s start line (low ~19°, mid ~29°, high ~40° above the hairline) down to skin just above it.
 
 **Physics** runs entirely in fragment passes, with state textures that are 2V wide (position and previous position):
 - `integrate`: a Verlet step with gravity, gusty wind, damping and global shape memory.

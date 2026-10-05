@@ -24,6 +24,10 @@
   // they look better than strands; guides exist only where hair is longer.
   const SHELL_MAX_LENGTH = 0.2;
   const STRAND_MIN_LENGTH = 0.17;
+  // How far off the scalp strands lie (as a share of the cranium's size,
+  // ≈ 3 mm): above the shells' 1.5 mm root undercoat, which would
+  // otherwise hide them.
+  const STRAND_LIFT = 0.03;
 
   // Real clipper guard lengths, in 0.5 cm units: skin, #1 3 mm, #2 6 mm,
   // #3 10 mm, #4 13 mm, #5 16 mm, #6 19 mm, #7 22 mm, #8 25 mm.
@@ -149,6 +153,12 @@
     nape: 124 * deg,
   };
 
+  // The lower hairline's polar angle, by angular distance from the face:
+  // sideburns at the front, round the ears, down to the nape at the back.
+  function lowerHairline(delta) {
+    return HAIRLINE.sideburn + (HAIRLINE.nape - HAIRLINE.sideburn) * smoothstep(80 * deg, 170 * deg, delta);
+  }
+
   function hairline(u, v) {
     const polar = v * MAX_POLAR;
     const delta = angularDistance(u * 2 * Math.PI, Math.PI / 2);
@@ -156,8 +166,8 @@
     const front = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * t;
     const vertical = 1 - smoothstep(front - 0.08, front + 0.08, polar);
     const horizontal = smoothstep(HAIRLINE.faceHalfWidth - 0.18, HAIRLINE.faceHalfWidth + 0.06, delta);
-    const lowerLine = HAIRLINE.sideburn + (HAIRLINE.nape - HAIRLINE.sideburn) * smoothstep(80 * deg, 170 * deg, delta);
-    const lower = 1 - smoothstep(lowerLine - 0.07, lowerLine + 0.03, polar);
+    const lowerLine = lowerHairline(delta);
+    const lower = 1 - smoothstep(lowerLine - 0.12, lowerLine + 0.04, polar); // a soft nape, not a cut line
     return Math.max(vertical, horizontal) * lower;
   }
 
@@ -337,10 +347,12 @@
       length = top * (topRatio * (1 - lower) + napeRatio * lower);
     }
     if (params.fadeHeight > 0) {
-      // A barber fade: down to skin over a band whose height is fadeHeight.
-      const start = (112 - 50 * params.fadeHeight) * deg;
-      const end = Math.min(start + 22 * deg, 124 * deg);
-      length *= 1 - smoothstep(start, end, polar);
+      // A barber fade: graduated evenly down to skin just above the
+      // hairline, all the way round; fadeHeight sets how far above the
+      // hairline it starts (low ~19°, mid ~29°, high ~40°).
+      const skin = lowerHairline(angularDistance(azimuth, Math.PI / 2)) - 4 * deg;
+      const start = skin - (10 + 35 * params.fadeHeight) * deg;
+      length *= 1 - Math.min(1, Math.max(0, (polar - start) / (skin - start)));
     }
     return length;
   }
@@ -508,6 +520,25 @@
     };
   }
 
+  // The share of the scalp cap (by area) where hair grows.
+  let hairBearing = null;
+  function hairBearingShare() {
+    if (hairBearing === null) {
+      let grows = 0;
+      let total = 0;
+      for (let row = 0; row < 64; row++) {
+        const v = (row + 0.5) / 64;
+        const area = Math.sin(v * MAX_POLAR);
+        for (let col = 0; col < 128; col++) {
+          grows += hairline((col + 0.5) / 128, v) * area;
+          total += area;
+        }
+      }
+      hairBearing = grows / total;
+    }
+    return hairBearing;
+  }
+
   // Guide strands where the hair is long enough for strands (shorter hair is
   // drawn by the shells). `budget` is how many root positions to try — the
   // quality tier; bald areas and short hair take none of it.
@@ -517,7 +548,7 @@
     const rng = random(1234567);
     const cap = 1 - Math.cos(MAX_POLAR);
     const golden = Math.PI * (3 - Math.sqrt(5));
-    const candidates = Math.round(budget * 2.1); // ~half the cap grows hair
+    const candidates = Math.round(budget / hairBearingShare());
     const spacing = Math.sqrt((2 * Math.PI * cap * 0.48 * CRANIUM.x * CRANIUM.z) / budget);
     const curl = params.curl;
     const partX = params.partOffset;
@@ -566,7 +597,7 @@
           }
           previous.copy(p);
           p.addScaledVector(direction, segment);
-          collide(p, 0.012 + 0.04 * (j / (V - 1)) * (0.4 + params.volume * 0.6 + curl * 0.8));
+          collide(p, STRAND_LIFT + 0.04 * (j / (V - 1)) * (0.4 + params.volume * 0.6 + curl * 0.8));
           if (j > 1) {
             direction.subVectors(p, previous).normalize();
             p.copy(previous).addScaledVector(direction, segment);
@@ -592,13 +623,15 @@
         bitangent.crossVectors(normal, tangent);
         const angle = rng() * Math.PI * 2;
         const radius = c === 0 ? 0 : spacing * Math.sqrt(rng());
+        // Layout must match hair_engine.js: aChildA = (guide row, random,
+        // tip trim, root u), aChildB = (root offset xyz, root v).
         children[k++] = row;
         children[k++] = rng();
         children[k++] = 0.75 + rng() * 0.25; // tips end at different lengths
+        children[k++] = roots[row * 2];
         children[k++] = (Math.cos(angle) * tangent.x + Math.sin(angle) * bitangent.x) * radius;
         children[k++] = (Math.cos(angle) * tangent.y + Math.sin(angle) * bitangent.y) * radius;
         children[k++] = (Math.cos(angle) * tangent.z + Math.sin(angle) * bitangent.z) * radius;
-        children[k++] = roots[row * 2];
         children[k++] = roots[row * 2 + 1];
       }
     }
@@ -624,6 +657,7 @@
     LENGTH_TO_SCENE,
     SHELL_MAX_LENGTH,
     STRAND_MIN_LENGTH,
+    STRAND_LIFT,
     MASK_WIDTH,
     MASK_HEIGHT,
     BASE_WIDTH,
