@@ -55,6 +55,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
   double _radius = 0.04;
   bool _mirror = false;
   String _dyeColorHex = '#b5502a';
+  String _curlBrushType = '3B';
   double _wind = 0;
 
   @override
@@ -164,6 +165,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     final config = <String, dynamic>{'tool': _tool, 'radius': _radius, 'mirror': _mirror};
     if (_tool == 'clipper') config['guard'] = _guard;
     if (_tool == 'dye') config['colorHex'] = _dyeColorHex;
+    if (_tool == 'curl') config['hairType'] = _curlBrushType;
     _run('setToolMode(${_literal(config)})');
   }
 
@@ -173,7 +175,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       // Razor is a precision liner — small, fixed width.
       if (tool == 'razor') _radius = 0.008;
       if (tool == 'clipper') _radius = 0.05;
-      if (tool == 'dye') _radius = 0.04;
+      if (tool == 'dye' || tool == 'curl') _radius = 0.04;
     });
     _pushToolMode();
   }
@@ -330,7 +332,6 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
 
   Widget _buildShapeTab() {
     final p = _parameters;
-    final curlLabel = p.curl < 0.15 ? 'Straight' : p.curl < 0.45 ? 'Wavy' : p.curl < 0.8 ? 'Curly' : 'Coily';
     final partLabel = p.partOffset.abs() < 0.05 ? 'Centre' : (p.partOffset < 0 ? 'Left' : 'Right');
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -359,14 +360,10 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
           max: 1,
           onChanged: (v) => _updateParameters(p.copyWith(partOffset: v)),
         ),
-        _LabeledSlider(
-          label: 'Texture',
-          valueLabel: curlLabel,
-          value: p.curl,
-          min: 0,
-          max: 1,
-          onChanged: (v) => _updateParameters(p.copyWith(curl: v)),
-        ),
+        Text('Hair type', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 4),
+        _HairTypePicker(selected: p.hairType, onSelected: (id) => _updateParameters(p.copyWith(hairType: id))),
+        const SizedBox(height: 12),
         _LabeledSlider(
           label: 'Thickness',
           valueLabel: p.volume < 0.7 ? 'Fine' : (p.volume < 1.3 ? 'Medium' : 'Thick'),
@@ -387,8 +384,9 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       ('clipper', Icons.straighten, 'Clipper'),
       ('razor', Icons.edit, 'Razor'),
       ('dye', Icons.palette, 'Dye'),
+      ('curl', Icons.waves, 'Curl'),
     ];
-    final brush = _tool == 'clipper' || _tool == 'razor' || _tool == 'dye';
+    final brush = _tool == 'clipper' || _tool == 'razor' || _tool == 'dye' || _tool == 'curl';
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -478,6 +476,18 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
             swatches: _hairSwatches,
             onChanged: (hex) {
               setState(() => _dyeColorHex = hex);
+              _pushToolMode();
+            },
+          ),
+        ];
+      case 'curl':
+        return [
+          const Text('Paint another hair type onto part of the head — say a curlier top or tighter sides.'),
+          const SizedBox(height: 8),
+          _HairTypePicker(
+            selected: _curlBrushType,
+            onSelected: (id) {
+              setState(() => _curlBrushType = id);
               _pushToolMode();
             },
           ),
@@ -671,6 +681,47 @@ class _LabeledSlider extends StatelessWidget {
           ],
         ),
         Slider(value: value.clamp(min, max), min: min, max: max, onChanged: onChanged, onChangeEnd: onChangeEnd),
+      ],
+    );
+  }
+}
+
+/// The 1A-4C hair types, grouped by family, with what the chosen one is.
+class _HairTypePicker extends StatelessWidget {
+  const _HairTypePicker({required this.selected, required this.onSelected});
+
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final families = <String, List<({String id, String family, String description})>>{};
+    for (final type in hairTypes) {
+      (families[type.family] ??= []).add(type);
+    }
+    final description = hairTypes.where((t) => t.id == selected).firstOrNull?.description ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final entry in families.entries)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                SizedBox(width: 64, child: Text(entry.key, style: Theme.of(context).textTheme.bodySmall)),
+                for (final type in entry.value)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(type.id),
+                      selected: selected == type.id,
+                      onSelected: (_) => onSelected(type.id),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        Text(description, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

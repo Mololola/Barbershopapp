@@ -1,7 +1,8 @@
 /// Bumped when the meaning of stored values changes; designer.js converts
 /// older designs on load (v2: the scalp map reaches down to the nape; v3:
-/// haircut presets — older designs become the 'custom' preset).
-const currentDesignVersion = 3;
+/// haircut presets — older designs become the 'custom' preset; v4: a hair
+/// type instead of a curl amount).
+const currentDesignVersion = 4;
 
 /// A design as `assets/haircut_designer/designer.js` describes it — the one
 /// typed shape both the WebView bridge and the `haircut_designs.parameters`
@@ -12,7 +13,7 @@ class HairParameters {
     this.preset = 'custom',
     this.length = 8,
     this.volume = 1,
-    this.curl = 0,
+    this.hairType = '1B',
     this.colorHex = '#3b2314',
     this.partOffset = 0,
     this.fadeHeight = 0.3,
@@ -32,8 +33,8 @@ class HairParameters {
   /// 0.2 (sparse) .. 2 (very thick).
   final double volume;
 
-  /// 0 (straight) .. 1 (tight curl).
-  final double curl;
+  /// One of [hairTypes]' ids, '1A' .. '4C'.
+  final String hairType;
 
   final String colorHex;
 
@@ -55,7 +56,7 @@ class HairParameters {
     String? preset,
     double? length,
     double? volume,
-    double? curl,
+    String? hairType,
     String? colorHex,
     double? partOffset,
     double? fadeHeight,
@@ -67,7 +68,7 @@ class HairParameters {
       preset: preset ?? this.preset,
       length: length ?? this.length,
       volume: volume ?? this.volume,
-      curl: curl ?? this.curl,
+      hairType: hairType ?? this.hairType,
       colorHex: colorHex ?? this.colorHex,
       partOffset: partOffset ?? this.partOffset,
       fadeHeight: fadeHeight ?? this.fadeHeight,
@@ -82,7 +83,7 @@ class HairParameters {
       'preset': preset,
       'length': length,
       'volume': volume,
-      'curl': curl,
+      'hairType': hairType,
       'colorHex': colorHex,
       'partOffset': partOffset,
       'fadeHeight': fadeHeight,
@@ -98,7 +99,7 @@ class HairParameters {
       preset: json['preset'] as String? ?? 'custom',
       length: (json['length'] as num?)?.toDouble() ?? 8,
       volume: (json['volume'] as num?)?.toDouble() ?? 1,
-      curl: (json['curl'] as num?)?.toDouble() ?? 0,
+      hairType: json['hairType'] as String? ?? hairTypeFromCurl((json['curl'] as num?)?.toDouble() ?? 0),
       colorHex: json['colorHex'] as String? ?? '#3b2314',
       partOffset: (json['partOffset'] as num?)?.toDouble() ?? 0,
       fadeHeight: (json['fadeHeight'] as num?)?.toDouble() ?? 0.3,
@@ -112,6 +113,32 @@ class HairParameters {
     );
   }
 }
+
+/// Designs before v4 had one 'curl' amount, 0..1, instead of a hair type.
+/// Must match hairTypeFromCurl in designer.js.
+String hairTypeFromCurl(double curl) {
+  if (curl < 0.15) return '1B';
+  if (curl < 0.45) return '2B';
+  if (curl < 0.8) return '3B';
+  return '4A';
+}
+
+/// The 1A-4C hair types — ids match HAIR_TYPES in
+/// `assets/haircut_designer/groom.js`, which holds what each one looks like.
+const hairTypes = [
+  (id: '1A', family: 'Straight', description: 'Fine, pin-straight and shiny'),
+  (id: '1B', family: 'Straight', description: 'Straight with some body'),
+  (id: '1C', family: 'Straight', description: 'Thick, with slight bends'),
+  (id: '2A', family: 'Wavy', description: 'Loose, fine S-waves'),
+  (id: '2B', family: 'Wavy', description: 'Defined S-waves'),
+  (id: '2C', family: 'Wavy', description: 'Thick, voluminous waves'),
+  (id: '3A', family: 'Curly', description: 'Large, loose spirals'),
+  (id: '3B', family: 'Curly', description: 'Springy ringlets'),
+  (id: '3C', family: 'Curly', description: 'Tight, pencil-sized corkscrews'),
+  (id: '4A', family: 'Coily', description: 'Soft S-pattern coils'),
+  (id: '4B', family: 'Coily', description: 'Z-pattern zig-zag coils'),
+  (id: '4C', family: 'Coily', description: 'Tight, dense coils'),
+];
 
 /// Kept separate from [HairParameters] since face customization is expected
 /// to grow (face shape, eye color, ...) independently of hair styling.
@@ -143,10 +170,12 @@ class HairStroke {
     this.guard,
     this.length,
     this.colorHex,
+    this.hairType,
   });
 
-  /// 'clipper' | 'razor' | 'dye' | 'cut' (the scissors), or 'scissors' — a
-  /// brush to a set length, from designs before the physics scissors.
+  /// 'clipper' | 'razor' | 'dye' | 'curl' | 'cut' (the scissors), or
+  /// 'scissors' — a brush to a set length, from designs before the physics
+  /// scissors.
   final String tool;
 
   /// Clipper guard, 0 (skin) .. 8 — the real guard lengths live in
@@ -158,6 +187,9 @@ class HairStroke {
 
   /// Only set when tool == 'dye'.
   final String? colorHex;
+
+  /// One of [hairTypes]' ids. Only set when tool == 'curl'.
+  final String? hairType;
 
   /// Brush radius in UV space (0..1).
   final double radius;
@@ -172,6 +204,7 @@ class HairStroke {
       if (guard != null) 'guard': guard,
       if (length != null) 'length': length,
       if (colorHex != null) 'colorHex': colorHex,
+      if (hairType != null) 'hairType': hairType,
       'radius': radius,
       'points': points,
     };
@@ -183,6 +216,7 @@ class HairStroke {
       guard: (json['guard'] as num?)?.toInt(),
       length: (json['length'] as num?)?.toDouble(),
       colorHex: json['colorHex'] as String?,
+      hairType: json['hairType'] as String?,
       radius: (json['radius'] as num?)?.toDouble() ?? 0.03,
       points: (json['points'] as List<dynamic>)
           .map((p) => (p as List<dynamic>).map((v) => (v as num).toDouble()).toList())

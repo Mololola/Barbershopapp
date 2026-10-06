@@ -16,13 +16,22 @@
   const G = window.HairGroom;
   const V = G.V;
   const SHELL_LAYERS = 14;
+  // Points along each drawn strand: more than the guides' V, so a curl has
+  // enough of them to turn through (a few per turn).
+  const DRAW_POINTS = 40;
 
   // Length and colour of the hair at a scalp UV, from groom.js's fields.
   const FIELDS_GLSL = `
     uniform sampler2D uBaseField;   // r: base length x hairline (scene units), g: hairline
     uniform sampler2D uLengthMask;  // painted length / MAX_LENGTH, alpha = painted
     uniform sampler2D uColorMask;   // dye, alpha = painted
+    uniform sampler2D uTypeField;   // curl brush: red = 20 i + 10 (hair type i), alpha = painted
     uniform vec3 uBaseColor;
+    uniform int uBaseType;          // the design's hair type (index into groom.js HAIR_TYPES)
+    // Per hair type: (pattern, radius, wavenumber, frizz), (definition,
+    // shine, shrink, curliness) — scene units; see groom.js HAIR_TYPES.
+    uniform vec4 uTypeShape[${G.HAIR_TYPES.length}];
+    uniform vec4 uTypeLook[${G.HAIR_TYPES.length}];
     const float PAINTED_MAX = ${(G.MAX_LENGTH * G.LENGTH_TO_SCENE).toFixed(3)};
 
     float hairLength(vec2 uv) {
@@ -59,6 +68,11 @@
       return mix(min(hairLen, ${G.SHELL_MAX_LENGTH.toFixed(3)}), 0.015, undercoat(hairLen));
     }
 
+    int hairTypeIndex(vec2 uv) {
+      vec4 painted = texture2D(uTypeField, uv);
+      return painted.a > 0.5 ? int(painted.r * 255.0 / 20.0) : uBaseType;
+    }
+
     vec3 hairColor(vec2 uv) {
       vec4 dye = texture2D(uColorMask, uv);
       return mix(uBaseColor, pow(dye.rgb / max(dye.a, 0.001), vec3(2.2)), dye.a);
@@ -66,7 +80,7 @@
 
     // Kajiya-Kay: a white primary highlight and a coloured secondary one,
     // the two bands real hair shows.
-    vec3 shadeHair(vec3 color, vec3 tangent, vec3 view, vec3 key, float occlusion) {
+    vec3 shadeHair(vec3 color, vec3 tangent, vec3 view, vec3 key, float occlusion, float shine) {
       float tl = dot(tangent, key);
       float diffuse = mix(0.3, 1.0, sqrt(max(0.0, 1.0 - tl * tl)));
       vec3 halfway = normalize(key + view);
@@ -76,7 +90,7 @@
       float h2 = dot(t2, halfway);
       float primary = pow(sqrt(max(0.0, 1.0 - h1 * h1)), 90.0);
       float secondary = pow(sqrt(max(0.0, 1.0 - h2 * h2)), 22.0);
-      return (color * diffuse + (vec3(0.03) + color * 0.25) * primary + color * 0.55 * secondary) * occlusion;
+      return (color * diffuse + ((vec3(0.03) + color * 0.25) * primary + color * 0.55 * secondary) * shine) * occlusion;
     }
 
     // Short hair seen from a distance has no single strand direction to
@@ -200,6 +214,9 @@
         return texture;
       };
       this.lengthMaskTexture = mask(this.fields.length.canvas);
+      // Hair type indices: nearest, never blended into indices in between.
+      this.typeTexture = mask(this.fields.type.canvas);
+      this.typeTexture.minFilter = this.typeTexture.magFilter = THREE.NearestFilter;
       this.colorMaskTexture = mask(this.fields.color.canvas);
 
       this.positionsTexture = new THREE.DataTexture(new Float32Array(4), 1, 1, THREE.RGBAFormat, THREE.FloatType);
@@ -208,6 +225,10 @@
         uBaseField: { value: this.baseTexture },
         uLengthMask: { value: this.lengthMaskTexture },
         uColorMask: { value: this.colorMaskTexture },
+        uTypeField: { value: this.typeTexture },
+        uBaseType: { value: 0 },
+        uTypeShape: { value: G.HAIR_TYPES.map((t) => new THREE.Vector4(t.pattern, t.diameter * 0.05, (2 * Math.PI) / (t.wavelength * 0.1), t.frizz)) },
+        uTypeLook: { value: G.HAIR_TYPES.map((t) => new THREE.Vector4(t.definition, t.shine, t.shrink, t.curliness)) },
         uBaseColor: { value: new THREE.Color('#3b2314') },
       };
     }
@@ -222,6 +243,7 @@
     masksChanged() {
       this.lengthMaskTexture.needsUpdate = true;
       this.colorMaskTexture.needsUpdate = true;
+      this.typeTexture.needsUpdate = true;
     }
 
     // --- Groom -----------------------------------------------------------------
@@ -375,9 +397,9 @@
     buildStrandMaterial() {
       const positions = [];
       const indices = [];
-      for (let j = 0; j < V; j++) {
+      for (let j = 0; j < DRAW_POINTS; j++) {
         positions.push(-1, j, 0, 1, j, 0);
-        if (j < V - 1) indices.push(j * 2, j * 2 + 1, j * 2 + 2, j * 2 + 1, j * 2 + 3, j * 2 + 2);
+        if (j < DRAW_POINTS - 1) indices.push(j * 2, j * 2 + 1, j * 2 + 2, j * 2 + 1, j * 2 + 3, j * 2 + 2);
       }
       const geometry = new THREE.InstancedBufferGeometry();
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -390,7 +412,6 @@
           uPositions: { value: this.positionsTexture },
           uBody: { value: this.body.matrix },
           uBodyRotation: { value: this.body.rotation },
-          uCurl: { value: 0 },
           uWidth: { value: 1 },
           uKey: { value: new THREE.Vector3(0.4, 0.6, 0.7).normalize() },
           uSkinRadius: { value: this.skinTexture },
@@ -403,7 +424,7 @@
           uniform mat3 uBodyRotation;
           uniform mat4 uBody;
           uniform vec3 uCranium;
-          uniform float uCurl, uWidth, uMaxPolar;
+          uniform float uWidth, uMaxPolar;
           // Layout must match groom.js buildGuides:
           attribute vec4 aRoot;    // root position (body space), random
           attribute vec4 aRootUv;  // scalp u, v, clumping (0 = a stray hair), length jitter
@@ -417,6 +438,7 @@
           varying float vShade;
           varying float vAcross;
           varying float vSeed;
+          varying float vShine;
 
           // A guide's point at arc length s from its root (body space); adds
           // its local direction, weighted, to dir. Guides' w is their length.
@@ -435,8 +457,13 @@
           }
 
           void main() {
-            float along = position.y / ${(V - 1).toFixed(1)};
-            float strandLength = hairLength(aRootUv.xy) * aRootUv.w;
+            float along = position.y / ${(DRAW_POINTS - 1).toFixed(1)};
+            int type = hairTypeIndex(aRootUv.xy);
+            vec4 shape = uTypeShape[type];
+            vec4 look = uTypeLook[type];
+            // What it looks like, not its length pulled straight: a coil
+            // takes up some of it.
+            float strandLength = hairLength(aRootUv.xy) * aRootUv.w * (1.0 - look.z);
             // Hair this short (cut, clipped) is the shells': no strand.
             if (strandLength < ${G.STRAND_MIN_LENGTH.toFixed(3)}) {
               gl_Position = vec4(0.0, 0.0, -2.0, 1.0);
@@ -462,7 +489,8 @@
             vec3 p = aRoot.xyz + w.x * d0 + w.y * d1 + w.z * d2;
             // Clumping: toward the first guide's path, more toward the tip,
             // so hair gathers into locks as real hair does.
-            float clump = aRootUv.z * smoothstep(0.1, 1.0, along);
+            float definition = aRootUv.z == 0.0 ? 0.0 : (shape.x >= 2.0 ? look.x : aRootUv.z);
+            float clump = definition * smoothstep(0.1, 1.0, along);
             p = mix(p, g0 + (aRoot.xyz - r0) * 0.25, clump);
             // Stray hairs wander off their lock.
             vec3 seed3 = vec3(aRoot.w * 13.1, aRoot.w * 71.7, aRoot.w * 37.3);
@@ -493,23 +521,47 @@
             p = (uBody * vec4(p, 1.0)).xyz;
             vec3 tangent = normalize(uBodyRotation * dir);
 
-            if (uCurl > 0.0) {
-              // Curls turn together within a lock (phase from its guide), so
-              // they read as ringlets rather than noise.
-              vec3 helper = abs(tangent.y) < 0.95 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
-              vec3 b1 = normalize(cross(tangent, helper));
-              vec3 b2 = cross(tangent, b1);
-              float frequency = mix(22.0, 44.0, uCurl);
-              float phase = fract(aGuides.x * 0.618034) * 6.2832 + aRoot.w * 0.8 + along * frequency;
-              float radius = 0.075 * uCurl * smoothstep(0.0, 0.18, along);
-              p += radius * (cos(phase) * b1 + sin(phase) * b2);
-              tangent = normalize(tangent + radius * frequency * (-sin(phase) * b1 + cos(phase) * b2));
+            // The hair type's pattern, round the strand's path. b1 lies across
+            // the hair's sheet (perpendicular to the strand and to the way out
+            // of the head), so waves swing side to side, as they do; b2 is out.
+            vec3 outward = normalize(p - (uBody * vec4(0.0, 0.0, 0.0, 1.0)).xyz);
+            vec3 b1 = cross(tangent, outward);
+            b1 = length(b1) > 1e-3 ? normalize(b1) : normalize(cross(tangent, vec3(0.0, 0.0, 1.0)));
+            vec3 b2 = cross(tangent, b1);
+            float pattern = shape.x;
+            // Never more than a turn per few drawn points: finer than that
+            // can't be drawn, and only aliases.
+            float wavenumber = min(shape.z, ${(DRAW_POINTS / 4).toFixed(1)} * 6.2832 / max(strandLength, 1e-3));
+            // Curls turn together within a lock (phase from its guide), so
+            // they read as ringlets rather than noise.
+            float phase = fract(aGuides.x * 0.618034) * 6.2832 + aRoot.w * 0.8 + s * wavenumber;
+            // Straight from the root for the first centimetre or so.
+            float radius = shape.y * smoothstep(0.0, 0.12, s);
+            vec3 offset = vec3(0.0);
+            vec3 slope = vec3(0.0);
+            if (pattern == 1.0) {
+              offset = sin(phase) * b1;
+              slope = cos(phase) * b1;
+            } else if (pattern == 2.0) {
+              offset = cos(phase) * b1 + sin(phase) * b2;
+              slope = -sin(phase) * b1 + cos(phase) * b2;
+            } else if (pattern == 3.0) {
+              // Zig-zag: a triangle wave, sharp at its corners.
+              float zig = asin(sin(phase)) * 0.63662;
+              offset = zig * b1 + 0.35 * sin(phase * 0.5) * b2;
+              slope = sign(cos(phase)) * 0.63662 * 1.5708 * b1;
             }
+            p += radius * offset;
+            tangent = normalize(tangent + radius * wavenumber * slope);
+            // Frizz: fine kinks off the pattern, more toward the tips.
+            float frizz = shape.w * 0.012 * smoothstep(0.0, 0.3, along);
+            p += frizz * (sin(s * 157.0 + aRoot.w * 41.0) * b1 + sin(s * 113.0 + aRoot.w * 23.0) * b2);
 
             // A card: a strip a few millimetres wide holding several fine
             // hairs (drawn in the fragment shader), facing the camera.
             vec3 side = normalize(cross(tangent, cameraPosition - p));
-            p += side * position.x * 0.016 * uWidth * mix(1.0, 0.45, along);
+            // Curlier hair reads bulkier: its hairs don't lie side by side.
+            p += side * position.x * 0.016 * uWidth * (1.0 + 0.6 * look.w) * mix(1.0, 0.45, along);
 
             vTangent = tangent;
             vWorld = p;
@@ -519,6 +571,7 @@
             vShade = mix(0.42, 1.0, clear) * mix(0.8, 1.0, aRoot.w);
             vAcross = position.x;
             vSeed = aRoot.w;
+            vShine = look.y;
             gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
           }`,
         fragmentShader: `
@@ -532,6 +585,7 @@
           varying float vShade;
           varying float vAcross;
           varying float vSeed;
+          varying float vShine;
 
           const float HAIRS_PER_CARD = 7.0;
 
@@ -566,7 +620,7 @@
             float occlusion = mix(0.55, 1.0, smoothstep(0.0, 0.12, vFromRoot)) * vShade;
             float lockShade = 0.82 + 0.3 * hash(vec3(floor(vAlong * 5.0 + vSeed * 3.0), vSeed * 97.0, 7.0));
             vec3 color = vColor * mix(mix(0.78, 1.15, hash(hairSeed + 4.0)), lockShade * (0.85 + 0.25 * sharp), far);
-            gl_FragColor = vec4(shadeHair(color, normalize(vTangent), view, uKey, occlusion), alpha);
+            gl_FragColor = vec4(shadeHair(color, normalize(vTangent), view, uKey, occlusion, vShine), alpha);
             #include <colorspace_fragment>
           }`,
         side: THREE.DoubleSide,
@@ -714,7 +768,7 @@
             float occlusion = mix(0.7, 1.0, layerFraction);
             vec3 color = hairColor(vUv) * mix(0.88 + 0.24 * hash(cell + 7.0), 0.62 + 0.55 * grain, far);
             vec3 shaded = mix(
-              shadeHair(color, tangent, view, uKey, occlusion),
+              shadeHair(color, tangent, view, uKey, occlusion, uTypeLook[hairTypeIndex(vUv)].y),
               shadeShortHair(color, normalize(vNormal), view, uKey, mix(0.75, 1.0, layerFraction)),
               far);
             // Beneath strands the shells are only roots in the hair's shade:
@@ -742,9 +796,11 @@
       this.fieldUniforms.uBaseColor.value.set(hex);
     }
 
-    setCurl(curl) {
-      this.strandMaterial.uniforms.uCurl.value = curl;
-      this.puff = 0.03 + 0.08 * curl;
+    setHairType(id) {
+      const type = G.hairTypeOf(id);
+      this.fieldUniforms.uBaseType.value = G.HAIR_TYPES.indexOf(type);
+      // Curly hair stands further off the head (the physics' collision margin).
+      this.puff = 0.03 + 0.08 * type.curliness;
     }
 
     setKeyLight(direction) {

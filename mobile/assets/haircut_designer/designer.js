@@ -1,23 +1,26 @@
-// The 3D haircut designer: a realistic head (scan), hair with physics
+// The 3D haircut designer: a mannequin head, hair with physics
 // (hair_engine.js) built from a design (groom.js), gestures, tools, and the
 // bridge to Flutter.
 //
-// A design: { version, preset, length, volume, curl, colorHex, partOffset,
-// fadeHeight, faceParams: { skinTone }, strokes: [...] }. See groom.js for
-// what the parameters mean; strokes are tool applications in scalp UV:
+// A design: { version, preset, length, volume, hairType, colorHex,
+// partOffset, fadeHeight, faceParams: { skinTone }, strokes: [...] }. See
+// groom.js for what the parameters mean (hairType: '1A'..'4C'); strokes
+// are tool applications in scalp UV:
 //   clipper / razor   { tool, guard, radius, points: [[u, v], ...] }
 //   scissors (v1/v2)  { tool, length, radius, points }   brush to a length
 //   dye               { tool, colorHex, radius, points }
+//   curl              { tool, hairType, radius, points }  another hair type
 //   cut               { tool, radius, points: [[u, v, length], ...] } one
 //                     point per strand the scissors cut, at its new length
 //
 // Bridge (called from Flutter via runJavaScript):
-//   loadDesign(json)          the whole design (also converts v1/v2)
+//   loadDesign(json)          the whole design (also converts v1-v3)
 //   updateParameters(json)    some or all parameters (sliders)
 //   setPreset(id)             a preset with its default parameters; posts
 //                             the new parameters on "ParametersChannel"
 //   setToolMode(json)         { tool: 'look'|'move'|'cut'|'clipper'|'razor'|
-//                             'dye', guard?, colorHex?, radius?, mirror? }
+//                             'dye'|'curl', guard?, colorHex?, hairType?,
+//                             radius?, mirror? }
 //   setView(name)             'front'|'left'|'right'|'back'|'top'|'reset'
 //   setWind(strength)         0..1
 //   shake()
@@ -31,7 +34,7 @@
 
 (function () {
   const G = window.HairGroom;
-  const DESIGN_VERSION = 3;
+  const DESIGN_VERSION = 4;
   const V1_MAX_POLAR = (100 * Math.PI) / 180;
 
   let renderer, scene, camera, bodyGroup, engine, fields;
@@ -340,7 +343,7 @@
 
   function applyLook() {
     engine.setColor(design.colorHex);
-    engine.setCurl(design.curl);
+    engine.setHairType(design.hairType);
     engine.setLayers(Math.round(Math.min(8, Math.max(1, design.volume * 5))));
     skinTone.set(design.faceParams.skinTone);
     requestRender();
@@ -374,6 +377,7 @@
     if (toolConfig.tool === 'clipper') stroke.guard = toolConfig.guard ?? 2;
     if (toolConfig.tool === 'razor') stroke.guard = 0;
     if (toolConfig.tool === 'dye') stroke.colorHex = toolConfig.colorHex || '#000000';
+    if (toolConfig.tool === 'curl') stroke.hairType = toolConfig.hairType || design.hairType;
     activeStroke = stroke;
     activeMirror = toolConfig.mirror ? { ...stroke, points: [] } : null;
     activeRasterized = 0;
@@ -416,7 +420,10 @@
     if (activeStroke && activeStroke.points.length > 0) {
       design.strokes.push(activeStroke);
       if (activeMirror) design.strokes.push(activeMirror);
-      if (activeStroke.tool !== 'dye') applyLengthsToStrands();
+      // A new hair type changes how long hair looks (shrinkage) and how it
+      // sits: the groom rebuilds.
+      if (activeStroke.tool === 'curl') rebuild();
+      else if (activeStroke.tool !== 'dye') applyLengthsToStrands();
       editsChanged();
     }
     activeStroke = activeMirror = null;
@@ -430,7 +437,7 @@
       rebuild(); // a longer guard over bare/short hair can create strands
       return;
     }
-    const lengthAt = G.lengthSampler(fields);
+    const lengthAt = G.visibleLengthSampler(fields, design);
     const targets = new Float32Array(groom.rows);
     for (let row = 0; row < groom.rows; row++) {
       targets[row] = G.guideLengthAt(lengthAt, groom.neighbourhood, groom.roots[row * 2], groom.roots[row * 2 + 1]);
@@ -520,7 +527,7 @@
   let lastMoveTime = 0;
 
   function isBrush(tool) {
-    return tool === 'clipper' || tool === 'razor' || tool === 'dye';
+    return tool === 'clipper' || tool === 'razor' || tool === 'dye' || tool === 'curl';
   }
 
   function setupControls() {
@@ -790,14 +797,26 @@
     return typeof json === 'string' ? JSON.parse(json) : json;
   }
 
+  // Designs before v4 had one 'curl' slider, 0..1, instead of a hair type.
+  // Must match HairParameters.hairTypeFromCurl in Dart.
+  function hairTypeFromCurl(curl) {
+    if (curl < 0.15) return '1B';
+    if (curl < 0.45) return '2B';
+    if (curl < 0.8) return '3B';
+    return '4A';
+  }
+
   // v1 mapped polar 0..100° onto v; v2 and later use 0..130°. v1 and v2
-  // designs had no presets: their parameters are the 'custom' preset.
+  // designs had no presets: their parameters are the 'custom' preset. v1-v3
+  // had a curl amount, v4 a hair type.
   function upgrade(loaded) {
     const version = loaded.version ?? 1;
     const strokes = Array.isArray(loaded.strokes) ? loaded.strokes : [];
+    const { curl, ...rest } = loaded;
     return {
       ...design,
-      ...loaded,
+      ...rest,
+      hairType: version < 4 ? hairTypeFromCurl(curl ?? 0) : loaded.hairType ?? design.hairType,
       version: DESIGN_VERSION,
       preset: version < 3 ? 'custom' : loaded.preset ?? 'custom',
       faceParams: { ...design.faceParams, ...(loaded.faceParams || {}) },
@@ -821,10 +840,10 @@
     try {
       const update = parse(json);
       const { strokes, preset, version, ...parameters } = update;
-      const lookOnly = Object.keys(parameters).every((k) => ['colorHex', 'faceParams', 'volume', 'curl'].includes(k));
+      const lookOnly = Object.keys(parameters).every((k) => ['colorHex', 'faceParams', 'volume'].includes(k));
       design = { ...design, ...parameters, faceParams: { ...design.faceParams, ...(parameters.faceParams || {}) } };
       applyLook();
-      if (!lookOnly || 'curl' in parameters) scheduleRebuild();
+      if (!lookOnly) scheduleRebuild();
     } catch (error) {
       console.error('updateParameters failed', error);
     }

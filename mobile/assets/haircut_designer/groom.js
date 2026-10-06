@@ -35,6 +35,41 @@
   // #3 10 mm, #4 13 mm, #5 16 mm, #6 19 mm, #7 22 mm, #8 25 mm.
   const CLIPPER_GUARD_LENGTHS = [0, 0.6, 1.2, 2, 2.6, 3.2, 3.8, 4.4, 5];
 
+  // --- Hair types ----------------------------------------------------------------
+  //
+  // The 1A-4C scale. Types differ in the strand's shape, not just how much
+  // it curls:
+  //   pattern     0 straight, 1 a flat "S" wave (side to side in the hair's
+  //               sheet), 2 a spiral (ringlets, coils), 3 a "Z" zig-zag
+  //   diameter    of the wave / spiral, cm
+  //   wavelength  one turn, cm (the curl's tightness)
+  //   definition  how much strands gather into ringlets, 0..1
+  //   frizz       stray, fine kinks off the pattern, 0..1
+  //   shine       0..1
+  //   shrink      how much shorter it looks than its length when pulled
+  //               straight (a coiled 10 cm 4C hair looks ~2.5 cm)
+  //   curliness   0..1, for what the groom does with it: curlier hair falls
+  //               less and stands further off the head
+  const HAIR_TYPES = [
+    { id: '1A', pattern: 0, diameter: 0, wavelength: 1, definition: 0.35, frizz: 0, shine: 1, shrink: 0, curliness: 0 },
+    { id: '1B', pattern: 0, diameter: 0, wavelength: 1, definition: 0.45, frizz: 0.05, shine: 0.8, shrink: 0, curliness: 0.05 },
+    { id: '1C', pattern: 1, diameter: 0.3, wavelength: 8, definition: 0.5, frizz: 0.2, shine: 0.6, shrink: 0.02, curliness: 0.1 },
+    { id: '2A', pattern: 1, diameter: 1, wavelength: 6, definition: 0.55, frizz: 0.1, shine: 0.7, shrink: 0.05, curliness: 0.25 },
+    { id: '2B', pattern: 1, diameter: 1.6, wavelength: 4.5, definition: 0.7, frizz: 0.2, shine: 0.6, shrink: 0.1, curliness: 0.35 },
+    { id: '2C', pattern: 1, diameter: 2, wavelength: 3.5, definition: 0.75, frizz: 0.45, shine: 0.45, shrink: 0.15, curliness: 0.45 },
+    { id: '3A', pattern: 2, diameter: 3, wavelength: 4, definition: 0.85, frizz: 0.2, shine: 0.6, shrink: 0.2, curliness: 0.6 },
+    { id: '3B', pattern: 2, diameter: 2, wavelength: 2.6, definition: 0.9, frizz: 0.3, shine: 0.45, shrink: 0.3, curliness: 0.7 },
+    { id: '3C', pattern: 2, diameter: 1, wavelength: 1.5, definition: 0.85, frizz: 0.45, shine: 0.35, shrink: 0.4, curliness: 0.8 },
+    { id: '4A', pattern: 2, diameter: 0.6, wavelength: 0.8, definition: 0.6, frizz: 0.6, shine: 0.25, shrink: 0.55, curliness: 0.9 },
+    { id: '4B', pattern: 3, diameter: 0.5, wavelength: 0.6, definition: 0.35, frizz: 0.7, shine: 0.15, shrink: 0.7, curliness: 0.95 },
+    { id: '4C', pattern: 3, diameter: 0.35, wavelength: 0.4, definition: 0.15, frizz: 0.85, shine: 0.1, shrink: 0.75, curliness: 1 },
+  ];
+  const HAIR_TYPE_INDEX = Object.fromEntries(HAIR_TYPES.map((type, i) => [type.id, i]));
+
+  function hairTypeOf(id) {
+    return HAIR_TYPES[HAIR_TYPE_INDEX[id] ?? HAIR_TYPE_INDEX['1B']];
+  }
+
   // --- The scan's scalp map and collision shapes ------------------------------
 
   function decodeBase64(text, Type) {
@@ -258,35 +293,35 @@
   const PRESETS = {
     custom: {
       label: 'Custom',
-      defaults: { length: 8, fadeHeight: 0.3, partOffset: 0, curl: 0, volume: 1 },
+      defaults: { length: 8, fadeHeight: 0.3, partOffset: 0, hairType: '1B', volume: 1 },
       ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
       fade: 'taper', comb: 'down', volume: [1, 1, 1, 0.5], rise: 0.3, taper: 0.3, hold: 0, clump: 0.7, bend: 2.4,
       stiffness: { local: [0.5, 0.1], global: [0.1, 0] },
     },
     buzz: {
       label: 'Buzz Cut',
-      defaults: { length: 1.2, fadeHeight: 0, partOffset: 0, curl: 0, volume: 1 },
+      defaults: { length: 1.2, fadeHeight: 0, partOffset: 0, hairType: '1B', volume: 1 },
       ratios: { fringe: 1, sides: 0.85, back: 0.85, nape: 0.7 },
       fade: 'skin', comb: 'down', volume: [0.4, 0.4, 0.4, 0.3], rise: 0.3, taper: 0, hold: 0, clump: 0.5, bend: 0.5,
       stiffness: { local: [0.9, 0.7], global: [0.5, 0.3] },
     },
     crew: {
       label: 'Crew Cut',
-      defaults: { length: 4, fadeHeight: 0.35, partOffset: 0, curl: 0, volume: 1 },
+      defaults: { length: 4, fadeHeight: 0.35, partOffset: 0, hairType: '1B', volume: 1 },
       ratios: { fringe: 0.8, sides: 0.35, back: 0.4, nape: 0.3 },
       fade: 'skin', comb: 'forward', volume: [1.0, 1.2, 0.8, 0.3], rise: 0.4, taper: 0.2, hold: 0.6, clump: 0.8, bend: 0.6,
       stiffness: { local: [0.9, 0.6], global: [0.45, 0.2] },
     },
     fade: {
       label: 'Fade',
-      defaults: { length: 8, fadeHeight: 0.55, partOffset: 0, curl: 0, volume: 1.1 },
+      defaults: { length: 8, fadeHeight: 0.55, partOffset: 0, hairType: '1B', volume: 1.1 },
       ratios: { fringe: 0.85, sides: 0.3, back: 0.3, nape: 0.2 },
       fade: 'skin', comb: 'forward', volume: [1.2, 1.5, 1.0, 0.3], rise: 0.35, taper: 0.3, hold: 0.5, clump: 0.8, bend: 0.9,
       stiffness: { local: [0.85, 0.45], global: [0.35, 0.1] },
     },
     undercut: {
       label: 'Undercut',
-      defaults: { length: 16, fadeHeight: 0, partOffset: 0.25, curl: 0, volume: 1.1 },
+      defaults: { length: 16, fadeHeight: 0, partOffset: 0.25, hairType: '1B', volume: 1.1 },
       ratios: { fringe: 1.05, sides: 1, back: 1, nape: 1 },
       undercut: 72 * deg, undercutLength: 1.2,
       fade: 'skin', comb: 'back', volume: [2.5, 1.5, 0.8, 0.3], rise: 0.3, taper: 0.6, hold: 0.85, clump: 0.4, bend: 1.2,
@@ -294,84 +329,84 @@
     },
     pompadour: {
       label: 'Pompadour',
-      defaults: { length: 18, fadeHeight: 0.45, partOffset: 0, curl: 0, volume: 1.2 },
+      defaults: { length: 18, fadeHeight: 0.45, partOffset: 0, hairType: '1B', volume: 1.2 },
       ratios: { fringe: 1.15, sides: 0.25, back: 0.3, nape: 0.2 },
       fade: 'skin', comb: 'back', volume: [6, 2.5, 1, 0.3], width: 0.65, rise: 0.45, taper: 0.85, hold: 0.95, clump: 0.3, bend: 0.9,
       stiffness: { local: [0.95, 0.55], global: [0.45, 0.12] },
     },
     quiff: {
       label: 'Quiff',
-      defaults: { length: 14, fadeHeight: 0.5, partOffset: 0, curl: 0, volume: 1.15 },
+      defaults: { length: 14, fadeHeight: 0.5, partOffset: 0, hairType: '1B', volume: 1.15 },
       ratios: { fringe: 1.2, sides: 0.25, back: 0.3, nape: 0.2 },
       fade: 'skin', comb: 'up', volume: [5, 2.8, 1.0, 0.3], rise: 0.4, taper: 0.6, hold: 0.8, clump: 0.5, bend: 1.0,
       stiffness: { local: [0.95, 0.5], global: [0.4, 0.1] },
     },
     slickBack: {
       label: 'Slick Back',
-      defaults: { length: 14, fadeHeight: 0.2, partOffset: 0, curl: 0, volume: 1 },
+      defaults: { length: 14, fadeHeight: 0.2, partOffset: 0, hairType: '1B', volume: 1 },
       ratios: { fringe: 1.05, sides: 0.55, back: 0.65, nape: 0.5 },
       fade: 'skin', comb: 'back', volume: [1.2, 0.8, 0.5, 0.3], rise: 0.2, taper: 0.6, hold: 1, clump: 0.25, bend: 1.6,
       stiffness: { local: [0.85, 0.4], global: [0.35, 0.08] },
     },
     texturedCrop: {
       label: 'Textured Crop',
-      defaults: { length: 8, fadeHeight: 0.75, partOffset: 0, curl: 0.15, volume: 1.15 },
+      defaults: { length: 8, fadeHeight: 0.75, partOffset: 0, hairType: '2A', volume: 1.15 },
       ratios: { fringe: 0.85, sides: 0.2, back: 0.25, nape: 0.15 },
       fade: 'skin', comb: 'forward', volume: [1.0, 1.6, 1.2, 0.3], rise: 0.35, taper: 0.3, hold: 0.6, clump: 0.9, bend: 1.0,
       stiffness: { local: [0.85, 0.4], global: [0.35, 0.1] },
     },
     mullet: {
       label: 'Mullet',
-      defaults: { length: 9, fadeHeight: 0.25, partOffset: 0, curl: 0.1, volume: 1.1 },
+      defaults: { length: 9, fadeHeight: 0.25, partOffset: 0, hairType: '2A', volume: 1.1 },
       ratios: { fringe: 0.8, sides: 0.45, back: 2.2, nape: 3.2 },
       fade: 'skin', comb: 'down', volume: [1.2, 1.5, 1.5, 0.6], rise: 0.2, taper: 0.4, hold: 0.3, clump: 0.7, bend: 2.2,
       stiffness: { local: [0.6, 0.1], global: [0.15, 0] },
     },
     afro: {
       label: 'Afro',
-      defaults: { length: 16, fadeHeight: 0, partOffset: 0, curl: 1, volume: 1.7 },
+      defaults: { length: 48, fadeHeight: 0, partOffset: 0, hairType: '4B', volume: 1.7 },
       ratios: { fringe: 0.85, sides: 0.95, back: 1, nape: 0.8 },
       fade: 'skin', comb: 'out', volume: [7, 7, 7, 6], rise: 0.3, taper: 0, hold: 1, clump: 0.6, bend: 0.3,
       stiffness: { local: [0.95, 0.8], global: [0.55, 0.35] },
     },
     bald: {
       label: 'Bald/Shaved',
-      defaults: { length: 0.15, fadeHeight: 0, partOffset: 0, curl: 0, volume: 1 },
+      defaults: { length: 0.15, fadeHeight: 0, partOffset: 0, hairType: '1B', volume: 1 },
       ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
       fade: 'skin', comb: 'down', volume: [0.2, 0.2, 0.2, 0.2], rise: 0.3, taper: 0, hold: 0, clump: 0.5, bend: 0.5,
       stiffness: { local: [0.9, 0.7], global: [0.5, 0.3] },
     },
     longLayers: {
       label: 'Long Layers',
-      defaults: { length: 56, fadeHeight: 0, partOffset: 0, curl: 0.1, volume: 1.15 },
+      defaults: { length: 56, fadeHeight: 0, partOffset: 0, hairType: '2A', volume: 1.15 },
       ratios: { fringe: 0.75, sides: 1.0, back: 1.15, nape: 1.15 },
       fade: 'skin', comb: 'center', volume: [1.2, 1.5, 1.2, 0.8], rise: 0.15, taper: 0.5, hold: 0.35, clump: 0.6, bend: 3.0,
       stiffness: { local: [0.6, 0.03], global: [0.12, 0] },
     },
     bob: {
       label: 'Bob',
-      defaults: { length: 24, fadeHeight: 0, partOffset: 0.3, curl: 0, volume: 1.15 },
+      defaults: { length: 24, fadeHeight: 0, partOffset: 0.3, hairType: '1B', volume: 1.15 },
       ratios: { fringe: 0.95, sides: 0.9, back: 0.75, nape: 0.6 },
       fade: 'skin', comb: 'side', volume: [1.2, 1.5, 1.0, 0.8], rise: 0.2, taper: 0.5, hold: 0.5, clump: 0.5, bend: 2.6,
       stiffness: { local: [0.65, 0.15], global: [0.15, 0.02] },
     },
     pixie: {
       label: 'Pixie',
-      defaults: { length: 11, fadeHeight: 0.2, partOffset: 0.35, curl: 0, volume: 1.05 },
+      defaults: { length: 11, fadeHeight: 0.2, partOffset: 0.35, hairType: '1B', volume: 1.05 },
       ratios: { fringe: 1.25, sides: 0.4, back: 0.45, nape: 0.3 },
       fade: 'skin', comb: 'side', volume: [1.5, 1.8, 1.0, 0.4], rise: 0.3, taper: 0.4, hold: 0.7, clump: 0.7, bend: 1.4,
       stiffness: { local: [0.8, 0.3], global: [0.3, 0.05] },
     },
     curtains: {
       label: 'Curtains',
-      defaults: { length: 26, fadeHeight: 0, partOffset: 0, curl: 0.05, volume: 1.1 },
+      defaults: { length: 26, fadeHeight: 0, partOffset: 0, hairType: '1C', volume: 1.1 },
       ratios: { fringe: 0.85, sides: 0.9, back: 0.85, nape: 0.7 },
       fade: 'skin', comb: 'center', volume: [1.5, 1.6, 1.2, 0.6], rise: 0.2, taper: 0.5, hold: 0.5, clump: 0.6, bend: 2.4,
       stiffness: { local: [0.7, 0.12], global: [0.2, 0.02] },
     },
     curly: {
       label: 'Curly',
-      defaults: { length: 22, fadeHeight: 0, partOffset: 0, curl: 0.7, volume: 1.45 },
+      defaults: { length: 30, fadeHeight: 0, partOffset: 0, hairType: '3B', volume: 1.45 },
       ratios: { fringe: 0.85, sides: 0.95, back: 1, nape: 0.85 },
       fade: 'skin', comb: 'center', volume: [3, 3.5, 3.5, 2.5], rise: 0.3, taper: 0.2, hold: 0.6, clump: 0.95, bend: 1.0,
       stiffness: { local: [0.8, 0.35], global: [0.25, 0.05] },
@@ -482,6 +517,7 @@
     return {
       length: make(), // grey = painted length / MAX_LENGTH, alpha = painted
       color: make(), // dye colour, alpha = painted
+      type: make(), // curl brush: red = hair type index (see typeCode), alpha = painted
       // RG per texel: base length × hairline (scene units), hairline.
       base: new Float32Array(BASE_WIDTH * BASE_HEIGHT * 2),
     };
@@ -568,12 +604,41 @@
       if (length !== null) pass(fields.length.ctx, () => grey(length));
     }
     if (stroke.tool === 'dye') pass(fields.color.ctx, () => stroke.colorHex || '#000000');
+    if (stroke.tool === 'curl') pass(fields.type.ctx, () => `rgb(${typeCode(hairTypeOf(stroke.hairType))}, 0, 0)`);
   }
 
   function repaint(fields, strokes) {
     fields.length.ctx.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
     fields.color.ctx.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
+    fields.type.ctx.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
     for (const stroke of strokes) paintStroke(fields, stroke);
+  }
+
+  // A hair type painted into the type field as red = 20 i + 10: well apart,
+  // so the shader reads the index back exactly (FIELDS_GLSL hairTypeIndex).
+  function typeCode(type) {
+    return HAIR_TYPES.indexOf(type) * 20 + 10;
+  }
+
+  // The hair type at a scalp point: the design's, unless the curl brush
+  // painted another.
+  function typeSampler(fields, params) {
+    const painted = fields.type.ctx.getImageData(0, 0, MASK_WIDTH, MASK_HEIGHT).data;
+    const base = hairTypeOf(params.hairType);
+    return (u, v) => {
+      const x = Math.min(MASK_WIDTH - 1, Math.floor((((u % 1) + 1) % 1) * MASK_WIDTH));
+      const y = Math.min(MASK_HEIGHT - 1, Math.floor(Math.min(Math.max(v, 0), 1) * MASK_HEIGHT));
+      const i = (y * MASK_WIDTH + x) * 4;
+      return painted[i + 3] > 127 ? HAIR_TYPES[Math.floor(painted[i] / 20)] ?? base : base;
+    };
+  }
+
+  // How long hair looks at a scalp point (scene units): its length, less
+  // what its curl takes up (shrinkage).
+  function visibleLengthSampler(fields, params) {
+    const lengthAt = lengthSampler(fields);
+    const typeAt = typeSampler(fields, params);
+    return (u, v) => lengthAt(u, v) * (1 - typeAt(u, v).shrink);
   }
 
   // Final length (scene units) at a scalp point: base, unless painted.
@@ -691,7 +756,7 @@
   // it leaves the scalp, or the comb runs steeply down past the product's
   // hold, it falls freely under gravity. Traced in fine steps, then
   // resampled to V evenly spaced points.
-  function traceGuide(preset, params, root, length, peak, partX, partSide, jitter, out) {
+  function traceGuide(preset, curliness, root, length, peak, partX, partSide, jitter, out) {
     const ds = length / (V - 1) / TRACE_STEPS;
     const rise = preset.rise * length;
     const holdLength = preset.hold * length;
@@ -710,10 +775,10 @@
         free = traceHere.v > 1 || (s > holdLength && traceFlow.y < -0.75);
       }
       if (free) {
-        traceDirection.y -= preset.bend * ds * (1 - 0.65 * params.curl);
+        traceDirection.y -= preset.bend * ds * (1 - 0.65 * curliness);
         traceDirection.normalize();
         p.addScaledVector(traceDirection, ds);
-        collide(p, STRAND_LIFT + 0.03 * params.curl);
+        collide(p, STRAND_LIFT + 0.03 * curliness);
       } else {
         // Along the comb (with this strand's own slight deviation), and up
         // or down toward this point's height in the hair.
@@ -827,7 +892,8 @@
   // takes hundreds of milliseconds on a phone and freezes the view.
   function* buildGuides(fields, presetId, params, guideBudget, strandBudget) {
     const preset = presetOf(presetId);
-    const lengthAt = lengthSampler(fields);
+    const lengthAt = visibleLengthSampler(fields, params);
+    const typeAt = typeSampler(fields, params);
     const rng = random(1234567);
     const cap = 1 - Math.cos(MAX_POLAR);
     const spacing = Math.sqrt((2 * Math.PI * cap * 0.48 * CRANIUM.x * CRANIUM.z) / guideBudget);
@@ -854,7 +920,7 @@
       const jitter = new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).multiplyScalar(0.12);
 
       const height = Math.min(volumeAt(preset, unit) * params.volume * layer, length * 0.7);
-      traceGuide(preset, params, root, length, height, partX, partSide, jitter, rest);
+      traceGuide(preset, typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, rest);
       lengths.push(length);
       roots.push(u, v);
       sides.push(partSide);
@@ -928,6 +994,8 @@
   window.HairGroom = {
     V,
     STRAND_LENGTH_JITTER,
+    HAIR_TYPES,
+    hairTypeOf,
     MAX_POLAR,
     MAX_LENGTH,
     LENGTH_TO_SCENE,
@@ -951,6 +1019,7 @@
     paintStroke,
     repaint,
     lengthSampler,
+    visibleLengthSampler,
     buildGuides,
     guideLengthAt,
     uvOf,

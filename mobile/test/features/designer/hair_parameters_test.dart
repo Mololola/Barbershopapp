@@ -6,7 +6,7 @@ void main() {
     const original = HairParameters(
       length: 14.5,
       volume: 1.75,
-      curl: 0.6,
+      hairType: '3C',
       colorHex: '#8a3324',
       partOffset: -0.5,
       fadeHeight: 0.9,
@@ -19,6 +19,9 @@ void main() {
         HairStroke(tool: 'dye', colorHex: '#ff00ff', radius: 0.02, points: [
           [0.6, 0.1],
         ]),
+        HairStroke(tool: 'curl', hairType: '4A', radius: 0.03, points: [
+          [0.4, 0.2],
+        ]),
       ],
     );
 
@@ -26,12 +29,12 @@ void main() {
 
     expect(restored.length, original.length);
     expect(restored.volume, original.volume);
-    expect(restored.curl, original.curl);
+    expect(restored.hairType, '3C');
     expect(restored.colorHex, original.colorHex);
     expect(restored.partOffset, original.partOffset);
     expect(restored.fadeHeight, original.fadeHeight);
     expect(restored.faceParams.skinTone, '#c68642');
-    expect(restored.strokes, hasLength(2));
+    expect(restored.strokes, hasLength(3));
     expect(restored.strokes[0].tool, 'clipper');
     expect(restored.strokes[0].guard, 3);
     expect(restored.strokes[0].points, [
@@ -40,6 +43,7 @@ void main() {
     ]);
     expect(restored.strokes[1].tool, 'dye');
     expect(restored.strokes[1].colorHex, '#ff00ff');
+    expect(restored.strokes[2].hairType, '4A');
   });
 
   test('fromJson fills in defaults for missing fields', () {
@@ -48,7 +52,7 @@ void main() {
     expect(restored.colorHex, '#000000');
     expect(restored.length, const HairParameters().length);
     expect(restored.volume, const HairParameters().volume);
-    expect(restored.curl, const HairParameters().curl);
+    expect(restored.hairType, const HairParameters().hairType);
     expect(restored.partOffset, const HairParameters().partOffset);
     expect(restored.fadeHeight, const HairParameters().fadeHeight);
     expect(restored.faceParams.skinTone, const FaceParameters().skinTone);
@@ -68,6 +72,8 @@ void main() {
     final restored = HairParameters.fromJson(legacyJson);
 
     expect(restored.length, 10.0);
+    // curl 0.3 was "wavy".
+    expect(restored.hairType, '2B');
     expect(restored.faceParams.skinTone, const FaceParameters().skinTone);
     expect(restored.strokes, isEmpty);
     // Unversioned means v1, so designer.js converts its strokes to the v2 scalp map.
@@ -91,6 +97,13 @@ void main() {
       ]),
     ]);
     expect(HairParameters.fromJson(original.toJson()).strokes.single.points.single, [0.25, 0.4, 12.5]);
+  });
+
+  test('hair type ids are unique and run 1A to 4C', () {
+    final ids = hairTypes.map((t) => t.id).toList();
+    expect(ids.toSet(), hasLength(12));
+    expect(ids.first, '1A');
+    expect(ids.last, '4C');
   });
 
   test('preset ids are unique', () {
