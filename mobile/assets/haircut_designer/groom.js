@@ -879,8 +879,12 @@
       const jitter = STRAND_LENGTH_JITTER[0] + rng() * (STRAND_LENGTH_JITTER[1] - STRAND_LENGTH_JITTER[0]);
       if (lengthAt(u, v) * jitter < STRAND_MIN_LENGTH) return;
       const { position: root } = scalpPoint(u, v);
-      const side = Math.sign(unitFromUV(u, v).x - partX) || 1;
-      nearest(root.x, root.y, root.z, (i) => !parted || sides[i] === side, found);
+      const rootUnit = unitFromUV(u, v);
+      const side = Math.sign(rootUnit.x - partX) || 1;
+      // A parting runs from the hairline back to the crown, no further:
+      // behind it the two sides blend, or a seam runs down the back.
+      const atParting = parted && rootUnit.z > -0.2;
+      nearest(root.x, root.y, root.z, (i) => !atParting || sides[i] === side, found);
       if (found.length === 0) return;
       let total = 0;
       const weights = found.map(({ d }) => 1 / (d + spacing * 0.25) ** 2);

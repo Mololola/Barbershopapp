@@ -451,7 +451,15 @@
             vec3 g1 = guideAt(rows.y, s, aWeights.y, dir);
             vec3 g2 = guideAt(rows.z, s, aWeights.z, dir);
             vec3 r0 = guideRoot(rows.x);
-            vec3 p = aRoot.xyz + aWeights.x * (g0 - r0) + aWeights.y * (g1 - guideRoot(rows.y)) + aWeights.z * (g2 - guideRoot(rows.z));
+            vec3 d0 = g0 - r0;
+            vec3 d1 = g1 - guideRoot(rows.y);
+            vec3 d2 = g2 - guideRoot(rows.z);
+            // Where neighbouring guides part ways (long hair falling either
+            // side of a shoulder), blending them puts strands through the
+            // middle: follow the strand's own lock instead.
+            vec3 w = aWeights.xyz * vec3(1.0, 1.0 - smoothstep(0.12, 0.35, distance(d1, d0)), 1.0 - smoothstep(0.12, 0.35, distance(d2, d0)));
+            w /= w.x + w.y + w.z;
+            vec3 p = aRoot.xyz + w.x * d0 + w.y * d1 + w.z * d2;
             // Clumping: toward the first guide's path, more toward the tip,
             // so hair gathers into locks as real hair does.
             float clump = aRootUv.z * smoothstep(0.1, 1.0, along);
