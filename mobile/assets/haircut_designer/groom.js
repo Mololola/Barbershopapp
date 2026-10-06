@@ -281,11 +281,16 @@
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across + 7 * deg * (1 - smoothstep(0, 9 * deg, delta));
         break;
       case 'receding':
-        // An M: a forelock in the middle, deep recessions either side of it,
-        // coming back down at the temples.
-        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across
-          - 19 * deg * smoothstep(9 * deg, 25 * deg, delta) * (1 - smoothstep(38 * deg, 50 * deg, delta));
+      {
+        // An M: a rounded forelock in the middle and a recession either side
+        // of it — a pointed inlet that curves gently down to the forelock
+        // and more steeply down to the temple.
+        const apex = 30 * deg;
+        const offset = delta - apex;
+        const inlet = Math.exp(-Math.abs(offset) / (offset < 0 ? 11 * deg : 7 * deg));
+        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across - 24 * deg * inlet;
         break;
+      }
       default:
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across;
     }
