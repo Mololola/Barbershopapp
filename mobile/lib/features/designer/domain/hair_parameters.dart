@@ -193,6 +193,7 @@ class HairlineParameters {
     this.lineUp = false,
     this.sideburns = 'medium',
     this.neckline = 'natural',
+    this.neckHeight = 0.5,
   });
 
   /// One of [hairlineShapes]' ids.
@@ -210,17 +211,28 @@ class HairlineParameters {
   /// One of [necklines]' ids.
   final String neckline;
 
-  HairlineParameters copyWith({String? shape, double? height, bool? lineUp, String? sideburns, String? neckline}) =>
+  /// 0 (low down the neck) .. 1 (high).
+  final double neckHeight;
+
+  HairlineParameters copyWith({
+    String? shape,
+    double? height,
+    bool? lineUp,
+    String? sideburns,
+    String? neckline,
+    double? neckHeight,
+  }) =>
       HairlineParameters(
         shape: shape ?? this.shape,
         height: height ?? this.height,
         lineUp: lineUp ?? this.lineUp,
         sideburns: sideburns ?? this.sideburns,
         neckline: neckline ?? this.neckline,
+        neckHeight: neckHeight ?? this.neckHeight,
       );
 
   Map<String, dynamic> toJson() =>
-      {'shape': shape, 'height': height, 'lineUp': lineUp, 'sideburns': sideburns, 'neckline': neckline};
+      {'shape': shape, 'height': height, 'lineUp': lineUp, 'sideburns': sideburns, 'neckline': neckline, 'neckHeight': neckHeight};
 
   factory HairlineParameters.fromJson(Map<String, dynamic> json) => HairlineParameters(
         shape: json['shape'] as String? ?? 'rounded',
@@ -228,6 +240,7 @@ class HairlineParameters {
         lineUp: json['lineUp'] as bool? ?? false,
         sideburns: json['sideburns'] as String? ?? 'medium',
         neckline: json['neckline'] as String? ?? 'natural',
+        neckHeight: (json['neckHeight'] as num?)?.toDouble() ?? 0.5,
       );
 }
 
@@ -250,6 +263,7 @@ const necklines = [
   (id: 'tapered', label: 'Tapered'),
   (id: 'rounded', label: 'Rounded'),
   (id: 'block', label: 'Block'),
+  (id: 'v', label: 'V'),
 ];
 
 /// The zones besides the top, front to back — keys of [HairParameters.zones]

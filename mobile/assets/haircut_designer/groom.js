@@ -259,9 +259,10 @@
   //              with fine baby hairs
   //   sideburns  'none' | 'short' | 'medium' | 'long'
   //   neckline   'natural' | 'tapered' (soft, fading out) | 'rounded' |
-  //              'block' (squared off)
+  //              'block' (squared off) | 'v' (a point at the middle)
+  //   neckHeight 0 (low down the neck) .. 1 (high)
   const BABY_HAIR_LENGTH = 0.12; // scene units: 1.2 cm
-  const DEFAULT_EDGES = { shape: 'rounded', height: 0.5, lineUp: false, sideburns: 'medium', neckline: 'natural' };
+  const DEFAULT_EDGES = { shape: 'rounded', height: 0.5, lineUp: false, sideburns: 'medium', neckline: 'natural', neckHeight: 0.5 };
 
   function edgesOf(params) {
     return { ...DEFAULT_EDGES, ...(params.hairline || {}) };
@@ -280,7 +281,10 @@
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across + 7 * deg * (1 - smoothstep(0, 9 * deg, delta));
         break;
       case 'receding':
-        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across - 14 * deg * smoothstep(12 * deg, 38 * deg, delta);
+        // An M: a forelock in the middle, deep recessions either side of it,
+        // coming back down at the temples.
+        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across
+          - 19 * deg * smoothstep(9 * deg, 25 * deg, delta) * (1 - smoothstep(38 * deg, 50 * deg, delta));
         break;
       default:
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across;
@@ -293,13 +297,18 @@
   function lowerLine(edges, delta) {
     const sideburn = SIDEBURNS[edges.sideburns] ?? SIDEBURNS.medium;
     const natural = sideburn + (HAIRLINE.nape - sideburn) * smoothstep(80 * deg, 170 * deg, delta);
+    // Higher or lower at the back only; the sideburns stay put.
+    const raise = (edges.neckHeight - 0.5) * 16 * deg * smoothstep(100 * deg, 150 * deg, delta);
+    const block = natural + (120 * deg - natural) * smoothstep(126 * deg, 134 * deg, delta);
     switch (edges.neckline) {
       case 'block': // straight across the back, with corners
-        return natural + (120 * deg - natural) * smoothstep(126 * deg, 134 * deg, delta);
+        return block - raise;
+      case 'v': // straight sides down to a point in the middle
+        return block + 10 * deg * Math.max(0, 1 - (Math.PI - delta) / (32 * deg)) - raise;
       case 'rounded': // a U, highest at the corners
-        return sideburn + (122 * deg - sideburn) * Math.pow(smoothstep(80 * deg, 180 * deg, delta), 0.6);
+        return sideburn + (122 * deg - sideburn) * Math.pow(smoothstep(80 * deg, 180 * deg, delta), 0.6) - raise;
       default:
-        return natural;
+        return natural - raise;
     }
   }
 

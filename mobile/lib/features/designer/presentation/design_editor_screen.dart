@@ -514,6 +514,14 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       ),
       choices('Sideburns', sideburnLengths, edges.sideburns, (id) => update(edges.copyWith(sideburns: id))),
       choices('Neckline', necklines, edges.neckline, (id) => update(edges.copyWith(neckline: id))),
+      _LabeledSlider(
+        label: 'Neckline height',
+        valueLabel: edges.neckHeight < 0.35 ? 'Low' : (edges.neckHeight < 0.65 ? 'Natural' : 'High'),
+        value: edges.neckHeight,
+        min: 0,
+        max: 1,
+        onChanged: (v) => update(edges.copyWith(neckHeight: v)),
+      ),
     ];
   }
 
