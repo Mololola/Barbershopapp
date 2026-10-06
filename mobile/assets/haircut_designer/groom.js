@@ -19,7 +19,9 @@
   const LENGTH_TO_SCENE = 0.05;
   const MAX_LENGTH = 100; // 50 cm
   const V = 24; // vertices per guide strand
-  const CHILDREN = 8; // drawn strands per guide
+  // Drawn strands are this share of the length field at their root, at
+  // random: cut hair doesn't end in one line.
+  const STRAND_LENGTH_JITTER = [0.8, 1.1];
   // Shells draw hair up to this length (scene units, 2 cm) — at that length
   // they look better than strands; guides exist only where hair is longer.
   const SHELL_MAX_LENGTH = 0.2;
@@ -47,6 +49,8 @@
   const MAX_POLAR = scalpInfo.maxPolar;
   const collision = asset.collision;
   const CRANIUM = new THREE.Vector3().fromArray(collision.cranium.radii);
+  // Scene units per cranium unit, roughly: for heights above the skull.
+  const CRANIUM_SCALE = (CRANIUM.x + CRANIUM.y + CRANIUM.z) / 3;
 
   // How far out the skin is along each scalp direction, as a multiple of
   // the cranium ellipsoid — the head's real shape for collisions.
@@ -238,9 +242,16 @@
   //   or 'skin' (a barber fade: down to skin, its height set by fadeHeight).
   // undercut: polar angle of a hard line below which hair is undercutLength.
   // comb: where the hair is combed (see combDirection).
-  // lift: how far roots stand up (0 flat, 1 straight out); frontLift adds at
-  //   the front. hold: how much of each strand keeps the comb's shape off
-  //   the head (product). bend: how quickly free hair falls.
+  // volume: [fringe, top, crown, sides], cm: how high above the scalp hair
+  //   rooted there rises (see volumeAt), over the middle `width` of the
+  //   head (0..1, default 0.95), over the first `rise` of its
+  //   length, and taper: how much of that height it gives up by its tip (a pompadour's
+  //   front rises high and slopes down over the top). Hair from upstream
+  //   lies over hair rooted under it (layerRank).
+  // hold: how much of each strand keeps the comb's shape off the head
+  //   (product). clump: how much hair gathers into pointed locks (textured
+  //   cuts) rather than lying smooth (sleek, styled ones), 0..1. bend: how
+  //   quickly free hair falls.
   // stiffness: [root, tip] shape memory for the physics (local: direction,
   //   global: position).
 
@@ -249,28 +260,28 @@
       label: 'Custom',
       defaults: { length: 8, fadeHeight: 0.3, partOffset: 0, curl: 0, volume: 1 },
       ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
-      fade: 'taper', comb: 'down', lift: 0.3, frontLift: 0, hold: 0, bend: 2.4,
+      fade: 'taper', comb: 'down', volume: [1, 1, 1, 0.5], rise: 0.3, taper: 0.3, hold: 0, clump: 0.7, bend: 2.4,
       stiffness: { local: [0.5, 0.1], global: [0.1, 0] },
     },
     buzz: {
       label: 'Buzz Cut',
       defaults: { length: 1.2, fadeHeight: 0, partOffset: 0, curl: 0, volume: 1 },
       ratios: { fringe: 1, sides: 0.85, back: 0.85, nape: 0.7 },
-      fade: 'skin', comb: 'down', lift: 0.6, frontLift: 0, hold: 0, bend: 0.5,
+      fade: 'skin', comb: 'down', volume: [0.4, 0.4, 0.4, 0.3], rise: 0.3, taper: 0, hold: 0, clump: 0.5, bend: 0.5,
       stiffness: { local: [0.9, 0.7], global: [0.5, 0.3] },
     },
     crew: {
       label: 'Crew Cut',
       defaults: { length: 4, fadeHeight: 0.35, partOffset: 0, curl: 0, volume: 1 },
       ratios: { fringe: 0.8, sides: 0.35, back: 0.4, nape: 0.3 },
-      fade: 'skin', comb: 'forward', lift: 0.55, frontLift: 0.15, hold: 0.6, bend: 0.6,
+      fade: 'skin', comb: 'forward', volume: [1.0, 1.2, 0.8, 0.3], rise: 0.4, taper: 0.2, hold: 0.6, clump: 0.8, bend: 0.6,
       stiffness: { local: [0.9, 0.6], global: [0.45, 0.2] },
     },
     fade: {
       label: 'Fade',
       defaults: { length: 8, fadeHeight: 0.55, partOffset: 0, curl: 0, volume: 1.1 },
       ratios: { fringe: 0.85, sides: 0.3, back: 0.3, nape: 0.2 },
-      fade: 'skin', comb: 'forward', lift: 0.45, frontLift: 0.1, hold: 0.5, bend: 0.9,
+      fade: 'skin', comb: 'forward', volume: [1.2, 1.5, 1.0, 0.3], rise: 0.35, taper: 0.3, hold: 0.5, clump: 0.8, bend: 0.9,
       stiffness: { local: [0.85, 0.45], global: [0.35, 0.1] },
     },
     undercut: {
@@ -278,97 +289,136 @@
       defaults: { length: 16, fadeHeight: 0, partOffset: 0.25, curl: 0, volume: 1.1 },
       ratios: { fringe: 1.05, sides: 1, back: 1, nape: 1 },
       undercut: 72 * deg, undercutLength: 1.2,
-      fade: 'skin', comb: 'back', lift: 0.3, frontLift: 0.35, hold: 0.85, bend: 1.2,
+      fade: 'skin', comb: 'back', volume: [2.5, 1.5, 0.8, 0.3], rise: 0.3, taper: 0.6, hold: 0.85, clump: 0.4, bend: 1.2,
       stiffness: { local: [0.85, 0.35], global: [0.3, 0.05] },
     },
     pompadour: {
       label: 'Pompadour',
       defaults: { length: 18, fadeHeight: 0.45, partOffset: 0, curl: 0, volume: 1.2 },
       ratios: { fringe: 1.15, sides: 0.25, back: 0.3, nape: 0.2 },
-      fade: 'skin', comb: 'back', lift: 0.35, frontLift: 0.55, hold: 0.95, bend: 0.9,
+      fade: 'skin', comb: 'back', volume: [6, 2.5, 1, 0.3], width: 0.65, rise: 0.45, taper: 0.85, hold: 0.95, clump: 0.3, bend: 0.9,
       stiffness: { local: [0.95, 0.55], global: [0.45, 0.12] },
     },
     quiff: {
       label: 'Quiff',
       defaults: { length: 14, fadeHeight: 0.5, partOffset: 0, curl: 0, volume: 1.15 },
       ratios: { fringe: 1.2, sides: 0.25, back: 0.3, nape: 0.2 },
-      fade: 'skin', comb: 'up', lift: 0.45, frontLift: 0.5, hold: 0.8, bend: 1.0,
+      fade: 'skin', comb: 'up', volume: [5, 2.8, 1.0, 0.3], rise: 0.4, taper: 0.6, hold: 0.8, clump: 0.5, bend: 1.0,
       stiffness: { local: [0.95, 0.5], global: [0.4, 0.1] },
     },
     slickBack: {
       label: 'Slick Back',
       defaults: { length: 14, fadeHeight: 0.2, partOffset: 0, curl: 0, volume: 1 },
       ratios: { fringe: 1.05, sides: 0.55, back: 0.65, nape: 0.5 },
-      fade: 'skin', comb: 'back', lift: 0.05, frontLift: 0.1, hold: 1, bend: 1.6,
+      fade: 'skin', comb: 'back', volume: [1.2, 0.8, 0.5, 0.3], rise: 0.2, taper: 0.6, hold: 1, clump: 0.25, bend: 1.6,
       stiffness: { local: [0.85, 0.4], global: [0.35, 0.08] },
     },
     texturedCrop: {
       label: 'Textured Crop',
       defaults: { length: 8, fadeHeight: 0.75, partOffset: 0, curl: 0.15, volume: 1.15 },
       ratios: { fringe: 0.85, sides: 0.2, back: 0.25, nape: 0.15 },
-      fade: 'skin', comb: 'forward', lift: 0.4, frontLift: 0, hold: 0.6, bend: 1.0,
+      fade: 'skin', comb: 'forward', volume: [1.0, 1.6, 1.2, 0.3], rise: 0.35, taper: 0.3, hold: 0.6, clump: 0.9, bend: 1.0,
       stiffness: { local: [0.85, 0.4], global: [0.35, 0.1] },
     },
     mullet: {
       label: 'Mullet',
       defaults: { length: 9, fadeHeight: 0.25, partOffset: 0, curl: 0.1, volume: 1.1 },
       ratios: { fringe: 0.8, sides: 0.45, back: 2.2, nape: 3.2 },
-      fade: 'skin', comb: 'down', lift: 0.25, frontLift: 0.1, hold: 0.3, bend: 2.2,
+      fade: 'skin', comb: 'down', volume: [1.2, 1.5, 1.5, 0.6], rise: 0.2, taper: 0.4, hold: 0.3, clump: 0.7, bend: 2.2,
       stiffness: { local: [0.6, 0.1], global: [0.15, 0] },
     },
     afro: {
       label: 'Afro',
       defaults: { length: 16, fadeHeight: 0, partOffset: 0, curl: 1, volume: 1.7 },
       ratios: { fringe: 0.85, sides: 0.95, back: 1, nape: 0.8 },
-      fade: 'skin', comb: 'out', lift: 0.85, frontLift: 0, hold: 1, bend: 0.3,
+      fade: 'skin', comb: 'out', volume: [7, 7, 7, 6], rise: 0.3, taper: 0, hold: 1, clump: 0.6, bend: 0.3,
       stiffness: { local: [0.95, 0.8], global: [0.55, 0.35] },
     },
     bald: {
       label: 'Bald/Shaved',
       defaults: { length: 0.15, fadeHeight: 0, partOffset: 0, curl: 0, volume: 1 },
       ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
-      fade: 'skin', comb: 'down', lift: 0.6, frontLift: 0, hold: 0, bend: 0.5,
+      fade: 'skin', comb: 'down', volume: [0.2, 0.2, 0.2, 0.2], rise: 0.3, taper: 0, hold: 0, clump: 0.5, bend: 0.5,
       stiffness: { local: [0.9, 0.7], global: [0.5, 0.3] },
     },
     longLayers: {
       label: 'Long Layers',
       defaults: { length: 56, fadeHeight: 0, partOffset: 0, curl: 0.1, volume: 1.15 },
       ratios: { fringe: 0.75, sides: 1.0, back: 1.15, nape: 1.15 },
-      fade: 'skin', comb: 'center', lift: 0.1, frontLift: 0, hold: 0.35, bend: 3.0,
+      fade: 'skin', comb: 'center', volume: [1.2, 1.5, 1.2, 0.8], rise: 0.15, taper: 0.5, hold: 0.35, clump: 0.6, bend: 3.0,
       stiffness: { local: [0.6, 0.03], global: [0.12, 0] },
     },
     bob: {
       label: 'Bob',
       defaults: { length: 24, fadeHeight: 0, partOffset: 0.3, curl: 0, volume: 1.15 },
       ratios: { fringe: 0.95, sides: 0.9, back: 0.75, nape: 0.6 },
-      fade: 'skin', comb: 'side', lift: 0.12, frontLift: 0.05, hold: 0.5, bend: 2.6,
+      fade: 'skin', comb: 'side', volume: [1.2, 1.5, 1.0, 0.8], rise: 0.2, taper: 0.5, hold: 0.5, clump: 0.5, bend: 2.6,
       stiffness: { local: [0.65, 0.15], global: [0.15, 0.02] },
     },
     pixie: {
       label: 'Pixie',
       defaults: { length: 11, fadeHeight: 0.2, partOffset: 0.35, curl: 0, volume: 1.05 },
       ratios: { fringe: 1.25, sides: 0.4, back: 0.45, nape: 0.3 },
-      fade: 'skin', comb: 'side', lift: 0.25, frontLift: 0.1, hold: 0.7, bend: 1.4,
+      fade: 'skin', comb: 'side', volume: [1.5, 1.8, 1.0, 0.4], rise: 0.3, taper: 0.4, hold: 0.7, clump: 0.7, bend: 1.4,
       stiffness: { local: [0.8, 0.3], global: [0.3, 0.05] },
     },
     curtains: {
       label: 'Curtains',
       defaults: { length: 26, fadeHeight: 0, partOffset: 0, curl: 0.05, volume: 1.1 },
       ratios: { fringe: 0.85, sides: 0.9, back: 0.85, nape: 0.7 },
-      fade: 'skin', comb: 'center', lift: 0.18, frontLift: 0.1, hold: 0.5, bend: 2.4,
+      fade: 'skin', comb: 'center', volume: [1.5, 1.6, 1.2, 0.6], rise: 0.2, taper: 0.5, hold: 0.5, clump: 0.6, bend: 2.4,
       stiffness: { local: [0.7, 0.12], global: [0.2, 0.02] },
     },
     curly: {
       label: 'Curly',
       defaults: { length: 22, fadeHeight: 0, partOffset: 0, curl: 0.7, volume: 1.45 },
       ratios: { fringe: 0.85, sides: 0.95, back: 1, nape: 0.85 },
-      fade: 'skin', comb: 'center', lift: 0.4, frontLift: 0.05, hold: 0.6, bend: 1.0,
+      fade: 'skin', comb: 'center', volume: [3, 3.5, 3.5, 2.5], rise: 0.3, taper: 0.2, hold: 0.6, clump: 0.95, bend: 1.0,
       stiffness: { local: [0.8, 0.35], global: [0.25, 0.05] },
     },
   };
 
   function presetOf(id) {
     return PRESETS[id] || PRESETS.custom;
+  }
+
+  // How high in the hair a strand rooted at `unit` lies, 0..1: the comb
+  // carries hair over the hair downstream of it, so strands from upstream
+  // (the front, for hair combed back) form the outer layer and the rest lie
+  // underneath.
+  function layerRank(comb, unit, partX) {
+    switch (comb) {
+      case 'back':
+      case 'up':
+        return smoothstep(0.1, 0.9, unit.z);
+      case 'forward':
+        return smoothstep(-0.7, 0.3, -unit.z);
+      case 'side':
+      case 'center':
+        return 1 - smoothstep(0, 0.7, Math.abs(unit.x - partX));
+      case 'out':
+        return 1;
+      default:
+        return 1 - smoothstep(0, 1.4, Math.acos(Math.min(1, Math.max(-1, unit.y))));
+    }
+  }
+
+  // The hair's outer surface above the scalp (scene units) in scalp
+  // direction `unit`: the preset's fringe / top / crown / sides heights,
+  // blended across the head.
+  function volumeAt(preset, unit) {
+    const [fringe, top, crown, sides] = preset.volume;
+    const polar = Math.acos(Math.min(1, Math.max(-1, unit.y)));
+    const upper = 1 - smoothstep(68 * deg, 92 * deg, polar);
+    // The height sits over the middle of the head (`width` of it, 0..1);
+    // toward the sides it eases down to the sides' value rather than
+    // sticking out in wings.
+    const width = preset.width ?? 0.95;
+    const middle = 1 - smoothstep(width * 0.35, width, Math.abs(unit.x));
+    const front = smoothstep(0.15, 0.75, unit.z);
+    const back = smoothstep(0.1, 0.8, -unit.z);
+    const height = top + (fringe - top) * front + (crown - top) * back;
+    return (sides + (height - sides) * upper * middle) * 0.1;
   }
 
   // Length (scene units, before the hairline) at a scalp point.
@@ -563,8 +613,9 @@
     switch (comb) {
       case 'back':
       case 'up':
-        // Swept back over the whole upper head, sides included, not just the top.
-        out.lerp(combTarget.set(0, -0.12, -1), (1 - smoothstep(85 * deg, 112 * deg, polar)) * 0.95);
+        // Swept back over the whole upper head, sides included, not just the
+        // top — straight back, or the two halves part along the middle.
+        out.lerp(combTarget.set(0, -0.12, -1), 1 - smoothstep(85 * deg, 112 * deg, polar));
         break;
       case 'forward':
         out.lerp(combTarget.set(0, -0.2, 1), styled * 0.85);
@@ -611,130 +662,268 @@
     return hairBearing;
   }
 
-  // Guide strands where the hair is long enough for strands (shorter hair is
-  // drawn by the shells). `budget` is how many root positions to try — the
-  // quality tier; bald areas and short hair take none of it.
+  // How long a guide at (u, v) must be to cover every drawn strand that may
+  // take its shape: the longest hair around it (within `neighbourhood`, in
+  // u units), plus the strands' random extra.
+  function guideLengthAt(lengthAt, neighbourhood, u, v) {
+    const neighbourhoodV = (neighbourhood * 2 * Math.PI) / MAX_POLAR;
+    let longest = lengthAt(u, v);
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * 2 * Math.PI;
+      longest = Math.max(longest, lengthAt(u + Math.cos(a) * neighbourhood, v + Math.sin(a) * neighbourhoodV));
+    }
+    return longest * STRAND_LENGTH_JITTER[1];
+  }
+
+  const TRACE_STEPS = 4; // per guide segment
+  const traceHere = { u: 0, v: 0, radius: 0, unit: new THREE.Vector3() };
+  const traceFlow = new THREE.Vector3();
+  const traceDirection = new THREE.Vector3();
+  const traceNext = new THREE.Vector3();
+  const traceNormal = new THREE.Vector3();
+  const traceSkin = new THREE.Vector3();
+
+  // A guide strand's rest shape, V points pushed onto `out` (x, y, z, 1).
   //
-  // A generator: it yields every few dozen guides and returns the groom, so
-  // the designer can build in slices across frames — all at once takes
-  // hundreds of milliseconds on a phone and freezes the view.
-  function* buildGuides(fields, presetId, params, budget) {
+  // Hair on the head is laid like hair over a mould: it glides along the
+  // comb at a height above the scalp that rises smoothly from the root to
+  // `peak` (over the preset's `rise`) and eases off by its tip (`taper`). Where
+  // it leaves the scalp, or the comb runs steeply down past the product's
+  // hold, it falls freely under gravity. Traced in fine steps, then
+  // resampled to V evenly spaced points.
+  function traceGuide(preset, params, root, length, peak, partX, partSide, jitter, out) {
+    const ds = length / (V - 1) / TRACE_STEPS;
+    const rise = preset.rise * length;
+    const holdLength = preset.hold * length;
+    const points = [root.x, root.y, root.z];
+    const p = root.clone();
+    // The skin point the strand is over, tracked apart from its height: the
+    // height isn't straight out from the head's centre (see below), so the
+    // skin point can't be recovered from the strand's own position.
+    const skinPoint = traceSkin.copy(root);
+    let height = 0;
+    let free = false;
+    for (let s = ds; s < length + ds * 0.5; s += ds) {
+      if (!free) {
+        uvOf(skinPoint, traceHere);
+        combDirection(traceHere.unit, preset.comb, partX, partSide, traceFlow);
+        free = traceHere.v > 1 || (s > holdLength && traceFlow.y < -0.75);
+      }
+      if (free) {
+        traceDirection.y -= preset.bend * ds * (1 - 0.65 * params.curl);
+        traceDirection.normalize();
+        p.addScaledVector(traceDirection, ds);
+        collide(p, STRAND_LIFT + 0.03 * params.curl);
+      } else {
+        // Along the comb (with this strand's own slight deviation), and up
+        // or down toward this point's height in the hair.
+        traceFlow.add(jitter).addScaledVector(combNormal, -traceFlow.dot(combNormal)).normalize();
+        const target = peak * smoothstep(0, rise, s) * (1 - preset.taper * smoothstep(rise, length, s));
+        const climb = Math.min(ds * 0.95, Math.max(-ds * 0.7, target - height));
+        height += climb;
+        skinPoint.addScaledVector(traceFlow, Math.sqrt(ds * ds - climb * climb));
+        uvOf(skinPoint, traceHere);
+        const { unit } = traceHere;
+        const skin = skinRadiusAt(traceHere.u, traceHere.v);
+        skinPoint.set(unit.x * skin * CRANIUM.x, unit.y * skin * CRANIUM.y, unit.z * skin * CRANIUM.z);
+        // Volume builds upward over the top of the head (that's what product
+        // does) and outward at the sides: straight off the forehead is
+        // forward, and hair would stand out in front of the face.
+        traceNormal.set(unit.x / CRANIUM.x, unit.y / CRANIUM.y, unit.z / CRANIUM.z).normalize();
+        traceNormal.y += 1.5 * Math.max(0, unit.y);
+        traceNormal.normalize();
+        traceNext.copy(skinPoint).addScaledVector(traceNormal, STRAND_LIFT + height);
+        traceDirection.subVectors(traceNext, p).normalize();
+        p.copy(traceNext);
+      }
+      points.push(p.x, p.y, p.z);
+    }
+    resampleEvenly(points, out);
+  }
+
+  // A polyline (x, y, z, ...) resampled to V points evenly spaced along it,
+  // pushed onto `out` as (x, y, z, 1).
+  function resampleEvenly(points, out) {
+    const n = points.length / 3;
+    const cumulative = new Float64Array(n);
+    for (let i = 1; i < n; i++) {
+      cumulative[i] = cumulative[i - 1] + Math.hypot(
+        points[i * 3] - points[i * 3 - 3], points[i * 3 + 1] - points[i * 3 - 2], points[i * 3 + 2] - points[i * 3 - 1],
+      );
+    }
+    const total = cumulative[n - 1];
+    let i = 0;
+    for (let j = 0; j < V; j++) {
+      const target = (total * j) / (V - 1);
+      while (i < n - 2 && cumulative[i + 1] < target) i++;
+      const t = Math.min(1, Math.max(0, (target - cumulative[i]) / Math.max(cumulative[i + 1] - cumulative[i], 1e-9)));
+      for (let c = 0; c < 3; c++) out.push(points[i * 3 + c] + (points[(i + 1) * 3 + c] - points[i * 3 + c]) * t);
+      out.push(1);
+    }
+  }
+
+  // Golden-angle spiral over the scalp cap, `count` candidate roots,
+  // jittered: an even spread with no rows. Calls visit(u, v) for each.
+  function* scalpSpiral(count, rng, visit) {
+    const cap = 1 - Math.cos(MAX_POLAR);
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    const offset = rng() * 2 * Math.PI;
+    for (let i = 0; i < count; i++) {
+      if (i % 64 === 63) yield;
+      const polar = Math.acos(1 - ((i + rng()) / count) * cap);
+      let azimuth = (offset + i * golden + (rng() - 0.5) * 0.01) % (2 * Math.PI);
+      if (azimuth < 0) azimuth += 2 * Math.PI;
+      visit(azimuth / (2 * Math.PI), polar / MAX_POLAR);
+    }
+  }
+
+  // Finds the (up to) three nearest guide roots that `accept` takes: a grid
+  // of cells about two guide spacings wide, searched 3x3x3 around a point.
+  function guideGrid(positions, cell) {
+    const cells = new Map();
+    const key = (x, y, z) => `${x},${y},${z}`;
+    for (let i = 0; i < positions.length / 3; i++) {
+      const k = key(Math.floor(positions[i * 3] / cell), Math.floor(positions[i * 3 + 1] / cell), Math.floor(positions[i * 3 + 2] / cell));
+      if (!cells.has(k)) cells.set(k, []);
+      cells.get(k).push(i);
+    }
+    return (x, y, z, accept, out) => {
+      const cx = Math.floor(x / cell);
+      const cy = Math.floor(y / cell);
+      const cz = Math.floor(z / cell);
+      out.length = 0;
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dz = -1; dz <= 1; dz++) {
+            for (const i of cells.get(key(cx + dx, cy + dy, cz + dz)) || []) {
+              if (!accept(i)) continue;
+              const ex = positions[i * 3] - x;
+              const ey = positions[i * 3 + 1] - y;
+              const ez = positions[i * 3 + 2] - z;
+              out.push({ i, d: Math.sqrt(ex * ex + ey * ey + ez * ez) });
+            }
+          }
+        }
+      }
+      out.sort((a, b) => a.d - b.d);
+      if (out.length > 3) out.length = 3;
+      return out;
+    };
+  }
+
+  // The groom: guide strands (simulated) and the strands actually drawn.
+  //
+  // Guides are a few hundred strands, shaped by the preset and simulated by
+  // hair_sim.js. Drawn strands are many thousands, each with its own root;
+  // the GPU shapes each one from the three nearest guides (on its side of a
+  // parting) and takes its length from the length field at its root, so
+  // tools that paint length show on every strand at once. Guides are a
+  // little longer than the longest hair near them, so drawn strands never
+  // run past their guides' tips.
+  //
+  // Only where the hair is long enough for strands: shorter hair is the
+  // shells'. A generator: it yields every few dozen strands and returns the
+  // groom, so the designer can build in slices across frames — all at once
+  // takes hundreds of milliseconds on a phone and freezes the view.
+  function* buildGuides(fields, presetId, params, guideBudget, strandBudget) {
     const preset = presetOf(presetId);
     const lengthAt = lengthSampler(fields);
     const rng = random(1234567);
     const cap = 1 - Math.cos(MAX_POLAR);
-    const golden = Math.PI * (3 - Math.sqrt(5));
-    const candidates = Math.round(budget / hairBearingShare());
-    const spacing = Math.sqrt((2 * Math.PI * cap * 0.48 * CRANIUM.x * CRANIUM.z) / budget);
-    const curl = params.curl;
+    const spacing = Math.sqrt((2 * Math.PI * cap * 0.48 * CRANIUM.x * CRANIUM.z) / guideBudget);
+    const neighbourhood = (spacing * 1.2) / ((CRANIUM.x + CRANIUM.z) * Math.PI); // in u
+    const guideLength = (u, v) => guideLengthAt(lengthAt, neighbourhood, u, v);
     const partX = params.partOffset;
+    const parted = preset.comb === 'side' || preset.comb === 'center';
 
     const rest = [];
     const lengths = [];
     const roots = [];
-    const rootNormals = [];
-    const here = { u: 0, v: 0, radius: 0, unit: new THREE.Vector3() };
-    const comb = new THREE.Vector3();
-    for (let i = 0; i < candidates; i++) {
-      if (i % 32 === 31) yield;
-      const jitter = rng();
-      const polar = Math.acos(1 - ((i + jitter) / candidates) * cap);
-      let azimuth = (i * golden + (rng() - 0.5) * 0.01) % (2 * Math.PI);
-      if (azimuth < 0) azimuth += 2 * Math.PI;
-      const u = azimuth / (2 * Math.PI);
-      const v = polar / MAX_POLAR;
+    const sides = [];
+    yield* scalpSpiral(Math.round(guideBudget / hairBearingShare()), rng, (u, v) => {
       // Hair thins out toward the hairline rather than stopping at an edge.
       const h = hairline(u, v);
-      if (rng() > h) continue;
-      const length = lengthAt(u, v) * (0.85 + rng() * 0.3); // uneven ends, as cut hair has
-      if (length < STRAND_MIN_LENGTH) continue;
+      if (rng() > h) return;
+      if (lengthAt(u, v) < STRAND_MIN_LENGTH * STRAND_LENGTH_JITTER[0]) return;
+      const length = guideLength(u, v);
 
-      const { position: root, normal } = scalpPoint(u, v);
+      const { position: root } = scalpPoint(u, v);
       const unit = unitFromUV(u, v);
       const partSide = Math.sign(unit.x - partX) || 1;
-      const frontness = smoothstep(0.3, 0.85, unit.z) * (1 - smoothstep(55 * deg, 80 * deg, polar));
-      const lift = Math.min(1, preset.lift + preset.frontLift * frontness);
-      const segment = length / (V - 1);
-      const holdUntil = preset.hold * (V - 1);
+      const layer = 0.25 + 0.75 * layerRank(preset.comb, unit, partX);
+      const jitter = new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).multiplyScalar(0.12);
 
-      const direction = normal.clone().multiplyScalar(lift)
-        .addScaledVector(combDirection(unit, preset.comb, partX, partSide, comb), 1 - lift)
-        .add(new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).multiplyScalar(0.14))
-        .normalize();
-      const p = root.clone();
-      const previous = root.clone();
-      for (let j = 0; j < V; j++) {
-        if (j > 0) {
-          if (j > 1) {
-            // On the head (or held by product) hair follows the comb; free
-            // hair falls. Curly hair holds itself up more.
-            uvOf(p, here);
-            const gap = here.v <= 1 ? here.radius - skinRadiusAt(here.u, here.v) : 1;
-            combDirection(here.unit, preset.comb, partX, partSide, comb);
-            if (j <= holdUntil || (gap < 0.06 && comb.y > -0.75)) direction.lerp(comb, 0.3);
-            else direction.y -= preset.bend * segment * (1 - 0.65 * curl);
-            direction.normalize();
-          }
-          previous.copy(p);
-          p.addScaledVector(direction, segment);
-          collide(p, STRAND_LIFT + 0.04 * (j / (V - 1)) * (0.4 + params.volume * 0.6 + curl * 0.8));
-          if (j > 1) {
-            direction.subVectors(p, previous).normalize();
-            p.copy(previous).addScaledVector(direction, segment);
-          }
-        }
-        rest.push(p.x, p.y, p.z, 1);
-      }
+      const height = Math.min(volumeAt(preset, unit) * params.volume * layer, length * 0.7);
+      traceGuide(preset, params, root, length, height, partX, partSide, jitter, rest);
       lengths.push(length);
       roots.push(u, v);
-      rootNormals.push(normal);
-    }
+      sides.push(partSide);
+    });
 
     const rows = lengths.length;
-    // Children ordered layer by layer (every guide's child 0, then child 1,
-    // ...) so drawing fewer instances thins the hair evenly.
-    const children = new Float32Array(rows * CHILDREN * 8);
-    let k = 0;
-    const tangent = new THREE.Vector3();
-    const bitangent = new THREE.Vector3();
-    const up = new THREE.Vector3(0, 1, 0.001);
-    for (let c = 0; c < CHILDREN; c++) {
-      for (let row = 0; row < rows; row++) {
-        if (row % 512 === 511) yield;
-        const normal = rootNormals[row];
-        tangent.crossVectors(normal, up).normalize();
-        bitangent.crossVectors(normal, tangent);
-        const angle = rng() * Math.PI * 2;
-        const radius = c === 0 ? 0 : spacing * Math.sqrt(rng());
-        // Layout must match hair_engine.js: aChildA = (guide row, random,
-        // tip trim, root u), aChildB = (root offset xyz, root v).
-        children[k++] = row;
-        children[k++] = rng();
-        children[k++] = 0.75 + rng() * 0.25; // tips end at different lengths
-        children[k++] = roots[row * 2];
-        children[k++] = (Math.cos(angle) * tangent.x + Math.sin(angle) * bitangent.x) * radius;
-        children[k++] = (Math.cos(angle) * tangent.y + Math.sin(angle) * bitangent.y) * radius;
-        children[k++] = (Math.cos(angle) * tangent.z + Math.sin(angle) * bitangent.z) * radius;
-        children[k++] = roots[row * 2 + 1];
-      }
+    const guideRoots = new Float32Array(rows * 3);
+    for (let row = 0; row < rows; row++) {
+      for (let c = 0; c < 3; c++) guideRoots[row * 3 + c] = rest[row * V * 4 + c];
     }
+    const nearest = guideGrid(guideRoots, spacing * 2);
+
+    // Drawn strands. Layout must match hair_engine.js (16 floats each):
+    //   aRoot    root position (body space), random
+    //   aRootUv  scalp u, v, clumping (0 = a stray hair), length jitter
+    //   aGuides  the three guide rows it follows (the first is its clump's)
+    //   aWeights their weights
+    const strands = [];
+    const found = [];
+    yield* scalpSpiral(Math.round(strandBudget / hairBearingShare()), rng, (u, v) => {
+      if (rows === 0 || rng() > hairline(u, v)) return;
+      const jitter = STRAND_LENGTH_JITTER[0] + rng() * (STRAND_LENGTH_JITTER[1] - STRAND_LENGTH_JITTER[0]);
+      if (lengthAt(u, v) * jitter < STRAND_MIN_LENGTH) return;
+      const { position: root } = scalpPoint(u, v);
+      const side = Math.sign(unitFromUV(u, v).x - partX) || 1;
+      nearest(root.x, root.y, root.z, (i) => !parted || sides[i] === side, found);
+      if (found.length === 0) return;
+      let total = 0;
+      const weights = found.map(({ d }) => 1 / (d + spacing * 0.25) ** 2);
+      for (const w of weights) total += w;
+      const stray = rng() < 0.06;
+      strands.push(
+        root.x, root.y, root.z, rng(),
+        u, v, stray ? 0 : preset.clump * (0.5 + rng() * 0.5), jitter,
+        found[0].i, (found[1] ?? found[0]).i, (found[2] ?? found[0]).i, 0,
+        weights[0] / total, (weights[1] ?? 0) / total, (weights[2] ?? 0) / total, 0,
+      );
+    });
+
+    // In random order, so drawing fewer of them thins the hair evenly.
+    const count = strands.length / 16;
+    const shuffled = new Float32Array(strands.length);
+    const order = Array.from({ length: count }, (_, i) => i);
+    for (let i = count - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    for (let i = 0; i < count; i++) shuffled.set(strands.slice(order[i] * 16, order[i] * 16 + 16), i * 16);
+
     return {
       rows,
       rest: new Float32Array(rest),
       lengths: new Float32Array(lengths),
       roots: new Float32Array(roots),
-      children,
+      strands: shuffled,
+      strandCount: count,
       stiffness: preset.stiffness,
-      // A cut strand is recorded as a dot this big (u units) on the length
+      // A cut guide is recorded as a dot this big (u units) on the length
       // field: about the gap between guides, so the cut rebuilds the same
-      // whatever the strand count.
+      // whatever the guide count.
       cutRadius: (spacing * 0.8) / (Math.PI * (CRANIUM.x + CRANIUM.z)),
+      // For guideLengthAt, when tools change the length field.
+      neighbourhood,
     };
   }
 
   window.HairGroom = {
     V,
-    CHILDREN,
+    STRAND_LENGTH_JITTER,
     MAX_POLAR,
     MAX_LENGTH,
     LENGTH_TO_SCENE,
@@ -759,6 +948,7 @@
     repaint,
     lengthSampler,
     buildGuides,
+    guideLengthAt,
     uvOf,
     pickScalp,
     decodeBase64,

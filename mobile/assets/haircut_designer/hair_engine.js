@@ -4,11 +4,11 @@
 // Guide strands come from groom.js. The simulator steps them and sends back
 // their positions each frame, uploaded as a float texture: one row per
 // strand, V texels of body-space positions (the shader applies the bust's
-// transform). Each guide is drawn as CHILDREN
-// strands around it, straight from that texture. Hair shorter than
-// SHELL_MAX_LENGTH is drawn by shells: stacked copies of the scalp cut into
-// individual hairs (fur technique). Scissors and brush tools shorten
-// strands in the simulator.
+// transform). The strands actually drawn are many more: each is shaped on
+// the GPU from its three nearest guides, at the length the length field
+// gives it (see buildGuides). Hair shorter than SHELL_MAX_LENGTH is drawn
+// by shells: stacked copies of the scalp cut into individual hairs (fur
+// technique). Scissors and brush tools shorten guides in the simulator.
 //
 // The whole bust can turn (bodyGroup.matrix); hair is simulated in its frame.
 
@@ -42,12 +42,21 @@
       return fract((p.x + p.y) * p.z);
     }
 
+    // Where shells hand over to strands: full shells up to SHELL_MAX_LENGTH,
+    // easing to just the undercoat by UNDERCOAT_FROM. The strands start
+    // shorter than that, so the two overlap — handing over any sooner
+    // leaves a band of sparse short strands over a dark undercoat.
+    const float UNDERCOAT_FROM = ${(G.SHELL_MAX_LENGTH * 1.75).toFixed(3)};
+
+    float undercoat(float hairLen) {
+      return smoothstep(${G.SHELL_MAX_LENGTH.toFixed(3)}, UNDERCOAT_FROM, hairLen);
+    }
+
     // How tall the shells are: the hair itself where it's short; beneath
     // strands, only a thin undercoat at the roots — a full-height one would
     // swallow the strands lying on the head.
     float shellLength(float hairLen) {
-      float shortHair = min(hairLen, ${G.SHELL_MAX_LENGTH.toFixed(3)});
-      return mix(shortHair, 0.015, smoothstep(${(G.STRAND_MIN_LENGTH * 0.85).toFixed(3)}, ${G.SHELL_MAX_LENGTH.toFixed(3)}, hairLen));
+      return mix(min(hairLen, ${G.SHELL_MAX_LENGTH.toFixed(3)}), 0.015, undercoat(hairLen));
     }
 
     vec3 hairColor(vec2 uv) {
@@ -85,7 +94,8 @@
       this.bodyGroup = bodyGroup;
       this.fields = fields;
       this.body = { matrix: bodyGroup.matrix, inverse: new THREE.Matrix4(), rotation: new THREE.Matrix3() };
-      this.rows = 0;
+      this.rows = 0; // guides
+      this.strandCount = 0; // drawn strands
       this.lengths = new Float32Array(0);
       this.roots = new Float32Array(0);
       this.layers = 8;
@@ -237,12 +247,15 @@
       this.rows = groom.rows;
       this.lengths = groom.lengths;
       this.roots = groom.roots;
-      this.strandMesh.visible = groom.rows > 0;
+      this.strandCount = groom.strandCount;
+      this.strandMesh.visible = groom.rows > 0 && groom.strandCount > 0;
       this.showPositions(positions);
       const geometry = this.strandMesh.geometry;
-      const children = new THREE.InstancedInterleavedBuffer(groom.children, 8, 1);
-      geometry.setAttribute('aChildA', new THREE.InterleavedBufferAttribute(children, 4, 0));
-      geometry.setAttribute('aChildB', new THREE.InterleavedBufferAttribute(children, 4, 4));
+      const strands = new THREE.InstancedInterleavedBuffer(groom.strands, 16, 1);
+      geometry.setAttribute('aRoot', new THREE.InterleavedBufferAttribute(strands, 4, 0));
+      geometry.setAttribute('aRootUv', new THREE.InterleavedBufferAttribute(strands, 4, 4));
+      geometry.setAttribute('aGuides', new THREE.InterleavedBufferAttribute(strands, 4, 8));
+      geometry.setAttribute('aWeights', new THREE.InterleavedBufferAttribute(strands, 4, 12));
       this.updateInstanceCount();
     }
 
@@ -262,7 +275,8 @@
     }
 
     updateInstanceCount() {
-      this.strandMesh.geometry.instanceCount = this.rows * Math.max(1, Math.min(this.layers, this.maxLayers));
+      // Layers: eighths of the drawn strands (volume, and the quality tier).
+      this.strandMesh.geometry.instanceCount = Math.round((this.strandCount * Math.max(1, Math.min(this.layers, this.maxLayers))) / 8);
     }
 
     // --- Body ------------------------------------------------------------------
@@ -382,59 +396,103 @@
           uSkinRadius: { value: this.skinTexture },
           uCranium: { value: G.CRANIUM },
           uMaxPolar: { value: G.MAX_POLAR },
-          uBodyInverse: { value: this.body.inverse },
         },
         vertexShader: `
           ${FIELDS_GLSL}
           uniform sampler2D uPositions, uSkinRadius;
           uniform mat3 uBodyRotation;
-          uniform mat4 uBody, uBodyInverse;
+          uniform mat4 uBody;
           uniform vec3 uCranium;
           uniform float uCurl, uWidth, uMaxPolar;
-          attribute vec4 aChildA; // guide row, random, tip trim, root u
-          attribute vec4 aChildB; // root offset from the guide (body space), root v
+          // Layout must match groom.js buildGuides:
+          attribute vec4 aRoot;    // root position (body space), random
+          attribute vec4 aRootUv;  // scalp u, v, clumping (0 = a stray hair), length jitter
+          attribute vec4 aGuides;  // the three guide rows it follows (the first is its clump's)
+          attribute vec4 aWeights; // their weights
           varying vec3 vTangent;
           varying vec3 vWorld;
           varying vec3 vColor;
           varying float vAlong;
+          varying float vFromRoot;
           varying float vShade;
           varying float vAcross;
           varying float vSeed;
 
-          // How deep in the hair a point is: hair lying near the scalp is
-          // under the rest and gets less light. 0 at the skin, 1 well clear.
-          float clearOfScalp(vec3 world) {
-            vec3 e = (uBodyInverse * vec4(world, 1.0)).xyz / uCranium;
-            float r = length(e);
-            vec3 d = e / max(r, 1e-6);
-            float polar = acos(clamp(d.y, -1.0, 1.0));
-            if (polar > uMaxPolar) return 1.0;
-            float azimuth = atan(d.z, d.x);
-            if (azimuth < 0.0) azimuth += 6.2831853;
-            vec2 size = vec2(${G.scalpInfo.width.toFixed(1)}, ${G.scalpInfo.height.toFixed(1)});
-            vec2 uv = vec2(azimuth / 6.2831853 + 0.5 / size.x, (polar / uMaxPolar * (size.y - 1.0) + 0.5) / size.y);
-            return smoothstep(0.0, 0.06, r - texture2D(uSkinRadius, uv).r);
+          // A guide's point at arc length s from its root (body space); adds
+          // its local direction, weighted, to dir. Guides' w is their length.
+          vec3 guideAt(int row, float s, float weight, inout vec3 dir) {
+            float guideLength = texelFetch(uPositions, ivec2(0, row), 0).w;
+            float k = clamp(s / max(guideLength, 1e-4), 0.0, 1.0) * ${(V - 1).toFixed(1)};
+            int j0 = min(int(floor(k)), ${V - 2});
+            vec3 a = texelFetch(uPositions, ivec2(j0, row), 0).xyz;
+            vec3 b = texelFetch(uPositions, ivec2(j0 + 1, row), 0).xyz;
+            dir += (b - a) * weight;
+            return mix(a, b, k - float(j0));
+          }
+
+          vec3 guideRoot(int row) {
+            return texelFetch(uPositions, ivec2(0, row), 0).xyz;
           }
 
           void main() {
-            int row = int(aChildA.x);
             float along = position.y / ${(V - 1).toFixed(1)};
-            float k = along * aChildA.z * ${(V - 1).toFixed(1)};
-            int j0 = min(int(floor(k)), ${V - 2});
-            vec3 p0 = (uBody * vec4(texelFetch(uPositions, ivec2(j0, row), 0).xyz, 1.0)).xyz;
-            vec3 p1 = (uBody * vec4(texelFetch(uPositions, ivec2(j0 + 1, row), 0).xyz, 1.0)).xyz;
-            vec3 p = mix(p0, p1, k - float(j0));
-            vec3 tangent = normalize(p1 - p0 + vec3(0.0, -1e-6, 0.0));
+            float strandLength = hairLength(aRootUv.xy) * aRootUv.w;
+            // Hair this short (cut, clipped) is the shells': no strand.
+            if (strandLength < ${G.STRAND_MIN_LENGTH.toFixed(3)}) {
+              gl_Position = vec4(0.0, 0.0, -2.0, 1.0);
+              return;
+            }
+            float s = along * strandLength;
 
-            // Children clump toward their guide along the strand.
-            p += uBodyRotation * aChildB.xyz * mix(1.0, 0.35, smoothstep(0.2, 1.0, along));
+            // The strand's own root, moved the way its three guides move.
+            ivec3 rows = ivec3(aGuides.xyz);
+            vec3 dir = vec3(0.0, -1e-6, 0.0);
+            vec3 g0 = guideAt(rows.x, s, aWeights.x, dir);
+            vec3 g1 = guideAt(rows.y, s, aWeights.y, dir);
+            vec3 g2 = guideAt(rows.z, s, aWeights.z, dir);
+            vec3 r0 = guideRoot(rows.x);
+            vec3 p = aRoot.xyz + aWeights.x * (g0 - r0) + aWeights.y * (g1 - guideRoot(rows.y)) + aWeights.z * (g2 - guideRoot(rows.z));
+            // Clumping: toward the first guide's path, more toward the tip,
+            // so hair gathers into locks as real hair does.
+            float clump = aRootUv.z * smoothstep(0.1, 1.0, along);
+            p = mix(p, g0 + (aRoot.xyz - r0) * 0.25, clump);
+            // Stray hairs wander off their lock.
+            vec3 seed3 = vec3(aRoot.w * 13.1, aRoot.w * 71.7, aRoot.w * 37.3);
+            p += (fract(seed3) - 0.5) * (aRootUv.z == 0.0 ? 0.12 : 0.012) * along * along;
+
+            // Blending guides that curve round the head cuts the corner
+            // through it: keep the strand out of the skin.
+            vec3 e = p / uCranium;
+            float r = length(e);
+            vec3 d = e / max(r, 1e-6);
+            float polar = acos(clamp(d.y, -1.0, 1.0));
+            float clear = 1.0;
+            if (polar <= uMaxPolar) {
+              float azimuth = atan(d.z, d.x);
+              if (azimuth < 0.0) azimuth += 6.2831853;
+              vec2 size = vec2(${G.scalpInfo.width.toFixed(1)}, ${G.scalpInfo.height.toFixed(1)});
+              vec2 uv = vec2(azimuth / 6.2831853 + 0.5 / size.x, (polar / uMaxPolar * (size.y - 1.0) + 0.5) / size.y);
+              float skin = texture2D(uSkinRadius, uv).r;
+              float minimum = skin + ${(G.STRAND_LIFT * 0.6).toFixed(3)};
+              if (r < minimum) p = d * minimum * uCranium;
+              // How deep in the hair this point is: under the rest of it,
+              // hair gets less light. Measured against how thick the hair is
+              // here — short hair lying flat is the top layer, fully lit.
+              float thickness = clamp(hairLength(vec2(azimuth / 6.2831853, polar / uMaxPolar)) * 0.4, 0.015, 0.4);
+              clear = smoothstep(0.0, thickness, max(r, minimum) - skin);
+            }
+
+            p = (uBody * vec4(p, 1.0)).xyz;
+            vec3 tangent = normalize(uBodyRotation * dir);
 
             if (uCurl > 0.0) {
+              // Curls turn together within a lock (phase from its guide), so
+              // they read as ringlets rather than noise.
               vec3 helper = abs(tangent.y) < 0.95 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
               vec3 b1 = normalize(cross(tangent, helper));
               vec3 b2 = cross(tangent, b1);
               float frequency = mix(22.0, 44.0, uCurl);
-              float phase = aChildA.y * 6.2832 + along * frequency;
+              float phase = fract(aGuides.x * 0.618034) * 6.2832 + aRoot.w * 0.8 + along * frequency;
               float radius = 0.075 * uCurl * smoothstep(0.0, 0.18, along);
               p += radius * (cos(phase) * b1 + sin(phase) * b2);
               tangent = normalize(tangent + radius * frequency * (-sin(phase) * b1 + cos(phase) * b2));
@@ -447,11 +505,12 @@
 
             vTangent = tangent;
             vWorld = p;
-            vColor = hairColor(vec2(aChildA.w, aChildB.w)) * (0.9 + 0.2 * aChildA.y);
+            vColor = hairColor(aRootUv.xy) * (0.9 + 0.2 * aRoot.w);
             vAlong = along;
-            vShade = mix(0.42, 1.0, clearOfScalp(p)) * mix(0.8, 1.0, aChildA.y);
+            vFromRoot = s;
+            vShade = mix(0.42, 1.0, clear) * mix(0.8, 1.0, aRoot.w);
             vAcross = position.x;
-            vSeed = aChildA.y;
+            vSeed = aRoot.w;
             gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
           }`,
         fragmentShader: `
@@ -461,6 +520,7 @@
           varying vec3 vWorld;
           varying vec3 vColor;
           varying float vAlong;
+          varying float vFromRoot;
           varying float vShade;
           varying float vAcross;
           varying float vSeed;
@@ -487,10 +547,15 @@
             float tip = mix(0.62, 1.0, hash(hairSeed + 3.0));
             float ends = mix(1.0 - smoothstep(tip - 0.1, tip, vAlong), 1.0 - smoothstep(0.7, 1.0, vAlong), far);
             float alpha = mix(sharp, 0.95, far) * ends * (1.0 - smoothstep(0.7, 1.0, abs(vAcross)));
+            // Hairs grow out of the skin one by one: no hard edge of card
+            // roots along the hairline.
+            alpha *= smoothstep(0.0, 0.04, vFromRoot);
             if (alpha < 0.02) discard;
 
             vec3 view = normalize(cameraPosition - vWorld);
-            float occlusion = mix(0.5, 1.0, smoothstep(0.0, 0.4, vAlong)) * vShade;
+            // Roots are in the shade of the hair around them (the first
+            // 1.2 cm, whatever the strand's length).
+            float occlusion = mix(0.55, 1.0, smoothstep(0.0, 0.12, vFromRoot)) * vShade;
             float lockShade = 0.82 + 0.3 * hash(vec3(floor(vAlong * 5.0 + vSeed * 3.0), vSeed * 97.0, 7.0));
             vec3 color = vColor * mix(mix(0.78, 1.15, hash(hairSeed + 4.0)), lockShade * (0.85 + 0.25 * sharp), far);
             gl_FragColor = vec4(shadeHair(color, normalize(vTangent), view, uKey, occlusion), alpha);
@@ -552,7 +617,7 @@
           varying float vUndercoat;
           void main() {
             float hairLen = hairLength(uv);
-            vUndercoat = step(${G.SHELL_MAX_LENGTH.toFixed(3)}, hairLen);
+            vUndercoat = step(UNDERCOAT_FROM, hairLen);
             float height = shellLength(hairLen) * (aLayer + 1.0) / ${SHELL_LAYERS.toFixed(1)};
             vec4 world = modelMatrix * vec4(position + aNormal * (height + 0.002), 1.0);
             vUv = uv;
@@ -638,16 +703,18 @@
             // light the whole cap as one smooth, helmet-like highlight.
             vec3 lean = (vec3(hash(cell + 13.0), hash(cell + 17.0), hash(cell + 19.0)) - 0.5) * (1.0 - far);
             vec3 tangent = normalize(vNormal + vec3(0.0, -0.3, 0.0) + lean * 1.6);
-            float occlusion = mix(0.35, 1.0, layerFraction);
+            float occlusion = mix(0.7, 1.0, layerFraction);
             vec3 color = hairColor(vUv) * mix(0.88 + 0.24 * hash(cell + 7.0), 0.62 + 0.55 * grain, far);
             vec3 shaded = mix(
               shadeHair(color, tangent, view, uKey, occlusion),
-              shadeShortHair(color, normalize(vNormal), view, uKey, mix(0.55, 1.0, layerFraction)),
+              shadeShortHair(color, normalize(vNormal), view, uKey, mix(0.75, 1.0, layerFraction)),
               far);
             // Beneath strands the shells are only roots in the hair's shade:
-            // matte and dark, never a shiny cap of their own.
-            float undercoat = smoothstep(${(G.STRAND_MIN_LENGTH * 0.85).toFixed(3)}, ${G.SHELL_MAX_LENGTH.toFixed(3)}, hairLength(vUv));
-            shaded = mix(shaded, color * 0.3, undercoat);
+            // matte and dark, never a shiny cap of their own — but only once
+            // the strands are long enough to cover them, or the hand-over
+            // from short hair to strands shows as a dark band.
+            float covered = smoothstep(UNDERCOAT_FROM, UNDERCOAT_FROM * 2.0, hairLength(vUv));
+            shaded = mix(shaded, color * 0.3, covered);
             gl_FragColor = vec4(shaded, clamp(alpha, 0.0, 1.0));
             #include <colorspace_fragment>
           }`,

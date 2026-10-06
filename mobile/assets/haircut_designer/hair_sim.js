@@ -24,8 +24,9 @@
 // Messages in:  init, groom, step, beginSwipe, cut, endSwipe, shorten.
 // Messages out: groomReady { id, positions, settleMs }, positions
 //               { positions, stepMs }, swipe { cuts: [row, fraction, ...] }.
-// Positions are body space RGBA float rows (V texels per strand), ready to
-// upload; the strand shader applies the bust's transform.
+// Positions are body space RGBA float rows (V texels per strand, w = the
+// strand's length), ready to upload; the strand shader applies the bust's
+// transform.
 
 function hairSimulator(post) {
   const TAU = Math.PI * 2;
@@ -44,6 +45,7 @@ function hairSimulator(post) {
   let rows = 0;
   let rest = null; // rows * V * 3
   let segment = null; // rest segment lengths, rows * V
+  let rowLength = null; // each strand's length
   let pos = null;
   let prev = null;
   let pred = null;
@@ -344,7 +346,7 @@ function hairSimulator(post) {
       out[i * 4] = P[i * 3];
       out[i * 4 + 1] = P[i * 3 + 1];
       out[i * 4 + 2] = P[i * 3 + 2];
-      out[i * 4 + 3] = 1;
+      out[i * 4 + 3] = rowLength[(i / V) | 0];
     }
     return out;
   }
@@ -379,10 +381,12 @@ function hairSimulator(post) {
 
   function computeSegments() {
     segment = new Float32Array(rows * V);
+    rowLength = new Float32Array(rows);
     for (let row = 0; row < rows; row++) {
       for (let j = 1; j < V; j++) {
         const k = (row * V + j) * 3;
         segment[row * V + j] = Math.hypot(rest[k] - rest[k - 3], rest[k + 1] - rest[k - 2], rest[k + 2] - rest[k - 1]);
+        rowLength[row] += segment[row * V + j];
       }
     }
   }
@@ -457,6 +461,7 @@ function hairSimulator(post) {
     resample(prev, row, fraction);
     resample(rest, row, fraction);
     for (let j = 1; j < V; j++) segment[row * V + j] *= fraction;
+    rowLength[row] *= fraction;
   }
 
   // Scissors, one segment of a swipe (pixels, y up): where it crosses each

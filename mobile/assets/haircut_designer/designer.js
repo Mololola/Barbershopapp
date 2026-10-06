@@ -36,6 +36,8 @@
 
   let renderer, scene, camera, bodyGroup, engine, fields;
   let keyLight;
+  const keyDirection = new THREE.Vector3();
+  const keyTarget = new THREE.Vector3();
   let design = {
     version: DESIGN_VERSION,
     preset: 'fade',
@@ -144,11 +146,13 @@
   //
   // Starts high and steps down (never up) while frames run below ~38 fps —
   // under that, dragging and painting already feel laggy.
+  // guides: simulated strands; strands: drawn ones (maxLayers eighths of
+  // them are drawn).
   const TIERS = [
-    { pixelRatio: 2, maxLayers: 8, budget: 3000 },
-    { pixelRatio: 1.5, maxLayers: 6, budget: 3000 },
-    { pixelRatio: 1.25, maxLayers: 5, budget: 2200 },
-    { pixelRatio: 1, maxLayers: 4, budget: 1500 },
+    { pixelRatio: 2, maxLayers: 8, guides: 900, strands: 18000 },
+    { pixelRatio: 1.5, maxLayers: 6, guides: 900, strands: 18000 },
+    { pixelRatio: 1.25, maxLayers: 5, guides: 700, strands: 14000 },
+    { pixelRatio: 1, maxLayers: 4, guides: 500, strands: 10000 },
   ];
   let tier = 0;
   let slowFrames = 0;
@@ -258,10 +262,12 @@
              float azimuth = atan(direction.z, direction.x);
              if (azimuth < 0.0) azimuth += PI2;
              vec2 scalpUv = vec2(azimuth / PI2, polar / uMaxPolar);
-             // Fades in with the hairline itself — stopping where the length
-             // does would draw a hard, wig-like line round the face.
-             float hair = smoothstep(0.0, 0.03, hairLength(scalpUv)) * smoothstep(0.1, 0.9, texture2D(uBaseField, scalpUv).g);
-             diffuseColor.rgb = mix(diffuseColor.rgb, hairColor(scalpUv) * 0.5, hair * 0.9);
+             // Grows with the hair's length, as a fade darkens gradually from
+             // the skin up (a tint at any length drew a hard dark band), and
+             // with the hairline itself — stopping where the length does
+             // would draw a hard, wig-like line round the face.
+             float hair = smoothstep(0.0, 0.12, hairLength(scalpUv)) * smoothstep(0.1, 0.9, texture2D(uBaseField, scalpUv).g);
+             diffuseColor.rgb = mix(diffuseColor.rgb, hairColor(scalpUv) * 0.75, hair * 0.9);
            }`,
         );
     };
@@ -291,7 +297,7 @@
     timed('uploadBase', () => engine.baseFieldChanged());
     timed('repaint', () => G.repaint(fields, design.strokes));
     engine.masksChanged();
-    guideBuild = G.buildGuides(fields, design.preset, design, TIERS[tier].budget);
+    guideBuild = G.buildGuides(fields, design.preset, design, TIERS[tier].guides, TIERS[tier].strands);
     applyLook();
     measuredFrames = 0;
     wake();
@@ -426,7 +432,9 @@
     }
     const lengthAt = G.lengthSampler(fields);
     const targets = new Float32Array(groom.rows);
-    for (let row = 0; row < groom.rows; row++) targets[row] = lengthAt(groom.roots[row * 2], groom.roots[row * 2 + 1]);
+    for (let row = 0; row < groom.rows; row++) {
+      targets[row] = G.guideLengthAt(lengthAt, groom.neighbourhood, groom.roots[row * 2], groom.roots[row * 2 + 1]);
+    }
     if (engine.shortenTo(targets)) rebuild();
     wake();
   }
@@ -737,8 +745,13 @@
     engine.wind = wind;
     timed('physics', () => engine.step(now));
     const settling = engine.settling;
-    const key = keyLight.getWorldDirection(new THREE.Vector3()).negate();
-    engine.setKeyLight(key);
+    // Toward the light, from where it points (its target). Not the light's
+    // getWorldDirection(): that's its own +z, which pointed the hair
+    // shaders' light into the scene and left surfaces facing the camera dark.
+    keyDirection.setFromMatrixPosition(keyLight.matrixWorld)
+      .sub(keyTarget.setFromMatrixPosition(keyLight.target.matrixWorld))
+      .normalize();
+    engine.setKeyLight(keyDirection);
     timed('render', () => {
       renderer.render(scene, camera);
       gpuSync();
@@ -764,10 +777,10 @@
     measuredFrames++;
     slowFrames = frameTime > 26 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
     if (slowFrames > 18 && tier < TIERS.length - 1) {
-      const budgetBefore = TIERS[tier].budget;
+      const guidesBefore = TIERS[tier].guides;
       tier++;
       slowFrames = 0;
-      applyTier(TIERS[tier].budget !== budgetBefore);
+      applyTier(TIERS[tier].guides !== guidesBefore);
     }
   }
 
