@@ -330,6 +330,16 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     );
   }
 
+  /// A length in the design's 0.5 cm units, as a barber reads it: the
+  /// clipper guard when it's one, otherwise centimetres.
+  String _lengthLabel(double length) {
+    final millimetres = length * 5;
+    for (var g = 0; g < _guardMillimetres.length; g++) {
+      if ((millimetres - _guardMillimetres[g]).abs() < 0.6) return g == 0 ? 'Skin' : '#$g (${_guardMillimetres[g]} mm)';
+    }
+    return '${(length / 2).toStringAsFixed(1)} cm';
+  }
+
   Widget _buildShapeTab() {
     final p = _parameters;
     final partLabel = p.partOffset.abs() < 0.05 ? 'Centre' : (p.partOffset < 0 ? 'Left' : 'Right');
@@ -337,12 +347,17 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         _LabeledSlider(
-          label: 'Length on top',
-          valueLabel: '${(p.length / 2).toStringAsFixed(1)} cm',
+          label: 'Length',
+          valueLabel: '${_lengthLabel(p.length)} on top',
           value: p.length,
           min: 0,
           max: 100,
-          onChanged: (v) => _updateParameters(p.copyWith(length: v)),
+          // The whole cut grows or shrinks together; Barber detail sets
+          // each zone on its own.
+          onChanged: (v) => _updateParameters(p.copyWith(
+            length: v,
+            zones: p.length > 0 ? p.zones.map((zone, length) => MapEntry(zone, length * v / p.length)) : null,
+          )),
         ),
         _LabeledSlider(
           label: 'Fade',
@@ -372,8 +387,83 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
           max: 2,
           onChanged: (v) => _updateParameters(p.copyWith(volume: v)),
         ),
+        if (p.preset != 'custom')
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            title: const Text('Barber detail'),
+            subtitle: const Text('Each zone\'s length, the fade and the undercut'),
+            expandedCrossAxisAlignment: CrossAxisAlignment.start,
+            children: _barberDetail(p),
+          ),
       ],
     );
+  }
+
+  List<Widget> _barberDetail(HairParameters p) {
+    final textTheme = Theme.of(context).textTheme;
+    Widget guardChips(int selected, ValueChanged<int> onSelected, {int max = 4}) => Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (var g = 0; g <= max; g++)
+              ChoiceChip(label: Text(g == 0 ? 'Skin' : '#$g'), selected: selected == g, onSelected: (_) => onSelected(g)),
+          ],
+        );
+    return [
+      Text('Zones', style: textTheme.titleSmall),
+      for (final zone in hairZones)
+        _LabeledSlider(
+          label: zone.label,
+          valueLabel: _lengthLabel(p.zones[zone.id] ?? p.length),
+          value: p.zones[zone.id] ?? p.length,
+          min: 0,
+          max: 100,
+          onChanged: (v) => _updateParameters(p.copyWith(zones: {...p.zones, zone.id: v})),
+        ),
+      if (p.fadeHeight >= 0.02) ...[
+        const SizedBox(height: 8),
+        Text('Fade finishes at', style: textTheme.titleSmall),
+        const SizedBox(height: 4),
+        guardChips(p.fadeTo, (g) => _updateParameters(p.copyWith(fadeTo: g)), max: 3),
+        const SizedBox(height: 8),
+        Text('Fade shape', style: textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final shape in fadeShapes)
+              ChoiceChip(
+                label: Text(shape.label),
+                tooltip: shape.description,
+                selected: p.fadeShape == shape.id,
+                onSelected: (_) => _updateParameters(p.copyWith(fadeShape: shape.id)),
+              ),
+          ],
+        ),
+        Text(fadeShapes.where((s) => s.id == p.fadeShape).firstOrNull?.description ?? '', style: textTheme.bodySmall),
+      ],
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Undercut'),
+        subtitle: const Text('A hard line, short underneath'),
+        value: p.undercut.on,
+        onChanged: (on) => _updateParameters(p.copyWith(undercut: p.undercut.copyWith(on: on))),
+      ),
+      if (p.undercut.on) ...[
+        _LabeledSlider(
+          label: 'Line',
+          valueLabel: p.undercut.height < 0.35 ? 'Low' : (p.undercut.height < 0.7 ? 'Mid' : 'High'),
+          value: p.undercut.height,
+          min: 0,
+          max: 1,
+          onChanged: (v) => _updateParameters(p.copyWith(undercut: p.undercut.copyWith(height: v))),
+        ),
+        guardChips(p.undercut.guard, (g) => _updateParameters(p.copyWith(undercut: p.undercut.copyWith(guard: g)))),
+        const SizedBox(height: 8),
+      ],
+    ];
   }
 
   Widget _buildToolsTab() {

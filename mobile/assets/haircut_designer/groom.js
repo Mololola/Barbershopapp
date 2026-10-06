@@ -456,6 +456,32 @@
     return (sides + (height - sides) * upper * middle) * 0.1;
   }
 
+  // The zones a barber works in, front to back: their lengths (0.5 cm
+  // units, like `length`, which is the top's) live in params.zones.
+  const ZONES = ['fringe', 'crown', 'sides', 'back', 'nape'];
+
+  // Where on the head the fade's shape lets it work, 0..1, by angular
+  // distance from the face (0 the face, pi the back). The ear is ~100°.
+  function fadeReach(shape, delta) {
+    switch (shape) {
+      case 'taper': // only the sideburns and the neckline
+        return Math.max(1 - smoothstep(25 * deg, 55 * deg, delta), smoothstep(135 * deg, 165 * deg, delta));
+      case 'burst': // a half-circle round the ear; the nape keeps its length
+        return 1 - smoothstep(35 * deg, 75 * deg, Math.abs(delta - 100 * deg));
+      default:
+        return 1;
+    }
+  }
+
+  // How far above the hairline (polar angle) the fade starts: fadeHeight
+  // low ~19°, mid ~29°, high ~40°. A drop fade's line curves down behind
+  // the ear toward the nape; a taper stays low.
+  function fadeStart(params, delta) {
+    const height = params.fadeShape === 'taper' ? 0.15 * params.fadeHeight : params.fadeHeight;
+    const drop = params.fadeShape === 'drop' ? 14 * deg * smoothstep(95 * deg, 150 * deg, delta) : 0;
+    return (10 + 35 * height) * deg - drop;
+  }
+
   // Length (scene units, before the hairline) at a scalp point.
   function baseLength(presetId, params, u, v) {
     const preset = presetOf(presetId);
@@ -463,7 +489,6 @@
     const azimuth = u * 2 * Math.PI;
     const unitZ = Math.sin(polar) * Math.sin(azimuth); // front (+) to back (-)
     const top = Math.max(0, params.length) * LENGTH_TO_SCENE;
-    const ratios = preset.ratios;
 
     if (presetId === 'custom' || !PRESETS[presetId]) {
       // Designs v1/v2: one length, a parting gap and a taper.
@@ -476,28 +501,56 @@
       return top * part * Math.max(0.05, 1 - fade * params.fadeHeight);
     }
 
+    const zones = params.zones || zonesFor(preset, params.length);
+    const zone = (name) => Math.max(0, zones[name]) * LENGTH_TO_SCENE;
     const front = smoothstep(0.25, 0.8, unitZ);
     const back = smoothstep(0.05, 0.7, -unitZ);
-    const topRatio = 1 + (ratios.fringe - 1) * front;
-    const lowerRatio = ratios.sides + (ratios.back - ratios.sides) * back;
-    const napeRatio = lowerRatio + (ratios.nape - lowerRatio) * back * smoothstep(100 * deg, 120 * deg, polar);
+    const upper = top + (zone('fringe') - top) * front + (zone('crown') - top) * back;
+    const sides = zone('sides') + (zone('back') - zone('sides')) * back;
+    const lower = sides + (zone('nape') - sides) * back * smoothstep(100 * deg, 120 * deg, polar);
     let length;
-    if (preset.undercut) {
-      const below = smoothstep(preset.undercut - 0.03, preset.undercut + 0.03, polar);
-      length = top * topRatio * (1 - below) + preset.undercutLength * LENGTH_TO_SCENE * below;
+    const undercut = params.undercut;
+    if (undercut && undercut.on) {
+      // A hard line (disconnected), from low (85°) to high (60°).
+      const line = (85 - 25 * undercut.height) * deg;
+      const below = smoothstep(line - 0.03, line + 0.03, polar);
+      length = upper * (1 - below) + (CLIPPER_GUARD_LENGTHS[undercut.guard] ?? 0) * LENGTH_TO_SCENE * below;
     } else {
-      const lower = smoothstep(55 * deg, 85 * deg, polar);
-      length = top * (topRatio * (1 - lower) + napeRatio * lower);
+      const blend = smoothstep(55 * deg, 85 * deg, polar);
+      length = upper * (1 - blend) + lower * blend;
     }
     if (params.fadeHeight > 0) {
-      // A barber fade: graduated evenly down to skin just above the
-      // hairline, all the way round; fadeHeight sets how far above the
-      // hairline it starts (low ~19°, mid ~29°, high ~40°).
-      const skin = lowerHairline(angularDistance(azimuth, Math.PI / 2)) - 4 * deg;
-      const start = skin - (10 + 35 * params.fadeHeight) * deg;
-      length *= 1 - Math.min(1, Math.max(0, (polar - start) / (skin - start)));
+      // A barber fade: graduated evenly down to its finish (skin, or a
+      // guard for a shadow fade) just above the hairline.
+      const delta = angularDistance(azimuth, Math.PI / 2);
+      const finish = (CLIPPER_GUARD_LENGTHS[params.fadeTo ?? 0] ?? 0) * LENGTH_TO_SCENE;
+      const skin = lowerHairline(delta) - 4 * deg;
+      const start = skin - fadeStart(params, delta);
+      const t = Math.min(1, Math.max(0, (polar - start) / (skin - start))) * fadeReach(params.fadeShape, delta);
+      if (length > finish) length = finish + (length - finish) * (1 - t);
     }
     return length;
+  }
+
+  // A preset's zone lengths for a given top length (0.5 cm units).
+  function zonesFor(preset, length) {
+    const ratios = preset.ratios;
+    return Object.fromEntries(ZONES.map((zone) => [zone, length * (ratios[zone] ?? 1)]));
+  }
+
+  // A preset's starting parameters, with every barber detail filled in.
+  function presetDefaults(id) {
+    const preset = presetOf(id);
+    const defaults = preset.defaults;
+    return {
+      ...defaults,
+      zones: zonesFor(preset, defaults.length),
+      fadeTo: 0,
+      fadeShape: 'classic',
+      undercut: preset.undercut
+        ? { on: true, height: (85 * deg - preset.undercut) / (25 * deg), guard: CLIPPER_GUARD_LENGTHS.indexOf(preset.undercutLength) }
+        : { on: false, height: 0.5, guard: 2 },
+    };
   }
 
   // --- Painted fields ------------------------------------------------------------
@@ -1013,7 +1066,9 @@
     scalpInfo,
     scalpData,
     skinRadius,
-    presetDefaults: (id) => ({ ...presetOf(id).defaults }),
+    ZONES,
+    presetDefaults,
+    zonesFor: (id, length) => zonesFor(presetOf(id), length),
     createFields,
     computeBase,
     paintStroke,

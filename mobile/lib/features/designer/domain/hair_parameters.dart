@@ -17,6 +17,10 @@ class HairParameters {
     this.colorHex = '#3b2314',
     this.partOffset = 0,
     this.fadeHeight = 0.3,
+    this.fadeTo = 0,
+    this.fadeShape = 'classic',
+    this.zones = const {},
+    this.undercut = const UndercutParameters(),
     this.faceParams = const FaceParameters(),
     this.strokes = const [],
   });
@@ -45,6 +49,20 @@ class HairParameters {
   /// (designs from before presets) tapers without reaching skin.
   final double fadeHeight;
 
+  /// The clipper guard the fade finishes at, 0 (skin) .. 8 — a shadow fade
+  /// stops at #1 or #2.
+  final int fadeTo;
+
+  /// One of [fadeShapes]' ids.
+  final String fadeShape;
+
+  /// The other zones' lengths, in the same 0.5 cm units as [length] (the
+  /// top's): 'fringe', 'crown', 'sides', 'back', 'nape' (see [hairZones]).
+  /// Empty until designer.js fills them in from the cut.
+  final Map<String, double> zones;
+
+  final UndercutParameters undercut;
+
   final FaceParameters faceParams;
 
   /// Freehand clipper/scissors/razor/dye strokes painted onto the scalp,
@@ -60,6 +78,10 @@ class HairParameters {
     String? colorHex,
     double? partOffset,
     double? fadeHeight,
+    int? fadeTo,
+    String? fadeShape,
+    Map<String, double>? zones,
+    UndercutParameters? undercut,
     FaceParameters? faceParams,
     List<HairStroke>? strokes,
   }) {
@@ -72,6 +94,10 @@ class HairParameters {
       colorHex: colorHex ?? this.colorHex,
       partOffset: partOffset ?? this.partOffset,
       fadeHeight: fadeHeight ?? this.fadeHeight,
+      fadeTo: fadeTo ?? this.fadeTo,
+      fadeShape: fadeShape ?? this.fadeShape,
+      zones: zones ?? this.zones,
+      undercut: undercut ?? this.undercut,
       faceParams: faceParams ?? this.faceParams,
       strokes: strokes ?? this.strokes,
     );
@@ -87,6 +113,11 @@ class HairParameters {
       'colorHex': colorHex,
       'partOffset': partOffset,
       'fadeHeight': fadeHeight,
+      'fadeTo': fadeTo,
+      'fadeShape': fadeShape,
+      // Left out until known, so designer.js derives them from the cut.
+      if (zones.isNotEmpty) 'zones': zones,
+      'undercut': undercut.toJson(),
       'faceParams': faceParams.toJson(),
       'strokes': strokes.map((s) => s.toJson()).toList(),
     };
@@ -103,6 +134,12 @@ class HairParameters {
       colorHex: json['colorHex'] as String? ?? '#3b2314',
       partOffset: (json['partOffset'] as num?)?.toDouble() ?? 0,
       fadeHeight: (json['fadeHeight'] as num?)?.toDouble() ?? 0.3,
+      fadeTo: (json['fadeTo'] as num?)?.toInt() ?? 0,
+      fadeShape: json['fadeShape'] as String? ?? 'classic',
+      zones: (json['zones'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k, (v as num).toDouble())) ?? const {},
+      undercut: json['undercut'] == null
+          ? const UndercutParameters()
+          : UndercutParameters.fromJson(json['undercut'] as Map<String, dynamic>),
       faceParams: json['faceParams'] == null
           ? const FaceParameters()
           : FaceParameters.fromJson(json['faceParams'] as Map<String, dynamic>),
@@ -113,6 +150,48 @@ class HairParameters {
     );
   }
 }
+
+/// A disconnected undercut: a hard line, short (a guard) below it.
+class UndercutParameters {
+  const UndercutParameters({this.on = false, this.height = 0.5, this.guard = 2});
+
+  final bool on;
+
+  /// Where the line is: 0 (low, near the ears) .. 1 (high, toward the top).
+  final double height;
+
+  /// Clipper guard below the line, 0 (skin) .. 8.
+  final int guard;
+
+  UndercutParameters copyWith({bool? on, double? height, int? guard}) =>
+      UndercutParameters(on: on ?? this.on, height: height ?? this.height, guard: guard ?? this.guard);
+
+  Map<String, dynamic> toJson() => {'on': on, 'height': height, 'guard': guard};
+
+  factory UndercutParameters.fromJson(Map<String, dynamic> json) => UndercutParameters(
+        on: json['on'] as bool? ?? false,
+        height: (json['height'] as num?)?.toDouble() ?? 0.5,
+        guard: (json['guard'] as num?)?.toInt() ?? 2,
+      );
+}
+
+/// The zones besides the top, front to back — keys of [HairParameters.zones]
+/// and groom.js ZONES.
+const hairZones = [
+  (id: 'fringe', label: 'Fringe'),
+  (id: 'crown', label: 'Crown'),
+  (id: 'sides', label: 'Sides'),
+  (id: 'back', label: 'Back'),
+  (id: 'nape', label: 'Nape'),
+];
+
+/// Ids match fadeReach/fadeStart in groom.js.
+const fadeShapes = [
+  (id: 'classic', label: 'Classic', description: 'Even all the way round'),
+  (id: 'taper', label: 'Taper', description: 'Only the sideburns and neckline'),
+  (id: 'drop', label: 'Drop', description: 'Curves down behind the ear'),
+  (id: 'burst', label: 'Burst', description: 'A half-circle round the ear'),
+];
 
 /// Designs before v4 had one 'curl' amount, 0..1, instead of a hair type.
 /// Must match hairTypeFromCurl in designer.js.

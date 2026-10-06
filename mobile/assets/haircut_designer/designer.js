@@ -3,8 +3,11 @@
 // bridge to Flutter.
 //
 // A design: { version, preset, length, volume, hairType, colorHex,
-// partOffset, fadeHeight, faceParams: { skinTone }, strokes: [...] }. See
-// groom.js for what the parameters mean (hairType: '1A'..'4C'); strokes
+// partOffset, fadeHeight, fadeTo, fadeShape, zones, undercut,
+// faceParams: { skinTone }, strokes: [...] }. See groom.js for what the
+// parameters mean (hairType: '1A'..'4C'; zones: the fringe, crown, sides,
+// back and nape lengths; fadeTo: the guard a fade finishes at; fadeShape:
+// 'classic'|'taper'|'drop'|'burst'; undercut: { on, height, guard }); strokes
 // are tool applications in scalp UV:
 //   clipper / razor   { tool, guard, radius, points: [[u, v], ...] }
 //   scissors (v1/v2)  { tool, length, radius, points }   brush to a length
@@ -16,8 +19,9 @@
 // Bridge (called from Flutter via runJavaScript):
 //   loadDesign(json)          the whole design (also converts v1-v3)
 //   updateParameters(json)    some or all parameters (sliders)
-//   setPreset(id)             a preset with its default parameters; posts
-//                             the new parameters on "ParametersChannel"
+//   setPreset(id)             a preset with its default parameters
+// Both loadDesign and setPreset post the design's parameters (without
+// strokes) on "ParametersChannel".
 //   setToolMode(json)         { tool: 'look'|'move'|'cut'|'clipper'|'razor'|
 //                             'dye'|'curl', guard?, colorHex?, hairType?,
 //                             radius?, mirror? }
@@ -813,12 +817,20 @@
     const version = loaded.version ?? 1;
     const strokes = Array.isArray(loaded.strokes) ? loaded.strokes : [];
     const { curl, ...rest } = loaded;
+    const preset = version < 3 ? 'custom' : loaded.preset ?? 'custom';
+    // Barber details a design doesn't have yet come from its own cut, never
+    // from whatever was on screen before.
+    const defaults = G.presetDefaults(preset);
     return {
       ...design,
       ...rest,
       hairType: version < 4 ? hairTypeFromCurl(curl ?? 0) : loaded.hairType ?? design.hairType,
+      zones: loaded.zones ?? G.zonesFor(preset, loaded.length ?? defaults.length),
+      fadeTo: loaded.fadeTo ?? defaults.fadeTo,
+      fadeShape: loaded.fadeShape ?? defaults.fadeShape,
+      undercut: loaded.undercut ?? defaults.undercut,
       version: DESIGN_VERSION,
-      preset: version < 3 ? 'custom' : loaded.preset ?? 'custom',
+      preset,
       faceParams: { ...design.faceParams, ...(loaded.faceParams || {}) },
       strokes: version < 2
         ? strokes.map((s) => ({ ...s, points: s.points.map(([u, v]) => [u, (v * V1_MAX_POLAR) / G.MAX_POLAR]) }))
@@ -831,6 +843,7 @@
       design = upgrade(parse(json));
       rebuild();
       editsChanged();
+      postParameters(); // with the details upgrade() filled in
     } catch (error) {
       console.error('loadDesign failed', error);
     }
@@ -855,9 +868,13 @@
     design = { ...design, preset: id, ...G.presetDefaults(id), strokes: [] };
     rebuild();
     editsChanged();
+    postParameters();
+  };
+
+  function postParameters() {
     const { strokes, ...parameters } = design;
     window.ParametersChannel?.postMessage(JSON.stringify(parameters));
-  };
+  }
 
   window.setToolMode = function (json) {
     try {

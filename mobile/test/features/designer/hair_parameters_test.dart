@@ -99,6 +99,28 @@ void main() {
     expect(HairParameters.fromJson(original.toJson()).strokes.single.points.single, [0.25, 0.4, 12.5]);
   });
 
+  test('barber details round-trip', () {
+    const original = HairParameters(
+      fadeTo: 1,
+      fadeShape: 'drop',
+      zones: {'fringe': 10, 'sides': 1.2},
+      undercut: UndercutParameters(on: true, height: 0.8, guard: 0),
+    );
+    final restored = HairParameters.fromJson(original.toJson());
+    expect(restored.fadeTo, 1);
+    expect(restored.fadeShape, 'drop');
+    expect(restored.zones, {'fringe': 10.0, 'sides': 1.2});
+    expect(restored.undercut.on, isTrue);
+    expect(restored.undercut.height, 0.8);
+    expect(restored.undercut.guard, 0);
+  });
+
+  test('designs without zones leave them out, so designer.js derives them from the cut', () {
+    expect(const HairParameters().toJson().containsKey('zones'), isFalse);
+    expect(HairParameters.fromJson(const {}).zones, isEmpty);
+    expect(HairParameters.fromJson(const {}).undercut.on, isFalse);
+  });
+
   test('hair type ids are unique and run 1A to 4C', () {
     final ids = hairTypes.map((t) => t.id).toList();
     expect(ids.toSet(), hasLength(12));
