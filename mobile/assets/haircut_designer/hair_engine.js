@@ -19,6 +19,9 @@
   // Points along each drawn strand: more than the guides' V, so a curl has
   // enough of them to turn through (a few per turn).
   const DRAW_POINTS = 40;
+  // How much wider curly strands are drawn (x curliness): their hairs don't
+  // lie side by side, so a lock reads bulkier.
+  const CURL_WIDTH = 0.6;
 
   // Length and colour of the hair at a scalp UV, from groom.js's fields.
   const FIELDS_GLSL = `
@@ -116,6 +119,7 @@
       this.maxLayers = 8;
       this.wind = 0;
       this.puff = 0.03;
+      this.curliness = 0;
       this.pendingGroom = null; // sent to the simulator, not settled yet
       this.groomId = 0;
       this.stepInFlight = false;
@@ -298,7 +302,10 @@
 
     updateInstanceCount() {
       // Layers: eighths of the drawn strands (volume, and the quality tier).
-      this.strandMesh.geometry.instanceCount = Math.round((this.strandCount * Math.max(1, Math.min(this.layers, this.maxLayers))) / 8);
+      // Curly hair's strands are drawn wider (see CURL_WIDTH): fewer of them
+      // cover the same, at about the same cost as straight hair.
+      const layers = Math.max(1, Math.min(this.layers, this.maxLayers));
+      this.strandMesh.geometry.instanceCount = Math.round((this.strandCount * layers) / 8 / (1 + CURL_WIDTH * this.curliness));
     }
 
     // --- Body ------------------------------------------------------------------
@@ -561,7 +568,7 @@
             // hairs (drawn in the fragment shader), facing the camera.
             vec3 side = normalize(cross(tangent, cameraPosition - p));
             // Curlier hair reads bulkier: its hairs don't lie side by side.
-            p += side * position.x * 0.016 * uWidth * (1.0 + 0.6 * look.w) * mix(1.0, 0.45, along);
+            p += side * position.x * 0.016 * uWidth * (1.0 + ${CURL_WIDTH.toFixed(2)} * look.w) * mix(1.0, 0.45, along);
 
             vTangent = tangent;
             vWorld = p;
@@ -801,6 +808,8 @@
       this.fieldUniforms.uBaseType.value = G.HAIR_TYPES.indexOf(type);
       // Curly hair stands further off the head (the physics' collision margin).
       this.puff = 0.03 + 0.08 * type.curliness;
+      this.curliness = type.curliness;
+      this.updateInstanceCount();
     }
 
     setKeyLight(direction) {
