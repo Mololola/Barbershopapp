@@ -341,11 +341,13 @@ class HairStroke {
     this.length,
     this.colorHex,
     this.hairType,
+    this.amount,
+    this.mirrored = false,
   });
 
-  /// 'clipper' | 'razor' | 'dye' | 'curl' | 'cut' (the scissors), or
-  /// 'scissors' — a brush to a set length, from designs before the physics
-  /// scissors.
+  /// 'clipper' | 'razor' | 'dye' | 'curl' | 'comb' | 'volume' | 'thin' |
+  /// 'scissors' (the Length brush: paints a set length) | 'cut' (the
+  /// physics scissors).
   final String tool;
 
   /// Clipper guard, 0 (skin) .. 8 — the real guard lengths live in
@@ -361,6 +363,12 @@ class HairStroke {
   /// One of [hairTypes]' ids. Only set when tool == 'curl'.
   final String? hairType;
 
+  /// 'volume': 1 lifts, 0 flattens. 'thin': the share of hair removed, 0..1.
+  final double? amount;
+
+  /// The mirror image of the stroke before it (undo/redo take both).
+  final bool mirrored;
+
   /// Brush radius in UV space (0..1).
   final double radius;
 
@@ -375,6 +383,8 @@ class HairStroke {
       if (length != null) 'length': length,
       if (colorHex != null) 'colorHex': colorHex,
       if (hairType != null) 'hairType': hairType,
+      if (amount != null) 'amount': amount,
+      if (mirrored) 'mirrored': true,
       'radius': radius,
       'points': points,
     };
@@ -387,6 +397,8 @@ class HairStroke {
       length: (json['length'] as num?)?.toDouble(),
       colorHex: json['colorHex'] as String?,
       hairType: json['hairType'] as String?,
+      amount: (json['amount'] as num?)?.toDouble(),
+      mirrored: json['mirrored'] as bool? ?? false,
       radius: (json['radius'] as num?)?.toDouble() ?? 0.03,
       points: (json['points'] as List<dynamic>)
           .map((p) => (p as List<dynamic>).map((v) => (v as num).toDouble()).toList())

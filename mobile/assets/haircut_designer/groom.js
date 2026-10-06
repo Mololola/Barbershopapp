@@ -636,6 +636,9 @@
       length: make(), // grey = painted length / MAX_LENGTH, alpha = painted
       color: make(), // dye colour, alpha = painted
       type: make(), // curl brush: red = hair type index (see typeCode), alpha = painted
+      comb: make(), // comb brush: red, green = the direction combed in scalp UV (0.5 = none), alpha = painted
+      lift: make(), // volume brush: red = 1 more volume, 0 flatter, alpha = painted
+      density: make(), // thinning brush: red = share of hair kept, alpha = painted
       // RG per texel: base length × hairline (scene units), hairline.
       base: new Float32Array(BASE_WIDTH * BASE_HEIGHT * 2),
     };
@@ -692,6 +695,18 @@
       ctx.lineJoin = 'round';
       ctx.lineWidth = radius * 2;
       for (const offset of [-MASK_WIDTH, 0, MASK_WIDTH]) {
+        if (stroke.tool === 'comb') {
+          // Each segment painted with the direction it was drawn in.
+          for (let i = Math.max(1, start); i < points.length; i++) {
+            if (Math.abs(points[i][0] - points[i - 1][0]) > 0.5) continue; // across the seam at the back
+            ctx.strokeStyle = styleOf([points[i - 1], points[i]]);
+            ctx.beginPath();
+            ctx.moveTo(points[i - 1][0] * MASK_WIDTH + offset, points[i - 1][1] * MASK_HEIGHT);
+            ctx.lineTo(points[i][0] * MASK_WIDTH + offset, points[i][1] * MASK_HEIGHT);
+            ctx.stroke();
+          }
+          continue;
+        }
         if (stroke.tool === 'cut') {
           // Physics scissors: each point is one strand's new length.
           for (let i = start; i < points.length; i++) {
@@ -730,12 +745,27 @@
     }
     if (stroke.tool === 'dye') pass(fields.color.ctx, () => stroke.colorHex || '#000000');
     if (stroke.tool === 'curl') pass(fields.type.ctx, () => `rgb(${typeCode(hairTypeOf(stroke.hairType))}, 0, 0)`);
+    if (stroke.tool === 'comb') {
+      pass(fields.comb.ctx, ([a, b]) => {
+        let du = b[0] - a[0];
+        if (du > 0.5) du -= 1; // across the seam at the back
+        if (du < -0.5) du += 1;
+        const dv = b[1] - a[1];
+        const n = Math.hypot(du, dv) || 1;
+        return `rgb(${Math.round(127.5 + 127 * (du / n))}, ${Math.round(127.5 + 127 * (dv / n))}, 0)`;
+      });
+    }
+    if (stroke.tool === 'volume') pass(fields.lift.ctx, () => (stroke.amount > 0.5 ? 'rgb(255, 0, 0)' : 'rgb(0, 0, 0)'));
+    if (stroke.tool === 'thin') {
+      const kept = Math.round(255 * (1 - (stroke.amount ?? 0.5)));
+      pass(fields.density.ctx, () => `rgb(${kept}, 0, 0)`);
+    }
   }
 
   function repaint(fields, strokes) {
     fields.length.ctx.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
     fields.color.ctx.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
-    fields.type.ctx.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
+    for (const field of ['type', 'comb', 'lift', 'density']) fields[field].ctx.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
     for (const stroke of strokes) paintStroke(fields, stroke);
   }
 
@@ -755,6 +785,40 @@
       const y = Math.min(MASK_HEIGHT - 1, Math.floor(Math.min(Math.max(v, 0), 1) * MASK_HEIGHT));
       const i = (y * MASK_WIDTH + x) * 4;
       return painted[i + 3] > 127 ? HAIR_TYPES[Math.floor(painted[i] / 20)] ?? base : base;
+    };
+  }
+
+  // The brushes' fields, read on the CPU when the groom is built:
+  //   combAt(u, v, out)  writes the combed direction (scalp UV, normalised)
+  //                      into out ({ u, v, weight }), weight 0 if unpainted
+  //   liftAt(u, v)       -1 (flatten) .. 1 (more volume), 0 unpainted
+  //   densityAt(u, v)    share of hair kept, 1 unpainted
+  function brushSamplers(fields) {
+    const read = (field) => fields[field].ctx.getImageData(0, 0, MASK_WIDTH, MASK_HEIGHT).data;
+    const comb = read('comb');
+    const lift = read('lift');
+    const density = read('density');
+    const index = (u, v) => {
+      const x = Math.min(MASK_WIDTH - 1, Math.floor((((u % 1) + 1) % 1) * MASK_WIDTH));
+      const y = Math.min(MASK_HEIGHT - 1, Math.floor(Math.min(Math.max(v, 0), 1) * MASK_HEIGHT));
+      return (y * MASK_WIDTH + x) * 4;
+    };
+    return {
+      combAt(u, v, out) {
+        const i = index(u, v);
+        out.weight = comb[i + 3] / 255;
+        out.u = (comb[i] - 127.5) / 127;
+        out.v = (comb[i + 1] - 127.5) / 127;
+        return out;
+      },
+      liftAt(u, v) {
+        const i = index(u, v);
+        return (lift[i + 3] / 255) * (lift[i] > 127 ? 1 : -1);
+      },
+      densityAt(u, v) {
+        const i = index(u, v);
+        return 1 - (density[i + 3] / 255) * (1 - density[i] / 255);
+      },
     };
   }
 
@@ -882,7 +946,23 @@
   // it leaves the scalp, or the comb runs steeply down past the product's
   // hold, it falls freely under gravity. Traced in fine steps, then
   // resampled to V evenly spaced points.
-  function traceGuide(preset, curliness, root, length, peak, partX, partSide, jitter, out) {
+  const traceCombed = { u: 0, v: 0, weight: 0 };
+  const traceAhead = new THREE.Vector3();
+
+  // The comb brush's direction at the skin point being traced, as a 3D
+  // direction along the scalp, blended into `flow` by how firmly it was
+  // painted.
+  function applyCombBrush(brushes, here, flow) {
+    brushes.combAt(here.u, here.v, traceCombed);
+    if (traceCombed.weight < 0.02) return;
+    const step = 0.01;
+    traceAhead.copy(unitFromUV(here.u + traceCombed.u * step, here.v + traceCombed.v * step))
+      .sub(unitFromUV(here.u, here.v))
+      .normalize();
+    flow.lerp(traceAhead, traceCombed.weight).normalize();
+  }
+
+  function traceGuide(preset, curliness, root, length, peak, partX, partSide, jitter, brushes, out) {
     const ds = length / (V - 1) / TRACE_STEPS;
     const rise = preset.rise * length;
     const holdLength = preset.hold * length;
@@ -898,6 +978,7 @@
       if (!free) {
         uvOf(skinPoint, traceHere);
         combDirection(traceHere.unit, preset.comb, partX, partSide, traceFlow);
+        applyCombBrush(brushes, traceHere, traceFlow);
         free = traceHere.v > 1 || (s > holdLength && traceFlow.y < -0.75);
       }
       if (free) {
@@ -1020,6 +1101,7 @@
     const preset = presetOf(presetId);
     const lengthAt = visibleLengthSampler(fields, params);
     const typeAt = typeSampler(fields, params);
+    const brushes = brushSamplers(fields);
     const rng = random(1234567);
     const cap = 1 - Math.cos(MAX_POLAR);
     const spacing = Math.sqrt((2 * Math.PI * cap * 0.48 * CRANIUM.x * CRANIUM.z) / guideBudget);
@@ -1046,8 +1128,12 @@
       const layer = 0.25 + 0.75 * layerRank(preset.comb, unit, partX);
       const jitter = new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).multiplyScalar(0.12);
 
-      const height = Math.min(volumeAt(preset, unit) * params.volume * layer, length * 0.7);
-      traceGuide(preset, typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, rest);
+      // The volume brush lifts the hair (to at least 4 cm) or flattens it.
+      const styled = volumeAt(preset, unit) * params.volume * layer;
+      const lift = brushes.liftAt(u, v);
+      const lifted = lift > 0 ? styled + (Math.max(styled * 2.5, 0.4) - styled) * lift : styled * (1 + 0.85 * lift);
+      const height = Math.min(lifted, length * 0.7);
+      traceGuide(preset, typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, brushes, rest);
       lengths.push(length);
       roots.push(u, v);
       sides.push(partSide);
@@ -1068,7 +1154,7 @@
     const strands = [];
     const found = [];
     yield* scalpSpiral(Math.round(strandBudget / hairBearingShare(edges)), rng, (u, v) => {
-      if (rows === 0 || rng() > hairline(u, v, edges)) return;
+      if (rows === 0 || rng() > hairline(u, v, edges) * brushes.densityAt(u, v)) return;
       const jitter = STRAND_LENGTH_JITTER[0] + rng() * (STRAND_LENGTH_JITTER[1] - STRAND_LENGTH_JITTER[0]);
       if (lengthAt(u, v) * jitter < STRAND_MIN_LENGTH) return;
       const { position: root } = scalpPoint(u, v);

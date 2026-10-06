@@ -11,9 +11,15 @@
 // hairline: { shape, height, lineUp, sideburns, neckline }); strokes
 // are tool applications in scalp UV:
 //   clipper / razor   { tool, guard, radius, points: [[u, v], ...] }
-//   scissors (v1/v2)  { tool, length, radius, points }   brush to a length
+//   scissors          { tool, length, radius, points }   brush to a length
+//                     (the Length brush: longer or shorter)
 //   dye               { tool, colorHex, radius, points }
 //   curl              { tool, hairType, radius, points }  another hair type
+//   comb              { tool, radius, points }  hair lies the way it's drawn
+//   volume            { tool, amount: 1 lift | 0 flatten, radius, points }
+//   thin              { tool, amount: share removed 0..1, radius, points }
+// A stroke with `mirrored: true` is the mirror image of the one before it;
+// undo and redo take the pair together.
 //   cut               { tool, radius, points: [[u, v, length], ...] } one
 //                     point per strand the scissors cut, at its new length
 //
@@ -24,18 +30,20 @@
 // Both loadDesign and setPreset post the design's parameters (without
 // strokes) on "ParametersChannel".
 //   setToolMode(json)         { tool: 'look'|'move'|'cut'|'clipper'|'razor'|
-//                             'dye'|'curl', guard?, colorHex?, hairType?,
-//                             radius?, mirror? }
+//                             'dye'|'curl'|'comb'|'volume'|'thin'|
+//                             'scissors', guard?, colorHex?, hairType?,
+//                             amount?, length?, radius?, mirror? }
 //   setView(name)             'front'|'left'|'right'|'back'|'top'|'reset'
 //   setWind(strength)         0..1
 //   shake()
-//   undoLastStroke() / clearStrokes()
+//   undoLastStroke() / redoStroke() / clearStrokes()
 //   requestDesignState()      posts the design on "DesignStateChannel"
 //   captureSnapshot()         posts a PNG data URL on "SnapshotChannel"
 //   enableProfiling()         debug/profile builds: logs where frame time
 //                             goes to the console (see `perf` below)
-// Whenever the number of strokes changes it is posted on "EditChannel", so
-// Flutter knows whether switching cut would throw work away.
+// Whenever the strokes change, { strokes, redo } (counts) is posted on
+// "EditChannel", so Flutter knows whether switching cut would throw work
+// away and whether there's anything to redo.
 
 (function () {
   const G = window.HairGroom;
@@ -287,8 +295,16 @@
   // --- Building the hair from the design ------------------------------------------
 
   // Rebuilds everything from the design: base field, painted fields, guides.
+  // Strokes undone, most recent last, for redo. Any new edit clears it.
+  let redoStack = [];
+
   function editsChanged() {
-    window.EditChannel?.postMessage(String(design.strokes.length));
+    window.EditChannel?.postMessage(JSON.stringify({ strokes: design.strokes.length, redo: redoStack.length }));
+  }
+
+  function addStrokes(...strokes) {
+    design.strokes.push(...strokes);
+    redoStack = [];
   }
 
   // Rebuilds everything from the design. The fields update at once; the
@@ -383,8 +399,10 @@
     if (toolConfig.tool === 'razor') stroke.guard = 0;
     if (toolConfig.tool === 'dye') stroke.colorHex = toolConfig.colorHex || '#000000';
     if (toolConfig.tool === 'curl') stroke.hairType = toolConfig.hairType || design.hairType;
+    if (toolConfig.tool === 'volume' || toolConfig.tool === 'thin') stroke.amount = toolConfig.amount ?? 1;
+    if (toolConfig.tool === 'scissors') stroke.length = toolConfig.length ?? design.length;
     activeStroke = stroke;
-    activeMirror = toolConfig.mirror ? { ...stroke, points: [] } : null;
+    activeMirror = toolConfig.mirror ? { ...stroke, points: [], mirrored: true } : null;
     activeRasterized = 0;
     pendingPoints = [uv];
     pendingScreenPoints = [];
@@ -423,11 +441,10 @@
   function endBrushNow() {
     flushBrush();
     if (activeStroke && activeStroke.points.length > 0) {
-      design.strokes.push(activeStroke);
-      if (activeMirror) design.strokes.push(activeMirror);
-      // A new hair type changes how long hair looks (shrinkage) and how it
-      // sits: the groom rebuilds.
-      if (activeStroke.tool === 'curl') rebuild();
+      addStrokes(activeStroke, ...(activeMirror ? [activeMirror] : []));
+      // Hair type, combing, volume and density change how the hair is laid
+      // out: the groom rebuilds. Length brushes shorten in place if they can.
+      if (['curl', 'comb', 'volume', 'thin'].includes(activeStroke.tool)) rebuild();
       else if (activeStroke.tool !== 'dye') applyLengthsToStrands();
       editsChanged();
     }
@@ -480,7 +497,7 @@
         stroke.points.push([groom.roots[row * 2], groom.roots[row * 2 + 1], length / G.LENGTH_TO_SCENE]);
       }
       if (stroke.points.length === 0) return;
-      design.strokes.push(stroke);
+      addStrokes(stroke);
       G.paintStroke(fields, stroke);
       engine.masksChanged();
       editsChanged();
@@ -532,7 +549,7 @@
   let lastMoveTime = 0;
 
   function isBrush(tool) {
-    return tool === 'clipper' || tool === 'razor' || tool === 'dye' || tool === 'curl';
+    return ['clipper', 'razor', 'dye', 'curl', 'comb', 'volume', 'thin', 'scissors'].includes(tool);
   }
 
   function setupControls() {
@@ -843,6 +860,7 @@
   window.loadDesign = function (json) {
     try {
       design = upgrade(parse(json));
+      redoStack = [];
       rebuild();
       editsChanged();
       postParameters(); // with the details upgrade() filled in
@@ -868,6 +886,7 @@
     if (!G.PRESETS[id]) return;
     perfEvent(`preset ${id}`);
     design = { ...design, preset: id, ...G.presetDefaults(id), strokes: [] };
+    redoStack = [];
     rebuild();
     editsChanged();
     postParameters();
@@ -916,15 +935,29 @@
     wake();
   };
 
+  // The last edit: one stroke, or a stroke and its mirror image.
+  function takeLastEdit(from) {
+    const last = from.pop();
+    return last.mirrored && from.length > 0 ? [from.pop(), last] : [last];
+  }
+
   window.undoLastStroke = function () {
     if (design.strokes.length === 0) return;
-    design.strokes.pop();
+    redoStack.push(...takeLastEdit(design.strokes));
+    rebuild();
+    editsChanged();
+  };
+
+  window.redoStroke = function () {
+    if (redoStack.length === 0) return;
+    design.strokes.push(...takeLastEdit(redoStack));
     rebuild();
     editsChanged();
   };
 
   window.clearStrokes = function () {
     design.strokes = [];
+    redoStack = [];
     rebuild();
     editsChanged();
   };

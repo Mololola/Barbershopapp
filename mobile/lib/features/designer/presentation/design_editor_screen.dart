@@ -46,6 +46,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
   bool _webViewReady = false;
   bool _initializedFromExisting = false;
   int _strokeCount = 0;
+  int _redoCount = 0;
   Completer<String>? _snapshotCompleter;
   Completer<String>? _designStateCompleter;
 
@@ -56,6 +57,9 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
   bool _mirror = false;
   String _dyeColorHex = '#b5502a';
   String _curlBrushType = '3B';
+  bool _volumeLift = true;
+  double _thinAmount = 0.5;
+  double _brushLength = 8; // 0.5 cm units, like HairParameters.length
   double _wind = 0;
 
   @override
@@ -113,7 +117,11 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
   }
 
   void _onEditReceived(JavaScriptMessage message) {
-    _strokeCount = int.tryParse(message.message) ?? 0;
+    final counts = jsonDecode(message.message) as Map<String, dynamic>;
+    setState(() {
+      _strokeCount = counts['strokes'] as int;
+      _redoCount = counts['redo'] as int;
+    });
   }
 
   Future<String> _captureSnapshot() async {
@@ -166,6 +174,9 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     if (_tool == 'clipper') config['guard'] = _guard;
     if (_tool == 'dye') config['colorHex'] = _dyeColorHex;
     if (_tool == 'curl') config['hairType'] = _curlBrushType;
+    if (_tool == 'volume') config['amount'] = _volumeLift ? 1 : 0;
+    if (_tool == 'thin') config['amount'] = _thinAmount;
+    if (_tool == 'scissors') config['length'] = _brushLength;
     _run('setToolMode(${_literal(config)})');
   }
 
@@ -175,7 +186,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       // Razor is a precision liner — small, fixed width.
       if (tool == 'razor') _radius = 0.008;
       if (tool == 'clipper') _radius = 0.05;
-      if (tool == 'dye' || tool == 'curl') _radius = 0.04;
+      if (const ['dye', 'curl', 'comb', 'volume', 'thin', 'scissors'].contains(tool)) _radius = 0.04;
     });
     _pushToolMode();
   }
@@ -533,9 +544,13 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       ('clipper', Icons.straighten, 'Clipper'),
       ('razor', Icons.edit, 'Razor'),
       ('dye', Icons.palette, 'Dye'),
+      ('scissors', Icons.height, 'Length'),
+      ('comb', Icons.gesture, 'Comb'),
+      ('volume', Icons.air, 'Volume'),
+      ('thin', Icons.grain, 'Thin'),
       ('curl', Icons.waves, 'Curl'),
     ];
-    final brush = _tool == 'clipper' || _tool == 'razor' || _tool == 'dye' || _tool == 'curl';
+    final brush = const ['clipper', 'razor', 'dye', 'curl', 'comb', 'volume', 'thin', 'scissors'].contains(_tool);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -577,7 +592,17 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         ],
         Row(
           children: [
-            OutlinedButton.icon(onPressed: () => _run('undoLastStroke()'), icon: const Icon(Icons.undo), label: const Text('Undo')),
+            OutlinedButton.icon(
+              onPressed: _strokeCount > 0 ? () => _run('undoLastStroke()') : null,
+              icon: const Icon(Icons.undo),
+              label: const Text('Undo'),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              onPressed: _redoCount > 0 ? () => _run('redoStroke()') : null,
+              icon: const Icon(Icons.redo),
+              label: const Text('Redo'),
+            ),
             const SizedBox(width: 8),
             TextButton.icon(
               onPressed: () => _run('clearStrokes()'),
@@ -627,6 +652,50 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
               setState(() => _dyeColorHex = hex);
               _pushToolMode();
             },
+          ),
+        ];
+      case 'scissors':
+        return [
+          const Text('Paint a length onto the hair — longer or shorter than it is.'),
+          _LabeledSlider(
+            label: 'Length',
+            valueLabel: _lengthLabel(_brushLength),
+            value: _brushLength,
+            min: 0,
+            max: 100,
+            onChanged: (v) => setState(() => _brushLength = v),
+            onChangeEnd: (_) => _pushToolMode(),
+          ),
+        ];
+      case 'comb':
+        return const [Text('Drag the way you want the hair to lie — forward, back, to the side, or a parting.')];
+      case 'volume':
+        return [
+          const Text('Paint where the hair should stand up more, or lie flatter.'),
+          const SizedBox(height: 8),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: true, label: Text('More volume'), icon: Icon(Icons.arrow_upward)),
+              ButtonSegment(value: false, label: Text('Flatten'), icon: Icon(Icons.arrow_downward)),
+            ],
+            selected: {_volumeLift},
+            onSelectionChanged: (selection) {
+              setState(() => _volumeLift = selection.first);
+              _pushToolMode();
+            },
+          ),
+        ];
+      case 'thin':
+        return [
+          const Text('Thin the hair out for texture or a lighter look.'),
+          _LabeledSlider(
+            label: 'Amount',
+            valueLabel: '${(_thinAmount * 100).round()}% removed',
+            value: _thinAmount,
+            min: 0.1,
+            max: 0.8,
+            onChanged: (v) => setState(() => _thinAmount = v),
+            onChangeEnd: (_) => _pushToolMode(),
           ),
         ];
       case 'curl':

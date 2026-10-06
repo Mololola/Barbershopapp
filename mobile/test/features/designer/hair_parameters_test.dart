@@ -22,6 +22,9 @@ void main() {
         HairStroke(tool: 'curl', hairType: '4A', radius: 0.03, points: [
           [0.4, 0.2],
         ]),
+        HairStroke(tool: 'volume', amount: 1, mirrored: true, radius: 0.04, points: [
+          [0.6, 0.2],
+        ]),
       ],
     );
 
@@ -34,7 +37,7 @@ void main() {
     expect(restored.partOffset, original.partOffset);
     expect(restored.fadeHeight, original.fadeHeight);
     expect(restored.faceParams.skinTone, '#c68642');
-    expect(restored.strokes, hasLength(3));
+    expect(restored.strokes, hasLength(4));
     expect(restored.strokes[0].tool, 'clipper');
     expect(restored.strokes[0].guard, 3);
     expect(restored.strokes[0].points, [
@@ -44,6 +47,9 @@ void main() {
     expect(restored.strokes[1].tool, 'dye');
     expect(restored.strokes[1].colorHex, '#ff00ff');
     expect(restored.strokes[2].hairType, '4A');
+    expect(restored.strokes[3].amount, 1);
+    expect(restored.strokes[3].mirrored, isTrue);
+    expect(restored.strokes[0].mirrored, isFalse);
   });
 
   test('fromJson fills in defaults for missing fields', () {
