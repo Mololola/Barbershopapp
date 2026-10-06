@@ -3,11 +3,12 @@
 // bridge to Flutter.
 //
 // A design: { version, preset, length, volume, hairType, colorHex,
-// partOffset, fadeHeight, fadeTo, fadeShape, zones, undercut,
+// partOffset, fadeHeight, fadeTo, fadeShape, zones, undercut, hairline,
 // faceParams: { skinTone }, strokes: [...] }. See groom.js for what the
 // parameters mean (hairType: '1A'..'4C'; zones: the fringe, crown, sides,
 // back and nape lengths; fadeTo: the guard a fade finishes at; fadeShape:
-// 'classic'|'taper'|'drop'|'burst'; undercut: { on, height, guard }); strokes
+// 'classic'|'taper'|'drop'|'burst'; undercut: { on, height, guard };
+// hairline: { shape, height, lineUp, sideburns, neckline }); strokes
 // are tool applications in scalp UV:
 //   clipper / razor   { tool, guard, radius, points: [[u, v], ...] }
 //   scissors (v1/v2)  { tool, length, radius, points }   brush to a length
@@ -829,6 +830,7 @@
       fadeTo: loaded.fadeTo ?? defaults.fadeTo,
       fadeShape: loaded.fadeShape ?? defaults.fadeShape,
       undercut: loaded.undercut ?? defaults.undercut,
+      hairline: loaded.hairline ?? defaults.hairline,
       version: DESIGN_VERSION,
       preset,
       faceParams: { ...design.faceParams, ...(loaded.faceParams || {}) },

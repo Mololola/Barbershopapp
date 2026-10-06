@@ -105,6 +105,7 @@ void main() {
       fadeShape: 'drop',
       zones: {'fringe': 10, 'sides': 1.2},
       undercut: UndercutParameters(on: true, height: 0.8, guard: 0),
+      hairline: HairlineParameters(shape: 'widowsPeak', height: 0.7, lineUp: true, sideburns: 'long', neckline: 'block'),
     );
     final restored = HairParameters.fromJson(original.toJson());
     expect(restored.fadeTo, 1);
@@ -113,6 +114,11 @@ void main() {
     expect(restored.undercut.on, isTrue);
     expect(restored.undercut.height, 0.8);
     expect(restored.undercut.guard, 0);
+    expect(restored.hairline.shape, 'widowsPeak');
+    expect(restored.hairline.height, 0.7);
+    expect(restored.hairline.lineUp, isTrue);
+    expect(restored.hairline.sideburns, 'long');
+    expect(restored.hairline.neckline, 'block');
   });
 
   test('designs without zones leave them out, so designer.js derives them from the cut', () {

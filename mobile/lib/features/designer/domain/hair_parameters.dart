@@ -21,6 +21,7 @@ class HairParameters {
     this.fadeShape = 'classic',
     this.zones = const {},
     this.undercut = const UndercutParameters(),
+    this.hairline = const HairlineParameters(),
     this.faceParams = const FaceParameters(),
     this.strokes = const [],
   });
@@ -63,6 +64,8 @@ class HairParameters {
 
   final UndercutParameters undercut;
 
+  final HairlineParameters hairline;
+
   final FaceParameters faceParams;
 
   /// Freehand clipper/scissors/razor/dye strokes painted onto the scalp,
@@ -82,6 +85,7 @@ class HairParameters {
     String? fadeShape,
     Map<String, double>? zones,
     UndercutParameters? undercut,
+    HairlineParameters? hairline,
     FaceParameters? faceParams,
     List<HairStroke>? strokes,
   }) {
@@ -98,6 +102,7 @@ class HairParameters {
       fadeShape: fadeShape ?? this.fadeShape,
       zones: zones ?? this.zones,
       undercut: undercut ?? this.undercut,
+      hairline: hairline ?? this.hairline,
       faceParams: faceParams ?? this.faceParams,
       strokes: strokes ?? this.strokes,
     );
@@ -118,6 +123,7 @@ class HairParameters {
       // Left out until known, so designer.js derives them from the cut.
       if (zones.isNotEmpty) 'zones': zones,
       'undercut': undercut.toJson(),
+      'hairline': hairline.toJson(),
       'faceParams': faceParams.toJson(),
       'strokes': strokes.map((s) => s.toJson()).toList(),
     };
@@ -140,6 +146,9 @@ class HairParameters {
       undercut: json['undercut'] == null
           ? const UndercutParameters()
           : UndercutParameters.fromJson(json['undercut'] as Map<String, dynamic>),
+      hairline: json['hairline'] == null
+          ? const HairlineParameters()
+          : HairlineParameters.fromJson(json['hairline'] as Map<String, dynamic>),
       faceParams: json['faceParams'] == null
           ? const FaceParameters()
           : FaceParameters.fromJson(json['faceParams'] as Map<String, dynamic>),
@@ -174,6 +183,74 @@ class UndercutParameters {
         guard: (json['guard'] as num?)?.toInt() ?? 2,
       );
 }
+
+/// The hairline and edges — see DEFAULT_EDGES in groom.js for what each
+/// value draws.
+class HairlineParameters {
+  const HairlineParameters({
+    this.shape = 'rounded',
+    this.height = 0.5,
+    this.lineUp = false,
+    this.sideburns = 'medium',
+    this.neckline = 'natural',
+  });
+
+  /// One of [hairlineShapes]' ids.
+  final String shape;
+
+  /// 0 (low on the forehead) .. 1 (high).
+  final double height;
+
+  /// A sharp, razor-edged line-up, rather than soft, natural edges.
+  final bool lineUp;
+
+  /// One of [sideburnLengths]' ids.
+  final String sideburns;
+
+  /// One of [necklines]' ids.
+  final String neckline;
+
+  HairlineParameters copyWith({String? shape, double? height, bool? lineUp, String? sideburns, String? neckline}) =>
+      HairlineParameters(
+        shape: shape ?? this.shape,
+        height: height ?? this.height,
+        lineUp: lineUp ?? this.lineUp,
+        sideburns: sideburns ?? this.sideburns,
+        neckline: neckline ?? this.neckline,
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'shape': shape, 'height': height, 'lineUp': lineUp, 'sideburns': sideburns, 'neckline': neckline};
+
+  factory HairlineParameters.fromJson(Map<String, dynamic> json) => HairlineParameters(
+        shape: json['shape'] as String? ?? 'rounded',
+        height: (json['height'] as num?)?.toDouble() ?? 0.5,
+        lineUp: json['lineUp'] as bool? ?? false,
+        sideburns: json['sideburns'] as String? ?? 'medium',
+        neckline: json['neckline'] as String? ?? 'natural',
+      );
+}
+
+const hairlineShapes = [
+  (id: 'rounded', label: 'Rounded'),
+  (id: 'straight', label: 'Straight'),
+  (id: 'widowsPeak', label: "Widow's peak"),
+  (id: 'receding', label: 'Receding'),
+];
+
+const sideburnLengths = [
+  (id: 'none', label: 'None'),
+  (id: 'short', label: 'Short'),
+  (id: 'medium', label: 'Medium'),
+  (id: 'long', label: 'Long'),
+];
+
+const necklines = [
+  (id: 'natural', label: 'Natural'),
+  (id: 'tapered', label: 'Tapered'),
+  (id: 'rounded', label: 'Rounded'),
+  (id: 'block', label: 'Block'),
+];
 
 /// The zones besides the top, front to back — keys of [HairParameters.zones]
 /// and groom.js ZONES.

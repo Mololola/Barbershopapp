@@ -239,33 +239,88 @@
     return d > Math.PI ? 2 * Math.PI - d : d;
   }
 
-  // 0 where no hair grows, 1 on the scalp: the front hairline arcs high over
-  // the forehead and dips at the temples; the lower one runs from the
-  // sideburns round the ears down to the nape. Tuned to the scan.
+  // Where hair grows, tuned to the scan: the front hairline arcs over the
+  // forehead and dips at the temples; the lower one runs from the
+  // sideburns round the ears down to the nape. Polar angles from the crown
+  // (bigger = lower on the head).
   const HAIRLINE = {
     faceHalfWidth: 50 * deg,
     center: 63 * deg,
     temple: 80 * deg,
-    sideburn: 104 * deg,
     nape: 124 * deg,
   };
+  const SIDEBURNS = { none: 92 * deg, short: 99 * deg, medium: 104 * deg, long: 113 * deg };
+
+  // A design's hairline and edges (params.hairline), as a barber shapes them:
+  //   shape      'rounded' | 'straight' (flat across, square corners) |
+  //              'widowsPeak' | 'receding' (temples set back, an M)
+  //   height     0 (low on the forehead) .. 1 (high)
+  //   lineUp     a sharp, razor-edged line, rather than natural, soft edges
+  //              with fine baby hairs
+  //   sideburns  'none' | 'short' | 'medium' | 'long'
+  //   neckline   'natural' | 'tapered' (soft, fading out) | 'rounded' |
+  //              'block' (squared off)
+  const BABY_HAIR_LENGTH = 0.12; // scene units: 1.2 cm
+  const DEFAULT_EDGES = { shape: 'rounded', height: 0.5, lineUp: false, sideburns: 'medium', neckline: 'natural' };
+
+  function edgesOf(params) {
+    return { ...DEFAULT_EDGES, ...(params.hairline || {}) };
+  }
+
+  // The front hairline's polar angle, by angular distance from the middle
+  // of the face.
+  function frontLine(edges, delta) {
+    const across = smoothstep(0, HAIRLINE.faceHalfWidth, delta);
+    let line;
+    switch (edges.shape) {
+      case 'straight':
+        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * 0.6 * smoothstep(0.7 * HAIRLINE.faceHalfWidth, HAIRLINE.faceHalfWidth, delta);
+        break;
+      case 'widowsPeak':
+        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across + 7 * deg * (1 - smoothstep(0, 9 * deg, delta));
+        break;
+      case 'receding':
+        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across - 14 * deg * smoothstep(12 * deg, 38 * deg, delta);
+        break;
+      default:
+        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across;
+    }
+    return line - (edges.height - 0.5) * 16 * deg;
+  }
 
   // The lower hairline's polar angle, by angular distance from the face:
   // sideburns at the front, round the ears, down to the nape at the back.
-  function lowerHairline(delta) {
-    return HAIRLINE.sideburn + (HAIRLINE.nape - HAIRLINE.sideburn) * smoothstep(80 * deg, 170 * deg, delta);
+  function lowerLine(edges, delta) {
+    const sideburn = SIDEBURNS[edges.sideburns] ?? SIDEBURNS.medium;
+    const natural = sideburn + (HAIRLINE.nape - sideburn) * smoothstep(80 * deg, 170 * deg, delta);
+    switch (edges.neckline) {
+      case 'block': // straight across the back, with corners
+        return natural + (120 * deg - natural) * smoothstep(126 * deg, 134 * deg, delta);
+      case 'rounded': // a U, highest at the corners
+        return sideburn + (122 * deg - sideburn) * Math.pow(smoothstep(80 * deg, 180 * deg, delta), 0.6);
+      default:
+        return natural;
+    }
   }
 
-  function hairline(u, v) {
+  // 0 where no hair grows, 1 on the scalp. Natural edges are soft, with a
+  // thin band of sparse baby hairs just beyond the line; a line-up is
+  // razor sharp.
+  function hairline(u, v, edges) {
     const polar = v * MAX_POLAR;
     const delta = angularDistance(u * 2 * Math.PI, Math.PI / 2);
-    const t = smoothstep(0, HAIRLINE.faceHalfWidth, delta);
-    const front = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * t;
-    const vertical = 1 - smoothstep(front - 0.08, front + 0.08, polar);
-    const horizontal = smoothstep(HAIRLINE.faceHalfWidth - 0.18, HAIRLINE.faceHalfWidth + 0.06, delta);
-    const lowerLine = lowerHairline(delta);
-    const lower = 1 - smoothstep(lowerLine - 0.12, lowerLine + 0.04, polar); // a soft nape, not a cut line
-    return Math.max(vertical, horizontal) * lower;
+    const sharp = edges.lineUp ? 0.012 : 0;
+    const front = frontLine(edges, delta);
+    const vertical = 1 - smoothstep(front - (sharp || 0.08), front + (sharp || 0.08), polar);
+    const horizontal = smoothstep(HAIRLINE.faceHalfWidth - (sharp || 0.18), HAIRLINE.faceHalfWidth + (sharp || 0.06), delta);
+    const lowerAt = lowerLine(edges, delta);
+    const soft = edges.neckline === 'tapered' ? 0.22 : 0.12;
+    const lower = 1 - smoothstep(lowerAt - (sharp || soft), lowerAt + (sharp || 0.04), polar);
+    const grows = Math.max(vertical, horizontal) * lower;
+    if (edges.lineUp) return grows;
+    const baby = 0.22 * (1 - smoothstep(front + 0.08, front + 0.16, polar)) * (1 - horizontal)
+      + 0.22 * (1 - smoothstep(lowerAt + 0.04, lowerAt + 0.1, polar));
+    return Math.max(grows, Math.min(0.22, baby) * (polar > front ? 1 : 0) * (polar < lowerAt + 0.12 ? 1 : 0));
   }
 
   // --- Presets -----------------------------------------------------------------
@@ -524,7 +579,7 @@
       // guard for a shadow fade) just above the hairline.
       const delta = angularDistance(azimuth, Math.PI / 2);
       const finish = (CLIPPER_GUARD_LENGTHS[params.fadeTo ?? 0] ?? 0) * LENGTH_TO_SCENE;
-      const skin = lowerHairline(delta) - 4 * deg;
+      const skin = lowerLine(edgesOf(params), delta) - 4 * deg;
       const start = skin - fadeStart(params, delta);
       const t = Math.min(1, Math.max(0, (polar - start) / (skin - start))) * fadeReach(params.fadeShape, delta);
       if (length > finish) length = finish + (length - finish) * (1 - t);
@@ -547,6 +602,7 @@
       zones: zonesFor(preset, defaults.length),
       fadeTo: 0,
       fadeShape: 'classic',
+      hairline: { ...DEFAULT_EDGES },
       undercut: preset.undercut
         ? { on: true, height: (85 * deg - preset.undercut) / (25 * deg), guard: CLIPPER_GUARD_LENGTHS.indexOf(preset.undercutLength) }
         : { on: false, height: 0.5, guard: 2 },
@@ -577,13 +633,17 @@
   }
 
   let hairlineGrid = null;
+  let hairlineGridKey = '';
 
   function computeBase(fields, presetId, params) {
-    if (!hairlineGrid) {
-      hairlineGrid = new Float32Array(BASE_WIDTH * BASE_HEIGHT);
+    const edges = edgesOf(params);
+    const key = JSON.stringify(edges);
+    if (key !== hairlineGridKey) {
+      hairlineGridKey = key;
+      hairlineGrid ??= new Float32Array(BASE_WIDTH * BASE_HEIGHT);
       for (let row = 0; row < BASE_HEIGHT; row++) {
         for (let col = 0; col < BASE_WIDTH; col++) {
-          hairlineGrid[row * BASE_WIDTH + col] = hairline((col + 0.5) / BASE_WIDTH, (row + 0.5) / BASE_HEIGHT);
+          hairlineGrid[row * BASE_WIDTH + col] = hairline((col + 0.5) / BASE_WIDTH, (row + 0.5) / BASE_HEIGHT, edges);
         }
       }
     }
@@ -593,7 +653,10 @@
         const u = (col + 0.5) / BASE_WIDTH;
         const h = hairlineGrid[row * BASE_WIDTH + col];
         const i = (row * BASE_WIDTH + col) * 2;
-        fields.base[i] = h > 0 ? baseLength(presetId, params, u, v) * h : 0;
+        // Baby hairs (the sparse band beyond a natural hairline) stay short
+        // and wispy whatever the cut.
+        const length = h > 0 ? baseLength(presetId, params, u, v) * h : 0;
+        fields.base[i] = h < 0.25 ? Math.min(length, BABY_HAIR_LENGTH) : length;
         fields.base[i + 1] = h;
       }
     }
@@ -762,22 +825,23 @@
   }
 
   // The share of the scalp cap (by area) where hair grows.
-  let hairBearing = null;
-  function hairBearingShare() {
-    if (hairBearing === null) {
+  const hairBearing = new Map();
+  function hairBearingShare(edges) {
+    const key = JSON.stringify(edges);
+    if (!hairBearing.has(key)) {
       let grows = 0;
       let total = 0;
       for (let row = 0; row < 64; row++) {
         const v = (row + 0.5) / 64;
         const area = Math.sin(v * MAX_POLAR);
         for (let col = 0; col < 128; col++) {
-          grows += hairline((col + 0.5) / 128, v) * area;
+          grows += hairline((col + 0.5) / 128, v, edges) * area;
           total += area;
         }
       }
-      hairBearing = grows / total;
+      hairBearing.set(key, grows / total);
     }
-    return hairBearing;
+    return hairBearing.get(key);
   }
 
   // How long a guide at (u, v) must be to cover every drawn strand that may
@@ -959,9 +1023,10 @@
     const lengths = [];
     const roots = [];
     const sides = [];
-    yield* scalpSpiral(Math.round(guideBudget / hairBearingShare()), rng, (u, v) => {
+    const edges = edgesOf(params);
+    yield* scalpSpiral(Math.round(guideBudget / hairBearingShare(edges)), rng, (u, v) => {
       // Hair thins out toward the hairline rather than stopping at an edge.
-      const h = hairline(u, v);
+      const h = hairline(u, v, edges);
       if (rng() > h) return;
       if (lengthAt(u, v) < STRAND_MIN_LENGTH * STRAND_LENGTH_JITTER[0]) return;
       const length = guideLength(u, v);
@@ -993,8 +1058,8 @@
     //   aWeights their weights
     const strands = [];
     const found = [];
-    yield* scalpSpiral(Math.round(strandBudget / hairBearingShare()), rng, (u, v) => {
-      if (rows === 0 || rng() > hairline(u, v)) return;
+    yield* scalpSpiral(Math.round(strandBudget / hairBearingShare(edges)), rng, (u, v) => {
+      if (rows === 0 || rng() > hairline(u, v, edges)) return;
       const jitter = STRAND_LENGTH_JITTER[0] + rng() * (STRAND_LENGTH_JITTER[1] - STRAND_LENGTH_JITTER[0]);
       if (lengthAt(u, v) * jitter < STRAND_MIN_LENGTH) return;
       const { position: root } = scalpPoint(u, v);

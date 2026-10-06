@@ -392,7 +392,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
             tilePadding: EdgeInsets.zero,
             childrenPadding: EdgeInsets.zero,
             title: const Text('Barber detail'),
-            subtitle: const Text('Each zone\'s length, the fade and the undercut'),
+            subtitle: const Text('Each zone\'s length, the fade, the undercut and the hairline'),
             expandedCrossAxisAlignment: CrossAxisAlignment.start,
             children: _barberDetail(p),
           ),
@@ -463,6 +463,57 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         guardChips(p.undercut.guard, (g) => _updateParameters(p.copyWith(undercut: p.undercut.copyWith(guard: g)))),
         const SizedBox(height: 8),
       ],
+      ..._hairlineDetail(p),
+    ];
+  }
+
+  List<Widget> _hairlineDetail(HairParameters p) {
+    final textTheme = Theme.of(context).textTheme;
+    final edges = p.hairline;
+    void update(HairlineParameters next) => _updateParameters(p.copyWith(hairline: next));
+    Widget choices(String title, List<({String id, String label})> options, String selected, ValueChanged<String> onSelected) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: textTheme.titleSmall),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final option in options)
+                    ChoiceChip(
+                      label: Text(option.label),
+                      selected: selected == option.id,
+                      onSelected: (_) => onSelected(option.id),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+    return [
+      const Divider(),
+      choices('Hairline', hairlineShapes, edges.shape, (id) => update(edges.copyWith(shape: id))),
+      _LabeledSlider(
+        label: 'Hairline height',
+        valueLabel: edges.height < 0.35 ? 'Low' : (edges.height < 0.65 ? 'Natural' : 'High'),
+        value: edges.height,
+        min: 0,
+        max: 1,
+        onChanged: (v) => update(edges.copyWith(height: v)),
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Line-up'),
+        subtitle: const Text('Sharp, razor-edged lines instead of soft, natural edges'),
+        value: edges.lineUp,
+        onChanged: (on) => update(edges.copyWith(lineUp: on)),
+      ),
+      choices('Sideburns', sideburnLengths, edges.sideburns, (id) => update(edges.copyWith(sideburns: id))),
+      choices('Neckline', necklines, edges.neckline, (id) => update(edges.copyWith(neckline: id))),
     ];
   }
 
