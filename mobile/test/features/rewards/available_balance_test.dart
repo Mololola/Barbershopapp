@@ -45,6 +45,7 @@ void main() {
 
   test('balances show each currency with its own symbol', () {
     expect(formatBalances({'GBP': 400, 'EUR': 1050}), '£4 · €10.50');
+    expect(formatBalances({'GBP': 400, 'EUR': 0}), '£4');
     expect(formatBalances({}), '0');
   });
 }

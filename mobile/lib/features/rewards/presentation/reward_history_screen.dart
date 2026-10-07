@@ -135,7 +135,6 @@ class RewardHistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final balance = ref.watch(rewardBalanceProvider);
     final history = ref.watch(rewardHistoryProvider);
     final referrals = ref.watch(referralsRankingProvider);
     final myProfile = ref.watch(currentProfileProvider).value;
@@ -149,32 +148,27 @@ class RewardHistoryScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          balance.when(
+          // What's left after withdrawals (pending ones included) — the
+          // money already requested is listed under Withdrawals below.
+          availableBalance.when(
             loading: () => const CircularProgressIndicator(),
             error: (error, _) => Text('Error: $error'),
-            data: (balances) => Text(
-              'Balance: ${formatBalances(balances)}',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-          ),
-          const SizedBox(height: 8),
-          availableBalance.when(
-            loading: () => const SizedBox.shrink(),
-            error: (error, _) => Text('Error: $error'),
             data: (balances) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Balance: ${formatBalances(balances)}', style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 8),
                 for (final MapEntry(key: currency, value: cents) in balances.entries)
-                  Row(
-                    children: [
-                      Expanded(child: Text('Available to withdraw: ${formatMoney(cents, currency)}')),
-                      FilledButton(
-                        onPressed: (cents <= 0 || payoutState.isLoading)
-                            ? null
-                            : () => _requestPayout(context, ref, currency, cents),
-                        child: const Text('Withdraw'),
-                      ),
-                    ],
-                  ),
+                  if (cents > 0)
+                    Row(
+                      children: [
+                        Expanded(child: Text('${formatMoney(cents, currency)} available')),
+                        FilledButton(
+                          onPressed: payoutState.isLoading ? null : () => _requestPayout(context, ref, currency, cents),
+                          child: const Text('Withdraw'),
+                        ),
+                      ],
+                    ),
               ],
             ),
           ),

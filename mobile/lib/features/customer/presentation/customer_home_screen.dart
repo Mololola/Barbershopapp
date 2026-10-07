@@ -20,7 +20,7 @@ class CustomerHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myProfile = ref.watch(currentProfileProvider).value;
-    final balances = ref.watch(rewardBalanceProvider).value ?? const {};
+    final balances = ref.watch(availableBalanceProvider).value ?? const {};
     final bookings = ref.watch(myBookingsProvider);
     final conversations = ref.watch(conversationsProvider).value ?? const [];
     final unreadCount = conversations.fold<int>(0, (sum, c) => sum + c.unreadCount);

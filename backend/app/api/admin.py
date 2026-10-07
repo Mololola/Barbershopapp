@@ -380,7 +380,7 @@ def set_quality_reviewer(
     _rate_limit: None = Depends(rate_limit("30/minute")),
     _admin: str = Depends(require_admin),
 ) -> None:
-    """Promote a customer to (or demote from) the $3 reward tier. Done here,
+    """Promote a customer to (or demote from) the higher (2 per review) reward tier. Done here,
     not as a client-side update: the app's database role deliberately has
     no UPDATE grant on is_quality_reviewer (see 'lock down profile
     privilege columns'), so nobody can promote themselves — which also

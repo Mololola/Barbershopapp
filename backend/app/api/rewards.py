@@ -14,8 +14,8 @@ from app.models import Review, RewardLedger
 
 router = APIRouter()
 
-_AUTOMATIC_REWARD_CENTS = 200
-_QUALITY_REWARD_CENTS = 300
+_AUTOMATIC_REWARD_CENTS = 100
+_QUALITY_REWARD_CENTS = 200
 _MONTHLY_CAP = 3
 
 
@@ -84,7 +84,7 @@ def credit_review_reward(
         {"id": review.customer_id},
     ).scalar()
     amount_cents = _tier_amount_cents(bool(is_quality_reviewer))
-    # Paid in the reviewed shop's currency: £2 at a UK shop, €2 at a Spanish one.
+    # Paid in the reviewed shop's currency: £1 at a UK shop, €1 at a Spanish one.
     currency = db.execute(
         text("select bz.currency from bookings b join businesses bz on bz.id = b.business_id where b.id = :id"),
         {"id": booking_id},

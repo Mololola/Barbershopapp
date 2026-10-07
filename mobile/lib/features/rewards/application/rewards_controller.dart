@@ -37,10 +37,12 @@ final payoutDetailsProvider = FutureProvider.autoDispose<PayoutDetails?>((ref) a
   return ref.watch(rewardsRepositoryProvider).fetchPayoutDetails(profile.id);
 });
 
-/// "£4 · €10", or "0" with nothing earned yet (no currency to show).
+/// "£4 · €10" — currencies at zero are left out, and "0" when nothing is
+/// left at all (no currency to show).
 String formatBalances(Map<String, int> balances) {
-  if (balances.isEmpty) return '0';
-  return balances.entries.map((e) => formatMoney(e.value, e.key)).join(' · ');
+  final nonZero = balances.entries.where((e) => e.value > 0);
+  if (nonZero.isEmpty) return '0';
+  return nonZero.map((e) => formatMoney(e.value, e.key)).join(' · ');
 }
 
 /// reward_ledger is append-only earnings (see its own amount_cents >= 0

@@ -132,7 +132,7 @@ class _CustomersTabState extends ConsumerState<_CustomersTab> {
                   FilledButton(
                     onPressed: actionState.isLoading ? null : _toggle,
                     child: Text(
-                      _isQualityReviewer ? 'Deactivate \$3 rewards' : 'Activate \$3 rewards',
+                      _isQualityReviewer ? 'Deactivate higher rewards' : 'Activate higher rewards',
                     ),
                   ),
                   if (actionState.hasError)
@@ -217,7 +217,7 @@ class _ReviewerLists extends ConsumerWidget {
             _ReviewerTile(reviewer: reviewer, onTap: () => onSelect(reviewer, isPromoted: false)),
           const SizedBox(height: 24),
           Text('Promoted (${lists.promoted.length})', style: textTheme.titleMedium),
-          Text('On the \$3 tier. Tap to re-read their reviews or demote.', style: textTheme.bodySmall),
+          Text('On the higher tier (2 per review instead of 1). Tap to re-read their reviews or demote.', style: textTheme.bodySmall),
           if (lists.promoted.isEmpty)
             const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('No one promoted yet.')),
           for (final reviewer in lists.promoted)

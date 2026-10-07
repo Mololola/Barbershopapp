@@ -80,7 +80,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Already promoted, so the action offered is demotion.
-    expect(find.text('Deactivate \$3 rewards'), findsOneWidget);
+    expect(find.text('Deactivate higher rewards'), findsOneWidget);
   });
 
   testWidgets('search, select a customer, and view their review history', (tester) async {
@@ -99,7 +99,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Great shop, very clean.'), findsOneWidget);
-    expect(find.text('Activate \$3 rewards'), findsOneWidget);
+    expect(find.text('Activate higher rewards'), findsOneWidget);
   });
 
   testWidgets('toggling quality reviewer flips the button label on success', (tester) async {
@@ -114,10 +114,10 @@ void main() {
     await tester.tap(find.text('janedoe'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Activate \$3 rewards'));
+    await tester.tap(find.text('Activate higher rewards'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Deactivate \$3 rewards'), findsOneWidget);
+    expect(find.text('Deactivate higher rewards'), findsOneWidget);
   });
 }
 
