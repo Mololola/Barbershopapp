@@ -15,6 +15,7 @@ from app.api.billing_return import router as billing_return_router
 from app.api.finance import router as finance_router
 from app.api.jobs import router as jobs_router
 from app.api.bookings import router as bookings_router
+from app.api.payouts import router as payouts_router
 from app.api.rewards import router as rewards_router
 from app.core.config import settings
 from app.core.logging import configure_logging
@@ -55,6 +56,7 @@ async def log_requests(request: Request, call_next):
 
 app.include_router(bookings_router)
 app.include_router(rewards_router)
+app.include_router(payouts_router)
 app.include_router(billing_router)
 app.include_router(finance_router)
 app.include_router(admin_router)

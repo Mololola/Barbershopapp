@@ -154,6 +154,7 @@ def _paid_invoice(amount_paid, metadata):
     return {
         "id": "in_1",
         "amount_paid": amount_paid,
+        "currency": "eur",
         "parent": {"subscription_details": {"subscription": "sub_1", "metadata": metadata}},
     }
 
@@ -164,7 +165,7 @@ def test_referrer_is_credited_five_percent_of_a_paid_shop_invoice():
     session = _RecordingSession()
     _handle_invoice_payment_succeeded(session, _paid_invoice(3000, {"business_id": "b1"}))
 
-    assert {"invoice": "in_1", "amount": 150, "business_id": "b1"} in session.params
+    assert {"invoice": "in_1", "amount": 150, "currency": "EUR", "business_id": "b1"} in session.params
 
 
 def test_finance_premium_and_unpaid_invoices_credit_no_referral():

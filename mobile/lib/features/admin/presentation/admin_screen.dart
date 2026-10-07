@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/loading.dart';
 import '../../auth/domain/profile.dart';
+import '../../business/domain/finance_overview.dart';
 import '../../rewards/domain/payout_request.dart';
 import '../application/admin_controller.dart';
 import '../domain/admin_business_summary.dart';
@@ -400,9 +401,11 @@ class _PayoutsTab extends ConsumerWidget {
                     children: [
                       Text(
                         '${request.requesterUsername ?? request.profileId} — '
-                        '\$${(request.amountCents / 100).toStringAsFixed(2)}',
+                        '${formatMoney(request.amountCents, request.currency)}',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
+                      if (request.iban != null)
+                        SelectableText('Pay to: ${request.accountHolder}\nIBAN: ${request.iban}'),
                       Text('Requested: ${request.requestedAt.toLocal().toString().split('.').first}'),
                       Text('Status: ${request.status.wireValue}'),
                       const SizedBox(height: 8),

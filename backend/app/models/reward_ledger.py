@@ -16,6 +16,7 @@ class RewardLedger(Base):
     review_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, default=None)
     stripe_invoice_id: Mapped[str | None] = mapped_column(String, default=None)
     amount_cents: Mapped[int] = mapped_column(Integer)
+    currency: Mapped[str] = mapped_column(String)
     # server_default tells SQLAlchemy to omit this column from the INSERT
     # entirely so the DB's own `default now()` applies — without it,
     # SQLAlchemy sends an explicit NULL for the unset attribute.

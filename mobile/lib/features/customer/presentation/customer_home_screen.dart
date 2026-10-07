@@ -20,7 +20,7 @@ class CustomerHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myProfile = ref.watch(currentProfileProvider).value;
-    final balance = ref.watch(rewardBalanceProvider).value ?? 0;
+    final balances = ref.watch(rewardBalanceProvider).value ?? const {};
     final bookings = ref.watch(myBookingsProvider);
     final conversations = ref.watch(conversationsProvider).value ?? const [];
     final unreadCount = conversations.fold<int>(0, (sum, c) => sum + c.unreadCount);
@@ -34,7 +34,7 @@ class CustomerHomeScreen extends ConsumerWidget {
             onPressed: () => context.push('/rewards'),
             icon: const Icon(Icons.paid_outlined, color: Colors.white),
             label: Text(
-              '\$${(balance / 100).toStringAsFixed(2)}',
+              formatBalances(balances),
               style: const TextStyle(color: Colors.white),
             ),
           ),

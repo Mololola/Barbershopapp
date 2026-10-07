@@ -84,6 +84,11 @@ def credit_review_reward(
         {"id": review.customer_id},
     ).scalar()
     amount_cents = _tier_amount_cents(bool(is_quality_reviewer))
+    # Paid in the reviewed shop's currency: £2 at a UK shop, €2 at a Spanish one.
+    currency = db.execute(
+        text("select bz.currency from bookings b join businesses bz on bz.id = b.business_id where b.id = :id"),
+        {"id": booking_id},
+    ).scalar()
 
     db.add(
         RewardLedger(
@@ -91,6 +96,7 @@ def credit_review_reward(
             source="review",
             review_id=review.id,
             amount_cents=amount_cents,
+            currency=currency,
         )
     )
     try:

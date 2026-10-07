@@ -500,13 +500,18 @@ def _credit_referral(db: Session, invoice: dict) -> None:
         return
     db.execute(
         text(
-            "insert into reward_ledger (customer_id, source, stripe_invoice_id, amount_cents) "
-            "select p.id, 'referral', :invoice, :amount from businesses b "
+            "insert into reward_ledger (customer_id, source, stripe_invoice_id, amount_cents, currency) "
+            "select p.id, 'referral', :invoice, :amount, :currency from businesses b "
             "join profiles p on p.referral_code = b.referred_by_code "
             "where b.id = :business_id and p.id <> b.owner_id "
             "on conflict (stripe_invoice_id) do nothing"
         ),
-        {"invoice": invoice["id"], "amount": amount_cents, "business_id": metadata["business_id"]},
+        {
+            "invoice": invoice["id"],
+            "amount": amount_cents,
+            "currency": invoice["currency"].upper(),
+            "business_id": metadata["business_id"],
+        },
     )
 
 
