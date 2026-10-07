@@ -358,6 +358,9 @@
   //   quickly free hair falls.
   // stiffness: [root, tip] shape memory for the physics (local: direction,
   //   global: position).
+  // gather: hair tied back — { style: 'bun' | 'ponytail', u, v (the tie's
+  //   scalp UV), lift (cm off the scalp), size (cm: the bun's radius, or
+  //   the ponytail's at the tie), loose (share of the front hair left out) }.
 
   const PRESETS = {
     custom: {
@@ -479,6 +482,78 @@
       ratios: { fringe: 0.85, sides: 0.95, back: 1, nape: 0.85 },
       fade: 'skin', comb: 'center', volume: [3, 3.5, 3.5, 2.5], rise: 0.3, taper: 0.2, hold: 0.6, clump: 0.95, bend: 1.0,
       stiffness: { local: [0.8, 0.35], global: [0.25, 0.05] },
+    },
+    frenchCrop: {
+      label: 'French Crop',
+      defaults: { length: 6, fadeHeight: 0.6, partOffset: 0, hairType: '1B', volume: 1.1 },
+      ratios: { fringe: 1.1, sides: 0.25, back: 0.3, nape: 0.2 },
+      fade: 'skin', comb: 'forward', volume: [0.8, 1.2, 1, 0.3], rise: 0.35, taper: 0.3, hold: 0.7, clump: 0.9, bend: 1.0,
+      stiffness: { local: [0.85, 0.45], global: [0.35, 0.1] },
+    },
+    caesar: {
+      label: 'Caesar',
+      defaults: { length: 4, fadeHeight: 0.3, partOffset: 0, hairType: '1B', volume: 1 },
+      ratios: { fringe: 1, sides: 0.5, back: 0.5, nape: 0.4 },
+      fade: 'skin', comb: 'forward', volume: [0.5, 0.6, 0.5, 0.3], rise: 0.3, taper: 0.2, hold: 0.8, clump: 0.4, bend: 0.8,
+      stiffness: { local: [0.9, 0.6], global: [0.45, 0.2] },
+    },
+    sidePart: {
+      label: 'Side Part',
+      defaults: { length: 10, fadeHeight: 0.25, partOffset: 0.4, hairType: '1B', volume: 1.05 },
+      ratios: { fringe: 1.1, sides: 0.4, back: 0.45, nape: 0.3 },
+      fade: 'skin', comb: 'side', volume: [1.5, 1.2, 0.8, 0.3], rise: 0.3, taper: 0.5, hold: 0.9, clump: 0.3, bend: 1.0,
+      stiffness: { local: [0.9, 0.45], global: [0.4, 0.1] },
+    },
+    slickedSidePart: {
+      label: 'Slicked Side Part',
+      defaults: { length: 18, fadeHeight: 0, partOffset: 0.4, hairType: '1B', volume: 1 },
+      ratios: { fringe: 1.05, sides: 0.6, back: 0.7, nape: 0.6 },
+      fade: 'skin', comb: 'side', volume: [1.2, 1, 0.6, 0.3], rise: 0.2, taper: 0.6, hold: 1, clump: 0.2, bend: 1.4,
+      stiffness: { local: [0.9, 0.45], global: [0.4, 0.08] },
+    },
+    wavyAirDry: {
+      label: 'Wavy Air-Dry',
+      defaults: { length: 18, fadeHeight: 0, partOffset: 0, hairType: '2B', volume: 1.25 },
+      ratios: { fringe: 0.9, sides: 0.9, back: 1, nape: 0.9 },
+      fade: 'skin', comb: 'down', volume: [2, 2.5, 2.5, 1.5], rise: 0.25, taper: 0.3, hold: 0.4, clump: 0.8, bend: 1.6,
+      stiffness: { local: [0.7, 0.2], global: [0.2, 0.03] },
+    },
+    shag: {
+      label: 'Shag',
+      defaults: { length: 16, fadeHeight: 0, partOffset: 0, hairType: '2B', volume: 1.25 },
+      ratios: { fringe: 0.7, sides: 0.8, back: 1.4, nape: 1.7 },
+      fade: 'skin', comb: 'down', volume: [1.8, 2.5, 2.5, 1.2], rise: 0.25, taper: 0.35, hold: 0.35, clump: 0.85, bend: 1.8,
+      stiffness: { local: [0.7, 0.15], global: [0.2, 0.02] },
+    },
+    wavyLayers: {
+      label: 'Wavy Long Layers',
+      defaults: { length: 50, fadeHeight: 0, partOffset: 0, hairType: '2B', volume: 1.2 },
+      ratios: { fringe: 0.7, sides: 1, back: 1.1, nape: 1.1 },
+      fade: 'skin', comb: 'center', volume: [1.5, 2, 1.8, 1.2], rise: 0.15, taper: 0.5, hold: 0.3, clump: 0.8, bend: 2.6,
+      stiffness: { local: [0.6, 0.05], global: [0.12, 0] },
+    },
+    sleekBack: {
+      label: 'Long Slicked Back',
+      defaults: { length: 44, fadeHeight: 0, partOffset: 0, hairType: '1B', volume: 1 },
+      ratios: { fringe: 1, sides: 1, back: 1.05, nape: 1 },
+      fade: 'skin', comb: 'back', volume: [0.8, 0.6, 0.4, 0.3], rise: 0.15, taper: 0.6, hold: 0.95, clump: 0.25, bend: 2.4,
+      stiffness: { local: [0.7, 0.08], global: [0.2, 0] },
+    },
+    manBun: {
+      label: 'Man Bun',
+      defaults: { length: 40, fadeHeight: 0, partOffset: 0, hairType: '2A', volume: 1 },
+      ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
+      fade: 'skin', comb: 'back', volume: [0.4, 0.4, 0.4, 0.3], rise: 0.1, taper: 0, hold: 1, clump: 0.5, bend: 2.0,
+      gather: { style: 'bun', u: 0.75, v: 30 / 130, lift: 2, size: 3.5, loose: 0.3 },
+      stiffness: { local: [0.98, 0.9], global: [0.85, 0.8] },
+    },
+    lowPonytail: {
+      label: 'Low Ponytail',
+      defaults: { length: 44, fadeHeight: 0, partOffset: 0, hairType: '1B', volume: 1 },
+      ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
+      fade: 'skin', comb: 'back', volume: [0.4, 0.4, 0.4, 0.3], rise: 0.1, taper: 0, hold: 1, clump: 0.5, bend: 2.4,
+      gather: { style: 'ponytail', u: 0.75, v: 100 / 130, lift: 1, size: 1.2, loose: 0 },
+      stiffness: { local: [0.95, 0.5], global: [0.7, 0.1] },
     },
   };
 
@@ -912,6 +987,38 @@
   // it leaves the scalp, or the comb runs steeply down past the product's
   // hold, it falls freely under gravity. Traced in fine steps, then
   // resampled to V evenly spaced points.
+  // Where a gathered style is tied: { skin, normal, point, e1, e2, size,
+  // style } (body space), or null for hair that isn't tied back.
+  function tieOf(preset) {
+    const gather = preset.gather;
+    if (!gather) return null;
+    const { position: skin, normal } = scalpPoint(gather.u, gather.v);
+    const e1 = new THREE.Vector3(0, 1, 0).cross(normal);
+    if (e1.lengthSq() < 1e-6) e1.set(1, 0, 0);
+    e1.normalize();
+    const e2 = normal.clone().cross(e1);
+    return {
+      skin,
+      normal,
+      point: skin.clone().addScaledVector(normal, gather.lift * 0.1),
+      e1,
+      e2,
+      size: gather.size * 0.1,
+      style: gather.style,
+    };
+  }
+
+  // Whether the strand rooted at (u, v) is tied back: all of it, but for a
+  // share of the front left loose (a messy bun's stray strands).
+  function isGathered(preset, u, v) {
+    const gather = preset.gather;
+    if (!gather) return false;
+    if (gather.loose === 0) return true;
+    const front = smoothstep(0.55, 0.9, unitFromUV(u, v).z);
+    const hash = Math.abs(Math.sin(u * 12.9898 + v * 78.233) * 43758.5453) % 1;
+    return hash >= gather.loose * front;
+  }
+
   // A guide's rest shape (V points pushed onto `out`), rooted at (u, v):
   // the cut's comb and volume, and the volume brush. `style`:
   // { preset, params, typeAt, brushes, partX }.
@@ -926,7 +1033,8 @@
     const lift = brushes.liftAt(u, v);
     const lifted = lift > 0 ? styled + (Math.max(styled * 2.5, 0.4) - styled) * lift : styled * (1 + 0.85 * lift);
     const height = Math.min(lifted, length * 0.7);
-    traceGuide(preset, style.typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, brushes, out);
+    const tie = isGathered(preset, u, v) ? style.tie : null;
+    traceGuide(preset, style.typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, tie, out);
   }
 
   // After a volume stroke: the guides that pass through `region`
@@ -936,12 +1044,14 @@
   // full rebuild. Returns { rows: Int32Array, rest: Float32Array (V x 4
   // per row) } and updates groom.rest to match.
   function restyleGuides(fields, presetId, params, groom, region) {
+    const preset = presetOf(presetId);
     const style = {
-      preset: presetOf(presetId),
+      preset,
       params,
       typeAt: typeSampler(fields, params),
       brushes: brushSamplers(fields),
       partX: params.partOffset,
+      tie: tieOf(preset),
     };
     const inside = (u, v) => v >= region.v0 && v <= region.v1
       && (region.u0 <= region.u1 ? u >= region.u0 && u <= region.u1 : u >= region.u0 || u <= region.u1);
@@ -967,7 +1077,10 @@
     return { rows: Int32Array.from(rows), rest: new Float32Array(rest) };
   }
 
-  function traceGuide(preset, curliness, root, length, peak, partX, partSide, jitter, brushes, out) {
+  const traceToTie = new THREE.Vector3();
+
+  // `tie`: the strand is tied back there (see tieOf), or null.
+  function traceGuide(preset, curliness, root, length, peak, partX, partSide, jitter, tie, out) {
     const ds = length / (V - 1) / TRACE_STEPS;
     const rise = preset.rise * length;
     const holdLength = preset.hold * length;
@@ -979,11 +1092,51 @@
     const skinPoint = traceSkin.copy(root);
     let height = 0;
     let free = false;
+    let bun = null; // once a bun strand passes the tie: its coil
     for (let s = ds; s < length + ds * 0.5; s += ds) {
+      if (bun) {
+        // Wound round the bun, a ball over the tie: round its axis, drifting
+        // up and down it so the turns cover the ball rather than a ring.
+        bun.angle += ds / bun.radius;
+        const along = Math.sin(bun.angle / 3 + bun.phase) * 0.6;
+        const across = bun.radius * Math.sqrt(1 - along * along);
+        p.copy(bun.center)
+          .addScaledVector(tie.e1, Math.cos(bun.angle) * across)
+          .addScaledVector(tie.e2, Math.sin(bun.angle) * across)
+          .addScaledVector(tie.normal, along * bun.radius);
+        points.push(p.x, p.y, p.z);
+        continue;
+      }
       if (!free) {
         uvOf(skinPoint, traceHere);
-        combDirection(traceHere.unit, preset.comb, partX, partSide, traceFlow);
-        free = traceHere.v > 1 || (s > holdLength && traceFlow.y < -0.75);
+        if (tie) {
+          // Pulled tight over the scalp straight toward the tie.
+          traceToTie.subVectors(tie.skin, skinPoint);
+          if (traceToTie.length() < 0.1) {
+            // At the tie: through it, to fall as a tail or wind into a bun.
+            const offsetAngle = Math.atan2(jitter.y, jitter.x) * 3;
+            const offset = tie.size * (0.3 + 0.7 * Math.min(1, jitter.length() / 0.1));
+            if (tie.style === 'bun') {
+              bun = {
+                center: tie.point.clone().addScaledVector(tie.normal, tie.size * 0.7),
+                radius: tie.size * (0.55 + 0.45 * Math.abs(jitter.z) / 0.06),
+                angle: offsetAngle,
+                phase: jitter.x * 50,
+              };
+              continue;
+            }
+            p.copy(tie.point).addScaledVector(tie.e1, Math.cos(offsetAngle) * offset * 0.5).addScaledVector(tie.e2, Math.sin(offsetAngle) * offset * 0.5);
+            traceDirection.copy(tie.normal).multiplyScalar(0.5).add(new THREE.Vector3(0, -1, 0)).normalize();
+            free = true;
+            points.push(p.x, p.y, p.z);
+            continue;
+          }
+          traceNormal.set(traceHere.unit.x / CRANIUM.x, traceHere.unit.y / CRANIUM.y, traceHere.unit.z / CRANIUM.z).normalize();
+          traceFlow.copy(traceToTie).addScaledVector(traceNormal, -traceToTie.dot(traceNormal)).normalize();
+        } else {
+          combDirection(traceHere.unit, preset.comb, partX, partSide, traceFlow);
+          free = traceHere.v > 1 || (s > holdLength && traceFlow.y < -0.75);
+        }
       }
       if (free) {
         traceDirection.y -= preset.bend * ds * (1 - 0.65 * curliness);
@@ -993,7 +1146,7 @@
       } else {
         // Along the comb (with this strand's own slight deviation), and up
         // or down toward this point's height in the hair.
-        traceFlow.add(jitter).addScaledVector(combNormal, -traceFlow.dot(combNormal)).normalize();
+        if (!tie) traceFlow.add(jitter).addScaledVector(combNormal, -traceFlow.dot(combNormal)).normalize();
         const target = peak * smoothstep(0, rise, s) * (1 - preset.taper * smoothstep(rise, length, s));
         const climb = Math.min(ds * 0.95, Math.max(-ds * 0.7, target - height));
         height += climb;
@@ -1114,7 +1267,7 @@
     const partX = params.partOffset;
     const parted = preset.comb === 'side' || preset.comb === 'center';
 
-    const style = { preset, params, typeAt, brushes, partX };
+    const style = { preset, params, typeAt, brushes, partX, tie: tieOf(preset) };
     const rest = [];
     const lengths = [];
     const roots = [];
