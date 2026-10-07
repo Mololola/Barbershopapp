@@ -118,9 +118,12 @@ class RewardHistoryScreen extends ConsumerWidget {
             data: (entries) {
               final matches = entries.where((e) => e.customerId == myProfile?.id);
               final count = matches.isEmpty ? 0 : matches.first.value;
+              final earnedCents = (history.value ?? [])
+                  .where((e) => e.isReferral)
+                  .fold<int>(0, (sum, e) => sum + e.amountCents);
               return Text(
-                '$count business${count == 1 ? '' : 'es'} referred — \$0.00 '
-                '(arrives with Stripe billing)',
+                '$count business${count == 1 ? '' : 'es'} referred — '
+                '\$${(earnedCents / 100).toStringAsFixed(2)} earned (5% of their subscription payments)',
               );
             },
           ),
@@ -130,12 +133,13 @@ class RewardHistoryScreen extends ConsumerWidget {
             loading: () => const LoadingView(),
             error: (error, _) => Text('Error: $error'),
             data: (entries) {
-              if (entries.isEmpty) {
+              final reviewRewards = entries.where((e) => !e.isReferral);
+              if (reviewRewards.isEmpty) {
                 return const Text('No rewards yet.');
               }
               return Column(
                 children: [
-                  for (final entry in entries)
+                  for (final entry in reviewRewards)
                     ListTile(
                       title: Text('+\$${(entry.amountCents / 100).toStringAsFixed(2)}'),
                       subtitle: Text(entry.createdAt.toLocal().toString().split('.').first),

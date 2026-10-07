@@ -28,6 +28,9 @@ _FINANCE_TRIAL = timedelta(days=14)
 # mistake it for the shop's main subscription.
 _FINANCE_PRODUCT = "finance_premium"
 
+# Per the spec, a referrer earns 5% of what the shop they signed up pays.
+_REFERRAL_SHARE = 0.05
+
 # 3D designer: a repeatable, per-user bundle — buy again any time you fill
 # up. Fixed GBP price since profiles (unlike businesses) have no currency.
 _DESIGN_SLOT_BUNDLE_SIZE = 2
@@ -433,6 +436,13 @@ def _invoice_subscription_id(invoice: dict) -> str | None:
     return details.get("subscription") or invoice.get("subscription")
 
 
+def _invoice_subscription_metadata(invoice: dict) -> dict:
+    """The subscription's metadata as of this invoice — same API-version
+    split as _invoice_subscription_id."""
+    details = (invoice.get("parent") or {}).get("subscription_details") or invoice.get("subscription_details") or {}
+    return details.get("metadata") or {}
+
+
 def _from_unix(timestamp: int | None) -> datetime | None:
     return datetime.fromtimestamp(timestamp, timezone.utc) if timestamp else None
 
@@ -473,6 +483,30 @@ def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
     db.execute(
         text("update business_finance_access set subscription_status = 'active' where stripe_subscription_id = :sub"),
         {"sub": subscription_id},
+    )
+    _credit_referral(db, invoice)
+
+
+def _credit_referral(db: Session, invoice: dict) -> None:
+    """Whoever referred the shop earns 5% of every paid shop-subscription
+    invoice, for as long as the shop keeps paying — never Finance Premium.
+    Keyed on the business from the invoice's metadata rather than the stored
+    subscription id: the first invoice can arrive before
+    checkout.session.completed has stored it. A shop owner can't refer
+    their own shop."""
+    metadata = _invoice_subscription_metadata(invoice)
+    amount_cents = round(invoice.get("amount_paid", 0) * _REFERRAL_SHARE)
+    if metadata.get("product") == _FINANCE_PRODUCT or "business_id" not in metadata or amount_cents <= 0:
+        return
+    db.execute(
+        text(
+            "insert into reward_ledger (customer_id, source, stripe_invoice_id, amount_cents) "
+            "select p.id, 'referral', :invoice, :amount from businesses b "
+            "join profiles p on p.referral_code = b.referred_by_code "
+            "where b.id = :business_id and p.id <> b.owner_id "
+            "on conflict (stripe_invoice_id) do nothing"
+        ),
+        {"invoice": invoice["id"], "amount": amount_cents, "business_id": metadata["business_id"]},
     )
 
 

@@ -150,6 +150,33 @@ def test_webhook_hands_handlers_plain_dicts(monkeypatch):
     assert {"sub": "sub_test", "business_id": "b1"} in session.params
 
 
+def _paid_invoice(amount_paid, metadata):
+    return {
+        "id": "in_1",
+        "amount_paid": amount_paid,
+        "parent": {"subscription_details": {"subscription": "sub_1", "metadata": metadata}},
+    }
+
+
+def test_referrer_is_credited_five_percent_of_a_paid_shop_invoice():
+    from app.api.billing import _handle_invoice_payment_succeeded
+
+    session = _RecordingSession()
+    _handle_invoice_payment_succeeded(session, _paid_invoice(3000, {"business_id": "b1"}))
+
+    assert {"invoice": "in_1", "amount": 150, "business_id": "b1"} in session.params
+
+
+def test_finance_premium_and_unpaid_invoices_credit_no_referral():
+    from app.api.billing import _credit_referral
+
+    session = _RecordingSession()
+    _credit_referral(session, _paid_invoice(999, {"business_id": "b1", "product": "finance_premium"}))
+    _credit_referral(session, _paid_invoice(0, {"business_id": "b1"}))
+
+    assert session.params == []
+
+
 def test_finance_premium_cancellation_is_recorded_on_its_own_row():
     from app.api.billing import _handle_subscription_updated
 
