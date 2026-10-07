@@ -21,7 +21,8 @@
 // the world, and lag behind the head as real hair does — and gravity and
 // wind are turned into body space.
 //
-// Messages in:  init, groom, step, beginSwipe, cut, endSwipe, shorten.
+// Messages in:  init, groom, restyle, step, beginSwipe, cut, endSwipe,
+//               shorten.
 // Messages out: groomReady { id, positions, settleMs }, positions
 //               { positions, stepMs }, swipe { cuts: [row, fraction, ...] }.
 // Positions are body space RGBA float rows (V texels per strand, w = the
@@ -220,8 +221,9 @@ function hairSimulator(post) {
     pushOutOfEllipsoid(shoulders, 1 + margin);
   }
 
-  // gx..wz: gravity and wind, in body space.
-  function simulate(dt, damping, gx, gy, gz, wx, wy, wz, puff) {
+  // gx..wz: gravity and wind, in body space. `only`: just these rows
+  // (settling restyled guides), or all of them.
+  function simulate(dt, damping, gx, gy, gz, wx, wy, wz, puff, only = null) {
     // Locals, not the closure's variables, in the hot loop.
     const P = pos;
     const Q = prev;
@@ -235,7 +237,9 @@ function hairSimulator(post) {
     const keep = 1 - damping;
     const lastIndex = V - 1;
     time += dt;
-    for (let row = 0; row < rows; row++) {
+    const count = only ? only.length : rows;
+    for (let n = 0; n < count; n++) {
+      const row = only ? only[n] : n;
       const base = row * V;
       // Integrate: Verlet, pulled toward the rest shape (global stiffness).
       const rowGust = windy ? Math.sin(time * 0.7 + row * 0.017) : 0;
@@ -382,12 +386,38 @@ function hairSimulator(post) {
   function computeSegments() {
     segment = new Float32Array(rows * V);
     rowLength = new Float32Array(rows);
-    for (let row = 0; row < rows; row++) {
-      for (let j = 1; j < V; j++) {
-        const k = (row * V + j) * 3;
-        segment[row * V + j] = Math.hypot(rest[k] - rest[k - 3], rest[k + 1] - rest[k - 2], rest[k + 2] - rest[k - 1]);
-        rowLength[row] += segment[row * V + j];
+    for (let row = 0; row < rows; row++) computeRowSegments(row);
+  }
+
+  function computeRowSegments(row) {
+    rowLength[row] = 0;
+    for (let j = 1; j < V; j++) {
+      const k = (row * V + j) * 3;
+      segment[row * V + j] = Math.hypot(rest[k] - rest[k - 3], rest[k + 1] - rest[k - 2], rest[k + 2] - rest[k - 1]);
+      rowLength[row] += segment[row * V + j];
+    }
+  }
+
+  // Some guides' new rest shapes (a comb or volume stroke): they jump to
+  // it and settle under gravity, as a new groom does; the rest carry on.
+  function restyle(message) {
+    const only = message.rows;
+    for (let n = 0; n < only.length; n++) {
+      const row = only[n];
+      for (let j = 0; j < V; j++) {
+        for (let c = 0; c < 3; c++) {
+          const value = message.rest[(n * V + j) * 4 + c];
+          const k = (row * V + j) * 3 + c;
+          rest[k] = pos[k] = prev[k] = value;
+        }
       }
+      computeRowSegments(row);
+    }
+    for (let i = 0; i < SETTLE_STEPS; i++) simulate(SETTLE_DT, 0.35, 0, GRAVITY, 0, 0, 0, 0, message.puff, only);
+    for (let n = 0; n < only.length; n++) {
+      const base = only[n] * V * 3;
+      for (let k = base; k < base + V * 3; k++) rest[k] = prev[k] = pos[k];
+      computeRowSegments(only[n]);
     }
   }
 
@@ -509,6 +539,9 @@ function hairSimulator(post) {
         break;
       case 'groom':
         groom(message);
+        break;
+      case 'restyle':
+        if (rows > 0) restyle(message);
         break;
       case 'step':
         step(message);

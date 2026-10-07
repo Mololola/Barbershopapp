@@ -432,6 +432,43 @@
     activeRasterized = activeStroke.points.length;
     pendingPoints = [];
     engine.masksChanged();
+    // Combing and volume show while the finger is still down.
+    if (RESTYLES.includes(activeStroke.tool) && performance.now() - lastRestyle > RESTYLE_EVERY_MS) restyleStrokes();
+  }
+
+  const RESTYLES = ['comb', 'volume'];
+  const RESTYLE_EVERY_MS = 150;
+  let lastRestyle = 0;
+
+  // Reshapes the guides the active stroke (and its mirror) pass over.
+  function restyleStrokes() {
+    lastRestyle = performance.now();
+    // A build in progress read the fields before this stroke: start again.
+    if (guideBuild || !groom || groom.rows === 0) {
+      rebuild();
+      return;
+    }
+    timed('restyle', () => {
+      for (const stroke of [activeStroke, activeMirror]) {
+        if (!stroke || stroke.points.length === 0) continue;
+        const { rows, rest } = G.restyleGuides(fields, design.preset, design, groom, strokeRegion(stroke));
+        engine.restyle(rows, rest);
+      }
+    });
+    wake();
+  }
+
+  // A stroke's extent in scalp UV, padded by its radius (u0 > u1 when it
+  // crosses the seam at the back of the head).
+  function strokeRegion(stroke) {
+    const us = stroke.points.map(([u]) => u);
+    const vs = stroke.points.map(([, v]) => v);
+    const r = stroke.radius;
+    const region = { v0: Math.min(...vs) - 2 * r, v1: Math.max(...vs) + 2 * r };
+    if (Math.max(...us) - Math.min(...us) <= 0.5) {
+      return { ...region, u0: Math.max(0, Math.min(...us) - r), u1: Math.min(1, Math.max(...us) + r) };
+    }
+    return { ...region, u0: Math.min(...us.filter((u) => u > 0.5)) - r, u1: Math.max(...us.filter((u) => u <= 0.5)) + r };
   }
 
   function endBrush() {
@@ -442,10 +479,13 @@
     flushBrush();
     if (activeStroke && activeStroke.points.length > 0) {
       addStrokes(activeStroke, ...(activeMirror ? [activeMirror] : []));
-      // Hair type, combing, volume and density change how the hair is laid
-      // out: the groom rebuilds. Length brushes shorten in place if they can.
-      if (['curl', 'comb', 'volume', 'thin'].includes(activeStroke.tool)) rebuild();
-      else if (activeStroke.tool !== 'dye') applyLengthsToStrands();
+      // A hair type changes how the hair is laid out: the groom rebuilds.
+      // Combing and volume reshape just the guides they touch; thinning
+      // and dye are drawn straight from their fields. Length brushes
+      // shorten in place if they can.
+      if (activeStroke.tool === 'curl') rebuild();
+      else if (RESTYLES.includes(activeStroke.tool)) restyleStrokes();
+      else if (!['dye', 'thin'].includes(activeStroke.tool)) applyLengthsToStrands();
       editsChanged();
     }
     activeStroke = activeMirror = null;

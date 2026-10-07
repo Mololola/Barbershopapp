@@ -285,9 +285,9 @@
         // An M: a rounded forelock in the middle and a recession either side
         // of it — a pointed inlet that curves gently down to the forelock
         // and more steeply down to the temple.
-        const apex = 30 * deg;
+        const apex = 40 * deg;
         const offset = delta - apex;
-        const inlet = Math.exp(-Math.abs(offset) / (offset < 0 ? 11 * deg : 7 * deg));
+        const inlet = Math.exp(-Math.abs(offset) / (offset < 0 ? 13 * deg : 6 * deg));
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across - 24 * deg * inlet;
         break;
       }
@@ -797,12 +797,10 @@
   //   combAt(u, v, out)  writes the combed direction (scalp UV, normalised)
   //                      into out ({ u, v, weight }), weight 0 if unpainted
   //   liftAt(u, v)       -1 (flatten) .. 1 (more volume), 0 unpainted
-  //   densityAt(u, v)    share of hair kept, 1 unpainted
   function brushSamplers(fields) {
     const read = (field) => fields[field].ctx.getImageData(0, 0, MASK_WIDTH, MASK_HEIGHT).data;
     const comb = read('comb');
     const lift = read('lift');
-    const density = read('density');
     const index = (u, v) => {
       const x = Math.min(MASK_WIDTH - 1, Math.floor((((u % 1) + 1) % 1) * MASK_WIDTH));
       const y = Math.min(MASK_HEIGHT - 1, Math.floor(Math.min(Math.max(v, 0), 1) * MASK_HEIGHT));
@@ -819,10 +817,6 @@
       liftAt(u, v) {
         const i = index(u, v);
         return (lift[i + 3] / 255) * (lift[i] > 127 ? 1 : -1);
-      },
-      densityAt(u, v) {
-        const i = index(u, v);
-        return 1 - (density[i + 3] / 255) * (1 - density[i] / 255);
       },
     };
   }
@@ -965,6 +959,61 @@
       .sub(unitFromUV(here.u, here.v))
       .normalize();
     flow.lerp(traceAhead, traceCombed.weight).normalize();
+  }
+
+  // A guide's rest shape (V points pushed onto `out`), rooted at (u, v):
+  // the cut's comb and volume, and the comb and volume brushes. `style`:
+  // { preset, params, typeAt, brushes, partX }.
+  function shapeGuide(style, u, v, length, jitter, out) {
+    const { preset, params, brushes, partX } = style;
+    const { position: root } = scalpPoint(u, v);
+    const unit = unitFromUV(u, v);
+    const partSide = Math.sign(unit.x - partX) || 1;
+    const layer = 0.25 + 0.75 * layerRank(preset.comb, unit, partX);
+    // The volume brush lifts the hair (to at least 4 cm) or flattens it.
+    const styled = volumeAt(preset, unit) * params.volume * layer;
+    const lift = brushes.liftAt(u, v);
+    const lifted = lift > 0 ? styled + (Math.max(styled * 2.5, 0.4) - styled) * lift : styled * (1 + 0.85 * lift);
+    const height = Math.min(lifted, length * 0.7);
+    traceGuide(preset, style.typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, brushes, out);
+  }
+
+  // After a comb or volume stroke: the guides that pass through `region`
+  // ({ u0, u1, v0, v1 } in scalp UV, u0 > u1 when it wraps round the back),
+  // reshaped. Nothing else about the groom changes (roots, lengths, the
+  // drawn strands), so this is all that needs redoing — a fraction of a
+  // full rebuild. Returns { rows: Int32Array, rest: Float32Array (V x 4
+  // per row) } and updates groom.rest to match.
+  function restyleGuides(fields, presetId, params, groom, region) {
+    const style = {
+      preset: presetOf(presetId),
+      params,
+      typeAt: typeSampler(fields, params),
+      brushes: brushSamplers(fields),
+      partX: params.partOffset,
+    };
+    const inside = (u, v) => v >= region.v0 && v <= region.v1
+      && (region.u0 <= region.u1 ? u >= region.u0 && u <= region.u1 : u >= region.u0 || u <= region.u1);
+    const point = new THREE.Vector3();
+    const here = { u: 0, v: 0, radius: 0, unit: new THREE.Vector3() };
+    const rows = [];
+    const rest = [];
+    const jitter = new THREE.Vector3();
+    for (let row = 0; row < groom.rows; row++) {
+      let touched = inside(groom.roots[row * 2], groom.roots[row * 2 + 1]);
+      for (let j = 3; j < V && !touched; j += 3) {
+        const k = (row * V + j) * 4;
+        uvOf(point.set(groom.rest[k], groom.rest[k + 1], groom.rest[k + 2]), here);
+        touched = inside(here.u, here.v);
+      }
+      if (!touched) continue;
+      const start = rest.length;
+      jitter.fromArray(groom.jitters, row * 3);
+      shapeGuide(style, groom.roots[row * 2], groom.roots[row * 2 + 1], groom.lengths[row], jitter, rest);
+      groom.rest.set(rest.slice(start), row * V * 4);
+      rows.push(row);
+    }
+    return { rows: Int32Array.from(rows), rest: new Float32Array(rest) };
   }
 
   function traceGuide(preset, curliness, root, length, peak, partX, partSide, jitter, brushes, out) {
@@ -1115,10 +1164,12 @@
     const partX = params.partOffset;
     const parted = preset.comb === 'side' || preset.comb === 'center';
 
+    const style = { preset, params, typeAt, brushes, partX };
     const rest = [];
     const lengths = [];
     const roots = [];
     const sides = [];
+    const jitters = [];
     const edges = edgesOf(params);
     yield* scalpSpiral(Math.round(guideBudget / hairBearingShare(edges)), rng, (u, v) => {
       // Hair thins out toward the hairline rather than stopping at an edge.
@@ -1127,21 +1178,12 @@
       if (lengthAt(u, v) < STRAND_MIN_LENGTH * STRAND_LENGTH_JITTER[0]) return;
       const length = guideLength(u, v);
 
-      const { position: root } = scalpPoint(u, v);
-      const unit = unitFromUV(u, v);
-      const partSide = Math.sign(unit.x - partX) || 1;
-      const layer = 0.25 + 0.75 * layerRank(preset.comb, unit, partX);
       const jitter = new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).multiplyScalar(0.12);
-
-      // The volume brush lifts the hair (to at least 4 cm) or flattens it.
-      const styled = volumeAt(preset, unit) * params.volume * layer;
-      const lift = brushes.liftAt(u, v);
-      const lifted = lift > 0 ? styled + (Math.max(styled * 2.5, 0.4) - styled) * lift : styled * (1 + 0.85 * lift);
-      const height = Math.min(lifted, length * 0.7);
-      traceGuide(preset, typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, brushes, rest);
+      shapeGuide(style, u, v, length, jitter, rest);
       lengths.push(length);
       roots.push(u, v);
-      sides.push(partSide);
+      sides.push(Math.sign(unitFromUV(u, v).x - partX) || 1);
+      jitters.push(jitter.x, jitter.y, jitter.z);
     });
 
     const rows = lengths.length;
@@ -1159,7 +1201,8 @@
     const strands = [];
     const found = [];
     yield* scalpSpiral(Math.round(strandBudget / hairBearingShare(edges)), rng, (u, v) => {
-      if (rows === 0 || rng() > hairline(u, v, edges) * brushes.densityAt(u, v)) return;
+      // (The thinning brush works on the GPU: hairDensity in hair_engine.js.)
+      if (rows === 0 || rng() > hairline(u, v, edges)) return;
       const jitter = STRAND_LENGTH_JITTER[0] + rng() * (STRAND_LENGTH_JITTER[1] - STRAND_LENGTH_JITTER[0]);
       if (lengthAt(u, v) * jitter < STRAND_MIN_LENGTH) return;
       const { position: root } = scalpPoint(u, v);
@@ -1197,6 +1240,7 @@
       rest: new Float32Array(rest),
       lengths: new Float32Array(lengths),
       roots: new Float32Array(roots),
+      jitters: new Float32Array(jitters),
       strands: shuffled,
       strandCount: count,
       stiffness: preset.stiffness,
@@ -1241,6 +1285,7 @@
     lengthSampler,
     visibleLengthSampler,
     buildGuides,
+    restyleGuides,
     guideLengthAt,
     uvOf,
     pickScalp,

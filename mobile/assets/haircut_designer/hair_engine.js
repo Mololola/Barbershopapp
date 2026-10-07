@@ -29,6 +29,7 @@
     uniform sampler2D uLengthMask;  // painted length / MAX_LENGTH, alpha = painted
     uniform sampler2D uColorMask;   // dye, alpha = painted
     uniform sampler2D uTypeField;   // curl brush: red = 20 i + 10 (hair type i), alpha = painted
+    uniform sampler2D uDensityField; // thinning brush: red = share of hair kept, alpha = painted
     uniform vec3 uBaseColor;
     uniform int uBaseType;          // the design's hair type (index into groom.js HAIR_TYPES)
     // Per hair type: (pattern, radius, wavenumber, frizz), (definition,
@@ -69,6 +70,12 @@
     // swallow the strands lying on the head.
     float shellLength(float hairLen) {
       return mix(min(hairLen, ${G.SHELL_MAX_LENGTH.toFixed(3)}), 0.015, undercoat(hairLen));
+    }
+
+    // Share of the hair kept by the thinning brush, 0..1.
+    float hairDensity(vec2 uv) {
+      vec4 painted = texture2D(uDensityField, uv);
+      return 1.0 - painted.a * (1.0 - painted.r / max(painted.a, 0.001));
     }
 
     int hairTypeIndex(vec2 uv) {
@@ -221,6 +228,7 @@
       // Hair type indices: nearest, never blended into indices in between.
       this.typeTexture = mask(this.fields.type.canvas);
       this.typeTexture.minFilter = this.typeTexture.magFilter = THREE.NearestFilter;
+      this.densityTexture = mask(this.fields.density.canvas);
       this.colorMaskTexture = mask(this.fields.color.canvas);
 
       this.positionsTexture = new THREE.DataTexture(new Float32Array(4), 1, 1, THREE.RGBAFormat, THREE.FloatType);
@@ -230,6 +238,7 @@
         uLengthMask: { value: this.lengthMaskTexture },
         uColorMask: { value: this.colorMaskTexture },
         uTypeField: { value: this.typeTexture },
+        uDensityField: { value: this.densityTexture },
         uBaseType: { value: 0 },
         uTypeShape: { value: G.HAIR_TYPES.map((t) => new THREE.Vector4(t.pattern, t.diameter * 0.05, (2 * Math.PI) / (t.wavelength * 0.1), t.frizz)) },
         uTypeLook: { value: G.HAIR_TYPES.map((t) => new THREE.Vector4(t.definition, t.shine, t.shrink, t.curliness)) },
@@ -248,6 +257,7 @@
       this.lengthMaskTexture.needsUpdate = true;
       this.colorMaskTexture.needsUpdate = true;
       this.typeTexture.needsUpdate = true;
+      this.densityTexture.needsUpdate = true;
     }
 
     // --- Groom -----------------------------------------------------------------
@@ -377,6 +387,13 @@
       this.sim.send({ type: 'endSwipe' });
     }
 
+    // New rest shapes for some guides (a comb or volume stroke; see
+    // groom.js restyleGuides). They settle in the simulator.
+    restyle(rows, rest) {
+      if (this.rows === 0 || rows.length === 0) return;
+      this.sim.send({ type: 'restyle', rows, rest, puff: this.puff }, [rows.buffer, rest.buffer]);
+    }
+
     // Shortens guides to new lengths (scene units) where those are shorter —
     // brush tools painting a length. Returns whether any guide would have
     // to grow instead (which needs a rebuild).
@@ -471,8 +488,9 @@
             // What it looks like, not its length pulled straight: a coil
             // takes up some of it.
             float strandLength = hairLength(aRootUv.xy) * aRootUv.w * (1.0 - look.z);
-            // Hair this short (cut, clipped) is the shells': no strand.
-            if (strandLength < ${G.STRAND_MIN_LENGTH.toFixed(3)}) {
+            // Hair this short (cut, clipped) is the shells': no strand. The
+            // thinning brush drops a share of the strands where it painted.
+            if (strandLength < ${G.STRAND_MIN_LENGTH.toFixed(3)} || fract(aRoot.w * 13.71) > hairDensity(aRootUv.xy)) {
               gl_Position = vec4(0.0, 0.0, -2.0, 1.0);
               return;
             }
@@ -760,6 +778,9 @@
             // Fewer hairs toward the hairline: a soft edge, not a helmet line.
             float density = hairlineDensity * hairlineDensity;
             alpha *= mix(hash(cell + 9.0) < density ? 1.0 : 0.0, density, far);
+            // The thinning brush: fewer short hairs too.
+            float kept = hairDensity(vUv);
+            alpha *= mix(hash(cell + 11.0) < kept ? 1.0 : 0.0, kept, far);
 
             vec3 view = normalize(cameraPosition - vWorld);
             // Seen edge-on, upper layers thin out so the outline reads as fuzz
