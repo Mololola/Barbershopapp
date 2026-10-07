@@ -186,7 +186,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       // Razor is a precision liner — small, fixed width.
       if (tool == 'razor') _radius = 0.008;
       if (tool == 'clipper') _radius = 0.05;
-      if (const ['dye', 'curl', 'comb', 'volume', 'thin', 'scissors'].contains(tool)) _radius = 0.04;
+      if (const ['dye', 'curl', 'volume', 'thin', 'scissors'].contains(tool)) _radius = 0.04;
     });
     _pushToolMode();
   }
@@ -545,12 +545,11 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       ('razor', Icons.edit, 'Razor'),
       ('dye', Icons.palette, 'Dye'),
       ('scissors', Icons.height, 'Length'),
-      ('comb', Icons.gesture, 'Comb'),
       ('volume', Icons.air, 'Volume'),
       ('thin', Icons.grain, 'Thin'),
       ('curl', Icons.waves, 'Curl'),
     ];
-    final brush = const ['clipper', 'razor', 'dye', 'curl', 'comb', 'volume', 'thin', 'scissors'].contains(_tool);
+    final brush = const ['clipper', 'razor', 'dye', 'curl', 'volume', 'thin', 'scissors'].contains(_tool);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -667,8 +666,6 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
             onChangeEnd: (_) => _pushToolMode(),
           ),
         ];
-      case 'comb':
-        return const [Text('Drag the way you want the hair to lie — forward, back, to the side, or a parting.')];
       case 'volume':
         return [
           const Text('Paint where the hair should stand up more, or lie flatter.'),

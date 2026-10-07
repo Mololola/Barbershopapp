@@ -15,7 +15,6 @@
 //                     (the Length brush: longer or shorter)
 //   dye               { tool, colorHex, radius, points }
 //   curl              { tool, hairType, radius, points }  another hair type
-//   comb              { tool, radius, points }  hair lies the way it's drawn
 //   volume            { tool, amount: 1 lift | 0 flatten, radius, points }
 //   thin              { tool, amount: share removed 0..1, radius, points }
 // A stroke with `mirrored: true` is the mirror image of the one before it;
@@ -30,7 +29,7 @@
 // Both loadDesign and setPreset post the design's parameters (without
 // strokes) on "ParametersChannel".
 //   setToolMode(json)         { tool: 'look'|'move'|'cut'|'clipper'|'razor'|
-//                             'dye'|'curl'|'comb'|'volume'|'thin'|
+//                             'dye'|'curl'|'volume'|'thin'|
 //                             'scissors', guard?, colorHex?, hairType?,
 //                             amount?, length?, radius?, mirror? }
 //   setView(name)             'front'|'left'|'right'|'back'|'top'|'reset'
@@ -432,11 +431,11 @@
     activeRasterized = activeStroke.points.length;
     pendingPoints = [];
     engine.masksChanged();
-    // Combing and volume show while the finger is still down.
+    // Volume shows while the finger is still down.
     if (RESTYLES.includes(activeStroke.tool) && performance.now() - lastRestyle > RESTYLE_EVERY_MS) restyleStrokes();
   }
 
-  const RESTYLES = ['comb', 'volume'];
+  const RESTYLES = ['volume'];
   const RESTYLE_EVERY_MS = 150;
   let lastRestyle = 0;
 
@@ -480,7 +479,7 @@
     if (activeStroke && activeStroke.points.length > 0) {
       addStrokes(activeStroke, ...(activeMirror ? [activeMirror] : []));
       // A hair type changes how the hair is laid out: the groom rebuilds.
-      // Combing and volume reshape just the guides they touch; thinning
+      // Volume reshapes just the guides it touches; thinning
       // and dye are drawn straight from their fields. Length brushes
       // shorten in place if they can.
       if (activeStroke.tool === 'curl') rebuild();
@@ -589,7 +588,7 @@
   let lastMoveTime = 0;
 
   function isBrush(tool) {
-    return ['clipper', 'razor', 'dye', 'curl', 'comb', 'volume', 'thin', 'scissors'].includes(tool);
+    return ['clipper', 'razor', 'dye', 'curl', 'volume', 'thin', 'scissors'].includes(tool);
   }
 
   function setupControls() {

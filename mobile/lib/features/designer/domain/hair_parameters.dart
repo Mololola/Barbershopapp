@@ -345,7 +345,7 @@ class HairStroke {
     this.mirrored = false,
   });
 
-  /// 'clipper' | 'razor' | 'dye' | 'curl' | 'comb' | 'volume' | 'thin' |
+  /// 'clipper' | 'razor' | 'dye' | 'curl' | 'volume' | 'thin' |
   /// 'scissors' (the Length brush: paints a set length) | 'cut' (the
   /// physics scissors).
   final String tool;
