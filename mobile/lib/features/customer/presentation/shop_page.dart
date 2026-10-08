@@ -54,29 +54,33 @@ class ShopPage extends ConsumerWidget {
               ref.invalidate(businessReviewsProvider(businessId));
               ref.invalidate(postsByAuthorProvider(shop.ownerId));
             },
-            child: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  expandedHeight: ShopHeader.height,
-                  backgroundColor: brandColorOf(businessId: shop.id, storedHex: shop.brandColor),
-                  foregroundColor: Colors.white,
-                  title: Text(shop.name),
-                  actions: [
-                    if (isOwner)
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        tooltip: 'Edit shop page',
-                        onPressed: () => context.push('/business/shop/edit'),
-                      ),
-                  ],
-                  flexibleSpace: FlexibleSpaceBar(background: ShopHeader(shop: shop)),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                  sliver: SliverList.list(children: [_ShopBody(shop: shop, isOwner: isOwner)]),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) => CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    expandedHeight: ShopHeader.heightFor(constraints.maxWidth),
+                    backgroundColor: brandColorOf(businessId: shop.id, storedHex: shop.brandColor),
+                    foregroundColor: Colors.white,
+                    // The website's light header theme gives titles a dark colour of their own.
+                    titleTextStyle: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(color: Colors.white),
+                    title: Text(shop.name),
+                    actions: [
+                      if (isOwner)
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit shop page',
+                          onPressed: () => context.push('/business/shop/edit'),
+                        ),
+                    ],
+                    flexibleSpace: FlexibleSpaceBar(background: ShopHeader(shop: shop)),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                    sliver: SliverList.list(children: [_ShopBody(shop: shop, isOwner: isOwner)]),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -97,7 +101,11 @@ class ShopHeader extends StatelessWidget {
     this.brandColorOverride,
   });
 
-  static const height = 220.0;
+  /// Covers are made at 2.5:1 (the editor asks for 1600 × 640), so the
+  /// header keeps that shape — a phone shows the whole photo instead of
+  /// cutting its sides — within limits that leave room for the title and
+  /// logo, and stop it taking over a wide screen.
+  static double heightFor(double width) => (width / 2.5).clamp(180.0, 360.0);
 
   final PublicBusiness shop;
 
@@ -111,45 +119,47 @@ class ShopHeader extends StatelessWidget {
     final brand = brandColorOverride ?? brandColorOf(businessId: shop.id, storedHex: shop.brandColor);
     final cover = coverImage ?? (shop.coverUrl != null ? NetworkImage(shop.coverUrl!) : null);
     final logo = logoImage ?? (shop.logoUrl != null ? NetworkImage(shop.logoUrl!) : null);
-    return SizedBox(
-      height: height,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (cover != null)
-            Image(image: cover, fit: BoxFit.cover)
-          else
-            CustomPaint(painter: _StripePainter(brand)),
-          // Keeps the app-bar title and back button readable over any photo.
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0x66000000), Color(0x00000000), Color(0x80000000)],
+    return LayoutBuilder(
+      builder: (context, constraints) => SizedBox(
+        height: heightFor(constraints.maxWidth),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (cover != null)
+              Image(image: cover, fit: BoxFit.cover)
+            else
+              CustomPaint(painter: _StripePainter(brand)),
+            // Keeps the app-bar title and back button readable over any photo.
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x66000000), Color(0x00000000), Color(0x80000000)],
+                ),
               ),
             ),
-          ),
-          Positioned(
-            left: 20,
-            bottom: 16,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-              child: CircleAvatar(
-                radius: 34,
-                backgroundColor: brand,
-                backgroundImage: logo,
-                child: logo == null
-                    ? Text(
-                        initialsOf(shop.name),
-                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
-                      )
-                    : null,
+            Positioned(
+              left: 20,
+              bottom: 16,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: CircleAvatar(
+                  radius: 34,
+                  backgroundColor: brand,
+                  backgroundImage: logo,
+                  child: logo == null
+                      ? Text(
+                          initialsOf(shop.name),
+                          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
+                        )
+                      : null,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

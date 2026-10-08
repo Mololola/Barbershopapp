@@ -321,24 +321,33 @@ class _CostsCard extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(cost.label),
-                subtitle: Text(cost.kind == CostKind.oneOff ? 'One-off' : 'Every month'),
+                subtitle: Text(
+                  cost.isAutomatic
+                      ? 'Every month · added automatically'
+                      : cost.kind == CostKind.oneOff
+                          ? 'One-off'
+                          : 'Every month',
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(formatMoney(cost.amountCents, currency)),
-                    PopupMenuButton<String>(
-                      onSelected: (action) => action == 'stop'
-                          ? controller.stopCostAfter(cost.id!, month)
-                          : controller.deleteCost(cost.id!),
-                      itemBuilder: (_) => [
-                        if (cost.kind == CostKind.monthly)
-                          PopupMenuItem(value: 'stop', child: Text('Stop after ${monthLabel(month)}')),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(cost.kind == CostKind.monthly ? 'Delete from every month' : 'Delete'),
-                        ),
-                      ],
-                    ),
+                    if (cost.isAutomatic)
+                      const SizedBox(width: 48)
+                    else
+                      PopupMenuButton<String>(
+                        onSelected: (action) => action == 'stop'
+                            ? controller.stopCostAfter(cost.id!, month)
+                            : controller.deleteCost(cost.id!),
+                        itemBuilder: (_) => [
+                          if (cost.kind == CostKind.monthly)
+                            PopupMenuItem(value: 'stop', child: Text('Stop after ${monthLabel(month)}')),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text(cost.kind == CostKind.monthly ? 'Delete from every month' : 'Delete'),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),

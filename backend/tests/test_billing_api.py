@@ -188,3 +188,82 @@ def test_finance_premium_cancellation_is_recorded_on_its_own_row():
     )
 
     assert session.params == [{"sub": "sub_fin", "cancel_at": datetime.fromtimestamp(1_800_000_000, timezone.utc)}]
+
+
+class _CostSession(_RecordingSession):
+    """Answers the current-cost lookup with `current`."""
+
+    def __init__(self, current=None):
+        super().__init__()
+        self.current = current
+        self.statements = []
+
+    def execute(self, statement, params=None):
+        self.statements.append(str(statement))
+        return super().execute(statement, params)
+
+    def mappings(self):
+        return self
+
+    def first(self):
+        return self.current
+
+
+def _cycle_invoice(amount_paid, metadata, billing_reason="subscription_cycle"):
+    return {**_paid_invoice(amount_paid, metadata), "billing_reason": billing_reason}
+
+
+def test_first_paid_invoice_adds_the_subscription_as_a_monthly_cost():
+    from app.api.billing import _record_subscription_cost
+
+    session = _CostSession()
+    _record_subscription_cost(session, _cycle_invoice(3000, {"business_id": "b1"}, "subscription_create"))
+
+    assert session.params[-1] == {"business_id": "b1", "label": "Shop subscription", "amount": 3000, "sub": "sub_1"}
+
+
+def test_finance_premium_is_labelled_as_such():
+    from app.api.billing import _record_subscription_cost
+
+    session = _CostSession()
+    _record_subscription_cost(session, _cycle_invoice(999, {"business_id": "b1", "product": "finance_premium"}))
+
+    assert session.params[-1]["label"] == "Finance Premium"
+
+
+def test_renewal_at_the_same_amount_changes_nothing():
+    from app.api.billing import _record_subscription_cost
+
+    session = _CostSession({"id": "c1", "amount_cents": 3000, "started_this_month": False})
+    _record_subscription_cost(session, _cycle_invoice(3000, {"business_id": "b1"}))
+
+    assert len(session.statements) == 1
+
+
+def test_new_amount_ends_the_old_cost_last_month_and_starts_a_new_one():
+    from app.api.billing import _record_subscription_cost
+
+    session = _CostSession({"id": "c1", "amount_cents": 3000, "started_this_month": False})
+    _record_subscription_cost(session, _cycle_invoice(3500, {"business_id": "b1"}))
+
+    assert "set ends_on" in session.statements[1] and session.params[1] == {"id": "c1"}
+    assert session.params[2]["amount"] == 3500
+
+
+def test_new_amount_in_the_cost_s_first_month_just_replaces_it():
+    from app.api.billing import _record_subscription_cost
+
+    session = _CostSession({"id": "c1", "amount_cents": 3000, "started_this_month": True})
+    _record_subscription_cost(session, _cycle_invoice(3500, {"business_id": "b1"}))
+
+    assert session.params[1:] == [{"id": "c1", "amount": 3500}]
+
+
+def test_trial_and_proration_invoices_add_no_cost():
+    from app.api.billing import _record_subscription_cost
+
+    session = _CostSession()
+    _record_subscription_cost(session, _cycle_invoice(0, {"business_id": "b1"}, "subscription_create"))
+    _record_subscription_cost(session, _cycle_invoice(1234, {"business_id": "b1"}, "subscription_update"))
+
+    assert session.statements == []

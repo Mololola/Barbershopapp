@@ -299,6 +299,7 @@ class CostItem {
     required this.kind,
     required this.startsOn,
     this.endsOn,
+    this.isAutomatic = false,
   });
 
   final String? id;
@@ -308,6 +309,9 @@ class CostItem {
   final CostKind kind;
   final DateTime startsOn;
   final DateTime? endsOn;
+
+  /// What the shop pays us, kept by the backend from Stripe — not editable.
+  final bool isAutomatic;
 
   bool appliesTo(DateTime month) => kind == CostKind.oneOff
       ? startsOn == month
@@ -327,6 +331,7 @@ class CostItem {
       kind: row['kind'] == 'one_off' ? CostKind.oneOff : CostKind.monthly,
       startsOn: DateTime.parse(row['starts_on'] as String),
       endsOn: row['ends_on'] == null ? null : DateTime.parse(row['ends_on'] as String),
+      isAutomatic: row['stripe_subscription_id'] != null,
     );
   }
 

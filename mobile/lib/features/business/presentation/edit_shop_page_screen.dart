@@ -98,7 +98,7 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'No logo? Your initials are shown. No cover? Your brand colour is used.',
+                  'Best cover size: 1600 × 640. No logo? Your initials are shown. No cover? Your brand colour is used.',
                   style: textTheme.bodySmall,
                 ),
                 const SizedBox(height: 24),

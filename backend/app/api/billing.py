@@ -485,6 +485,61 @@ def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
         {"sub": subscription_id},
     )
     _credit_referral(db, invoice)
+    _record_subscription_cost(db, invoice)
+
+
+_THIS_MONTH = "date_trunc('month', now())::date"
+
+
+def _record_subscription_cost(db: Session, invoice: dict) -> None:
+    """What the shop pays us shows in its finance tool as a monthly cost,
+    from the month it's first paid. A new amount counts from this month on,
+    so earlier months keep what was paid then. Trial and proration invoices
+    aren't the regular monthly price, so they're skipped."""
+    metadata = _invoice_subscription_metadata(invoice)
+    amount_cents = invoice.get("amount_paid", 0)
+    if (
+        invoice.get("billing_reason") not in ("subscription_create", "subscription_cycle")
+        or amount_cents <= 0
+        or "business_id" not in metadata
+    ):
+        return
+    subscription_id = _invoice_subscription_id(invoice)
+    current = db.execute(
+        text(
+            "select id, amount_cents, starts_on = " + _THIS_MONTH + " as started_this_month "
+            "from business_cost_items where stripe_subscription_id = :sub and ends_on is null for update"
+        ),
+        {"sub": subscription_id},
+    ).mappings().first()
+    if current is not None:
+        if current["amount_cents"] == amount_cents:
+            return
+        if current["started_this_month"]:
+            db.execute(
+                text("update business_cost_items set amount_cents = :amount where id = :id"),
+                {"id": current["id"], "amount": amount_cents},
+            )
+            return
+        db.execute(
+            text(
+                "update business_cost_items set ends_on = (" + _THIS_MONTH + " - interval '1 month')::date "
+                "where id = :id"
+            ),
+            {"id": current["id"]},
+        )
+    db.execute(
+        text(
+            "insert into business_cost_items (business_id, label, amount_cents, kind, starts_on, stripe_subscription_id) "
+            "values (:business_id, :label, :amount, 'monthly', " + _THIS_MONTH + ", :sub)"
+        ),
+        {
+            "business_id": metadata["business_id"],
+            "label": "Finance Premium" if metadata.get("product") == _FINANCE_PRODUCT else "Shop subscription",
+            "amount": amount_cents,
+            "sub": subscription_id,
+        },
+    )
 
 
 def _credit_referral(db: Session, invoice: dict) -> None:
@@ -572,6 +627,15 @@ def _handle_subscription_deleted(db: Session, subscription: dict) -> None:
     )
     db.execute(
         text("update business_finance_access set subscription_status = 'canceled' where stripe_subscription_id = :sub"),
+        {"sub": subscription["id"]},
+    )
+    # The last paid period usually ran into this month, so the cost stops
+    # with last month — unless it only started this month.
+    db.execute(
+        text(
+            "update business_cost_items set ends_on = greatest(starts_on, (" + _THIS_MONTH + " - interval '1 month')::date) "
+            "where stripe_subscription_id = :sub and ends_on is null"
+        ),
         {"sub": subscription["id"]},
     )
 
