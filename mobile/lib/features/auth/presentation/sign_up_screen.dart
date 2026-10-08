@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,7 +25,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _businessNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  AccountRole _role = AccountRole.customer;
+  // The website is for shops (customers use the app), so it starts there.
+  AccountRole _role = kIsWeb ? AccountRole.business : AccountRole.customer;
   DateTime? _dateOfBirth;
   bool _agreedToTerms = false;
   bool _attestedAdultOwner = false;

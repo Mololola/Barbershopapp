@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/responsive.dart';
 import '../../../core/quick_action_tile.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
@@ -32,10 +33,11 @@ class CustomerHomeScreen extends ConsumerWidget {
         actions: [
           TextButton.icon(
             onPressed: () => context.push('/rewards'),
-            icon: const Icon(Icons.paid_outlined, color: Colors.white),
+            // White on the phone's dark app bar; the desktop header is light.
+            icon: Icon(Icons.paid_outlined, color: isWideLayout(context) ? null : Colors.white),
             label: Text(
               formatBalances(balances),
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: isWideLayout(context) ? null : Colors.white),
             ),
           ),
           const MessagesButton(),

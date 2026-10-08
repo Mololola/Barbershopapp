@@ -46,6 +46,9 @@ dependencies:
   video_player: ^2.10.1
   google_fonts: ^6.3.2
   sentry_flutter: ^9.30.1
+  qr_flutter: ^4.1.0
+  flutter_web_plugins:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/error_reporting.dart';
 import '../../../core/supabase_providers.dart';
@@ -39,7 +38,7 @@ class FeedActionController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<bool> createPost({required String? body, required File? image, required File? video}) async {
+  Future<bool> createPost({required String? body, required XFile? image, required XFile? video}) async {
     return _run(() async {
       final profile = await ref.read(currentProfileProvider.future);
       if (profile == null) throw StateError('No signed-in profile.');

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -136,16 +137,28 @@ class AppTheme {
       // Same considered motion on every platform — iOS/macOS keep the native
       // swipe-back feel since users expect it there, everywhere else gets
       // the subtle scale+fade instead of leaving desktop/web on Flutter's
-      // unstyled fallback.
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.windows: ZoomPageTransitionsBuilder(),
-          TargetPlatform.linux: ZoomPageTransitionsBuilder(),
-        },
-      ),
+      // unstyled fallback. The website is a desktop product whatever the
+      // computer: a quick fade, as pages switch from the sidebar rather than
+      // stack up.
+      pageTransitionsTheme: kIsWeb
+          ? const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+                TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+              },
+            )
+          : const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+                TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+              },
+            ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
@@ -28,32 +29,67 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   @override
   Widget build(BuildContext context) {
     final overview = ref.watch(financeOverviewProvider(_month));
+    final wide = isWideLayout(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Finance')),
+      appBar: AppBar(
+        title: const Text('Finance'),
+        actions: [
+          // Pull-to-refresh needs a touch screen.
+          if (wide)
+            IconButton(
+              tooltip: 'Refresh',
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(financeOverviewProvider(_month)),
+            ),
+        ],
+      ),
       body: overview.when(
         loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Couldn\'t load your figures: $error')),
         data: (data) => RefreshIndicator(
           onRefresh: () => ref.refresh(financeOverviewProvider(_month).future),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            padding: wide ? const EdgeInsets.fromLTRB(24, 8, 24, 40) : const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              _MonthSwitcher(
-                month: _month,
-                canGoForward: !data.isCurrentMonth,
-                onChanged: (month) => setState(() => _month = month),
+              Align(
+                alignment: Alignment.centerLeft,
+                // Arrows either side of the month, not at the far edges of a wide page.
+                child: SizedBox(
+                  width: wide ? 360 : double.infinity,
+                  child: _MonthSwitcher(
+                    month: _month,
+                    canGoForward: !data.isCurrentMonth,
+                    onChanged: (month) => setState(() => _month = month),
+                  ),
+                ),
               ),
-              _ResultCard(overview: data),
-              const SizedBox(height: 12),
-              _CostsCard(month: _month, currency: data.currency),
-              const SizedBox(height: 12),
-              _OtherIncomeCard(month: _month, summary: data.summary, currency: data.currency),
+              ResponsiveColumns(
+                flex: const [3, 2],
+                spacing: 12,
+                children: [
+                  _ResultCard(overview: data),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _CostsCard(month: _month, currency: data.currency),
+                      const SizedBox(height: 12),
+                      _OtherIncomeCard(month: _month, summary: data.summary, currency: data.currency),
+                    ],
+                  ),
+                ],
+              ),
               const SizedBox(height: 28),
               if (data.premium != null)
                 PremiumSection(overview: data)
               else
-                _UpgradeCard(state: data.premiumState, currency: data.currency),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 880),
+                    child: _UpgradeCard(state: data.premiumState, currency: data.currency),
+                  ),
+                ),
             ],
           ),
         ),
@@ -411,18 +447,32 @@ class _UpgradeCard extends ConsumerWidget {
             const SizedBox(height: 4),
             const Text('Your numbers, turned into decisions.', style: TextStyle(color: AppColors.chalk)),
             const SizedBox(height: 14),
-            for (final (icon, text) in features)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Two columns once there's room, rather than one long, thin list.
+                final itemWidth = constraints.maxWidth >= 640 ? (constraints.maxWidth - 24) / 2 : constraints.maxWidth;
+                return Wrap(
+                  spacing: 24,
                   children: [
-                    Icon(icon, color: AppColors.brass, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(text, style: const TextStyle(color: AppColors.chalk))),
+                    for (final (icon, text) in features)
+                      SizedBox(
+                        width: itemWidth,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(icon, color: AppColors.brass, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(child: Text(text, style: const TextStyle(color: AppColors.chalk))),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
-                ),
-              ),
+                );
+              },
+            ),
             const SizedBox(height: 16),
             if (!state.trialUsed)
               FilledButton(

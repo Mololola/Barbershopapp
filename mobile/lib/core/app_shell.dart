@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'responsive.dart';
+
 /// The persistent bottom-nav chrome wrapping each StatefulShellRoute branch.
 /// One instance of this is used for the customer shell and a separate one
 /// for the business shell (see router.dart) — same widget, different
 /// destinations passed in, since the two roles need different tab sets.
+/// On a wide window the sidebar (see AdaptiveChrome) replaces the tabs.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell, required this.destinations});
 
@@ -15,16 +18,18 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => navigationShell.goBranch(
-          index,
-          // Tapping the already-active tab pops it back to its root instead
-          // of leaving you stranded on whatever nested screen you'd pushed.
-          initialLocation: index == navigationShell.currentIndex,
-        ),
-        destinations: destinations,
-      ),
+      bottomNavigationBar: isWideLayout(context)
+          ? null
+          : NavigationBar(
+              selectedIndex: navigationShell.currentIndex,
+              onDestinationSelected: (index) => navigationShell.goBranch(
+                index,
+                // Tapping the already-active tab pops it back to its root instead
+                // of leaving you stranded on whatever nested screen you'd pushed.
+                initialLocation: index == navigationShell.currentIndex,
+              ),
+              destinations: destinations,
+            ),
     );
   }
 }

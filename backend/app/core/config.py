@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     # This API's own https address, for pages Stripe redirects the browser to.
     public_base_url: str = "https://barbershopapp-qrpk.onrender.com"
+    # The business website's address (the Flutter web build). The only
+    # browser origin allowed to call this API; empty allows none.
+    web_app_url: str = ""
     # Bearer token the scheduled-jobs workflow sends (see app/api/jobs.py);
     # empty disables the job endpoints.
     jobs_secret: str = ""

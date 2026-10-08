@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/api_client.dart';
@@ -191,7 +190,7 @@ class ProfileEditController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<bool> updateAvatar(File image) async {
+  Future<bool> updateAvatar(XFile image) async {
     state = const AsyncLoading();
     var success = false;
     state = await AsyncValue.guard(() async {

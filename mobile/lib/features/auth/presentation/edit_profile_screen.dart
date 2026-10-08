@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/picked_media.dart';
 import '../application/auth_controller.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -14,12 +13,12 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
-  File? _pickedImage;
+  XFile? _pickedImage;
 
   Future<void> _pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
-    setState(() => _pickedImage = File(picked.path));
+    setState(() => _pickedImage = picked);
   }
 
   Future<void> _save() async {
@@ -45,7 +44,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: CircleAvatar(
                 radius: 48,
                 backgroundImage: _pickedImage != null
-                    ? FileImage(_pickedImage!)
+                    ? pickedImage(_pickedImage!)
                     : (profile?.avatarUrl != null ? NetworkImage(profile!.avatarUrl!) : null) as ImageProvider?,
                 child: (_pickedImage == null && profile?.avatarUrl == null)
                     ? const Icon(Icons.person, size: 48)

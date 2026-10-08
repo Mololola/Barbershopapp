@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/responsive.dart';
+import '../../../core/theme.dart';
 import '../../auth/domain/profile.dart';
 import '../../business/domain/finance_overview.dart';
 import '../../rewards/domain/payout_request.dart';
@@ -20,6 +22,22 @@ class AdminScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Admin'),
+          actions: [
+            // Pull-to-refresh needs a touch screen.
+            if (isWideLayout(context))
+              Consumer(
+                builder: (context, ref, _) => IconButton(
+                  tooltip: 'Refresh',
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () {
+                    ref.invalidate(adminMetricsProvider);
+                    ref.invalidate(adminReviewersProvider);
+                    ref.invalidate(adminBusinessesProvider);
+                    ref.invalidate(adminPayoutRequestsProvider);
+                  },
+                ),
+              ),
+          ],
           bottom: const TabBar(
             isScrollable: true,
             tabs: [Tab(text: 'Overview'), Tab(text: 'Customers'), Tab(text: 'Businesses'), Tab(text: 'Payouts')],
@@ -82,74 +100,92 @@ class _CustomersTabState extends ConsumerState<_CustomersTab> {
   Widget build(BuildContext context) {
     final selected = _selected;
     final actionState = ref.watch(adminActionControllerProvider);
+    final wide = isWideLayout(context);
 
+    final search = Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _queryController,
+            decoration: const InputDecoration(labelText: 'Search customers by username'),
+            onSubmitted: (_) => _search(),
+          ),
+        ),
+        IconButton(icon: const Icon(Icons.search), onPressed: _search),
+      ],
+    );
+    final list = _query != null
+        ? _SearchResults(
+            query: _query!,
+            onSelect: (profile) => _select(profile.id, profile.username, isQualityReviewer: profile.isQualityReviewer),
+          )
+        : _ReviewerLists(
+            onSelect: (reviewer, {required isPromoted}) =>
+                _select(reviewer.id, reviewer.username, isQualityReviewer: isPromoted),
+          );
+    final detail = selected == null
+        ? null
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  // Beside the list on a desktop, there's nothing to go back to.
+                  if (!wide)
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => setState(() => _selected = null),
+                    ),
+                  Text(selected.username, style: Theme.of(context).textTheme.titleLarge),
+                ],
+              ),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: actionState.isLoading ? null : _toggle,
+                child: Text(
+                  _isQualityReviewer ? 'Deactivate higher rewards' : 'Activate higher rewards',
+                ),
+              ),
+              if (actionState.hasError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    actionState.error.toString(),
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Text('Review history', style: Theme.of(context).textTheme.titleMedium),
+              Expanded(child: _ReviewHistory(customerId: selected.id)),
+            ],
+          );
+
+    if (wide) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 400,
+              child: Column(children: [search, const SizedBox(height: 16), Expanded(child: list)]),
+            ),
+            const VerticalDivider(width: 48),
+            Expanded(
+              child: detail ??
+                  const Center(
+                    child: Text('Choose a customer to read their reviews.', style: TextStyle(color: AppColors.steel)),
+                  ),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _queryController,
-                  decoration: const InputDecoration(labelText: 'Search customers by username'),
-                  onSubmitted: (_) => _search(),
-                ),
-              ),
-              IconButton(icon: const Icon(Icons.search), onPressed: _search),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (selected == null)
-            Expanded(
-              child: _query != null
-                  ? _SearchResults(
-                      query: _query!,
-                      onSelect: (profile) =>
-                          _select(profile.id, profile.username, isQualityReviewer: profile.isQualityReviewer),
-                    )
-                  : _ReviewerLists(
-                      onSelect: (reviewer, {required isPromoted}) =>
-                          _select(reviewer.id, reviewer.username, isQualityReviewer: isPromoted),
-                    ),
-            )
-          else
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => setState(() => _selected = null),
-                      ),
-                      Text(selected.username, style: Theme.of(context).textTheme.titleLarge),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    onPressed: actionState.isLoading ? null : _toggle,
-                    child: Text(
-                      _isQualityReviewer ? 'Deactivate higher rewards' : 'Activate higher rewards',
-                    ),
-                  ),
-                  if (actionState.hasError)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        actionState.error.toString(),
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  Text('Review history', style: Theme.of(context).textTheme.titleMedium),
-                  Expanded(child: _ReviewHistory(customerId: selected.id)),
-                ],
-              ),
-            ),
-        ],
+        children: [search, const SizedBox(height: 16), Expanded(child: detail ?? list)],
       ),
     );
   }
@@ -327,33 +363,37 @@ class _BusinessesTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            for (final business in list)
-              Card(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(business.name, style: Theme.of(context).textTheme.titleMedium),
-                      Text('Owner: ${business.ownerUsername}'),
-                      Text('Signed up: ${business.createdAt.toLocal().toString().split(' ').first}'),
-                      Text('Subscription: ${business.subscriptionStatus ?? 'none yet'}'),
-                      const SizedBox(height: 8),
-                      if (business.hasActiveTrial)
-                        Text(
-                          'Trial until ${business.subscriptionTrialEndsAt!.toLocal().toString().split(' ').first}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        )
-                      else
-                        OutlinedButton(
-                          onPressed: actionState.isLoading ? null : () => _grantTrial(context, ref, business),
-                          child: const Text('Grant 1-month trial'),
-                        ),
-                    ],
+            _CardGrid(
+              children: [
+                for (final business in list)
+                  Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(business.name, style: Theme.of(context).textTheme.titleMedium),
+                          Text('Owner: ${business.ownerUsername}'),
+                          Text('Signed up: ${business.createdAt.toLocal().toString().split(' ').first}'),
+                          Text('Subscription: ${business.subscriptionStatus ?? 'none yet'}'),
+                          const SizedBox(height: 8),
+                          if (business.hasActiveTrial)
+                            Text(
+                              'Trial until ${business.subscriptionTrialEndsAt!.toLocal().toString().split(' ').first}',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            )
+                          else
+                            OutlinedButton(
+                              onPressed: actionState.isLoading ? null : () => _grantTrial(context, ref, business),
+                              child: const Text('Grant 1-month trial'),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
+              ],
+            ),
           ],
         );
       },
@@ -391,54 +431,80 @@ class _PayoutsTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            for (final request in list)
-              Card(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${request.requesterUsername ?? request.profileId} — '
-                        '${formatMoney(request.amountCents, request.currency)}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      if (request.iban != null)
-                        SelectableText('Pay to: ${request.accountHolder}\nIBAN: ${request.iban}'),
-                      Text('Requested: ${request.requestedAt.toLocal().toString().split('.').first}'),
-                      Text('Status: ${request.status.wireValue}'),
-                      const SizedBox(height: 8),
-                      Row(
+            _CardGrid(
+              children: [
+                for (final request in list)
+                  Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (request.status == PayoutRequestStatus.pending) ...[
-                            OutlinedButton(
-                              onPressed: actionState.isLoading
-                                  ? null
-                                  : () => _resolve(context, ref, request, PayoutRequestStatus.rejected),
-                              child: const Text('Reject'),
-                            ),
-                            const SizedBox(width: 8),
-                            FilledButton(
-                              onPressed: actionState.isLoading
-                                  ? null
-                                  : () => _resolve(context, ref, request, PayoutRequestStatus.approved),
-                              child: const Text('Approve'),
-                            ),
-                          ] else if (request.status == PayoutRequestStatus.approved)
-                            FilledButton(
-                              onPressed: actionState.isLoading
-                                  ? null
-                                  : () => _resolve(context, ref, request, PayoutRequestStatus.paid),
-                              child: const Text('Mark paid — I\'ve sent the money'),
-                            ),
+                          Text(
+                            '${request.requesterUsername ?? request.profileId} — '
+                            '${formatMoney(request.amountCents, request.currency)}',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          if (request.iban != null)
+                            SelectableText('Pay to: ${request.accountHolder}\nIBAN: ${request.iban}'),
+                          Text('Requested: ${request.requestedAt.toLocal().toString().split('.').first}'),
+                          Text('Status: ${request.status.wireValue}'),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              if (request.status == PayoutRequestStatus.pending) ...[
+                                OutlinedButton(
+                                  onPressed: actionState.isLoading
+                                      ? null
+                                      : () => _resolve(context, ref, request, PayoutRequestStatus.rejected),
+                                  child: const Text('Reject'),
+                                ),
+                                const SizedBox(width: 8),
+                                FilledButton(
+                                  onPressed: actionState.isLoading
+                                      ? null
+                                      : () => _resolve(context, ref, request, PayoutRequestStatus.approved),
+                                  child: const Text('Approve'),
+                                ),
+                              ] else if (request.status == PayoutRequestStatus.approved)
+                                FilledButton(
+                                  onPressed: actionState.isLoading
+                                      ? null
+                                      : () => _resolve(context, ref, request, PayoutRequestStatus.paid),
+                                  child: const Text('Mark paid — I\'ve sent the money'),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+              ],
+            ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/// One card per row on a phone; a grid on a desktop.
+class _CardGrid extends StatelessWidget {
+  const _CardGrid({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 12.0;
+        final columns = columnsFor(constraints.maxWidth, minWidth: 380, min: 1, max: 3);
+        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          children: [for (final child in children) SizedBox(width: width, child: child)],
         );
       },
     );

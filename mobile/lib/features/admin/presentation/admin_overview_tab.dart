@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
 import '../../business/domain/business.dart';
 import '../application/admin_controller.dart';
@@ -47,6 +48,7 @@ class AdminOverviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final metrics = ref.watch(adminMetricsProvider);
+    final wide = isWideLayout(context);
 
     return RefreshIndicator(
       onRefresh: () => ref.refresh(adminMetricsProvider.future),
@@ -55,99 +57,111 @@ class AdminOverviewTab extends ConsumerWidget {
         error: (error, _) => ListView(
           children: [Padding(padding: const EdgeInsets.all(24), child: Text('Couldn\'t load: $error'))],
         ),
-        data: (m) => ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-          children: [
-            _NeedsAttention(items: [
-              if (m.pendingPayouts > 0)
-                (Icons.payments_outlined, '${m.pendingPayouts} payout request${m.pendingPayouts == 1 ? '' : 's'} '
-                    'waiting (${_money(m.pendingPayoutsCents)}) — Payouts tab'),
-              if (m.trialsEndingIn7Days > 0)
-                (Icons.hourglass_bottom, '${m.trialsEndingIn7Days} trial${m.trialsEndingIn7Days == 1 ? '' : 's'} '
-                    'ending this week'),
-              if (_countOf(m.monthlyRecurringAtRisk) > 0)
-                (Icons.credit_card_off_outlined, '${_countOf(m.monthlyRecurringAtRisk)} failed payment'
-                    '${_countOf(m.monthlyRecurringAtRisk) == 1 ? '' : 's'} (${_perCurrency(m.monthlyRecurringAtRisk)}/mo at risk)'),
-              if (m.suspended > 0) (Icons.block, '${m.suspended} business${m.suspended == 1 ? '' : 'es'} hidden (unpaid)'),
-              if (m.awaitingEmailConfirmation + m.confirmedWithoutProfile > 0)
-                (Icons.person_off_outlined, '${m.awaitingEmailConfirmation + m.confirmedWithoutProfile} '
-                    'sign-up${m.awaitingEmailConfirmation + m.confirmedWithoutProfile == 1 ? '' : 's'} not finished'),
-            ]),
-            const SizedBox(height: 16),
-            _Hero(
-              label: 'Monthly recurring revenue',
-              value: _perCurrency(m.monthlyRecurring),
-              caption: '${_countOf(m.monthlyRecurring)} paying businesses'
-                  '${m.monthlyRecurringInTrial.isEmpty ? '' : ' · ${_perCurrency(m.monthlyRecurringInTrial)} more once trials end'}',
-            ),
-            const SizedBox(height: 12),
-            _TileGrid(tiles: [
-              _Tile('Live businesses', '${m.bookable}', caption: 'of ${m.businesses.total} total', delta: m.businesses),
-              _Tile('Customers', _grouped(m.customers.total), delta: m.customers),
-              _Tile('Bookings, 30 days', _grouped(m.bookings.last30Days),
-                  caption: '${m.upcomingBookings} upcoming', delta: m.bookings, deltaIsRecentCount: true),
-              _Tile('Average rating', m.averageShopRating == null ? '—' : '${m.averageShopRating} ★',
-                  caption: '${m.reviews.total} reviews'),
-            ]),
-            const _SectionTitle('Revenue', note: 'From Stripe\'s updates. Stripe\'s dashboard has cash received, fees and refunds.'),
-            _TileGrid(tiles: [
-              _Tile('In trial', _perCurrency(m.monthlyRecurringInTrial),
-                  caption: '${_countOf(m.monthlyRecurringInTrial)} businesses, billed after trial'),
-              _Tile('At risk', _perCurrency(m.monthlyRecurringAtRisk), caption: 'Payment failed'),
-              _Tile('Finance tool', _perCurrency(m.financeToolPaid),
-                  caption: '${_countOf(m.financeToolPaid)} paid · ${m.financeToolTrialsActive} trialling'),
-              _Tile('3D design slots', _money(m.designSlotRevenueGbpCents, 'GBP'),
-                  caption: '${m.designSlotBundlesSold} bundles'),
-            ]),
-            const _SectionTitle('Growth', note: 'Last 6 months. Tap a bar for its exact number.'),
+        data: (m) {
+          final needsAttention = _NeedsAttention(items: [
+            if (m.pendingPayouts > 0)
+              (Icons.payments_outlined, '${m.pendingPayouts} payout request${m.pendingPayouts == 1 ? '' : 's'} '
+                  'waiting (${_money(m.pendingPayoutsCents)}) — Payouts tab'),
+            if (m.trialsEndingIn7Days > 0)
+              (Icons.hourglass_bottom, '${m.trialsEndingIn7Days} trial${m.trialsEndingIn7Days == 1 ? '' : 's'} '
+                  'ending this week'),
+            if (_countOf(m.monthlyRecurringAtRisk) > 0)
+              (Icons.credit_card_off_outlined, '${_countOf(m.monthlyRecurringAtRisk)} failed payment'
+                  '${_countOf(m.monthlyRecurringAtRisk) == 1 ? '' : 's'} (${_perCurrency(m.monthlyRecurringAtRisk)}/mo at risk)'),
+            if (m.suspended > 0) (Icons.block, '${m.suspended} business${m.suspended == 1 ? '' : 'es'} hidden (unpaid)'),
+            if (m.awaitingEmailConfirmation + m.confirmedWithoutProfile > 0)
+              (Icons.person_off_outlined, '${m.awaitingEmailConfirmation + m.confirmedWithoutProfile} '
+                  'sign-up${m.awaitingEmailConfirmation + m.confirmedWithoutProfile == 1 ? '' : 's'} not finished'),
+          ]);
+          final hero = _Hero(
+            label: 'Monthly recurring revenue',
+            value: _perCurrency(m.monthlyRecurring),
+            caption: '${_countOf(m.monthlyRecurring)} paying businesses'
+                '${m.monthlyRecurringInTrial.isEmpty ? '' : ' · ${_perCurrency(m.monthlyRecurringInTrial)} more once trials end'}',
+          );
+          final growth = [
             _MonthBars(title: 'New customers', months: m.monthlyTrend, valueOf: (t) => t.newCustomers),
             _MonthBars(title: 'New businesses', months: m.monthlyTrend, valueOf: (t) => t.newBusinesses),
             _MonthBars(title: 'Completed bookings', months: m.monthlyTrend, valueOf: (t) => t.completedBookings),
-            const _SectionTitle('Businesses'),
-            _TileGrid(tiles: [
-              _Tile('Finished setup', '${m.setupComplete}', caption: 'of ${m.businesses.total}'),
-              _Tile('Trials running', '${m.trialsActive}', caption: '${m.trialsEndingIn7Days} end this week'),
-              _Tile('Trial → paying', _percent(m.trialsConvertedToPaying, m.trialsEnded),
-                  caption: '${m.trialsConvertedToPaying} of ${m.trialsEnded} finished trials'),
-              _Tile('Hidden', '${m.suspended}', caption: 'Unpaid — not shown to customers'),
-              if (m.grandfathered > 0) _Tile('Free (grandfathered)', '${m.grandfathered}', caption: 'Never billed'),
-            ]),
-            _Breakdown(
-              title: 'Subscriptions',
-              rows: [
-                for (final s in m.subscriptionsByStatus) (_subscriptionStatusLabels[s.name] ?? s.name, s.count),
+          ];
+          return ListView(
+            padding: wide ? const EdgeInsets.fromLTRB(24, 20, 24, 40) : const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            children: [
+              // On a desktop the headline sits beside what needs doing.
+              if (wide)
+                ResponsiveColumns(flex: const [3, 2], spacing: 12, children: [hero, needsAttention])
+              else ...[
+                needsAttention,
+                const SizedBox(height: 16),
+                hero,
               ],
-            ),
-            const _SectionTitle('People'),
-            _TileGrid(tiles: [
-              _Tile('Business accounts', '${m.businessAccounts.total}', delta: m.businessAccounts),
-              _Tile('Barbers', '${m.workersOptedIn}', caption: '${m.workersLookingForWork} looking for work'),
-              _Tile('Under 18', '${m.minors}', caption: 'Restricted accounts'),
-              _Tile('Unfinished sign-ups', '${m.awaitingEmailConfirmation + m.confirmedWithoutProfile}',
-                  caption: '${m.awaitingEmailConfirmation} unconfirmed email'),
-            ]),
-            _Breakdown(title: 'Sign-in methods (an account can have both)', rows: [
-              for (final s in m.signInMethods) (s.name == 'email' ? 'Email & password' : 'Google', s.count),
-            ]),
-            const _SectionTitle('Bookings & reviews'),
-            _TileGrid(tiles: [
-              _Tile('Completed', _grouped(m.completedBookings), caption: 'All time'),
-              _Tile('Cancelled', _percent(m.cancelledBookings, m.bookings.total),
-                  caption: '${m.cancelledBookings} of ${m.bookings.total} bookings'),
-              _Tile('Barber rating', m.averageWorkerRating == null ? '—' : '${m.averageWorkerRating} ★'),
-              _Tile('Haircut rating', m.averageHaircutRating == null ? '—' : '${m.averageHaircutRating} ★'),
-              _Tile('Reviews', _grouped(m.reviews.total), delta: m.reviews),
-            ]),
-            const _SectionTitle('Rewards', note: 'Review rewards customers earn and can withdraw.'),
-            _TileGrid(tiles: [
-              _Tile('Owed to customers', _money(m.rewardsOwedCents), caption: 'Earned, not yet paid'),
-              _Tile('Paid out', _money(m.rewardsPaidOutCents)),
-              _Tile('Earned, 30 days', _money(m.rewardsEarnedLast30DaysCents),
-                  caption: '${_money(m.rewardsEarnedCents)} all time'),
-              _Tile('Quality reviewers', '${m.qualityReviewers}', caption: 'Suggestions: Customers tab'),
-            ]),
-          ],
-        ),
+              const SizedBox(height: 12),
+              _TileGrid(tiles: [
+                _Tile('Live businesses', '${m.bookable}', caption: 'of ${m.businesses.total} total', delta: m.businesses),
+                _Tile('Customers', _grouped(m.customers.total), delta: m.customers),
+                _Tile('Bookings, 30 days', _grouped(m.bookings.last30Days),
+                    caption: '${m.upcomingBookings} upcoming', delta: m.bookings, deltaIsRecentCount: true),
+                _Tile('Average rating', m.averageShopRating == null ? '—' : '${m.averageShopRating} ★',
+                    caption: '${m.reviews.total} reviews'),
+              ]),
+              const _SectionTitle('Revenue', note: 'From Stripe\'s updates. Stripe\'s dashboard has cash received, fees and refunds.'),
+              _TileGrid(tiles: [
+                _Tile('In trial', _perCurrency(m.monthlyRecurringInTrial),
+                    caption: '${_countOf(m.monthlyRecurringInTrial)} businesses, billed after trial'),
+                _Tile('At risk', _perCurrency(m.monthlyRecurringAtRisk), caption: 'Payment failed'),
+                _Tile('Finance tool', _perCurrency(m.financeToolPaid),
+                    caption: '${_countOf(m.financeToolPaid)} paid · ${m.financeToolTrialsActive} trialling'),
+                _Tile('3D design slots', _money(m.designSlotRevenueGbpCents, 'GBP'),
+                    caption: '${m.designSlotBundlesSold} bundles'),
+              ]),
+              const _SectionTitle('Growth', note: 'Last 6 months. Tap a bar for its exact number.'),
+              if (wide) ResponsiveColumns(minChildWidth: 240, spacing: 32, children: growth) else ...growth,
+              const _SectionTitle('Businesses'),
+              _TileGrid(tiles: [
+                _Tile('Finished setup', '${m.setupComplete}', caption: 'of ${m.businesses.total}'),
+                _Tile('Trials running', '${m.trialsActive}', caption: '${m.trialsEndingIn7Days} end this week'),
+                _Tile('Trial → paying', _percent(m.trialsConvertedToPaying, m.trialsEnded),
+                    caption: '${m.trialsConvertedToPaying} of ${m.trialsEnded} finished trials'),
+                _Tile('Hidden', '${m.suspended}', caption: 'Unpaid — not shown to customers'),
+                if (m.grandfathered > 0) _Tile('Free (grandfathered)', '${m.grandfathered}', caption: 'Never billed'),
+              ]),
+              _Breakdown(
+                title: 'Subscriptions',
+                rows: [
+                  for (final s in m.subscriptionsByStatus) (_subscriptionStatusLabels[s.name] ?? s.name, s.count),
+                ],
+              ),
+              const _SectionTitle('People'),
+              _TileGrid(tiles: [
+                _Tile('Business accounts', '${m.businessAccounts.total}', delta: m.businessAccounts),
+                _Tile('Barbers', '${m.workersOptedIn}', caption: '${m.workersLookingForWork} looking for work'),
+                _Tile('Under 18', '${m.minors}', caption: 'Restricted accounts'),
+                _Tile('Unfinished sign-ups', '${m.awaitingEmailConfirmation + m.confirmedWithoutProfile}',
+                    caption: '${m.awaitingEmailConfirmation} unconfirmed email'),
+              ]),
+              _Breakdown(title: 'Sign-in methods (an account can have both)', rows: [
+                for (final s in m.signInMethods) (s.name == 'email' ? 'Email & password' : 'Google', s.count),
+              ]),
+              const _SectionTitle('Bookings & reviews'),
+              _TileGrid(tiles: [
+                _Tile('Completed', _grouped(m.completedBookings), caption: 'All time'),
+                _Tile('Cancelled', _percent(m.cancelledBookings, m.bookings.total),
+                    caption: '${m.cancelledBookings} of ${m.bookings.total} bookings'),
+                _Tile('Barber rating', m.averageWorkerRating == null ? '—' : '${m.averageWorkerRating} ★'),
+                _Tile('Haircut rating', m.averageHaircutRating == null ? '—' : '${m.averageHaircutRating} ★'),
+                _Tile('Reviews', _grouped(m.reviews.total), delta: m.reviews),
+              ]),
+              const _SectionTitle('Rewards', note: 'Review rewards customers earn and can withdraw.'),
+              _TileGrid(tiles: [
+                _Tile('Owed to customers', _money(m.rewardsOwedCents), caption: 'Earned, not yet paid'),
+                _Tile('Paid out', _money(m.rewardsPaidOutCents)),
+                _Tile('Earned, 30 days', _money(m.rewardsEarnedLast30DaysCents),
+                    caption: '${_money(m.rewardsEarnedCents)} all time'),
+                _Tile('Quality reviewers', '${m.qualityReviewers}', caption: 'Suggestions: Customers tab'),
+              ]),
+            ],
+          );
+        },
       ),
     );
   }
@@ -258,11 +272,27 @@ class _TileGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const gap = 10.0;
-        final width = (constraints.maxWidth - gap) / 2;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [for (final tile in tiles) SizedBox(width: width, child: _TileCard(tile: tile))],
+        // Two across on a phone, up to four on a desktop.
+        final columns = columnsFor(constraints.maxWidth, minWidth: 220);
+        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+        // Row by row, so the tiles in a row share one height.
+        return Column(
+          children: [
+            for (var start = 0; start < tiles.length; start += columns) ...[
+              if (start > 0) const SizedBox(height: gap),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = start; i < start + columns && i < tiles.length; i++) ...[
+                      if (i > start) const SizedBox(width: gap),
+                      SizedBox(width: width, child: _TileCard(tile: tiles[i])),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
         );
       },
     );
@@ -410,11 +440,10 @@ class _MonthBars extends StatelessWidget {
   final List<MonthTrend> months;
   final int Function(MonthTrend) valueOf;
 
-  static const _plotHeight = 56.0;
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final plotHeight = isWideLayout(context) ? 96.0 : 56.0;
     final values = [for (final m in months) valueOf(m)];
     final max = values.fold(0, (a, b) => a > b ? a : b);
     return Padding(
@@ -447,7 +476,7 @@ class _MonthBars extends StatelessWidget {
                           Text(i == months.length - 1 ? '${values[i]}' : '', style: textTheme.labelSmall),
                           const SizedBox(height: 2),
                           Container(
-                            height: max == 0 ? 2 : 2 + (_plotHeight - 2) * values[i] / max,
+                            height: max == 0 ? 2 : 2 + (plotHeight - 2) * values[i] / max,
                             decoration: BoxDecoration(
                               color: values[i] == 0 ? AppColors.divider : AppColors.brass,
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),

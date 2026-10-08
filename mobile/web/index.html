@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    $FLUTTER_BASE_HREF is replaced by the value of `flutter build web --base-href`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Run your barbershop from any screen: bookings, staff, finance and your shop page.">
+  <meta name="theme-color" content="#221D1A">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Barbershop">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <title>Barbershop for Business</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Shown while the app downloads; the app paints over it once it starts. -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #221D1A; }
+    .loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      font: 800 20px/1 system-ui, sans-serif; letter-spacing: 0.12em; color: #EDEAE3;
+    }
+    .loading .mark {
+      width: 48px; height: 48px; border-radius: 50%; background: #A6803C;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 50% { transform: scale(0.85); opacity: 0.6; } }
+    @media (prefers-reduced-motion: reduce) { .loading .mark { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="loading" aria-label="Loading">
+    <div class="mark"></div>
+    BARBERSHOP
+  </div>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

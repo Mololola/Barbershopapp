@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/app_network_image.dart';
 import '../../../core/loading.dart';
+import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
 import '../../messaging/presentation/messages_button.dart';
 import '../application/business_controller.dart';
@@ -23,16 +24,28 @@ class BusinessHomeScreen extends ConsumerWidget {
     final workers = ref.watch(workersProvider);
     final bookings = ref.watch(businessBookingsProvider);
 
+    // On a wide screen the sidebar carries the brand, Messages and Settings.
+    final wide = isWideLayout(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Barbershop for Business'),
+        title: Text(wide ? 'Home' : 'Barbershop for Business'),
         actions: [
-          const MessagesButton(),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
-            onPressed: () => context.push('/account-settings'),
-          ),
+          if (wide)
+            // Pull-to-refresh needs a touch screen.
+            IconButton(
+              tooltip: 'Refresh',
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(businessBookingsProvider),
+            )
+          else ...[
+            const MessagesButton(),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'Settings',
+              onPressed: () => context.push('/account-settings'),
+            ),
+          ],
         ],
       ),
       body: business.when(
@@ -42,107 +55,143 @@ class BusinessHomeScreen extends ConsumerWidget {
           if (business == null) {
             return const Center(child: Text('No business found.'));
           }
+          final today = bookings.hasValue
+              ? _TodayCard(
+                  summary: summarizeToday(bookings.value!, DateTime.now()),
+                  workerNames: {
+                    for (final w in workers.value ?? const <Worker>[])
+                      if (w.id != null) w.id!: w.name,
+                  },
+                  serviceNames: {
+                    for (final s in services.value ?? const <Service>[])
+                      if (s.id != null) s.id!: s.name,
+                  },
+                )
+              : null;
+          final stats = Row(
+            children: [
+              Expanded(
+                child: _StatChip(
+                  value: services.value?.length,
+                  label: services.value?.length == 1 ? 'service' : 'services',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatChip(
+                  value: workers.value?.length,
+                  label: workers.value?.length == 1 ? 'staff member' : 'staff',
+                ),
+              ),
+            ],
+          );
+          final hoursSection = _Section(
+            header: _SectionHeader(title: 'This week', onManage: () => context.push('/business/edit')),
+            child: hours.when(
+              loading: () => const LoadingView(),
+              error: (error, _) => Text('Error: $error'),
+              data: (list) => _HoursCard(hours: list),
+            ),
+          );
+          final servicesSection = _Section(
+            header: _SectionHeader(title: 'Services', onManage: () => context.push('/business/services')),
+            child: services.when(
+              loading: () => const LoadingView(),
+              error: (error, _) => Text('Error: $error'),
+              data: (list) {
+                if (list.isEmpty) {
+                  return const Text('No services listed yet.', style: TextStyle(color: AppColors.steel));
+                }
+                return Card(
+                  child: Column(
+                    children: [
+                      for (final service in list)
+                        ListTile(
+                          leading: const Icon(Icons.content_cut, color: AppColors.brass),
+                          title: Text(service.name),
+                          trailing: Text(
+                            '${currencySymbol(business.currency)}${service.priceInMajorUnits.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+          final staffSection = _Section(
+            header: _SectionHeader(title: 'Staff', onManage: () => context.go('/business/staff')),
+            child: workers.when(
+              loading: () => const LoadingView(),
+              error: (error, _) => Text('Error: $error'),
+              data: (list) {
+                if (list.isEmpty) {
+                  return const Text('No staff yet.', style: TextStyle(color: AppColors.steel));
+                }
+                return Card(
+                  child: Column(
+                    children: [
+                      for (final worker in list)
+                        ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: AppColors.chalk,
+                            child: Icon(Icons.person_outline, color: AppColors.brass),
+                          ),
+                          title: Text(worker.name),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+          final plaque = _ShopPlaque(business: business, locations: locations, hours: hours);
+
           return RefreshIndicator(
             // New bookings arrive from customers at any time; pull to catch up.
             onRefresh: () => ref.refresh(businessBookingsProvider.future),
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const SubscriptionBanner(),
-                _ShopPlaque(business: business, locations: locations, hours: hours),
-                const SizedBox(height: 16),
-                if (bookings.hasValue)
-                  _TodayCard(
-                    summary: summarizeToday(bookings.value!, DateTime.now()),
-                    workerNames: {
-                      for (final w in workers.value ?? const <Worker>[])
-                        if (w.id != null) w.id!: w.name,
-                    },
-                    serviceNames: {
-                      for (final s in services.value ?? const <Service>[])
-                        if (s.id != null) s.id!: s.name,
-                    },
+            child: wide
+                ? ListView(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+                    children: [
+                      const SubscriptionBanner(),
+                      ResponsiveColumns(
+                        flex: const [3, 2],
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [plaque, const SizedBox(height: 16), ?today, const SizedBox(height: 16), stats],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [const _FinanceCard(), const SizedBox(height: 16), hoursSection],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      ResponsiveColumns(children: [servicesSection, staffSection]),
+                    ],
+                  )
+                : ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      const SubscriptionBanner(),
+                      plaque,
+                      const SizedBox(height: 16),
+                      ?today,
+                      const SizedBox(height: 12),
+                      const _FinanceCard(),
+                      const SizedBox(height: 16),
+                      stats,
+                      const SizedBox(height: 24),
+                      hoursSection,
+                      const SizedBox(height: 24),
+                      servicesSection,
+                      const SizedBox(height: 24),
+                      staffSection,
+                    ],
                   ),
-                const SizedBox(height: 12),
-                const _FinanceCard(),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatChip(
-                        value: services.value?.length,
-                        label: services.value?.length == 1 ? 'service' : 'services',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatChip(
-                        value: workers.value?.length,
-                        label: workers.value?.length == 1 ? 'staff member' : 'staff',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _SectionHeader(title: 'This week', onManage: () => context.push('/business/edit')),
-                hours.when(
-                  loading: () => const LoadingView(),
-                  error: (error, _) => Text('Error: $error'),
-                  data: (list) => _HoursCard(hours: list),
-                ),
-                const SizedBox(height: 24),
-                _SectionHeader(title: 'Services', onManage: () => context.push('/business/services')),
-                services.when(
-                  loading: () => const LoadingView(),
-                  error: (error, _) => Text('Error: $error'),
-                  data: (list) {
-                    if (list.isEmpty) {
-                      return const Text('No services listed yet.', style: TextStyle(color: AppColors.steel));
-                    }
-                    return Card(
-                      child: Column(
-                        children: [
-                          for (final service in list)
-                            ListTile(
-                              leading: const Icon(Icons.content_cut, color: AppColors.brass),
-                              title: Text(service.name),
-                              trailing: Text(
-                                '${currencySymbol(business.currency)}${service.priceInMajorUnits.toStringAsFixed(2)}',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                _SectionHeader(title: 'Staff', onManage: () => context.go('/business/staff')),
-                workers.when(
-                  loading: () => const LoadingView(),
-                  error: (error, _) => Text('Error: $error'),
-                  data: (list) {
-                    if (list.isEmpty) {
-                      return const Text('No staff yet.', style: TextStyle(color: AppColors.steel));
-                    }
-                    return Card(
-                      child: Column(
-                        children: [
-                          for (final worker in list)
-                            ListTile(
-                              leading: const CircleAvatar(
-                                backgroundColor: AppColors.chalk,
-                                child: Icon(Icons.person_outline, color: AppColors.brass),
-                              ),
-                              title: Text(worker.name),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
           );
         },
       ),
@@ -422,6 +471,20 @@ class _SectionHeader extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// A section header with its content, kept together so a wide layout can
+/// place them as one block.
+class _Section extends StatelessWidget {
+  const _Section({required this.header, required this.child});
+
+  final Widget header;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [header, child]);
   }
 }
 

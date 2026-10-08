@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
+from app.core.config import settings
 from app.core.rate_limit import limiter
 
 router = APIRouter()
@@ -14,7 +15,8 @@ router = APIRouter()
 # targets (both must be in Supabase's Redirect URLs allow-list, or Supabase
 # silently falls back to the Site URL instead). On a phone they forward the
 # query string/hash Supabase attached into barbershopapp://auth-callback;
-# on a desktop there's no app to open, so they just say what to do next.
+# on a desktop there's no app to open, so they say what to do next — and
+# point business owners to the website, when there is one.
 _PAGE_TEMPLATE = """<!doctype html>
 <html lang="en">
 <head>
@@ -36,9 +38,11 @@ _PAGE_TEMPLATE = """<!doctype html>
     <h1 id="title"></h1>
     <p id="body"></p>
     <a class="button" id="open-app" href="#" hidden>Open the app</a>
+    <a class="button" id="open-web" href="#" hidden>Open the website</a>
   </div>
   <script>
     var copy = __COPY__;
+    var website = __WEBSITE__;
     var params = new URLSearchParams(window.location.search + '&' + window.location.hash.slice(1));
     var isPhone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var state = params.get('error') ? copy.error : isPhone ? copy.phone : copy.desktop;
@@ -50,6 +54,10 @@ _PAGE_TEMPLATE = """<!doctype html>
       button.href = target;
       button.hidden = false;
       window.location.replace(target);
+    } else if (website && state.website) {
+      var web = document.getElementById('open-web');
+      web.href = website;
+      web.hidden = false;
     }
   </script>
 </body>
@@ -58,7 +66,8 @@ _PAGE_TEMPLATE = """<!doctype html>
 
 
 def _page(copy: dict) -> str:
-    return _PAGE_TEMPLATE.replace("__COPY__", json.dumps(copy))
+    website = f"{settings.web_app_url}/sign-in" if settings.web_app_url else ""
+    return _PAGE_TEMPLATE.replace("__COPY__", json.dumps(copy)).replace("__WEBSITE__", json.dumps(website))
 
 
 _CONFIRMED_PAGE = _page(
@@ -69,7 +78,9 @@ _CONFIRMED_PAGE = _page(
         },
         "desktop": {
             "title": "Email confirmed",
-            "body": "Your account is ready. You can close this tab — go back to the app on your phone and sign in.",
+            "body": "Your account is ready. Go back to the app on your phone and sign in — "
+            "or, if you run a shop, sign in on the website.",
+            "website": True,
         },
         "error": {
             "title": "This link has expired",

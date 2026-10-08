@@ -1,7 +1,7 @@
-import 'dart:io';
-
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/picked_media.dart';
 import '../domain/post.dart';
 
 /// Posts/likes/comments are simple CRUD with no money/concurrency invariant,
@@ -41,8 +41,8 @@ class FeedRepository {
   Future<void> createPost({
     required String authorId,
     required String? body,
-    required File? image,
-    required File? video,
+    required XFile? image,
+    required XFile? video,
   }) async {
     assert(image == null || video == null, 'A post has at most one piece of media — an image or a video, not both.');
     final post = await _client.from('posts').insert({'author_id': authorId, 'body': body}).select().single();
@@ -55,11 +55,11 @@ class FeedRepository {
     // separate one just to name the file. Content type is set explicitly
     // (not left to the client library's guess) since the post-media
     // bucket enforces allowed_mime_types.
-    final extension = _extensionOf(mediaFile.path);
+    final extension = extensionOf(mediaFile);
     final path = '$authorId/${post['id']}$extension';
-    await _client.storage.from('post-media').upload(
+    await _client.storage.from('post-media').uploadBinary(
           path,
-          mediaFile,
+          await mediaFile.readAsBytes(),
           fileOptions: FileOptions(contentType: _contentTypeOf(extension)),
         );
     final mediaUrl = _client.storage.from('post-media').getPublicUrl(path);
@@ -132,11 +132,6 @@ class FeedRepository {
 
   Future<void> deleteComment(String commentId) async {
     await _client.from('comments').delete().eq('id', commentId);
-  }
-
-  String _extensionOf(String path) {
-    final dot = path.lastIndexOf('.');
-    return dot == -1 ? '.jpg' : path.substring(dot);
   }
 
   /// Must match one of post-media's allowed_mime_types (see the

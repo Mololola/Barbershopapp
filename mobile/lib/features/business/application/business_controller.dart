@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
@@ -499,7 +498,7 @@ class ShopBrandingController extends AsyncNotifier<void> {
   Future<void> build() async {}
 
   /// Only what changed is uploaded/written; null means "keep as is".
-  Future<bool> save({File? logoImage, File? coverImage, String? brandColor}) async {
+  Future<bool> save({XFile? logoImage, XFile? coverImage, String? brandColor}) async {
     state = const AsyncLoading();
     var success = false;
     state = await AsyncValue.guard(() async {

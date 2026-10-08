@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import '../../../core/loading.dart';
+import '../../../core/picked_media.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,8 +20,8 @@ class CreatePostScreen extends ConsumerStatefulWidget {
 
 class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   final _bodyController = TextEditingController();
-  File? _image;
-  File? _video;
+  XFile? _image;
+  XFile? _video;
   String? _mediaError;
 
   @override
@@ -42,7 +41,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1920, imageQuality: 80);
     if (picked == null) return;
     setState(() {
-      _image = File(picked.path);
+      _image = picked;
       _video = null;
       _mediaError = null;
     });
@@ -56,8 +55,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     final picked = await ImagePicker().pickVideo(source: ImageSource.gallery, maxDuration: _maxVideoDuration);
     if (picked == null) return;
 
-    final file = File(picked.path);
-    final controller = VideoPlayerController.file(file);
+    final controller = pickedVideoController(picked);
     Duration duration;
     try {
       await controller.initialize();
@@ -72,7 +70,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     }
 
     setState(() {
-      _video = file;
+      _video = picked;
       _image = null;
       _mediaError = null;
     });
@@ -115,7 +113,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 16),
-            if (_image != null) Image.file(_image!, height: 200),
+            if (_image != null) Image(image: pickedImage(_image!), height: 200),
             if (_video != null) _LocalVideoPreview(file: _video!, height: 200),
             Row(
               children: [
@@ -162,7 +160,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 class _LocalVideoPreview extends StatefulWidget {
   const _LocalVideoPreview({required this.file, required this.height});
 
-  final File file;
+  final XFile file;
   final double height;
 
   @override
@@ -175,7 +173,7 @@ class _LocalVideoPreviewState extends State<_LocalVideoPreview> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.file(widget.file)
+    _controller = pickedVideoController(widget.file)
       ..setVolume(0)
       ..setLooping(true)
       ..initialize().then((_) {

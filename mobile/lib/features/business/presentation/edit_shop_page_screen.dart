@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/picked_media.dart';
 import '../../customer/domain/public_business.dart';
 import '../../customer/presentation/shop_page.dart';
 import '../application/business_controller.dart';
@@ -21,14 +20,11 @@ class EditShopPageScreen extends ConsumerStatefulWidget {
 }
 
 class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
-  File? _logo;
-  File? _cover;
+  XFile? _logo;
+  XFile? _cover;
   Color? _brandColor;
 
-  Future<File?> _pick() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600);
-    return picked == null ? null : File(picked.path);
-  }
+  Future<XFile?> _pick() => ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600);
 
   Future<void> _save() async {
     final brandColor = _brandColor;
@@ -64,8 +60,8 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
               coverUrl: business.coverUrl,
               brandColor: business.brandColor,
             ),
-            logoImage: _logo == null ? null : FileImage(_logo!),
-            coverImage: _cover == null ? null : FileImage(_cover!),
+            logoImage: _logo == null ? null : pickedImage(_logo!),
+            coverImage: _cover == null ? null : pickedImage(_cover!),
             brandColorOverride: _brandColor,
           ),
           Padding(

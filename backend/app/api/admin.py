@@ -7,16 +7,22 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.billing import _DESIGN_SLOT_BUNDLE_PRICE_CENTS, _DESIGN_SLOT_BUNDLE_SIZE
-from app.core.auth import get_current_user_id
+from app.core.auth import get_token_claims
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 
 router = APIRouter()
 
-def require_admin(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> str:
+def require_admin(db: Session = Depends(get_db), claims: dict = Depends(get_token_claims)) -> str:
+    """An admin who signed in with their second factor too ('aal2'): admin
+    access reaches bank details and payouts, so a leaked password alone
+    mustn't be enough. The database's admin policies require the same."""
+    user_id = claims["sub"]
     is_admin = db.execute(text("select is_admin from profiles where id = :id"), {"id": user_id}).scalar()
     if not is_admin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Admins only")
+    if claims.get("aal") != "aal2":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Sign in with your authenticator code to use admin tools")
     return user_id
 
 
