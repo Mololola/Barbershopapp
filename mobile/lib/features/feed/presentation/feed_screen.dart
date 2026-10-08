@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/loading.dart';
-import '../../../core/theme.dart';
+import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/feed_controller.dart';
 import 'post_card.dart';
@@ -15,6 +15,7 @@ class FeedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(feedProvider);
     final myProfile = ref.watch(currentProfileProvider).value;
+    final canPost = myProfile != null && !myProfile.isMinor;
 
     return Scaffold(
       appBar: AppBar(
@@ -29,61 +30,60 @@ class FeedScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: myProfile?.isMinor == true
-          ? null
-          : FloatingActionButton(
+      floatingActionButton: canPost
+          ? FloatingActionButton.extended(
               heroTag: null,
               onPressed: () => context.push('/posts/new'),
-              child: const Icon(Icons.add),
-            ),
+              icon: const Icon(Icons.add_a_photo_outlined),
+              label: const Text('Post'),
+            )
+          : null,
       body: feed.when(
-        loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
-        data: (posts) {
-          if (posts.isEmpty) {
-            return _EmptyFeed(onCreate: () => context.push('/posts/new'));
-          }
-          return ListView(
-            padding: const EdgeInsets.only(top: 8, bottom: 16),
-            children: [
-              for (final post in posts) PostCard(post: post, isMine: post.authorId == myProfile?.id),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _EmptyFeed extends StatelessWidget {
-  const _EmptyFeed({required this.onCreate});
-
-  final VoidCallback onCreate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.photo_camera_outlined, color: AppColors.brass, size: 40),
-            const SizedBox(height: 12),
-            Text('The wall is empty', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
-            const Text(
-              'Be the first to show off a cut.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.steel),
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: onCreate,
-              icon: const Icon(Icons.add),
-              label: const Text('Share a post'),
-            ),
-          ],
+        loading: () => const LoadingView(caption: 'Fetching fresh cuts…'),
+        error: (_, _) => Center(
+          child: StatusMessage(
+            icon: Icons.wifi_off_rounded,
+            title: 'Couldn\'t load the feed',
+            message: 'Check your connection and try again.',
+            actionLabel: 'Try again',
+            onAction: () => ref.invalidate(feedProvider),
+            isError: true,
+          ),
+        ),
+        data: (posts) => RefreshIndicator(
+          onRefresh: () => ref.refresh(feedProvider.future),
+          child: posts.isEmpty
+              // Scrollable so pull-to-refresh still works on an empty feed.
+              ? LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: constraints.maxHeight,
+                      child: Center(
+                        child: StatusMessage(
+                          icon: Icons.photo_camera_outlined,
+                          title: 'The wall is empty',
+                          message: 'Be the first to show off a cut.',
+                          actionLabel: canPost ? 'Share a post' : null,
+                          onAction: canPost ? () => context.push('/posts/new') : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  // Clear of the Post button at the end of the list.
+                  padding: const EdgeInsets.only(top: 8, bottom: 88),
+                  itemCount: posts.length,
+                  itemBuilder: (context, index) => Center(
+                    // Portrait photos at a phone's width, even on the website.
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: PostCard(post: posts[index], isMine: posts[index].authorId == myProfile?.id),
+                    ),
+                  ),
+                ),
         ),
       ),
     );

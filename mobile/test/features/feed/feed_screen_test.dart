@@ -61,8 +61,28 @@ void main() {
     expect(find.byIcon(Icons.favorite), findsOneWidget);
     expect(find.byIcon(Icons.favorite_border), findsOneWidget);
 
-    // Only the signed-in user's own post shows a delete option.
-    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    // Only the signed-in user's own post has the options menu, and deleting
+    // asks first.
+    expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete this post?'), findsOneWidget);
+  });
+
+  testWidgets('an empty feed invites the first post', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentProfileProvider.overrideWith((ref) async => myProfile),
+        feedProvider.overrideWith((ref) async => []),
+      ],
+      child: const MaterialApp(home: FeedScreen()),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('The wall is empty'), findsOneWidget);
+    expect(find.text('Share a post'), findsOneWidget);
   });
 
   // Posts are shared by both roles, so they must open on the top-level

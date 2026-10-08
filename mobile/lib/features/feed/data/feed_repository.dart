@@ -15,7 +15,7 @@ class FeedRepository {
   Future<List<Post>> fetchFeed({required String? myProfileId}) async {
     final rows = await _client
         .from('posts')
-        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
+        .select('*, profiles(username, avatar_url), post_media(media_url, media_type), likes(profile_id), comments(count)')
         .order('created_at', ascending: false);
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
   }
@@ -23,7 +23,7 @@ class FeedRepository {
   Future<List<Comment>> fetchComments(String postId, {required String? myProfileId}) async {
     final rows = await _client
         .from('comments')
-        .select('*, profiles(username), comment_likes(profile_id)')
+        .select('*, profiles(username, avatar_url), comment_likes(profile_id)')
         .eq('post_id', postId)
         .order('created_at');
     return rows.map((row) => Comment.fromRow(row, myProfileId: myProfileId)).toList();
@@ -32,7 +32,7 @@ class FeedRepository {
   Future<List<Post>> fetchPostsByAuthor({required String authorId, required String? myProfileId}) async {
     final rows = await _client
         .from('posts')
-        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
+        .select('*, profiles(username, avatar_url), post_media(media_url, media_type), likes(profile_id), comments(count)')
         .eq('author_id', authorId)
         .order('created_at', ascending: false);
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
@@ -119,7 +119,7 @@ class FeedRepository {
   Future<List<Post>> fetchPinnedPosts(String authorId) async {
     final rows = await _client
         .from('posts')
-        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
+        .select('*, profiles(username, avatar_url), post_media(media_url, media_type), likes(profile_id), comments(count)')
         .eq('author_id', authorId)
         .eq('is_pinned', true)
         .order('created_at', ascending: false);

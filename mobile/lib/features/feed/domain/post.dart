@@ -5,6 +5,7 @@ class Post {
     required this.id,
     required this.authorId,
     required this.authorUsername,
+    this.authorAvatarUrl,
     required this.body,
     required this.mediaUrl,
     required this.mediaType,
@@ -18,6 +19,7 @@ class Post {
   final String id;
   final String authorId;
   final String authorUsername;
+  final String? authorAvatarUrl;
   final String? body;
   final String? mediaUrl;
 
@@ -38,6 +40,7 @@ class Post {
       id: id,
       authorId: authorId,
       authorUsername: authorUsername,
+      authorAvatarUrl: authorAvatarUrl,
       body: body,
       mediaUrl: mediaUrl,
       mediaType: mediaType,
@@ -54,10 +57,12 @@ class Post {
     final likes = row['likes'] as List;
     final comments = row['comments'] as List;
     final firstMedia = media.isEmpty ? null : media.first as Map<String, dynamic>;
+    final author = row['profiles'] as Map<String, dynamic>;
     return Post(
       id: row['id'] as String,
       authorId: row['author_id'] as String,
-      authorUsername: (row['profiles'] as Map<String, dynamic>)['username'] as String,
+      authorUsername: author['username'] as String,
+      authorAvatarUrl: author['avatar_url'] as String?,
       body: row['body'] as String?,
       mediaUrl: firstMedia?['media_url'] as String?,
       mediaType: firstMedia?['media_type'] == 'video' ? PostMediaType.video : PostMediaType.image,
@@ -77,6 +82,7 @@ class Comment {
     required this.parentCommentId,
     required this.authorId,
     required this.authorUsername,
+    this.authorAvatarUrl,
     required this.body,
     required this.likeCount,
     required this.likedByMe,
@@ -88,6 +94,7 @@ class Comment {
   final String? parentCommentId;
   final String authorId;
   final String authorUsername;
+  final String? authorAvatarUrl;
   final String body;
   final int likeCount;
   final bool likedByMe;
@@ -100,6 +107,7 @@ class Comment {
       parentCommentId: parentCommentId,
       authorId: authorId,
       authorUsername: authorUsername,
+      authorAvatarUrl: authorAvatarUrl,
       body: body,
       likeCount: likeCount ?? this.likeCount,
       likedByMe: likedByMe ?? this.likedByMe,
@@ -109,12 +117,14 @@ class Comment {
 
   factory Comment.fromRow(Map<String, dynamic> row, {required String? myProfileId}) {
     final likes = row['comment_likes'] as List;
+    final author = row['profiles'] as Map<String, dynamic>;
     return Comment(
       id: row['id'] as String,
       postId: row['post_id'] as String,
       parentCommentId: row['parent_comment_id'] as String?,
       authorId: row['author_id'] as String,
-      authorUsername: (row['profiles'] as Map<String, dynamic>)['username'] as String,
+      authorUsername: author['username'] as String,
+      authorAvatarUrl: author['avatar_url'] as String?,
       body: row['body'] as String,
       likeCount: likes.length,
       likedByMe: myProfileId != null && likes.any((like) => like['profile_id'] == myProfileId),
