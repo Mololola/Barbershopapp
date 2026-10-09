@@ -62,16 +62,16 @@ class _BookingTile extends ConsumerWidget {
     }
 
     if (booking.status == BookingStatus.completed) {
-      final review = ref.watch(reviewForBookingProvider(booking.id));
-      return review.when(
+      final reviews = ref.watch(myReviewsByBookingProvider);
+      return reviews.when(
         loading: () => const SizedBox(
           height: 16,
           width: 16,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
         error: (error, _) => Text('Error: $error'),
-        data: (review) {
-          if (review != null) {
+        data: (reviews) {
+          if (reviews[booking.id] != null) {
             return const Text('Reviewed');
           }
           return TextButton(

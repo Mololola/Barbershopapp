@@ -10,10 +10,11 @@ class ReviewRepository {
 
   final SupabaseClient _client;
 
-  Future<Review?> fetchReviewForBooking(String bookingId) async {
-    final row = await _client.from('reviews').select().eq('booking_id', bookingId).maybeSingle();
-    if (row == null) return null;
-    return Review.fromRow(row);
+  /// Every review this customer has written, by booking id — what My
+  /// bookings needs for all its rows in one query.
+  Future<Map<String, Review>> fetchReviewsByCustomer(String customerId) async {
+    final rows = await _client.from('reviews').select().eq('customer_id', customerId);
+    return {for (final row in rows) row['booking_id'] as String: Review.fromRow(row)};
   }
 
   Future<void> submitReview(Review review) async {

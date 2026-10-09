@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     db_pool_size: int = 5
     db_max_overflow: int = 5
     db_pool_recycle_seconds: int = 1800
+    # Dev only: log every SQL statement, e.g. to count a page's queries.
+    sql_echo: bool = False
 
     # Business hours / worker schedules change a handful of times a year at
     # most, so a few minutes of staleness is a non-issue — see
