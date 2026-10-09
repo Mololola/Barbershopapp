@@ -12,11 +12,22 @@ class FeedRepository {
 
   final SupabaseClient _client;
 
-  Future<List<Post>> fetchFeed({required String? myProfileId}) async {
-    final rows = await _client
-        .from('posts')
-        .select('*, profiles(username, avatar_url), post_media(media_url, media_type), likes(profile_id), comments(count)')
-        .order('created_at', ascending: false);
+  /// Like counts are counted on the server; of the likes themselves only
+  /// mine comes back (filtered below), which is all `likedByMe` needs.
+  static const _postColumns = '*, profiles(username, avatar_url), post_media(media_url, media_type), '
+      'like_count:likes(count), my_like:likes(profile_id), comments(count)';
+
+  PostgrestFilterBuilder<PostgrestList> _posts(String? myProfileId) {
+    final query = _client.from('posts').select(_postColumns);
+    return myProfileId == null ? query : query.eq('my_like.profile_id', myProfileId);
+  }
+
+  /// One page of the feed, newest first: the [limit] posts older than
+  /// [before] (the oldest post already shown), or the newest when null.
+  Future<List<Post>> fetchFeed({required String? myProfileId, DateTime? before, required int limit}) async {
+    var query = _posts(myProfileId);
+    if (before != null) query = query.lt('created_at', before.toUtc().toIso8601String());
+    final rows = await query.order('created_at', ascending: false).limit(limit);
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
   }
 
@@ -30,9 +41,7 @@ class FeedRepository {
   }
 
   Future<List<Post>> fetchPostsByAuthor({required String authorId, required String? myProfileId}) async {
-    final rows = await _client
-        .from('posts')
-        .select('*, profiles(username, avatar_url), post_media(media_url, media_type), likes(profile_id), comments(count)')
+    final rows = await _posts(myProfileId)
         .eq('author_id', authorId)
         .order('created_at', ascending: false);
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
@@ -117,9 +126,7 @@ class FeedRepository {
   /// Portfolio posts on the marketplace candidate detail view — see
   /// WorkerCandidateDetailScreen.
   Future<List<Post>> fetchPinnedPosts(String authorId) async {
-    final rows = await _client
-        .from('posts')
-        .select('*, profiles(username, avatar_url), post_media(media_url, media_type), likes(profile_id), comments(count)')
+    final rows = await _posts(authorId)
         .eq('author_id', authorId)
         .eq('is_pinned', true)
         .order('created_at', ascending: false);

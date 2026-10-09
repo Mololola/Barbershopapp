@@ -35,7 +35,7 @@ class Post {
   /// feed, a worker's own curated highlights.
   final bool isPinned;
 
-  Post copyWith({int? likeCount, bool? likedByMe, bool? isPinned}) {
+  Post copyWith({int? likeCount, int? commentCount, bool? likedByMe, bool? isPinned}) {
     return Post(
       id: id,
       authorId: authorId,
@@ -45,7 +45,7 @@ class Post {
       mediaUrl: mediaUrl,
       mediaType: mediaType,
       likeCount: likeCount ?? this.likeCount,
-      commentCount: commentCount,
+      commentCount: commentCount ?? this.commentCount,
       likedByMe: likedByMe ?? this.likedByMe,
       createdAt: createdAt,
       isPinned: isPinned ?? this.isPinned,
@@ -54,7 +54,8 @@ class Post {
 
   factory Post.fromRow(Map<String, dynamic> row, {required String? myProfileId}) {
     final media = row['post_media'] as List;
-    final likes = row['likes'] as List;
+    final likeCount = row['like_count'] as List;
+    final myLike = row['my_like'] as List;
     final comments = row['comments'] as List;
     final firstMedia = media.isEmpty ? null : media.first as Map<String, dynamic>;
     final author = row['profiles'] as Map<String, dynamic>;
@@ -66,9 +67,9 @@ class Post {
       body: row['body'] as String?,
       mediaUrl: firstMedia?['media_url'] as String?,
       mediaType: firstMedia?['media_type'] == 'video' ? PostMediaType.video : PostMediaType.image,
-      likeCount: likes.length,
+      likeCount: likeCount.isEmpty ? 0 : likeCount.first['count'] as int,
       commentCount: comments.isEmpty ? 0 : comments.first['count'] as int,
-      likedByMe: myProfileId != null && likes.any((like) => like['profile_id'] == myProfileId),
+      likedByMe: myProfileId != null && myLike.any((like) => like['profile_id'] == myProfileId),
       createdAt: DateTime.parse(row['created_at'] as String),
       isPinned: row['is_pinned'] as bool? ?? false,
     );

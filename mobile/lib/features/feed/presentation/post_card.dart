@@ -34,7 +34,13 @@ class _PostCardState extends ConsumerState<PostCard> {
   @override
   void didUpdateWidget(PostCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.post.id != widget.post.id) _post = widget.post;
+    if (oldWidget.post.id != widget.post.id) {
+      _post = widget.post;
+    } else if (oldWidget.post != widget.post) {
+      // Fresh counts from the feed (e.g. a new comment), keeping a like or
+      // pin just toggled here that the feed's copy doesn't know about.
+      _post = widget.post.copyWith(likedByMe: _post.likedByMe, likeCount: _post.likeCount, isPinned: _post.isPinned);
+    }
   }
 
   Future<void> _toggleLike() async {
