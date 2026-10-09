@@ -24,7 +24,13 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
   XFile? _cover;
   Color? _brandColor;
 
-  Future<XFile?> _pick() => ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600);
+  // Each capped near the largest size it's shown at: the logo is a small
+  // circle, the cover a 2.5:1 header (see ShopHeader.heightFor).
+  Future<XFile?> _pickLogo() =>
+      ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512, imageQuality: 85);
+
+  Future<XFile?> _pickCover() =>
+      ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, maxHeight: 640, imageQuality: 85);
 
   Future<void> _save() async {
     final brandColor = _brandColor;
@@ -78,7 +84,7 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
                         icon: const Icon(Icons.storefront_outlined),
                         label: const Text('Logo'),
                         onPressed: () async {
-                          final file = await _pick();
+                          final file = await _pickLogo();
                           if (file != null) setState(() => _logo = file);
                         },
                       ),
@@ -89,7 +95,7 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
                         icon: const Icon(Icons.panorama_outlined),
                         label: const Text('Cover photo'),
                         onPressed: () async {
-                          final file = await _pick();
+                          final file = await _pickCover();
                           if (file != null) setState(() => _cover = file);
                         },
                       ),

@@ -16,7 +16,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   XFile? _pickedImage;
 
   Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    // Shown at most ~96 px across; 512 keeps it sharp on any screen
+    // without uploading a multi-megabyte camera photo.
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
     if (picked == null) return;
     setState(() => _pickedImage = picked);
   }
