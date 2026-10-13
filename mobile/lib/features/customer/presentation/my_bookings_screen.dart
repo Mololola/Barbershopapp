@@ -40,12 +40,26 @@ class _BookingTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actionState = ref.watch(bookingActionControllerProvider);
+    final atRisk = ref.watch(bookingsAtRiskProvider).value ?? const {};
+    final cancelledAt = booking.status == BookingStatus.confirmed ? atRisk[booking.id] : null;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: ListTile(
         title: Text(_formatDateTime(booking.startTime.toLocal())),
-        subtitle: Text(_statusLabel(booking.status)),
+        subtitle: cancelledAt == null
+            ? Text(_statusLabel(booking.status))
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_statusLabel(booking.status)),
+                  const SizedBox(height: 4),
+                  Text(
+                    shopClosureNotice(cancelledAt, DateTime.now()),
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+              ),
         trailing: _buildTrailing(context, ref, actionState),
       ),
     );

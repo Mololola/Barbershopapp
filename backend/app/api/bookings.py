@@ -13,6 +13,7 @@ from app.core.auth import get_current_user_id
 from app.core.cache import cache
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
+from app.jobs.expire_grace_periods import GRACE_PERIOD_DAYS
 from app.models import Booking, Service, Worker
 from app.services.availability import compute_available_slots, working_periods
 
@@ -36,6 +37,11 @@ class BookingResponse(BaseModel):
     end_time: datetime.datetime
     status: str
     completed_at: datetime.datetime | None = None
+
+
+class BookingAtRisk(BaseModel):
+    booking_id: uuid.UUID
+    cancelled_at: datetime.datetime
 
 
 class AvailableSlot(BaseModel):
@@ -358,3 +364,34 @@ def complete_booking(
     db.commit()
     db.refresh(booking)
     return booking
+
+
+# Customers hear about it once the deletion is this close — early enough to
+# rebook, late enough that a shop that renews soon never worries anyone.
+_AT_RISK_NOTICE_DAYS = 30
+
+
+@router.get("/me/bookings/at-risk", response_model=list[BookingAtRisk])
+def my_bookings_at_risk(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> list[BookingAtRisk]:
+    """My upcoming bookings at a shop that has stopped paying, dated on or
+    after the day the shop will be deleted (and the booking with it) — see
+    app/jobs/expire_grace_periods.py. Only once that day is within
+    _AT_RISK_NOTICE_DAYS. Computed on read, so nothing is ever sent twice."""
+    rows = db.execute(
+        text(
+            "select booking_id, deletion_at as cancelled_at from ("
+            "  select b.id as booking_id, b.start_time, "
+            "    coalesce(s.suspended_at, business_hidden_since(b.business_id)) + make_interval(days => :days) "
+            "      as deletion_at "
+            "  from bookings b left join business_subscriptions s on s.business_id = b.business_id "
+            "  where b.customer_id = :user_id and b.status = 'confirmed' and b.start_time > now() "
+            "    and business_hidden_since(b.business_id) is not null"
+            ") at_risk "
+            "where start_time >= deletion_at and deletion_at <= now() + make_interval(days => :notice_days)"
+        ),
+        {"user_id": user_id, "days": GRACE_PERIOD_DAYS, "notice_days": _AT_RISK_NOTICE_DAYS},
+    ).mappings()
+    return [BookingAtRisk(**row) for row in rows]

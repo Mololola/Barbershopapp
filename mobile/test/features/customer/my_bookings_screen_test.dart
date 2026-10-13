@@ -36,6 +36,7 @@ void main() {
         currentProfileProvider.overrideWith((ref) async => me),
         bookingsRepositoryProvider.overrideWithValue(bookingsRepository),
         reviewRepositoryProvider.overrideWithValue(reviewRepository),
+        bookingsAtRiskProvider.overrideWith((ref) async => {}),
       ],
       child: const MaterialApp(home: MyBookingsScreen()),
     ));
@@ -48,6 +49,39 @@ void main() {
     expect(bookingsRepository.calls + reviewRepository.calls, 2);
     expect(find.text('Leave a review'), findsWidgets);
     expect(find.text('Reviewed'), findsWidgets);
+  });
+
+  testWidgets('a booking its shop will be deleted before shows when it will be cancelled', (tester) async {
+    final cancelledAt = DateTime.now().add(const Duration(days: 20));
+    final upcoming = Booking(
+      id: 'up-1',
+      businessId: 'shop-1',
+      workerId: 'w1',
+      serviceId: 's1',
+      customerId: 'me-1',
+      startTime: DateTime.now().add(const Duration(days: 40)),
+      endTime: DateTime.now().add(const Duration(days: 40, hours: 1)),
+      status: BookingStatus.confirmed,
+    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentProfileProvider.overrideWith((ref) async => me),
+        bookingsRepositoryProvider.overrideWithValue(_CountingBookings([upcoming])),
+        reviewRepositoryProvider.overrideWithValue(_CountingReviews({})),
+        bookingsAtRiskProvider.overrideWith((ref) async => {'up-1': cancelledAt}),
+      ],
+      child: const MaterialApp(home: MyBookingsScreen()),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text(shopClosureNotice(cancelledAt, DateTime.now())), findsOneWidget);
+    expect(find.textContaining('this booking will be cancelled.'), findsOneWidget);
+  });
+
+  test('the notice is reworded for the last day', () {
+    final now = DateTime.utc(2026, 4, 1, 13);
+    expect(shopClosureNotice(DateTime.utc(2026, 4, 2, 12), now), contains('within a day'));
+    expect(shopClosureNotice(DateTime.utc(2026, 4, 2, 12), now.subtract(const Duration(days: 5))), contains('2 Apr'));
   });
 }
 

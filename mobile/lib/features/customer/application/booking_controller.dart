@@ -31,6 +31,12 @@ final myBookingsProvider = FutureProvider<List<Booking>>((ref) async {
   return ref.watch(bookingsRepositoryProvider).fetchMyBookings(profile.id);
 });
 
+/// Bookings at a shop that stopped paying, dated after it will be deleted —
+/// see `/me/bookings/at-risk`.
+final bookingsAtRiskProvider = FutureProvider<Map<String, DateTime>>((ref) {
+  return ref.watch(bookingApiClientProvider).fetchBookingsAtRisk();
+});
+
 final bookingProvider = FutureProvider.family<Booking?, String>((ref, bookingId) {
   return ref.watch(bookingsRepositoryProvider).fetchBooking(bookingId);
 });

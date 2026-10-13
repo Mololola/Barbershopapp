@@ -125,6 +125,7 @@ class _NextAppointmentCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final business = ref.watch(businessProvider(booking.businessId)).value;
+    final cancelledAt = ref.watch(bookingsAtRiskProvider).value?[booking.id];
     final start = booking.startTime.toLocal();
 
     return DecoratedBox(
@@ -170,6 +171,22 @@ class _NextAppointmentCard extends ConsumerWidget {
             ),
             const SizedBox(height: 2),
             Text(_formatTime(start), style: const TextStyle(color: AppColors.chalk, fontSize: 15)),
+            if (cancelledAt != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.brass),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      shopClosureNotice(cancelledAt, DateTime.now()),
+                      style: const TextStyle(color: AppColors.chalk, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             CustomPaint(
               painter: _DashedLinePainter(color: AppColors.brass.withValues(alpha: 0.4)),
