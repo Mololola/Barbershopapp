@@ -1,0 +1,9 @@
+# App icons and 3D texture sources: no knowledge to extract, and each image
+# would cost its own AI reading on every update.
+*.png
+*.jpg
+*.jpeg
+# Minified/bundled 3D libraries for the haircut designer: their mangled
+# symbol names otherwise dominate the graph's most-connected nodes.
+*.min.js
+mobile/assets/haircut_designer/head_asset.js

@@ -10,9 +10,9 @@ import 'subscription_screen.dart';
 /// Shown on the business home screen. Nothing renders for an active or
 /// grandfathered (pre-billing) subscription — only when action is needed
 /// (never subscribed, suspended, or canceled): an unpaid shop is hidden from
-/// customers and, 60 days after that, deleted. During a free trial, or once
-/// a cancellation is scheduled, it says so and links to where to cancel or
-/// undo it.
+/// customers and deleted 60 days after the payment failed or it ended.
+/// During a free trial, or once a cancellation is scheduled, it says so and
+/// links to where to cancel or undo it.
 class SubscriptionBanner extends ConsumerWidget {
   const SubscriptionBanner({super.key});
 
@@ -102,7 +102,7 @@ class SubscriptionBanner extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text('$visibility ${_deletionNotice(hiddenAt.add(BusinessSubscription.dataRetention), now)}'),
+                Text('$visibility ${_deletionNotice(sub.suspendedAt!.add(BusinessSubscription.dataRetention), now)}'),
                 const SizedBox(height: 12),
                 // A failed payment is fixed in the billing portal; a canceled
                 // subscription is gone in Stripe and needs a new checkout.
