@@ -19,6 +19,7 @@ class Profile {
     this.isQualityReviewer = false,
     this.dateOfBirth,
     this.isMinor = false,
+    this.termsAcceptedAt,
   });
 
   final String id;
@@ -48,6 +49,9 @@ class Profile {
   /// policies that actually enforce the restrictions always agree.
   final bool isMinor;
 
+  /// When this account agreed to the Terms and Privacy Policy, at sign-up.
+  final DateTime? termsAcceptedAt;
+
   factory Profile.fromRow(Map<String, dynamic> row) {
     return Profile(
       id: row['id'] as String,
@@ -59,6 +63,7 @@ class Profile {
       isQualityReviewer: row['is_quality_reviewer'] as bool? ?? false,
       dateOfBirth: row['date_of_birth'] != null ? DateTime.parse(row['date_of_birth'] as String) : null,
       isMinor: row['is_minor'] as bool? ?? false,
+      termsAcceptedAt: row['terms_accepted_at'] != null ? DateTime.parse(row['terms_accepted_at'] as String) : null,
     );
   }
 }

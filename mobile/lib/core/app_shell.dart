@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'policy_update_notice.dart';
 import 'responsive.dart';
 
 /// The persistent bottom-nav chrome wrapping each StatefulShellRoute branch.
@@ -17,7 +18,7 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: navigationShell,
+      body: PolicyUpdateNotice(child: navigationShell),
       bottomNavigationBar: isWideLayout(context)
           ? null
           : NavigationBar(

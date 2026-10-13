@@ -5,12 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/legal.dart';
 import '../../../core/supabase_providers.dart';
 import '../application/auth_controller.dart';
 import '../domain/profile.dart';
-
-const _privacyPolicyUrl = 'https://claude.ai/code/artifact/f348e6eb-ffe5-4615-8087-6ab8396295ca';
-const _termsOfServiceUrl = 'https://claude.ai/code/artifact/7b0fd848-a548-46c4-9ee1-89d93f7e7b26';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -256,9 +254,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Text('I agree to the '),
-                      _LegalLink(label: 'Terms of Service', url: _termsOfServiceUrl),
+                      _LegalLink(label: 'Terms of Service', url: termsOfServiceUrl),
                       const Text(' and '),
-                      _LegalLink(label: 'Privacy Policy', url: _privacyPolicyUrl),
+                      _LegalLink(label: 'Privacy Policy', url: privacyPolicyUrl),
                     ],
                   ),
                 ),
