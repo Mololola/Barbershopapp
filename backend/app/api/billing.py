@@ -213,8 +213,8 @@ def set_basic_cut(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> OkResponse:
-    """Swaps the basic cut in one transaction (one per business). The price
-    follows on the next run of app/jobs/sync_subscription_prices.py."""
+    """Swaps the basic cut in one transaction (one per business), then moves
+    the subscription to its new price from the next payment."""
     if not _is_business_owner(db, business_id, user_id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
     is_active_service = db.execute(
@@ -230,6 +230,60 @@ def set_basic_cut(
     )
     db.execute(text("update services set is_basic_cut = true where id = :service_id"), {"service_id": service_id})
     db.commit()
+    _sync_price(db, business_id)
+    return OkResponse()
+
+
+def _sync_price(db: Session, business_id: uuid.UUID) -> None:
+    # Imported here: the job imports _PRICE_MULTIPLIER from this module.
+    from app.jobs.sync_subscription_prices import sync_subscription_prices
+
+    sync_subscription_prices(db, business_id)
+
+
+class PriceQuoteResponse(BaseModel):
+    # None when the shop has no running paid subscription to change.
+    current_monthly_cents: int | None
+    new_monthly_cents: int
+
+
+@router.get("/businesses/{business_id}/subscription/price-quote", response_model=PriceQuoteResponse)
+def quote_subscription_price(
+    business_id: uuid.UUID,
+    basic_cut_price_cents: int,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> PriceQuoteResponse:
+    """What the monthly subscription becomes with this basic cut price, so
+    the owner is told before saving a change to it."""
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+    # Same subscriptions as app/jobs/sync_subscription_prices.py moves.
+    current = db.execute(
+        text(
+            "select monthly_amount_cents from business_subscriptions where business_id = :business_id "
+            "and stripe_subscription_id is not null and status in ('active', 'suspended') and not grandfathered"
+        ),
+        {"business_id": business_id},
+    ).scalar()
+    return PriceQuoteResponse(
+        current_monthly_cents=current,
+        new_monthly_cents=_price_from_basic_cut(basic_cut_price_cents),
+    )
+
+
+@router.post("/businesses/{business_id}/subscription/sync-price", response_model=OkResponse)
+def sync_subscription_price(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("10/minute")),  # each call can be a real Stripe API round-trip
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    """Called after the owner edits their basic cut (written straight to
+    Supabase), so the new price applies now rather than on the next job run."""
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+    _sync_price(db, business_id)
     return OkResponse()
 
 

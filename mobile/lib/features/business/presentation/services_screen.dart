@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/loading.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
+import '../domain/finance_overview.dart';
 
 /// The shop's services, for its owner only. The first one is the basic cut,
 /// the shop's standard haircut. What it's used for (pricing the
@@ -92,17 +93,53 @@ class ServicesScreen extends ConsumerWidget {
     );
   }
 
+  /// Before a new basic cut price is saved, tells an owner with a running
+  /// subscription what their monthly payment becomes. True to go ahead.
+  Future<bool> _confirmPriceChange(BuildContext context, WidgetRef ref, int basicCutPriceCents) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final business = await ref.read(currentBusinessProvider.future);
+    if (business == null) return false;
+    final ({int? currentCents, int newCents}) quote;
+    try {
+      quote = await ref.read(billingApiClientProvider).quoteSubscriptionPrice(business.id, basicCutPriceCents);
+    } catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+      return false;
+    }
+    final currentCents = quote.currentCents;
+    if (currentCents == null || currentCents == quote.newCents) return true;
+    if (!context.mounted) return false;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Your monthly subscription changes'),
+        content: Text(
+          'From your next payment it goes from ${formatMoney(currentCents, business.currency)} to '
+          '${formatMoney(quote.newCents, business.currency)} a month. Nothing changes for the month '
+          'you\'ve already paid.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Continue')),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   Future<void> _add(BuildContext context, WidgetRef ref, {required bool isFirst}) async {
     final values = await _showServiceDialog(
       context,
       title: isFirst ? 'Your basic cut' : 'Add service',
       helper: isFirst ? 'Your standard haircut, with its price and duration.' : null,
     );
-    if (values == null) return;
+    if (values == null || !context.mounted) return;
+    if (isFirst && !await _confirmPriceChange(context, ref, values.priceCents)) return;
     await ref.read(serviceControllerProvider.notifier).addService(
           name: values.name,
           priceCents: values.priceCents,
           durationMinutes: values.durationMinutes,
+          isFirst: isFirst,
         );
   }
 
@@ -112,7 +149,12 @@ class ServicesScreen extends ConsumerWidget {
       title: service.isBasicCut ? 'Edit your basic cut' : 'Edit service',
       existing: service,
     );
-    if (values == null) return;
+    if (values == null || !context.mounted) return;
+    if (service.isBasicCut &&
+        values.priceCents != service.priceCents &&
+        !await _confirmPriceChange(context, ref, values.priceCents)) {
+      return;
+    }
     await ref.read(serviceControllerProvider.notifier).updateService(
           Service(
             id: service.id,
@@ -120,18 +162,25 @@ class ServicesScreen extends ConsumerWidget {
             name: values.name,
             priceCents: values.priceCents,
             durationMinutes: values.durationMinutes,
+            isBasicCut: service.isBasicCut,
           ),
         );
   }
 
-  Future<void> _remove(BuildContext context, WidgetRef ref, Service service, {required bool isLast}) async {
-    if (service.isBasicCut && !isLast) {
+  Future<void> _makeBasicCut(BuildContext context, WidgetRef ref, Service service) async {
+    if (!await _confirmPriceChange(context, ref, service.priceCents)) return;
+    await ref.read(serviceControllerProvider.notifier).makeBasicCut(service.id!);
+  }
+
+  Future<void> _remove(BuildContext context, WidgetRef ref, Service service) async {
+    if (service.isBasicCut) {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Choose another basic cut first'),
+          title: const Text('Your shop needs a basic cut'),
           content: const Text(
-            'Your shop always has a basic cut. Make another service your basic cut, then remove this one.',
+            'To change it, edit it, or add another service and make that your basic cut. Then you can '
+            'remove this one.',
           ),
           actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
         ),
@@ -142,10 +191,7 @@ class ServicesScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Remove ${service.name}?'),
-        content: Text(
-          'Customers won\'t be able to book it any more. Bookings already made for it are kept.'
-          '${isLast ? ' This is your last service: customers can\'t book your shop until you add one.' : ''}',
-        ),
+        content: const Text('Customers won\'t be able to book it any more. Bookings already made for it are kept.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
@@ -219,8 +265,8 @@ class ServicesScreen extends ConsumerWidget {
                     tooltip: 'Service options',
                     onSelected: (action) => switch (action) {
                       'edit' => _edit(context, ref, service),
-                      'basic' => ref.read(serviceControllerProvider.notifier).makeBasicCut(service.id!),
-                      _ => _remove(context, ref, service, isLast: list.length == 1),
+                      'basic' => _makeBasicCut(context, ref, service),
+                      _ => _remove(context, ref, service),
                     },
                     itemBuilder: (_) => [
                       const PopupMenuItem(value: 'edit', child: Text('Edit')),

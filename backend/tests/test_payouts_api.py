@@ -41,7 +41,9 @@ def test_payout_request_copies_the_bank_details_it_will_be_paid_to():
     session = _ScriptedSession(_DETAILS, available=1000)
     request_payout(PayoutRequestCreate(amount_cents=1000, currency="EUR"), session, "u1")
 
-    insert_params = session.statements[-1][1]
+    insert_statement, insert_params = session.statements[-1]
+    # Who it was paid to stays on the record if the account is deleted.
+    assert "requester_username" in insert_statement
     assert insert_params == {
         "id": "u1",
         "amount": 1000,

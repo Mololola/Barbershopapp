@@ -60,3 +60,9 @@ def test_a_stripe_failure_is_left_for_the_next_run(monkeypatch):
     session = _Session([{"business_id": "b1", "stripe_subscription_id": "sub_1", "amount": 18000}])
     assert job.sync_subscription_prices(session) == []
     assert session.updates == []
+
+
+def test_an_owner_change_syncs_only_their_shop():
+    session = _Session([])
+    assert job.sync_subscription_prices(session, "b1") == []
+    assert session.params["business_id"] == "b1"

@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 import stripe
 from sqlalchemy import text
@@ -10,20 +11,22 @@ from app.api.billing import _PRICE_MULTIPLIER
 logger = logging.getLogger(__name__)
 
 
-def sync_subscription_prices(db: Session) -> list[str]:
+def sync_subscription_prices(db: Session, business_id: uuid.UUID | None = None) -> list[str]:
     """Moves every running subscription whose shop's basic cut price changed
     to the new price, from its next payment (no proration). Services are
     written straight to Supabase, so this — not the app — is what keeps the
-    price honest. A shop with no basic cut keeps its current price."""
+    price honest. A shop with no basic cut keeps its current price. With
+    [business_id], only that shop — so an owner's change applies at once."""
     rows = db.execute(
         text(
             "select s.business_id, s.stripe_subscription_id, sv.price_cents * :multiplier as amount "
             "from business_subscriptions s "
             "join services sv on sv.business_id = s.business_id and sv.is_active and sv.is_basic_cut "
             "where s.stripe_subscription_id is not null and s.status in ('active', 'suspended') "
-            "and not s.grandfathered and sv.price_cents * :multiplier <> s.monthly_amount_cents"
+            "and not s.grandfathered and sv.price_cents * :multiplier <> s.monthly_amount_cents "
+            "and (cast(:business_id as uuid) is null or s.business_id = :business_id)"
         ),
-        {"multiplier": _PRICE_MULTIPLIER},
+        {"multiplier": _PRICE_MULTIPLIER, "business_id": business_id},
     ).mappings().all()
 
     synced: list[str] = []

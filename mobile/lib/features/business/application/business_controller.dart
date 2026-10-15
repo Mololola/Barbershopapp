@@ -255,25 +255,39 @@ class ServiceController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
+  /// [isFirst]: it becomes the basic cut (services_default_basic_cut).
   Future<void> addService({
     required String name,
     required int priceCents,
     required int durationMinutes,
+    bool isFirst = false,
   }) =>
-      _run(
-        (businessId) => ref.read(businessRepositoryProvider).addService(
+      _run((businessId) async {
+        await ref.read(businessRepositoryProvider).addService(
               Service(businessId: businessId, name: name, priceCents: priceCents, durationMinutes: durationMinutes),
-            ),
-      );
+            );
+        if (isFirst) await _syncSubscriptionPrice(businessId);
+      });
 
-  Future<void> updateService(Service service) =>
-      _run((_) => ref.read(businessRepositoryProvider).updateService(service));
+  Future<void> updateService(Service service) => _run((businessId) async {
+        await ref.read(businessRepositoryProvider).updateService(service);
+        if (service.isBasicCut) await _syncSubscriptionPrice(businessId);
+      });
 
   Future<void> removeService(String serviceId) =>
       _run((_) => ref.read(businessRepositoryProvider).removeService(serviceId));
 
-  Future<void> makeBasicCut(String serviceId) =>
-      _run((businessId) => ref.read(billingApiClientProvider).setBasicCut(businessId, serviceId));
+  Future<void> makeBasicCut(String serviceId) => _run((businessId) async {
+        await ref.read(billingApiClientProvider).setBasicCut(businessId, serviceId);
+        ref.invalidate(businessSubscriptionProvider);
+      });
+
+  // Services are written straight to Supabase, so the backend is asked to
+  // move the subscription to the basic cut's new price now.
+  Future<void> _syncSubscriptionPrice(String businessId) async {
+    await ref.read(billingApiClientProvider).syncSubscriptionPrice(businessId);
+    ref.invalidate(businessSubscriptionProvider);
+  }
 
   Future<void> _run(Future<void> Function(String businessId) action) async {
     state = const AsyncLoading();

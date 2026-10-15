@@ -41,7 +41,7 @@ void main() {
     await tester.tap(find.text('Remove'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Choose another basic cut first'), findsOneWidget);
+    expect(find.text('Your shop needs a basic cut'), findsOneWidget);
   });
 
   testWidgets('removing another service keeps its bookings', (tester) async {

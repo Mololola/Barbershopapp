@@ -15,6 +15,8 @@ extension PayoutRequestStatusX on PayoutRequestStatus {
 /// existed); the admin marks this 'paid' once they've actually sent it (see
 /// admin_screen.dart's Payouts tab). `requesterUsername` is only populated
 /// for the admin's view (their own requests don't need to name themselves).
+/// A paid request outlives its account (a tax record): `profileId` is then
+/// null and `requesterUsername` comes from the copy taken when it was made.
 class PayoutRequest {
   const PayoutRequest({
     required this.id,
@@ -31,7 +33,7 @@ class PayoutRequest {
   });
 
   final String id;
-  final String profileId;
+  final String? profileId;
   final int amountCents;
   final String currency;
   final String? accountHolder;
@@ -46,7 +48,7 @@ class PayoutRequest {
     final profile = row['profiles'] as Map<String, dynamic>?;
     return PayoutRequest(
       id: row['id'] as String,
-      profileId: row['profile_id'] as String,
+      profileId: row['profile_id'] as String?,
       amountCents: row['amount_cents'] as int,
       currency: row['currency'] as String,
       accountHolder: row['account_holder'] as String?,
@@ -55,7 +57,7 @@ class PayoutRequest {
       requestedAt: DateTime.parse(row['requested_at'] as String),
       resolvedAt: row['resolved_at'] != null ? DateTime.parse(row['resolved_at'] as String) : null,
       adminNote: row['admin_note'] as String?,
-      requesterUsername: profile?['username'] as String?,
+      requesterUsername: profile?['username'] as String? ?? row['requester_username'] as String?,
     );
   }
 }

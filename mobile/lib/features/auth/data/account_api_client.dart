@@ -27,6 +27,16 @@ class AccountApiClient {
     await _api.delete('/account');
   }
 
+  /// Rewards earned but not yet paid out, per currency — given up if the
+  /// account is deleted.
+  Future<List<({String currency, int amountCents})>> fetchUnpaidRewards() async {
+    final rows = await _api.get('/account/unpaid-rewards') as List<dynamic>;
+    return [
+      for (final row in rows.cast<Map<String, dynamic>>())
+        (currency: row['currency'] as String, amountCents: row['amount_cents'] as int),
+    ];
+  }
+
   /// Throws [SignUpConflictException] if the email or username is already
   /// in use — checked server-side because the `profiles` read policy hides
   /// every row from a signed-out caller, and pending (unconfirmed) signups

@@ -11,6 +11,7 @@ import '../application/admin_controller.dart';
 import '../domain/admin_business_summary.dart';
 import '../domain/reviewer.dart';
 import 'admin_overview_tab.dart';
+import 'admin_payout_records.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -401,8 +402,40 @@ class _BusinessesTab extends ConsumerWidget {
   }
 }
 
-class _PayoutsTab extends ConsumerWidget {
+/// Requests waiting on the admin, and the records of what's been paid.
+class _PayoutsTab extends StatefulWidget {
   const _PayoutsTab();
+
+  @override
+  State<_PayoutsTab> createState() => _PayoutsTabState();
+}
+
+class _PayoutsTabState extends State<_PayoutsTab> {
+  var _showRecords = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: false, label: Text('Requests'), icon: Icon(Icons.inbox_outlined)),
+              ButtonSegment(value: true, label: Text('Records'), icon: Icon(Icons.receipt_long_outlined)),
+            ],
+            selected: {_showRecords},
+            onSelectionChanged: (selection) => setState(() => _showRecords = selection.single),
+          ),
+        ),
+        Expanded(child: _showRecords ? const AdminPayoutRecords() : const _PayoutRequests()),
+      ],
+    );
+  }
+}
+
+class _PayoutRequests extends ConsumerWidget {
+  const _PayoutRequests();
 
   Future<void> _resolve(
     BuildContext context,
@@ -442,7 +475,7 @@ class _PayoutsTab extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${request.requesterUsername ?? request.profileId} — '
+                            '${request.requesterUsername ?? 'Deleted account'} — '
                             '${formatMoney(request.amountCents, request.currency)}',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),

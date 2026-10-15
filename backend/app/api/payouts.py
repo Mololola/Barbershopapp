@@ -80,8 +80,8 @@ def request_payout(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "That's more than your available balance.")
     db.execute(
         text(
-            "insert into payout_requests (profile_id, amount_cents, currency, account_holder, iban) "
-            "values (:id, :amount, :currency, :holder, :iban)"
+            "insert into payout_requests (profile_id, requester_username, amount_cents, currency, account_holder, iban) "
+            "select :id, username, :amount, :currency, :holder, :iban from profiles where id = :id"
         ),
         {
             "id": user_id,

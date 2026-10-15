@@ -47,6 +47,7 @@ class Business {
     this.logoUrl,
     this.coverUrl,
     this.brandColor,
+    this.referredByCode,
     this.isSetupComplete = false,
     this.createdAt,
   });
@@ -61,6 +62,9 @@ class Business {
 
   /// "#RRGGBB", or null until chosen — see brandColorOf.
   final String? brandColor;
+
+  /// The referral code entered at signup, if any — fixed after that.
+  final String? referredByCode;
 
   /// False until the owner finishes the onboarding wizard (details, a
   /// service, a staff member) — the router keeps them in it until then.
@@ -78,6 +82,7 @@ class Business {
       logoUrl: row['logo_url'] as String?,
       coverUrl: row['cover_url'] as String?,
       brandColor: row['brand_color'] as String?,
+      referredByCode: row['referred_by_code'] as String?,
       isSetupComplete: row['setup_completed_at'] != null,
       createdAt: row['created_at'] != null ? DateTime.parse(row['created_at'] as String) : null,
     );
