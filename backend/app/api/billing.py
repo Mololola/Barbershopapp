@@ -16,8 +16,9 @@ from app.api.finance import finance_premium_state
 
 router = APIRouter()
 
-# The value of "10 haircuts" per the spec — a business's own average active
-# service price, times this multiplier, becomes its monthly subscription.
+# The value of "10 haircuts" per the spec — a business's basic cut (its
+# standard haircut, services.is_basic_cut), times this multiplier, becomes
+# its monthly subscription.
 _PRICE_MULTIPLIER = 10
 
 # Finance tool premium: a flat monthly add-on (the basic finance summary
@@ -65,12 +66,12 @@ def _is_business_owner(db: Session, business_id: uuid.UUID, user_id: str) -> boo
     )
 
 
-def _price_from_average(avg_price_cents: float | None) -> int | None:
+def _price_from_basic_cut(basic_cut_price_cents: int | None) -> int | None:
     """The "value of 10 haircuts" pricing rule — pulled out of the DB-facing
     endpoint so it's testable without a database."""
-    if avg_price_cents is None:
+    if basic_cut_price_cents is None:
         return None
-    return round(avg_price_cents * _PRICE_MULTIPLIER)
+    return basic_cut_price_cents * _PRICE_MULTIPLIER
 
 
 def _trial_end_timestamp(trial_ends_at: datetime | None, now: datetime) -> int | None:
@@ -86,15 +87,15 @@ def _trial_end_timestamp(trial_ends_at: datetime | None, now: datetime) -> int |
 
 
 def _compute_monthly_amount_cents(db: Session, business_id: uuid.UUID) -> int:
-    avg_price = db.execute(
-        text("select avg(price_cents) from services where business_id = :business_id and is_active = true"),
+    basic_cut_price = db.execute(
+        text("select price_cents from services where business_id = :business_id and is_active and is_basic_cut"),
         {"business_id": business_id},
     ).scalar()
-    amount = _price_from_average(float(avg_price) if avg_price is not None else None)
+    amount = _price_from_basic_cut(basic_cut_price)
     if amount is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Add at least one active service before subscribing — the subscription price is based on it.",
+            "Add your basic cut before subscribing.",
         )
     return amount
 
@@ -203,6 +204,33 @@ def create_portal_session(
         return_url=_return_url("portal"),
     )
     return PortalSessionResponse(url=portal_session.url)
+
+
+@router.post("/businesses/{business_id}/services/{service_id}/basic-cut", response_model=OkResponse)
+def set_basic_cut(
+    business_id: uuid.UUID,
+    service_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    """Swaps the basic cut in one transaction (one per business). The price
+    follows on the next run of app/jobs/sync_subscription_prices.py."""
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+    is_active_service = db.execute(
+        text("select 1 from services where id = :service_id and business_id = :business_id and is_active"),
+        {"service_id": service_id, "business_id": business_id},
+    ).first()
+    if is_active_service is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Service not found")
+    # Unset first: one basic cut per business (services_one_basic_cut).
+    db.execute(
+        text("update services set is_basic_cut = false where business_id = :business_id and is_basic_cut"),
+        {"business_id": business_id},
+    )
+    db.execute(text("update services set is_basic_cut = true where id = :service_id"), {"service_id": service_id})
+    db.commit()
+    return OkResponse()
 
 
 _ACTIVE_SHOP_SUBSCRIPTION = (

@@ -259,27 +259,28 @@ class ServiceController extends AsyncNotifier<void> {
     required String name,
     required int priceCents,
     required int durationMinutes,
-  }) async {
+  }) =>
+      _run(
+        (businessId) => ref.read(businessRepositoryProvider).addService(
+              Service(businessId: businessId, name: name, priceCents: priceCents, durationMinutes: durationMinutes),
+            ),
+      );
+
+  Future<void> updateService(Service service) =>
+      _run((_) => ref.read(businessRepositoryProvider).updateService(service));
+
+  Future<void> removeService(String serviceId) =>
+      _run((_) => ref.read(businessRepositoryProvider).removeService(serviceId));
+
+  Future<void> makeBasicCut(String serviceId) =>
+      _run((businessId) => ref.read(billingApiClientProvider).setBasicCut(businessId, serviceId));
+
+  Future<void> _run(Future<void> Function(String businessId) action) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final business = await ref.read(currentBusinessProvider.future);
       if (business == null) throw StateError('No business set up yet.');
-      await ref.read(businessRepositoryProvider).addService(
-            Service(
-              businessId: business.id,
-              name: name,
-              priceCents: priceCents,
-              durationMinutes: durationMinutes,
-            ),
-          );
-      ref.invalidate(servicesProvider);
-    });
-  }
-
-  Future<void> deleteService(String serviceId) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref.read(businessRepositoryProvider).deleteService(serviceId);
+      await action(business.id);
       ref.invalidate(servicesProvider);
     });
   }

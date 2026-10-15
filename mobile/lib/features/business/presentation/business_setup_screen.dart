@@ -48,8 +48,8 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
         setupFooter: _SetupFooter(
           stepLabel: 'Step 2 of 3',
           hint:
-              'Add at least one service with its price and duration. Your monthly subscription is '
-              '10× your average service price.',
+              'Add your basic cut — your standard haircut — with its price and duration. Once setup is '
+              'complete you can add the rest of your services.',
           continueLabel: 'Continue',
           onContinue: services.value!.isEmpty ? null : () => setState(() => _step = _Step.staff),
         ),

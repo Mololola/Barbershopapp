@@ -262,6 +262,7 @@ class Service {
     required this.priceCents,
     required this.durationMinutes,
     this.isActive = true,
+    this.isBasicCut = false,
   });
 
   final String? id;
@@ -270,6 +271,10 @@ class Service {
   final int priceCents;
   final int durationMinutes;
   final bool isActive;
+
+  /// The shop's standard haircut; the subscription is priced from it. Only
+  /// ever shown to the owner.
+  final bool isBasicCut;
 
   double get priceInMajorUnits => priceCents / 100;
 
@@ -281,6 +286,7 @@ class Service {
       priceCents: row['price_cents'] as int,
       durationMinutes: row['duration_minutes'] as int,
       isActive: row['is_active'] as bool,
+      isBasicCut: row['is_basic_cut'] as bool? ?? false,
     );
   }
 }
