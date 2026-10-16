@@ -29,7 +29,7 @@ class BusinessHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(wide ? 'Home' : 'Barbershop for Business'),
+        title: Text(wide ? 'Home' : 'Fadra Cut for Business'),
         actions: [
           if (wide)
             // Pull-to-refresh needs a touch screen.

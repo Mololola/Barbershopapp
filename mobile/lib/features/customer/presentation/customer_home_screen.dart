@@ -29,7 +29,7 @@ class CustomerHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Barbershop'),
+        title: const Text('Fadra Cut'),
         actions: [
           TextButton.icon(
             onPressed: () => context.push('/rewards'),

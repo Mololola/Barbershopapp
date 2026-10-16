@@ -56,7 +56,7 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
       for (final factor in _factors.where((f) => f.status == FactorStatus.unverified)) {
         await _auth.mfa.unenroll(factor.id);
       }
-      final enrolled = await _auth.mfa.enroll(issuer: 'Barbershop', friendlyName: 'Authenticator app');
+      final enrolled = await _auth.mfa.enroll(issuer: 'Fadra Cut', friendlyName: 'Authenticator app');
       setState(() {
         _factorId = enrolled.id;
         _enrollment = enrolled.totp;

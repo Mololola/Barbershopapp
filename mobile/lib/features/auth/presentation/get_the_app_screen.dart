@@ -19,7 +19,7 @@ class GetTheAppScreen extends ConsumerWidget {
           Text('This website is for barbershops.', style: textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
-            'Booking, your rewards and the feed are in the Barbershop app — sign in there on your phone '
+            'Booking, your rewards and the feed are in the Fadra Cut app — sign in there on your phone '
             'with this same account.',
             style: textTheme.bodyLarge,
           ),

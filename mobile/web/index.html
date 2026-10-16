@@ -13,11 +13,11 @@
 
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Barbershop">
+  <meta name="apple-mobile-web-app-title" content="Fadra Cut">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <title>Barbershop for Business</title>
+  <title>Fadra Cut for Business</title>
   <link rel="manifest" href="manifest.json">
 
   <!-- Shown while the app downloads; the app paints over it once it starts. -->
@@ -29,7 +29,7 @@
       font: 800 20px/1 system-ui, sans-serif; letter-spacing: 0.12em; color: #EDEAE3;
     }
     .loading .mark {
-      width: 48px; height: 48px; border-radius: 50%; background: #A6803C;
+      width: 64px; height: 64px; border-radius: 22.5%;
       animation: pulse 1.4s ease-in-out infinite;
     }
     @keyframes pulse { 50% { transform: scale(0.85); opacity: 0.6; } }
@@ -38,8 +38,8 @@
 </head>
 <body>
   <div class="loading" aria-label="Loading">
-    <div class="mark"></div>
-    BARBERSHOP
+    <img class="mark" src="icons/Icon-192.png" alt="">
+    FADRA CUT
   </div>
   <script src="flutter_bootstrap.js" async></script>
 </body>

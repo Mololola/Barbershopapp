@@ -190,7 +190,7 @@ class _BrandPanel extends StatelessWidget {
               ),
             const Spacer(),
             Text(
-              'Customers book on the Barbershop app.',
+              'Customers book on the Fadra Cut app.',
               style: textTheme.bodySmall?.copyWith(color: AppColors.chalk.withValues(alpha: 0.55)),
             ),
           ],
@@ -207,12 +207,9 @@ class _Wordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const mark = DecoratedBox(
-      decoration: BoxDecoration(color: AppColors.brass, shape: BoxShape.circle),
-      child: Padding(
-        padding: EdgeInsets.all(8),
-        child: Icon(Icons.content_cut, size: 20, color: AppColors.onBrass),
-      ),
+    final mark = ClipRRect(
+      borderRadius: BorderRadius.circular(9),
+      child: Image.asset('assets/branding/icon.png', width: 40, height: 40),
     );
     return Row(
       children: [
@@ -223,7 +220,7 @@ class _Wordmark extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'BARBERSHOP',
+                'FADRA CUT',
                 style: GoogleFonts.bigShouldersDisplay(
                   fontWeight: FontWeight.w800,
                   fontSize: 22,

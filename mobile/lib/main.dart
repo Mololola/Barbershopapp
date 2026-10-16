@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/adaptive_chrome.dart';
 import 'core/env.dart';
 import 'core/error_reporting.dart';
+import 'core/launch_animation.dart';
 import 'core/router.dart';
 import 'core/secure_local_storage.dart';
 import 'core/system_bars.dart';
@@ -67,10 +68,11 @@ class BarbershopApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'Barbershop',
+      title: 'Fadra Cut',
       theme: AppTheme.light,
       routerConfig: ref.watch(routerProvider),
-      builder: (context, child) => SystemBarsSafeArea(child: AdaptiveChrome(child: child!)),
+      builder: (context, child) =>
+          LaunchAnimation(child: SystemBarsSafeArea(child: AdaptiveChrome(child: child!))),
     );
   }
 }
