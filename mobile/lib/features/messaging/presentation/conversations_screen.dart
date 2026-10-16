@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/loading.dart';
 import '../../../core/status_message.dart';
+import '../../../core/theme.dart';
 import '../../business/domain/brand.dart';
 import '../application/messaging_controller.dart';
 import '../domain/conversation.dart';
@@ -19,16 +20,53 @@ class ConversationsScreen extends ConsumerWidget {
     final personal = list.where((c) => c.type == ConversationType.personal).toList();
     final business = list.where((c) => c.type == ConversationType.business).toList();
 
+    final unread = _unread(list);
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Messages'),
-          bottom: TabBar(
-            tabs: [
-              _InboxTab(label: 'Personal', unread: _unread(personal)),
-              _InboxTab(label: 'Business', unread: _unread(business)),
-            ],
+          scrolledUnderElevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(124),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Messages',
+                    style: TextStyle(fontFamily: AppFonts.script, fontSize: 40, height: 1, color: AppColors.chalk),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    conversations.hasValue ? (unread == 0 ? 'All caught up' : '$unread unread') : ' ',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.brass),
+                  ),
+                  const SizedBox(height: 16),
+                  // Personal / Business as a pill switch.
+                  Container(
+                    height: 40,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.chalk.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TabBar(
+                      indicator: BoxDecoration(color: AppColors.chalk, borderRadius: BorderRadius.circular(9)),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerHeight: 0,
+                      labelColor: AppColors.charcoal,
+                      unselectedLabelColor: AppColors.chalk.withValues(alpha: 0.7),
+                      labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                      tabs: [
+                        _InboxTab(label: 'Personal', unread: _unread(personal)),
+                        _InboxTab(label: 'Business', unread: _unread(business)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
         body: conversations.when(
@@ -108,11 +146,11 @@ class _UnreadBadge extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minWidth: 20),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: theme.colorScheme.primary, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(color: AppColors.brass, borderRadius: BorderRadius.circular(10)),
       child: Text(
         count > 99 ? '99+' : '$count',
         textAlign: TextAlign.center,
-        style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.w600),
+        style: theme.textTheme.labelSmall?.copyWith(color: AppColors.onBrass, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -140,7 +178,7 @@ class _ConversationList extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: conversations.length,
-              separatorBuilder: (_, _) => Divider(height: 1, indent: 80, color: Theme.of(context).colorScheme.outline),
+              separatorBuilder: (_, _) => Divider(height: 1, indent: 84, color: AppColors.charcoal.withValues(alpha: 0.06)),
               itemBuilder: (context, index) => _ConversationRow(conversation: conversations[index]),
             ),
     );
@@ -168,12 +206,20 @@ class _ConversationRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: scheme.primary.withValues(alpha: 0.12),
-                foregroundColor: scheme.primary,
-                backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                child: avatarUrl == null ? Text(initialsOf(conversation.otherUsername)) : null,
+              // Unread threads get a brass ring around the photo.
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: unread ? AppColors.brass : Colors.transparent, width: 2),
+                ),
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: scheme.primary.withValues(alpha: 0.12),
+                  foregroundColor: scheme.primary,
+                  backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  child: avatarUrl == null ? Text(initialsOf(conversation.otherUsername)) : null,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(

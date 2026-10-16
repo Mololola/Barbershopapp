@@ -26,6 +26,14 @@ class AppColors {
   static const onRust = chalk;
 }
 
+class AppFonts {
+  const AppFonts._();
+
+  /// The Fadra Cut logo's script, for brand headings only (bundled, see
+  /// pubspec.yaml).
+  static const script = 'Yellowtail';
+}
+
 class AppTheme {
   const AppTheme._();
 

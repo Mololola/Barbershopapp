@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/loading.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/profile.dart';
 import '../../business/application/business_controller.dart';
+import '../../business/domain/brand.dart';
+import '../../worker/application/worker_controller.dart';
 import '../../worker/domain/worker_leave_request.dart';
 import '../application/messaging_controller.dart';
+import '../domain/conversation.dart';
+import '../domain/message.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
   const ConversationScreen({super.key, required this.conversationId});
@@ -65,9 +71,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         : (ref.watch(pendingLeaveRequestsProvider).value ?? const [])
             .where((r) => r.workerProfileId == conversation.otherParticipantId)
             .firstOrNull;
+    final other = conversation?.otherUsername;
+    final fieldBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(24),
+      borderSide: const BorderSide(color: AppColors.divider),
+    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Conversation')),
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: conversation == null ? null : _ChatHeader(conversation: conversation),
+      ),
       body: Column(
         children: [
           if (leaveRequest != null) _LeaveRequestBanner(request: leaveRequest),
@@ -80,46 +94,58 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   return const Center(child: Text('No messages yet — say hello.'));
                 }
                 _scrollToBottom();
+                final lastMine = list.lastIndexWhere((m) => m.senderId == myId);
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
                   itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final message = list[index];
-                    final isMine = message.senderId == myId;
-                    return Align(
-                      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isMine
-                              ? Theme.of(context).colorScheme.primaryContainer
-                              : Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(message.body),
-                      ),
-                    );
-                  },
+                  itemBuilder: (context, index) => _MessageItem(
+                    message: list[index],
+                    previous: index > 0 ? list[index - 1] : null,
+                    next: index < list.length - 1 ? list[index + 1] : null,
+                    isMine: list[index].senderId == myId,
+                    showRead: index == lastMine,
+                  ),
                 );
               },
             ),
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+            decoration: const BoxDecoration(
+              color: AppColors.cardSurface,
+              border: Border(top: BorderSide(color: AppColors.divider)),
+            ),
+            child: SafeArea(
+              top: false,
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _bodyController,
-                      decoration: const InputDecoration(hintText: 'Message'),
+                      textCapitalization: TextCapitalization.sentences,
+                      minLines: 1,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: other == null ? 'Message' : 'Message $other',
+                        filled: true,
+                        fillColor: AppColors.chalk,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: fieldBorder,
+                        enabledBorder: fieldBorder,
+                        focusedBorder: fieldBorder.copyWith(
+                          borderSide: const BorderSide(color: AppColors.brass, width: 1.5),
+                        ),
+                      ),
                       onSubmitted: (_) => _send(),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    style: IconButton.styleFrom(backgroundColor: AppColors.brass, foregroundColor: AppColors.onBrass),
+                    tooltip: 'Send',
+                    icon: const Icon(Icons.send_rounded),
                     onPressed: actionState.isLoading ? null : _send,
                   ),
                 ],
@@ -128,6 +154,163 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Who you're talking to, in place of a "Conversation" title: photo, name,
+/// and Barber or Shop when they are one. Opens their profile.
+class _ChatHeader extends ConsumerWidget {
+  const _ChatHeader({required this.conversation});
+
+  final Conversation conversation;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final otherId = conversation.otherParticipantId;
+    final role = ref.watch(profileByIdProvider(otherId)).value?.role;
+    // The same fact the profile's Barber badge shows: a worker profile exists.
+    final isBarber = role == AccountRole.customer && ref.watch(workerProfileByIdProvider(otherId)).value != null;
+    final kind = isBarber ? 'Barber · ' : (role == AccountRole.business ? 'Shop · ' : '');
+    final avatarUrl = conversation.otherAvatarUrl;
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => context.push('/profile/$otherId'),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.brass.withValues(alpha: 0.2),
+              foregroundColor: AppColors.brass,
+              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+              child: avatarUrl == null ? Text(initialsOf(conversation.otherUsername)) : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    conversation.otherUsername,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleSmall?.copyWith(color: AppColors.chalk, fontWeight: FontWeight.w600),
+                  ),
+                  Text('${kind}View profile', style: textTheme.labelSmall?.copyWith(color: AppColors.brass)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/// One message, with a day marker above it when the day changes and its
+/// time below the last message of a run. Messages from the same person
+/// within a few minutes form one run, with the tail on its last bubble.
+class _MessageItem extends StatelessWidget {
+  const _MessageItem({
+    required this.message,
+    required this.previous,
+    required this.next,
+    required this.isMine,
+    required this.showRead,
+  });
+
+  static const _runGap = Duration(minutes: 5);
+
+  final Message message;
+  final Message? previous;
+  final Message? next;
+  final bool isMine;
+
+  /// True on your latest message: it says "Read" once they've seen it.
+  final bool showRead;
+
+  static bool _sameRun(Message earlier, Message later) =>
+      earlier.senderId == later.senderId &&
+      DateUtils.isSameDay(earlier.createdAt.toLocal(), later.createdAt.toLocal()) &&
+      later.createdAt.difference(earlier.createdAt) < _runGap;
+
+  static String _dayLabel(DateTime at) {
+    final local = at.toLocal();
+    final now = DateTime.now();
+    final days = DateUtils.dateOnly(now).difference(DateUtils.dateOnly(local)).inDays;
+    if (days == 0) return 'Today';
+    if (days == 1) return 'Yesterday';
+    final year = local.year == now.year ? '' : ' ${local.year}';
+    return '${local.day} ${_monthShort[local.month - 1]}$year';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final prev = previous;
+    final after = next;
+    final newDay = prev == null || !DateUtils.isSameDay(prev.createdAt.toLocal(), message.createdAt.toLocal());
+    final startsRun = prev == null || !_sameRun(prev, message);
+    final endsRun = after == null || !_sameRun(message, after);
+    final textTheme = Theme.of(context).textTheme;
+    const round = Radius.circular(18);
+    const tail = Radius.circular(6);
+    final read = isMine && showRead && message.readAt != null ? ' · Read' : '';
+
+    return Column(
+      crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        if (newDay)
+          Align(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.charcoal.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(_dayLabel(message.createdAt), style: textTheme.labelSmall?.copyWith(color: AppColors.steel)),
+            ),
+          ),
+        Align(
+          alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
+            child: Container(
+              margin: EdgeInsets.only(top: startsRun && !newDay ? 8 : 2),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isMine ? AppColors.charcoal : AppColors.cardSurface,
+                border: isMine ? null : Border.all(color: AppColors.divider),
+                borderRadius: BorderRadius.only(
+                  topLeft: round,
+                  topRight: round,
+                  bottomLeft: !isMine && endsRun ? tail : round,
+                  bottomRight: isMine && endsRun ? tail : round,
+                ),
+              ),
+              child: Text(
+                message.body,
+                style: textTheme.bodyMedium?.copyWith(color: isMine ? AppColors.chalk : AppColors.charcoal),
+              ),
+            ),
+          ),
+        ),
+        if (endsRun)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+            child: Text(
+              '${TimeOfDay.fromDateTime(message.createdAt.toLocal()).format(context)}$read',
+              style: textTheme.labelSmall?.copyWith(color: AppColors.steel),
+            ),
+          ),
+      ],
     );
   }
 }

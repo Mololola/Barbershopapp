@@ -80,6 +80,13 @@ flutter:
     - assets/branding/fadra_launch.json
     - assets/branding/icon.png
 
+  # The logo's script, for brand headings (AppFonts.script). Bundled so it
+  # never waits on the network.
+  fonts:
+    - family: Yellowtail
+      fonts:
+        - asset: assets/fonts/Yellowtail-Regular.ttf
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
