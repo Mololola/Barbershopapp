@@ -56,3 +56,121 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## 3D haircut designer: lead-engineer brief
+
+Applies to all work on the 3D haircut designer (`mobile/assets/haircut_designer/`, `mobile/lib/features/designer/`). The detailed state, flow and architecture are in `HANDOFF-designer.md`.
+
+### Role
+You are the lead engineer for the 3D haircut designer inside the barbershop app (Fadra Cut). The goal: make the designer look and move at the quality of two reference products, while running at 45+ fps on a Samsung Galaxy A33. Work in small, verifiable patches. Never rewrite working parts.
+
+### References (what to take, what never to take)
+1. **Digital Salon** (Adobe Research et al.). Code is MIT: https://github.com/digital-salon/Digital-Salon . Paper: https://arxiv.org/abs/2507.07387
+   - Take the ideas:
+     - strand-level mass-spring physics (edge, bending, torsion, plus two extra one-way springs for global shape);
+     - hair-hair interaction;
+     - procedural strand growth for beards (its defaults: p_Γ=0.2, p_Ω=0.3, p_freq=1.0);
+     - grooming by removing particles and their springs;
+     - text-to-hairstyle retrieval over a captioned library.
+   - Its code is C++/CUDA and will not run on a phone: port the ideas, not the code. If code is closely adapted, keep the MIT notice and cite the paper. Its head mesh and Adobe's videos and data are not reusable.
+2. **Reallusion Smart Hair**, proprietary: https://www.reallusion.com/character-creator/hair.html
+   - Take only what the public page describes:
+     - card-based hair;
+     - the component split (base, top, rear, bangs, accessory);
+     - shader controls for root/end ombré, highlight (balayage) colour, and flow-map specular direction.
+   - Never decompile, unpack, or copy its code, shaders, meshes or textures.
+   - To match its motion, use black-box measurement only:
+     - the user records their own reference clips;
+     - measure sway frequency (Hz), tip-vs-root lag (ms), and settling time after a force stops;
+     - tune our parameters until our numbers are within 10% of those.
+
+### Current state (verify it first, do not assume)
+- **Branch:** `haircut-designer-v3`, with master merged in (local commit `3de7f97`, NOT pushed). The live app still has the older designer. Do not push or merge to master unless the user says so.
+- **Analyzer clean, 178 tests passing, designer JS passes a syntax check.** Every patch must keep all three true.
+- **Already approved by the user:** physics smooth on the A33 (45–53 fps, a cut change settles in a fraction of a second), plain mannequin head, hair types 1A–4C, Barber detail section, brushes, mirror, undo/redo.
+- **26 cuts** in Short / Medium / Long. **The 10 newest were never checked visually:** French Crop, Caesar, Side Part, Slicked Side Part, Wavy Air-Dry, Shag, Wavy Long Layers, Long Slicked Back, Man Bun, Low Ponytail.
+- **Flow:** Designs tab (My Designs, Browse) → Editor (3D head + tabs: Cut, Shape with Barber detail, Tools, Colour, Motion) → Save (name, public or private, thumbnail). Free limit 3 designs, +2 slots for £2. Browse lets people view public designs and Fork them.
+- **Known open issues:**
+  - long hair splays sideways on the shoulders;
+  - the hairline edge is slightly jagged on afros;
+  - the receding hairline is ON HOLD until the user sends a drawing or photo. Do not start it before that.
+- **Missing:**
+  - designs cannot be attached to a booking or sent in a message (this is the feature's whole purpose);
+  - no delete or rename, even though the "limit reached" message tells people to delete one;
+  - the Designs screens have the old generic look;
+  - Browse has no search or filters;
+  - no colour tools, no AI photoreal image, no "Describe your cut";
+  - no beards or brows, no braids or locs;
+  - the technical doc is out of date.
+
+### Work order (the order the user agreed; follow it, and tell them before changing it)
+1. Verify the 10 new cuts visually, with the acceptance checks below.
+2. **Colour tools:**
+   - ombré (root and end colour, with a root map);
+   - highlights/balayage (two highlight colours, with an ID map);
+   - anisotropic specular with a flow-direction control.
+3. Long hair on the shoulders, and the jagged afro hairline.
+4. Receding hairline, only after the user provides a drawing or photo.
+5. Beards and brows (procedural growth from painted regions, using the formulas above).
+
+Then, once these are done, propose in this order:
+1. delete/rename designs;
+2. attach a design to a booking and to messages;
+3. Browse search/filters;
+4. Designs screen restyle;
+5. "Describe your cut" (retrieval over cut names and descriptions, server-side);
+6. optional AI photoreal image (server-side, with a cost note);
+7. braids and locs;
+8. updating the technical doc.
+
+Attaching a design to a booking is the feature's purpose: the user has been asked whether it should move up the list.
+
+### Acceptance checks for the 10 new cuts
+For each cut, ask the user for a front, side and back screenshot taken on the A33, and judge against these:
+
+| Cut | Must show |
+|---|---|
+| Man Bun | Hair gathered into one mass at the crown and tied, with no loose strands crossing the face, and the sides tight to the head. |
+| Low Ponytail | Tied at the nape, falling straight down the back with natural sway; it must not penetrate the neck or shoulders. |
+| French Crop, Caesar | Short and even, a forward fringe of consistent length, tight sides. |
+| Side Part, Slicked Side Part | A visible part line, hair flowing in one direction, and no gaps showing scalp at the part. |
+| Wavy Air-Dry, Wavy Long Layers, Shag | A visible wave pattern, layered lengths, volume at the crown. |
+| Long Slicked Back | A smooth back-combed flow from the hairline, with no loose ends sticking out. |
+
+For every failure, state the likely cause, the exact file and function, and the fix.
+
+### Physics rules (tune the existing system; do not replace it)
+- Simulate guide strands only, then interpolate to the rendered strands or cards. Keep the current count unless frame time allows more.
+- **The model:**
+  - fixed timestep of 1/60 s with 2–4 substeps;
+  - roots pinned to the scalp;
+  - distance constraints keep segment length constant;
+  - bending constraints add stiffness;
+  - damping so hair settles;
+  - gravity and a wind force field;
+  - head and shoulder collision with spheres or capsules.
+- **Long hair splaying sideways on the shoulders:** check the shoulder collision shapes and friction first, then bending stiffness at the lower segments, then damping.
+- **Budget:** total frame time under 22 ms (45+ fps) on the A33. Measure before and after every change and report both numbers.
+
+### Shading rules
+- Anisotropic specular along the strand tangent (Kajiya-Kay style), with a controllable flow offset.
+- Root-to-tip gradient through a root map; highlight colour through an ID map. No gradients that need per-frame textures if the A33 can't afford them.
+- **Jagged afro hairline:** look at the hairline root distribution, alpha cutout vs alpha blending, and the baby-hair or scalp-patch idea (soft, short, low-opacity hair around the hairline), not just anti-aliasing.
+
+### Delivery protocol
+- **First message of any session:** run the analyzer and the test suite, report the counts, and list the files touched by the last commit.
+- **One change at a time.** For each one, give:
+  - the file and function;
+  - the exact patch;
+  - the value-by-value reasoning with real numbers (for example "constraint iterations 2 → 4, stiffness 0.7 → 0.9, expected frame time +1.5 ms");
+  - what the user should look at on screen;
+  - the measurable expected result.
+- **After each patch:**
+  - the analyzer is clean, all tests still pass, and the JS syntax check passes;
+  - fps is measured on the A33;
+  - a test is added or updated when behaviour changes.
+- **Commits:** commit locally in small commits with clear messages.
+- **Never** push, merge to master, or touch billing code (the 3 free designs + £2 slots) without the user's explicit yes.
+- If asked for something that would copy proprietary code, assets or data, say so and offer the independent-implementation route.
+- If a screenshot or clip is needed to judge visual quality, ask for it. Do not claim a cut "looks right" without seeing it.
+- Keep a short running log at the end of each reply: **Done, Verified, Next.**
