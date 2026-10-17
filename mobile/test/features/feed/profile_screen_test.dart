@@ -46,50 +46,101 @@ void main() {
     );
   }
 
-  testWidgets('shows a single worker-status line for a customer with a worker profile', (tester) async {
+  testWidgets('a customer with a worker profile gets a Barber badge, and nothing more about the job', (tester) async {
     await tester.pumpWidget(
       buildTestable(customerProfile, signedInAs: viewer, workerData: workerProfile),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Worker status: Barber'), findsOneWidget);
-    // The detailed breakdown moved to the business worker-browse screen.
+    expect(find.text('Barber'), findsOneWidget);
+    // The detailed breakdown stays on the business worker-browse screen.
     expect(find.textContaining('Looking for work'), findsNothing);
     expect(find.textContaining('Ten years of barbering'), findsNothing);
   });
 
-  testWidgets('omits the worker-status line for a customer with no worker profile', (tester) async {
+  testWidgets('no Barber badge for a customer with no worker profile', (tester) async {
     await tester.pumpWidget(
       buildTestable(customerProfile, signedInAs: viewer, workerData: null),
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Worker status'), findsNothing);
+    expect(find.text('Barber'), findsNothing);
+    expect(find.text('Customer'), findsOneWidget);
   });
 
-  testWidgets('omits the worker-status line for a business profile', (tester) async {
+  testWidgets('no Barber badge for a business profile', (tester) async {
     await tester.pumpWidget(
       buildTestable(businessProfile, signedInAs: viewer, workerData: workerProfile),
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Worker status'), findsNothing);
+    expect(find.text('Barber'), findsNothing);
   });
 
-  testWidgets('no edit icon when viewing someone else\'s profile', (tester) async {
+  testWidgets('someone else\'s profile offers Message, not Edit profile', (tester) async {
     await tester.pumpWidget(
       buildTestable(customerProfile, signedInAs: viewer, workerData: null),
     );
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.edit_outlined), findsNothing);
+    expect(find.text('Message'), findsOneWidget);
+    expect(find.text('Edit profile'), findsNothing);
+    expect(find.byIcon(Icons.settings_outlined), findsNothing);
   });
 
-  testWidgets('your own profile has the settings gear (no separate edit pencil)', (tester) async {
+  testWidgets('no Message button to or from an under-18 account', (tester) async {
+    await tester.pumpWidget(
+      buildTestable(
+        const Profile(id: 'teen-1', role: AccountRole.customer, username: 'teen', referralCode: 'TEENCODE', isMinor: true),
+        signedInAs: viewer,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Message'), findsNothing);
+  });
+
+  testWidgets('your own profile has Settings, Edit profile and a way to post when empty', (tester) async {
     await tester.pumpWidget(
       buildTestable(customerProfile, signedInAs: customerProfile, workerData: null),
     );
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.edit_outlined), findsNothing);
+    expect(find.text('Edit profile'), findsOneWidget);
+    expect(find.text('Message'), findsNothing);
+    expect(find.text('No posts yet'), findsOneWidget);
+    expect(find.text('Share your first post'), findsOneWidget);
+  });
+
+  testWidgets('posts show as a grid with their totals in the header', (tester) async {
+    Post post(String id, {required int likes, required int comments}) => Post(
+          id: id,
+          authorId: 'cust-1',
+          authorUsername: 'customer_one',
+          body: 'Fresh fade $id',
+          // Text-only, so the tile shows the text and the test needs no network image.
+          mediaUrl: null,
+          mediaType: PostMediaType.image,
+          isPinned: false,
+          likeCount: likes,
+          commentCount: comments,
+          likedByMe: false,
+          createdAt: DateTime.utc(2026, 10, 1),
+        );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentProfileProvider.overrideWith((ref) async => viewer),
+        profileByIdProvider.overrideWith((ref, id) async => customerProfile),
+        workerProfileByIdProvider.overrideWith((ref, id) async => null),
+        postsByAuthorProvider.overrideWith((ref, id) async => [post('a', likes: 3, comments: 1), post('b', likes: 4, comments: 0)]),
+      ],
+      child: const MaterialApp(home: ProfileScreen(profileId: 'cust-1')),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fresh fade a'), findsOneWidget);
+    expect(find.text('Fresh fade b'), findsOneWidget);
+    // Posts, likes, comments.
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
   });
 }

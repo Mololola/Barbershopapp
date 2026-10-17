@@ -1,7 +1,7 @@
-import 'dart:io';
-
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/picked_media.dart';
 import '../domain/post.dart';
 
 /// Posts/likes/comments are simple CRUD with no money/concurrency invariant,
@@ -12,27 +12,36 @@ class FeedRepository {
 
   final SupabaseClient _client;
 
-  Future<List<Post>> fetchFeed({required String? myProfileId}) async {
-    final rows = await _client
-        .from('posts')
-        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
-        .order('created_at', ascending: false);
+  /// Like counts are counted on the server; of the likes themselves only
+  /// mine comes back (filtered below), which is all `likedByMe` needs.
+  static const _postColumns = '*, profiles(username, avatar_url), post_media(media_url, media_type), '
+      'like_count:likes(count), my_like:likes(profile_id), comments(count)';
+
+  PostgrestFilterBuilder<PostgrestList> _posts(String? myProfileId) {
+    final query = _client.from('posts').select(_postColumns);
+    return myProfileId == null ? query : query.eq('my_like.profile_id', myProfileId);
+  }
+
+  /// One page of the feed, newest first: the [limit] posts older than
+  /// [before] (the oldest post already shown), or the newest when null.
+  Future<List<Post>> fetchFeed({required String? myProfileId, DateTime? before, required int limit}) async {
+    var query = _posts(myProfileId);
+    if (before != null) query = query.lt('created_at', before.toUtc().toIso8601String());
+    final rows = await query.order('created_at', ascending: false).limit(limit);
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
   }
 
   Future<List<Comment>> fetchComments(String postId, {required String? myProfileId}) async {
     final rows = await _client
         .from('comments')
-        .select('*, profiles(username), comment_likes(profile_id)')
+        .select('*, profiles(username, avatar_url), comment_likes(profile_id)')
         .eq('post_id', postId)
         .order('created_at');
     return rows.map((row) => Comment.fromRow(row, myProfileId: myProfileId)).toList();
   }
 
   Future<List<Post>> fetchPostsByAuthor({required String authorId, required String? myProfileId}) async {
-    final rows = await _client
-        .from('posts')
-        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
+    final rows = await _posts(myProfileId)
         .eq('author_id', authorId)
         .order('created_at', ascending: false);
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
@@ -41,8 +50,8 @@ class FeedRepository {
   Future<void> createPost({
     required String authorId,
     required String? body,
-    required File? image,
-    required File? video,
+    required XFile? image,
+    required XFile? video,
   }) async {
     assert(image == null || video == null, 'A post has at most one piece of media — an image or a video, not both.');
     final post = await _client.from('posts').insert({'author_id': authorId, 'body': body}).select().single();
@@ -55,11 +64,11 @@ class FeedRepository {
     // separate one just to name the file. Content type is set explicitly
     // (not left to the client library's guess) since the post-media
     // bucket enforces allowed_mime_types.
-    final extension = _extensionOf(mediaFile.path);
+    final extension = extensionOf(mediaFile);
     final path = '$authorId/${post['id']}$extension';
-    await _client.storage.from('post-media').upload(
+    await _client.storage.from('post-media').uploadBinary(
           path,
-          mediaFile,
+          await mediaFile.readAsBytes(),
           fileOptions: FileOptions(contentType: _contentTypeOf(extension)),
         );
     final mediaUrl = _client.storage.from('post-media').getPublicUrl(path);
@@ -117,9 +126,7 @@ class FeedRepository {
   /// Portfolio posts on the marketplace candidate detail view — see
   /// WorkerCandidateDetailScreen.
   Future<List<Post>> fetchPinnedPosts(String authorId) async {
-    final rows = await _client
-        .from('posts')
-        .select('*, profiles(username), post_media(media_url, media_type), likes(profile_id), comments(count)')
+    final rows = await _posts(authorId)
         .eq('author_id', authorId)
         .eq('is_pinned', true)
         .order('created_at', ascending: false);
@@ -132,11 +139,6 @@ class FeedRepository {
 
   Future<void> deleteComment(String commentId) async {
     await _client.from('comments').delete().eq('id', commentId);
-  }
-
-  String _extensionOf(String path) {
-    final dot = path.lastIndexOf('.');
-    return dot == -1 ? '.jpg' : path.substring(dot);
   }
 
   /// Must match one of post-media's allowed_mime_types (see the

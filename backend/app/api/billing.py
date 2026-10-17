@@ -16,8 +16,9 @@ from app.api.finance import finance_premium_state
 
 router = APIRouter()
 
-# The value of "10 haircuts" per the spec — a business's own average active
-# service price, times this multiplier, becomes its monthly subscription.
+# The value of "10 haircuts" per the spec — a business's basic cut (its
+# standard haircut, services.is_basic_cut), times this multiplier, becomes
+# its monthly subscription.
 _PRICE_MULTIPLIER = 10
 
 # Finance tool premium: a flat monthly add-on (the basic finance summary
@@ -27,6 +28,9 @@ _FINANCE_TRIAL = timedelta(days=14)
 # Tags the premium add-on's checkout/subscription so webhook handlers don't
 # mistake it for the shop's main subscription.
 _FINANCE_PRODUCT = "finance_premium"
+
+# Per the spec, a referrer earns 5% of what the shop they signed up pays.
+_REFERRAL_SHARE = 0.05
 
 # 3D designer: a repeatable, per-user bundle — buy again any time you fill
 # up. Fixed GBP price since profiles (unlike businesses) have no currency.
@@ -62,12 +66,12 @@ def _is_business_owner(db: Session, business_id: uuid.UUID, user_id: str) -> boo
     )
 
 
-def _price_from_average(avg_price_cents: float | None) -> int | None:
+def _price_from_basic_cut(basic_cut_price_cents: int | None) -> int | None:
     """The "value of 10 haircuts" pricing rule — pulled out of the DB-facing
     endpoint so it's testable without a database."""
-    if avg_price_cents is None:
+    if basic_cut_price_cents is None:
         return None
-    return round(avg_price_cents * _PRICE_MULTIPLIER)
+    return basic_cut_price_cents * _PRICE_MULTIPLIER
 
 
 def _trial_end_timestamp(trial_ends_at: datetime | None, now: datetime) -> int | None:
@@ -83,15 +87,15 @@ def _trial_end_timestamp(trial_ends_at: datetime | None, now: datetime) -> int |
 
 
 def _compute_monthly_amount_cents(db: Session, business_id: uuid.UUID) -> int:
-    avg_price = db.execute(
-        text("select avg(price_cents) from services where business_id = :business_id and is_active = true"),
+    basic_cut_price = db.execute(
+        text("select price_cents from services where business_id = :business_id and is_active and is_basic_cut"),
         {"business_id": business_id},
     ).scalar()
-    amount = _price_from_average(float(avg_price) if avg_price is not None else None)
+    amount = _price_from_basic_cut(basic_cut_price)
     if amount is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Add at least one active service before subscribing — the subscription price is based on it.",
+            "Add your basic cut before subscribing.",
         )
     return amount
 
@@ -200,6 +204,87 @@ def create_portal_session(
         return_url=_return_url("portal"),
     )
     return PortalSessionResponse(url=portal_session.url)
+
+
+@router.post("/businesses/{business_id}/services/{service_id}/basic-cut", response_model=OkResponse)
+def set_basic_cut(
+    business_id: uuid.UUID,
+    service_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    """Swaps the basic cut in one transaction (one per business), then moves
+    the subscription to its new price from the next payment."""
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+    is_active_service = db.execute(
+        text("select 1 from services where id = :service_id and business_id = :business_id and is_active"),
+        {"service_id": service_id, "business_id": business_id},
+    ).first()
+    if is_active_service is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Service not found")
+    # Unset first: one basic cut per business (services_one_basic_cut).
+    db.execute(
+        text("update services set is_basic_cut = false where business_id = :business_id and is_basic_cut"),
+        {"business_id": business_id},
+    )
+    db.execute(text("update services set is_basic_cut = true where id = :service_id"), {"service_id": service_id})
+    db.commit()
+    _sync_price(db, business_id)
+    return OkResponse()
+
+
+def _sync_price(db: Session, business_id: uuid.UUID) -> None:
+    # Imported here: the job imports _PRICE_MULTIPLIER from this module.
+    from app.jobs.sync_subscription_prices import sync_subscription_prices
+
+    sync_subscription_prices(db, business_id)
+
+
+class PriceQuoteResponse(BaseModel):
+    # None when the shop has no running paid subscription to change.
+    current_monthly_cents: int | None
+    new_monthly_cents: int
+
+
+@router.get("/businesses/{business_id}/subscription/price-quote", response_model=PriceQuoteResponse)
+def quote_subscription_price(
+    business_id: uuid.UUID,
+    basic_cut_price_cents: int,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> PriceQuoteResponse:
+    """What the monthly subscription becomes with this basic cut price, so
+    the owner is told before saving a change to it."""
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+    # Same subscriptions as app/jobs/sync_subscription_prices.py moves.
+    current = db.execute(
+        text(
+            "select monthly_amount_cents from business_subscriptions where business_id = :business_id "
+            "and stripe_subscription_id is not null and status in ('active', 'suspended') and not grandfathered"
+        ),
+        {"business_id": business_id},
+    ).scalar()
+    return PriceQuoteResponse(
+        current_monthly_cents=current,
+        new_monthly_cents=_price_from_basic_cut(basic_cut_price_cents),
+    )
+
+
+@router.post("/businesses/{business_id}/subscription/sync-price", response_model=OkResponse)
+def sync_subscription_price(
+    business_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit("10/minute")),  # each call can be a real Stripe API round-trip
+    user_id: str = Depends(get_current_user_id),
+) -> OkResponse:
+    """Called after the owner edits their basic cut (written straight to
+    Supabase), so the new price applies now rather than on the next job run."""
+    if not _is_business_owner(db, business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business")
+    _sync_price(db, business_id)
+    return OkResponse()
 
 
 _ACTIVE_SHOP_SUBSCRIPTION = (
@@ -433,6 +518,13 @@ def _invoice_subscription_id(invoice: dict) -> str | None:
     return details.get("subscription") or invoice.get("subscription")
 
 
+def _invoice_subscription_metadata(invoice: dict) -> dict:
+    """The subscription's metadata as of this invoice — same API-version
+    split as _invoice_subscription_id."""
+    details = (invoice.get("parent") or {}).get("subscription_details") or invoice.get("subscription_details") or {}
+    return details.get("metadata") or {}
+
+
 def _from_unix(timestamp: int | None) -> datetime | None:
     return datetime.fromtimestamp(timestamp, timezone.utc) if timestamp else None
 
@@ -473,6 +565,90 @@ def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
     db.execute(
         text("update business_finance_access set subscription_status = 'active' where stripe_subscription_id = :sub"),
         {"sub": subscription_id},
+    )
+    _credit_referral(db, invoice)
+    _record_subscription_cost(db, invoice)
+
+
+_THIS_MONTH = "date_trunc('month', now())::date"
+
+
+def _record_subscription_cost(db: Session, invoice: dict) -> None:
+    """What the shop pays us shows in its finance tool as a monthly cost,
+    from the month it's first paid. A new amount counts from this month on,
+    so earlier months keep what was paid then. Trial and proration invoices
+    aren't the regular monthly price, so they're skipped."""
+    metadata = _invoice_subscription_metadata(invoice)
+    amount_cents = invoice.get("amount_paid", 0)
+    if (
+        invoice.get("billing_reason") not in ("subscription_create", "subscription_cycle")
+        or amount_cents <= 0
+        or "business_id" not in metadata
+    ):
+        return
+    subscription_id = _invoice_subscription_id(invoice)
+    current = db.execute(
+        text(
+            "select id, amount_cents, starts_on = " + _THIS_MONTH + " as started_this_month "
+            "from business_cost_items where stripe_subscription_id = :sub and ends_on is null for update"
+        ),
+        {"sub": subscription_id},
+    ).mappings().first()
+    if current is not None:
+        if current["amount_cents"] == amount_cents:
+            return
+        if current["started_this_month"]:
+            db.execute(
+                text("update business_cost_items set amount_cents = :amount where id = :id"),
+                {"id": current["id"], "amount": amount_cents},
+            )
+            return
+        db.execute(
+            text(
+                "update business_cost_items set ends_on = (" + _THIS_MONTH + " - interval '1 month')::date "
+                "where id = :id"
+            ),
+            {"id": current["id"]},
+        )
+    db.execute(
+        text(
+            "insert into business_cost_items (business_id, label, amount_cents, kind, starts_on, stripe_subscription_id) "
+            "values (:business_id, :label, :amount, 'monthly', " + _THIS_MONTH + ", :sub)"
+        ),
+        {
+            "business_id": metadata["business_id"],
+            "label": "Finance Premium" if metadata.get("product") == _FINANCE_PRODUCT else "Shop subscription",
+            "amount": amount_cents,
+            "sub": subscription_id,
+        },
+    )
+
+
+def _credit_referral(db: Session, invoice: dict) -> None:
+    """Whoever referred the shop earns 5% of every paid shop-subscription
+    invoice, for as long as the shop keeps paying — never Finance Premium.
+    Keyed on the business from the invoice's metadata rather than the stored
+    subscription id: the first invoice can arrive before
+    checkout.session.completed has stored it. A shop owner can't refer
+    their own shop."""
+    metadata = _invoice_subscription_metadata(invoice)
+    amount_cents = round(invoice.get("amount_paid", 0) * _REFERRAL_SHARE)
+    if metadata.get("product") == _FINANCE_PRODUCT or "business_id" not in metadata or amount_cents <= 0:
+        return
+    db.execute(
+        text(
+            "insert into reward_ledger (customer_id, source, stripe_invoice_id, amount_cents, currency) "
+            "select p.id, 'referral', :invoice, :amount, :currency from businesses b "
+            "join profiles p on p.referral_code = b.referred_by_code "
+            "where b.id = :business_id and p.id <> b.owner_id "
+            "on conflict (stripe_invoice_id) do nothing"
+        ),
+        {
+            "invoice": invoice["id"],
+            "amount": amount_cents,
+            "currency": invoice["currency"].upper(),
+            "business_id": metadata["business_id"],
+        },
     )
 
 
@@ -533,6 +709,15 @@ def _handle_subscription_deleted(db: Session, subscription: dict) -> None:
     )
     db.execute(
         text("update business_finance_access set subscription_status = 'canceled' where stripe_subscription_id = :sub"),
+        {"sub": subscription["id"]},
+    )
+    # The last paid period usually ran into this month, so the cost stops
+    # with last month — unless it only started this month.
+    db.execute(
+        text(
+            "update business_cost_items set ends_on = greatest(starts_on, (" + _THIS_MONTH + " - interval '1 month')::date) "
+            "where stripe_subscription_id = :sub and ends_on is null"
+        ),
         {"sub": subscription["id"]},
     )
 

@@ -13,8 +13,12 @@ final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   return ReviewRepository(ref.watch(supabaseClientProvider));
 });
 
-final reviewForBookingProvider = FutureProvider.family<Review?, String>((ref, bookingId) {
-  return ref.watch(reviewRepositoryProvider).fetchReviewForBooking(bookingId);
+/// My reviews by booking id — one query for the whole My bookings list
+/// rather than one per booking.
+final myReviewsByBookingProvider = FutureProvider<Map<String, Review>>((ref) async {
+  final profile = await ref.watch(currentProfileProvider.future);
+  if (profile == null) return {};
+  return ref.watch(reviewRepositoryProvider).fetchReviewsByCustomer(profile.id);
 });
 
 /// The next completed-but-unreviewed booking to prompt for, if any — see
@@ -67,7 +71,7 @@ class ReviewController extends AsyncNotifier<void> {
               haircutType: haircutType,
             ),
           );
-      ref.invalidate(reviewForBookingProvider(bookingId));
+      ref.invalidate(myReviewsByBookingProvider);
       ref.invalidate(pendingReviewProvider);
       // Router's redirect gate reads pendingReviewProvider synchronously
       // right after this returns (see core/router.dart) — without awaiting

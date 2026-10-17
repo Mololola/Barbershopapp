@@ -13,6 +13,7 @@ from app.core.auth import get_current_user_id
 from app.core.cache import cache
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
+from app.jobs.expire_grace_periods import GRACE_PERIOD_DAYS
 from app.models import Booking, Service, Worker
 from app.services.availability import compute_available_slots, working_periods
 
@@ -36,6 +37,11 @@ class BookingResponse(BaseModel):
     end_time: datetime.datetime
     status: str
     completed_at: datetime.datetime | None = None
+
+
+class BookingAtRisk(BaseModel):
+    booking_id: uuid.UUID
+    cancelled_at: datetime.datetime
 
 
 class AvailableSlot(BaseModel):
@@ -107,14 +113,28 @@ def _query_worker_schedule(db: Session, worker_id: uuid.UUID, day_of_week: int) 
     return dict(row) if row else None
 
 
-def _get_worker_schedule(db: Session, worker_id: uuid.UUID, day_of_week: int) -> dict | None:
-    # Cached — same reasoning as _get_opening_hours, and this one is
-    # already inside a per-worker loop in get_availability, so it's the
-    # actual N+1 query multiplied by however many active workers a
-    # business has.
+def _query_worker_schedules(db: Session, worker_ids: list[uuid.UUID], day_of_week: int) -> dict[uuid.UUID, dict]:
+    """Every listed worker's own hours for the day, in one query; a worker
+    with no row for the day is simply absent."""
+    rows = db.execute(
+        text(
+            "select worker_id, is_closed, open_time, close_time, break_start, break_end from worker_schedules "
+            "where worker_id = any(:worker_ids) and day_of_week = :day_of_week"
+        ),
+        {"worker_ids": worker_ids, "day_of_week": day_of_week},
+    ).mappings()
+    return {row["worker_id"]: {key: value for key, value in row.items() if key != "worker_id"} for row in rows}
+
+
+def _get_worker_schedules(
+    db: Session, business_id: uuid.UUID, worker_ids: list[uuid.UUID], day_of_week: int
+) -> dict[uuid.UUID, dict]:
+    # Cached — same reasoning as _get_opening_hours. Keyed on the worker set
+    # too, so hiring or removing someone doesn't serve last set's hours.
+    workers_key = ",".join(sorted(str(worker_id) for worker_id in worker_ids))
     return cache.get_or_set(
-        f"worker_schedule:{worker_id}:{day_of_week}",
-        lambda: _query_worker_schedule(db, worker_id, day_of_week),
+        f"worker_schedules:{business_id}:{day_of_week}:{workers_key}",
+        lambda: _query_worker_schedules(db, worker_ids, day_of_week),
     )
 
 
@@ -180,30 +200,39 @@ def get_availability(
         return []
 
     workers = db.query(Worker).filter(Worker.business_id == business_id, Worker.is_active.is_(True)).all()
+    if not workers:
+        return []
+    worker_ids = [worker.id for worker in workers]
 
     day_start = datetime.datetime.combine(date, datetime.time.min, tzinfo=tz)
     day_end = datetime.datetime.combine(date, datetime.time.max, tzinfo=tz)
     now = datetime.datetime.now(datetime.UTC)
 
+    # Schedules and bookings for every worker at once — not two queries per
+    # worker. business_id is implied by the workers; filtering on it too
+    # lets the (business_id, start_time) index do the work.
+    schedules = _get_worker_schedules(db, business_id, worker_ids, day_of_week)
+    booked_ranges_by_worker: dict[uuid.UUID, list] = {worker_id: [] for worker_id in worker_ids}
+    for booking in (
+        db.query(Booking)
+        .filter(
+            Booking.business_id == business_id,
+            Booking.worker_id.in_(worker_ids),
+            Booking.status == "confirmed",
+            Booking.start_time < day_end,
+            Booking.end_time > day_start,
+        )
+        .all()
+    ):
+        booked_ranges_by_worker[booking.worker_id].append((booking.start_time, booking.end_time))
+
     slots: list[AvailableSlot] = []
     for worker in workers:
-        hours = _effective_hours(_get_worker_schedule(db, worker.id, day_of_week), business_hours)
-        existing = (
-            db.query(Booking)
-            .filter(
-                Booking.worker_id == worker.id,
-                Booking.status == "confirmed",
-                Booking.start_time < day_end,
-                Booking.end_time > day_start,
-            )
-            .all()
-        )
-        booked_ranges = [(b.start_time, b.end_time) for b in existing]
-
+        hours = _effective_hours(schedules.get(worker.id), business_hours)
         for start_time in compute_available_slots(
             periods=working_periods(date, hours, tz),
             duration_minutes=service.duration_minutes,
-            booked_ranges=booked_ranges,
+            booked_ranges=booked_ranges_by_worker[worker.id],
             now=now,
         ):
             slots.append(AvailableSlot(worker_id=worker.id, worker_name=worker.name, start_time=start_time))
@@ -335,3 +364,34 @@ def complete_booking(
     db.commit()
     db.refresh(booking)
     return booking
+
+
+# Customers hear about it once the deletion is this close — early enough to
+# rebook, late enough that a shop that renews soon never worries anyone.
+_AT_RISK_NOTICE_DAYS = 30
+
+
+@router.get("/me/bookings/at-risk", response_model=list[BookingAtRisk])
+def my_bookings_at_risk(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> list[BookingAtRisk]:
+    """My upcoming bookings at a shop that has stopped paying, dated on or
+    after the day the shop will be deleted (and the booking with it) — see
+    app/jobs/expire_grace_periods.py. Only once that day is within
+    _AT_RISK_NOTICE_DAYS. Computed on read, so nothing is ever sent twice."""
+    rows = db.execute(
+        text(
+            "select booking_id, deletion_at as cancelled_at from ("
+            "  select b.id as booking_id, b.start_time, "
+            "    coalesce(s.suspended_at, business_hidden_since(b.business_id)) + make_interval(days => :days) "
+            "      as deletion_at "
+            "  from bookings b left join business_subscriptions s on s.business_id = b.business_id "
+            "  where b.customer_id = :user_id and b.status = 'confirmed' and b.start_time > now() "
+            "    and business_hidden_since(b.business_id) is not null"
+            ") at_risk "
+            "where start_time >= deletion_at and deletion_at <= now() + make_interval(days => :notice_days)"
+        ),
+        {"user_id": user_id, "days": GRACE_PERIOD_DAYS, "notice_days": _AT_RISK_NOTICE_DAYS},
+    ).mappings()
+    return [BookingAtRisk(**row) for row in rows]

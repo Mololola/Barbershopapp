@@ -30,36 +30,25 @@ class MessagingRepository {
     return rows.first['id'] as String;
   }
 
-  /// Fetches every conversation I'm in, joined to the *other* participant's
+  /// Every conversation I'm in, in one request: the *other* participant's
   /// profile (PostgREST needs an explicit FK hint since `conversations` has
-  /// two FKs to `profiles`), then a second query for all messages in those
-  /// conversations to derive the last-message preview and unread count in
-  /// Dart. Simple and fine at this app's scale; revisit with a view/RPC if
-  /// the message table grows large.
+  /// two FKs to `profiles`), only the latest message for the preview, and
+  /// the unread count counted on the server — never the whole message
+  /// history.
   Future<List<Conversation>> fetchConversations(String myId) async {
     final rows = await _client
         .from('conversations')
         .select(
           'id, participant_a_id, participant_b_id, type, '
           'participant_a:profiles!conversations_participant_a_id_fkey(username, avatar_url), '
-          'participant_b:profiles!conversations_participant_b_id_fkey(username, avatar_url)',
+          'participant_b:profiles!conversations_participant_b_id_fkey(username, avatar_url), '
+          'last_message:messages(body, created_at), unread:messages(count)',
         )
-        .or('participant_a_id.eq.$myId,participant_b_id.eq.$myId');
-
-    final conversationIds = rows.map((row) => row['id'] as String).toList();
-    final messageRows = conversationIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : await _client
-            .from('messages')
-            .select()
-            .inFilter('conversation_id', conversationIds)
-            .order('created_at', ascending: true);
-    final messages = messageRows.map(Message.fromRow).toList();
-
-    final messagesByConversation = <String, List<Message>>{};
-    for (final message in messages) {
-      (messagesByConversation[message.conversationId] ??= []).add(message);
-    }
+        .or('participant_a_id.eq.$myId,participant_b_id.eq.$myId')
+        .isFilter('unread.read_at', null)
+        .neq('unread.sender_id', myId)
+        .order('created_at', ascending: false, referencedTable: 'last_message')
+        .limit(1, referencedTable: 'last_message');
 
     final conversations = rows.map((row) {
       final id = row['id'] as String;
@@ -68,19 +57,18 @@ class MessagingRepository {
           (isParticipantA ? row['participant_b'] : row['participant_a']) as Map<String, dynamic>;
       final otherId =
           (isParticipantA ? row['participant_b_id'] : row['participant_a_id']) as String;
-      final conversationMessages = messagesByConversation[id] ?? [];
-      final lastMessage = conversationMessages.isEmpty ? null : conversationMessages.last;
-      final unreadCount =
-          conversationMessages.where((m) => m.senderId != myId && m.readAt == null).length;
+      final lastMessages = row['last_message'] as List;
+      final lastMessage = lastMessages.isEmpty ? null : lastMessages.first as Map<String, dynamic>;
+      final unread = row['unread'] as List;
 
       return Conversation(
         id: id,
         otherParticipantId: otherId,
         otherUsername: otherProfile['username'] as String,
         otherAvatarUrl: otherProfile['avatar_url'] as String?,
-        lastMessageBody: lastMessage?.body,
-        lastMessageAt: lastMessage?.createdAt,
-        unreadCount: unreadCount,
+        lastMessageBody: lastMessage?['body'] as String?,
+        lastMessageAt: lastMessage == null ? null : DateTime.parse(lastMessage['created_at'] as String),
+        unreadCount: unread.isEmpty ? 0 : unread.first['count'] as int,
         type: ConversationTypeX.fromWireValue(row['type'] as String),
       );
     }).toList();

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 // Supplied at build/run time via --dart-define-from-file, e.g.:
 //   flutter run --dart-define-from-file=env.json
 // env.json is untracked (see .gitignore) — copy env.json.example and fill in
@@ -18,8 +20,9 @@ class Env {
   /// scheme straight back to it. Must match the scheme/host registered in
   /// AndroidManifest.xml's intent-filter and iOS Info.plist's
   /// CFBundleURLTypes, and the redirect URL allow-listed in the Supabase
-  /// dashboard (Authentication > URL Configuration).
-  static const authCallbackUrl = 'barbershopapp://auth-callback';
+  /// dashboard (Authentication > URL Configuration). On the website it's the
+  /// site itself, which picks the sign-in up from the URL.
+  static String get authCallbackUrl => kIsWeb ? _webSignIn : 'barbershopapp://auth-callback';
 
   /// Where Supabase redirects after a *emailed* signup-confirmation or
   /// password-reset link — unlike [authCallbackUrl], this is opened from a
@@ -29,10 +32,16 @@ class Env {
   /// That page then forwards into [authCallbackUrl] itself. Always the
   /// production backend, regardless of which FASTAPI_BASE_URL this build
   /// uses — an emailed link is clicked from anywhere, not just wherever the
-  /// developer's own machine can reach.
-  static const emailConfirmationRedirectUrl = 'https://barbershopapp-qrpk.onrender.com/auth/confirmed';
+  /// developer's own machine can reach. Requested from the website, the link
+  /// goes back to the website: the sign-in it carries can only be completed
+  /// in the browser that asked for it.
+  static String get emailConfirmationRedirectUrl =>
+      kIsWeb ? _webSignIn : 'https://barbershopapp-qrpk.onrender.com/auth/confirmed';
 
   /// Same idea as [emailConfirmationRedirectUrl], for the password-reset
   /// email — a separate page because what the person has to do next differs.
-  static const passwordResetRedirectUrl = 'https://barbershopapp-qrpk.onrender.com/auth/reset';
+  static String get passwordResetRedirectUrl =>
+      kIsWeb ? _webSignIn : 'https://barbershopapp-qrpk.onrender.com/auth/reset';
+
+  static String get _webSignIn => '${Uri.base.origin}/sign-in';
 }

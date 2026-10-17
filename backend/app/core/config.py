@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     # This API's own https address, for pages Stripe redirects the browser to.
     public_base_url: str = "https://barbershopapp-qrpk.onrender.com"
+    # The business website's address (the Flutter web build). The only
+    # browser origin allowed to call this API; empty allows none.
+    web_app_url: str = ""
     # Bearer token the scheduled-jobs workflow sends (see app/api/jobs.py);
     # empty disables the job endpoints.
     jobs_secret: str = ""
@@ -33,6 +36,8 @@ class Settings(BaseSettings):
     db_pool_size: int = 5
     db_max_overflow: int = 5
     db_pool_recycle_seconds: int = 1800
+    # Dev only: log every SQL statement, e.g. to count a page's queries.
+    sql_echo: bool = False
 
     # Business hours / worker schedules change a handful of times a year at
     # most, so a few minutes of staleness is a non-issue — see

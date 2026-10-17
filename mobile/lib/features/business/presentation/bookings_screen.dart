@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/responsive.dart';
 import '../../customer/application/booking_controller.dart';
 import '../../customer/domain/booking.dart';
 import '../application/business_controller.dart';
@@ -39,7 +40,18 @@ class BookingsScreen extends ConsumerWidget {
     final actionState = ref.watch(bookingActionControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Bookings')),
+      appBar: AppBar(
+        title: const Text('Bookings'),
+        actions: [
+          // A desktop page stays open for hours; this fetches bookings made since.
+          if (isWideLayout(context))
+            IconButton(
+              tooltip: 'Refresh',
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(businessBookingsProvider),
+            ),
+        ],
+      ),
       body: bookings.when(
         loading: () => const LoadingView(),
         error: (error, _) => Center(child: Text('Error: $error')),

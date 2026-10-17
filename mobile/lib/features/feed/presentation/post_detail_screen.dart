@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../business/domain/brand.dart';
 import '../application/feed_controller.dart';
 import '../domain/post.dart';
+import 'post_card.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   const PostDetailScreen({super.key, required this.postId});
@@ -18,12 +21,19 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   final _commentController = TextEditingController();
+  final _commentFocus = FocusNode();
   Comment? _replyingTo;
 
   @override
   void dispose() {
     _commentController.dispose();
+    _commentFocus.dispose();
     super.dispose();
+  }
+
+  void _replyTo(Comment comment) {
+    setState(() => _replyingTo = comment);
+    _commentFocus.requestFocus();
   }
 
   Future<void> _submitComment() async {
@@ -43,8 +53,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final comments = ref.watch(commentsProvider(widget.postId));
-    final actionState = ref.watch(feedActionControllerProvider);
     final myProfile = ref.watch(currentProfileProvider).value;
+    final canComment = myProfile?.isMinor != true;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Comments')),
@@ -52,11 +62,28 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         children: [
           Expanded(
             child: comments.when(
-              loading: () => const LoadingView(),
-              error: (error, _) => Center(child: Text('Error: $error')),
+              loading: () => const LoadingView(caption: 'Loading comments…'),
+              error: (_, _) => Center(
+                child: StatusMessage(
+                  icon: Icons.wifi_off_rounded,
+                  title: 'Couldn\'t load comments',
+                  message: 'Check your connection and try again.',
+                  actionLabel: 'Try again',
+                  onAction: () => ref.invalidate(commentsProvider(widget.postId)),
+                  isError: true,
+                ),
+              ),
               data: (list) {
                 if (list.isEmpty) {
-                  return const Center(child: Text('No comments yet.'));
+                  return Center(
+                    child: StatusMessage(
+                      icon: Icons.chat_bubble_outline,
+                      title: 'No comments yet',
+                      message: canComment ? 'Start the conversation.' : 'Comments will show up here.',
+                      actionLabel: canComment ? 'Write a comment' : null,
+                      onAction: canComment ? _commentFocus.requestFocus : null,
+                    ),
+                  );
                 }
                 final topLevel = list.where((c) => c.parentCommentId == null);
                 final repliesByParent = <String, List<Comment>>{};
@@ -67,55 +94,36 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   }
                 }
                 return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
                   children: [
                     for (final comment in topLevel) ...[
                       _CommentTile(
                         comment: comment,
                         myProfileId: myProfile?.id,
-                        onReply: () => setState(() => _replyingTo = comment),
+                        onReply: canComment ? () => _replyTo(comment) : null,
                       ),
                       for (final reply in repliesByParent[comment.id] ?? const <Comment>[])
                         Padding(
-                          padding: const EdgeInsets.only(left: 32),
-                          child: _CommentTile(comment: reply, myProfileId: myProfile?.id, onReply: null),
+                          padding: const EdgeInsets.only(left: 44),
+                          child: _CommentTile(comment: reply, myProfileId: myProfile?.id, onReply: null, isReply: true),
                         ),
+                      const SizedBox(height: 8),
                     ],
                   ],
                 );
               },
             ),
           ),
-          if (_replyingTo != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(child: Text('Replying to ${_replyingTo!.authorUsername}')),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => setState(() => _replyingTo = null),
-                  ),
-                ],
-              ),
-            ),
           // No commenting on a minor account — see the guardian-consent design.
-          if (myProfile?.isMinor != true)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      decoration: const InputDecoration(labelText: 'Add a comment'),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: actionState.isLoading ? null : _submitComment,
-                  ),
-                ],
-              ),
+          if (canComment)
+            _Composer(
+              controller: _commentController,
+              focusNode: _commentFocus,
+              avatarUrl: myProfile?.avatarUrl,
+              username: myProfile?.username ?? '',
+              replyingTo: _replyingTo?.authorUsername,
+              onCancelReply: () => setState(() => _replyingTo = null),
+              onSend: _submitComment,
             ),
         ],
       ),
@@ -123,12 +131,35 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 }
 
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.username, required this.url, required this.radius});
+
+  final String username;
+  final String? url;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: scheme.primary.withValues(alpha: 0.12),
+      foregroundColor: scheme.primary,
+      backgroundImage: url != null ? NetworkImage(url!) : null,
+      child: url == null
+          ? Text(initialsOf(username), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.primary))
+          : null,
+    );
+  }
+}
+
 class _CommentTile extends ConsumerStatefulWidget {
-  const _CommentTile({required this.comment, required this.myProfileId, required this.onReply});
+  const _CommentTile({required this.comment, required this.myProfileId, required this.onReply, this.isReply = false});
 
   final Comment comment;
   final String? myProfileId;
   final VoidCallback? onReply;
+  final bool isReply;
 
   @override
   ConsumerState<_CommentTile> createState() => _CommentTileState();
@@ -168,51 +199,213 @@ class _CommentTileState extends ConsumerState<_CommentTile> {
     }
   }
 
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this comment?'),
+        content: const Text('This can\'t be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref
+          .read(feedActionControllerProvider.notifier)
+          .deleteComment(postId: _comment.postId, commentId: _comment.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final actionState = ref.watch(feedActionControllerProvider);
     final comment = _comment;
     final isMine = comment.authorId == widget.myProfileId;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final secondary = scheme.onSurface.withValues(alpha: 0.65);
+    final actionStyle = theme.textTheme.labelMedium?.copyWith(color: secondary, fontWeight: FontWeight.w600);
+    final cardShape = theme.cardTheme.shape;
+    final bubbleRadius = cardShape is RoundedRectangleBorder ? cardShape.borderRadius : BorderRadius.zero;
 
-    return ListTile(
-      title: InkWell(
-        onTap: () => context.push('/profile/${comment.authorId}'),
-        child: Text(comment.authorUsername),
-      ),
-      subtitle: Column(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(comment.body),
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(
-                  comment.likedByMe ? Icons.favorite : Icons.favorite_border,
-                  size: 18,
+          GestureDetector(
+            onTap: () => context.push('/profile/${comment.authorId}'),
+            child: _Avatar(username: comment.authorUsername, url: comment.authorAvatarUrl, radius: widget.isReply ? 14 : 18),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Who said it on its own line, in bold, above what they said —
+                // inside one bubble so each comment reads as a unit.
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  decoration: BoxDecoration(
+                    color: isMine ? scheme.primary.withValues(alpha: 0.08) : scheme.surface,
+                    borderRadius: bubbleRadius,
+                    border: Border.all(color: scheme.outline, width: 0.5),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.push('/profile/${comment.authorId}'),
+                        child: Text(
+                          comment.authorUsername,
+                          style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(comment.body, style: theme.textTheme.bodyMedium?.copyWith(height: 1.35)),
+                    ],
+                  ),
                 ),
-                color: comment.likedByMe ? Colors.red : null,
-                onPressed: _toggleLike,
-              ),
-              Text('${comment.likeCount}'),
-              if (widget.onReply != null)
-                TextButton(
-                  onPressed: widget.onReply,
-                  child: const Text('Reply'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 0, 0),
+                  child: Row(
+                    children: [
+                      Text(timeAgo(comment.createdAt), style: theme.textTheme.labelMedium?.copyWith(color: secondary)),
+                      if (widget.onReply != null) ...[
+                        const SizedBox(width: 16),
+                        InkWell(onTap: widget.onReply, child: Text('Reply', style: actionStyle)),
+                      ],
+                      if (isMine) ...[
+                        const SizedBox(width: 16),
+                        InkWell(
+                          onTap: actionState.isLoading ? null : _confirmDelete,
+                          child: Text('Delete', style: actionStyle),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-            ],
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 40,
+            child: Column(
+              children: [
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 18,
+                  tooltip: comment.likedByMe ? 'Unlike' : 'Like',
+                  icon: Icon(comment.likedByMe ? Icons.favorite : Icons.favorite_border),
+                  color: comment.likedByMe ? scheme.secondary : secondary,
+                  onPressed: _toggleLike,
+                ),
+                if (comment.likeCount > 0)
+                  Text('${comment.likeCount}', style: theme.textTheme.labelSmall?.copyWith(color: secondary)),
+              ],
+            ),
           ),
         ],
       ),
-      trailing: isMine
-          ? IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: actionState.isLoading
-                  ? null
-                  : () => ref
-                      .read(feedActionControllerProvider.notifier)
-                      .deleteComment(postId: comment.postId, commentId: comment.id),
-            )
-          : null,
+    );
+  }
+}
+
+/// The comment box, pinned to the bottom: your avatar, the field, and a
+/// send button that only lights up once there's something to send.
+class _Composer extends ConsumerWidget {
+  const _Composer({
+    required this.controller,
+    required this.focusNode,
+    required this.avatarUrl,
+    required this.username,
+    required this.replyingTo,
+    required this.onCancelReply,
+    required this.onSend,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String? avatarUrl;
+  final String username;
+  final String? replyingTo;
+  final VoidCallback onCancelReply;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final sending = ref.watch(feedActionControllerProvider).isLoading;
+    return Material(
+      color: scheme.surface,
+      shape: Border(top: BorderSide(color: scheme.outline)),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (replyingTo != null)
+              Container(
+                color: scheme.primary.withValues(alpha: 0.08),
+                padding: const EdgeInsets.only(left: 16),
+                child: Row(
+                  children: [
+                    Icon(Icons.reply, size: 16, color: scheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Replying to $replyingTo', style: theme.textTheme.labelMedium)),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: 'Cancel reply',
+                      onPressed: onCancelReply,
+                    ),
+                  ],
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+              child: Row(
+                children: [
+                  _Avatar(username: username, url: avatarUrl, radius: 16),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      minLines: 1,
+                      maxLines: 4,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: replyingTo != null ? 'Write a reply…' : 'Add a comment…',
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                  ),
+                  ListenableBuilder(
+                    listenable: controller,
+                    builder: (context, _) {
+                      final ready = controller.text.trim().isNotEmpty && !sending;
+                      return IconButton(
+                        tooltip: 'Send',
+                        onPressed: ready ? onSend : null,
+                        icon: Icon(Icons.send_rounded, color: ready ? scheme.primary : null),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

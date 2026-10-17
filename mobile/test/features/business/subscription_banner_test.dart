@@ -96,7 +96,7 @@ void main() {
     expect(find.text('Payment failed'), findsOneWidget);
     expect(
       find.text('Customers can still find your shop for 2 days. '
-          '62 days left before your shop and all its data are permanently deleted.'),
+          '59 days left before your shop and all its data are permanently deleted.'),
       findsOneWidget,
     );
     expect(find.text('Update payment'), findsOneWidget);
@@ -116,7 +116,7 @@ void main() {
     expect(find.text('Subscription ended'), findsOneWidget);
     expect(
       find.text('Your shop is hidden from customers. '
-          '50 days left before your shop and all its data are permanently deleted.'),
+          '47 days left before your shop and all its data are permanently deleted.'),
       findsOneWidget,
     );
     expect(find.text('Subscribe'), findsOneWidget);

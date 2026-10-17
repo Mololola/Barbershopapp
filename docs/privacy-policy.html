@@ -93,7 +93,7 @@ footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-famil
   <p class="eyebrow">Barbershop App</p>
   <h1>Privacy Policy</h1>
   <div class="meta">
-    <span><b>Effective</b> 13 September 2026</span>
+    <span><b>Effective</b> 15 October 2026</span>
     <span><b>Controller</b> Luis Guillot Lozano, operating individually from Spain</span>
     <span><b>Contact</b> <a href="mailto:luis.guillot.lozano@gmail.com">luis.guillot.lozano@gmail.com</a></span>
   </div>
@@ -129,7 +129,7 @@ footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-famil
 
 <section id="scope">
   <h2><span class="num">2</span> Who this policy covers</h2>
-  <p>This policy applies to everyone who uses the Barbershop App mobile app, whether as a customer booking a service, a business owner running a shop on the platform, or a worker/barber with a profile — in the UK, Spain, or anywhere else. Where a right or rule below applies specifically to one region (the UK vs. the EU/Spain), that's called out explicitly; everything else applies to all users equally.</p>
+  <p>This policy applies to everyone who uses the Barbershop App mobile app or its business website, whether as a customer booking a service, a business owner running a shop on the platform, or a worker/barber with a profile — in the UK, Spain, or anywhere else. Where a right or rule below applies specifically to one region (the UK vs. the EU/Spain), that's called out explicitly; everything else applies to all users equally.</p>
 </section>
 
 <section id="collect">
@@ -148,6 +148,7 @@ footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-famil
     <tr><td>Messages</td><td>Direct messages between you and other users (customers, businesses, workers)</td><td>When you use in-app messaging</td></tr>
     <tr><td>3D haircut designs</td><td>Designs you create or fork in the haircut designer tool</td><td>When you use the designer</td></tr>
     <tr><td>Referral &amp; rewards</td><td>Your referral code, and a record of rewards earned</td><td>Automatically, as you use referral-linked features</td></tr>
+    <tr><td>Bank details for withdrawals</td><td>The account holder's name and IBAN you give us, and a copy on each withdrawal you request. Only you and our payout administrators can see them</td><td>Only if you choose to withdraw your rewards</td></tr>
   </table></div>
   <p>We do not collect your precise location — "city" on a worker profile is something you type in yourself, not GPS data.</p>
 </section>
@@ -159,6 +160,7 @@ footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-famil
     <tr><th>What we use it for</th><th>Legal basis</th></tr>
     <tr><td>Running your account, processing bookings, connecting you with a business or worker, showing you the app's features</td><td>Performance of a contract with you</td></tr>
     <tr><td>Processing payments and subscriptions through Stripe</td><td>Performance of a contract with you</td></tr>
+    <tr><td>Sending your reward withdrawals to your bank account</td><td>Performance of a contract with you</td></tr>
     <tr><td>Preventing double-bookings, fraud, and abuse; keeping the service secure and working correctly</td><td>Legitimate interests (running a safe, functioning marketplace)</td></tr>
     <tr><td>Sending you account-related emails (confirming your address, password resets, booking notifications)</td><td>Performance of a contract / legitimate interests</td></tr>
     <tr><td>Signing in via Google</td><td>Your consent, given each time you choose that sign-in method</td></tr>
@@ -180,21 +182,23 @@ footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-famil
     <tr><td>Supabase, Inc.</td><td>Database hosting, authentication, file storage (photos/videos), and realtime features — the infrastructure the whole app runs on</td></tr>
     <tr><td>Stripe, Inc. / Stripe Payments Europe, Ltd.</td><td>Payment processing for subscriptions and one-off purchases. Stripe acts as an independent controller for its own regulatory/fraud-prevention obligations — see <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe's own privacy policy</a></td></tr>
     <tr><td>Google LLC</td><td>Authenticating you if you choose "Continue with Google" — only used if you pick that sign-in method</td></tr>
+    <tr><td>Render Services, Inc.</td><td>Hosting the server that handles bookings, payments and rewards, and hosting the business website</td></tr>
   </table></div>
 </section>
 
 <section id="transfers">
   <h2><span class="num">6</span> International transfers</h2>
-  <p>Supabase, Stripe, and Google are all US-headquartered companies, which means some processing may happen outside the UK/EEA. Where that happens, it's protected by recognized safeguards — Standard Contractual Clauses (and the UK's International Data Transfer Addendum, for transfers from the UK) — which these providers commit to as part of their own compliance programs.</p>
+  <p>Supabase, Stripe, Google, and Render are all US-headquartered companies, which means some processing may happen outside the UK/EEA. Where that happens, it's protected by recognized safeguards — Standard Contractual Clauses (and the UK's International Data Transfer Addendum, for transfers from the UK) — which these providers commit to as part of their own compliance programs.</p>
 </section>
 
 <section id="retention">
   <h2><span class="num">7</span> How long we keep it</h2>
   <p>We keep your data for as long as your account is active, plus a short period where the app's own mechanics require it:</p>
   <ul>
-    <li>If you delete your account (Account Settings → Delete account), deletion is <strong>immediate and permanent</strong> — your profile, bookings, reviews, posts, messages, and every other record tied to your account is removed right away, not after a waiting period.</li>
+    <li>If you delete your account (Account Settings → Delete account), deletion is <strong>immediate and permanent</strong> — your profile, bookings, reviews, posts, messages, and every other record tied to your account is removed right away, not after a waiting period. The one exception is below.</li>
+    <li>Records of reward withdrawals we have already <strong>paid</strong> to you (the amount, currency, date, your username, and the account holder name and IBAN it was paid to) are kept for <strong>6 years</strong> after the payment, even if you delete your account, because tax and accounting law requires us to keep records of money we pay out. Only our payout administrators can see them. Withdrawals not yet paid are deleted with your account.</li>
     <li>A business account with an active subscription or upcoming confirmed bookings can't be deleted until those are resolved first (so a customer's upcoming appointment doesn't just vanish) — once cleared, deletion is equally immediate.</li>
-    <li>If a business subscription payment fails, the account is suspended and given a 60-day grace period to resolve it before the business and its data are automatically deleted.</li>
+    <li>If a business subscription payment fails, the shop stays visible to customers for 3 days, is then hidden until the business pays, and has 60 days from the first failed payment to resolve it before the business and its data are automatically deleted.</li>
     <li>Stripe retains payment/transaction records for its own legal and accounting obligations, independent of what we delete on our side — typically several years, per Stripe's own policy, since that's a standard financial-recordkeeping requirement neither of us can shorten.</li>
   </ul>
 </section>
@@ -230,7 +234,7 @@ footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-famil
   <p>A few concrete things we actually do, not a generic promise:</p>
   <ul>
     <li>All traffic between the app and our servers is encrypted (HTTPS/TLS).</li>
-    <li>Your session is stored in your device's own secure enclave — the iOS Keychain or Android's encrypted Keystore — never in plain text.</li>
+    <li>Your session is stored in your device's own secure enclave — the iOS Keychain or Android's encrypted Keystore — never in plain text. On the business website, it's kept in your browser's local storage for this site only.</li>
     <li>Passwords are hashed by our authentication provider; we never see or store them in readable form.</li>
     <li>Database access is governed by row-level security policies, so the database itself — not just the app — enforces who can see what.</li>
   </ul>
@@ -238,7 +242,7 @@ footer.doc p{ margin:0 0 10px; font-size:14px; color:var(--ink-soft); font-famil
 
 <section id="storage">
   <h2><span class="num">11</span> Cookies and local storage</h2>
-  <p>This is a native mobile app, not a website — there are no browser cookies. The app stores a small amount of data on your device itself (your session, so you stay signed in) using your OS's secure storage. That data never leaves your device except to make the API calls the app needs to function.</p>
+  <p>We don't use cookies for tracking or advertising. The mobile app stores a small amount of data on your device itself (your session, so you stay signed in) using your OS's secure storage. The business website keeps the same session in your browser's local storage, which is strictly necessary for signing in and needs no consent banner. That data never leaves your device except to make the requests the app or website needs to function.</p>
 </section>
 
 <section id="automated">

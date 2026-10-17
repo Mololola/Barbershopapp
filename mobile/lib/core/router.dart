@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/admin/presentation/admin_screen.dart';
 import '../features/auth/application/auth_controller.dart';
@@ -8,9 +10,11 @@ import '../features/auth/domain/profile.dart';
 import '../features/auth/presentation/account_settings_screen.dart';
 import '../features/auth/presentation/edit_profile_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
+import '../features/auth/presentation/get_the_app_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
+import '../features/auth/presentation/two_factor_screen.dart';
 import '../features/business/application/business_controller.dart';
 import '../features/business/presentation/edit_shop_page_screen.dart';
 import '../features/business/presentation/business_edit_screen.dart';
@@ -50,6 +54,8 @@ import 'supabase_providers.dart';
 
 const _authRoutes = {'/sign-in', '/sign-up', '/forgot-password'};
 const _businessSetupRoute = '/business-setup';
+const _twoFactorRoute = '/two-factor';
+const _getTheAppRoute = '/get-the-app';
 
 bool _isReviewRoute(String location, String? bookingId) {
   return bookingId != null && location == '/customer/bookings/$bookingId/review';
@@ -66,6 +72,8 @@ String? resolveRedirect({
   required String? pendingReviewBookingId,
   required String location,
   bool passwordRecovery = false,
+  bool needsSecondFactor = false,
+  bool isWeb = false,
 }) {
   // The password-reset email link signs the user into a temporary recovery
   // session — that counts as authenticated, but must not fall through to
@@ -89,6 +97,16 @@ String? resolveRedirect({
     return _authRoutes.contains(location) ? null : '/sign-in';
   }
 
+  // Before anything else an admin can reach — see TwoFactorScreen.
+  if (needsSecondFactor) {
+    return location == _twoFactorRoute ? null : _twoFactorRoute;
+  }
+
+  // The website is for shops (and the admin); customers use the app.
+  if (isWeb && profile.role == AccountRole.customer && !profile.isAdmin) {
+    return location == _getTheAppRoute ? null : _getTheAppRoute;
+  }
+
   if (profile.role == AccountRole.business && !isBusinessSetupComplete) {
     return location == _businessSetupRoute ? null : _businessSetupRoute;
   }
@@ -102,8 +120,8 @@ String? resolveRedirect({
     return '/customer/bookings/$pendingReviewBookingId/review';
   }
 
-  final home = profile.role == AccountRole.customer ? '/customer' : '/business';
-  final onboardingRoutes = {..._authRoutes, _businessSetupRoute};
+  final home = profile.role == AccountRole.business ? '/business' : (isWeb ? '/admin' : '/customer');
+  final onboardingRoutes = {..._authRoutes, _businessSetupRoute, _twoFactorRoute, _getTheAppRoute};
   return onboardingRoutes.contains(location) ? home : null;
 }
 
@@ -144,6 +162,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final profileState = ref.read(currentProfileProvider);
       final isBusinessSetupComplete = ref.read(currentBusinessProvider).value?.isSetupComplete ?? false;
       final pendingReviewBookingId = ref.read(pendingReviewProvider).value?.id;
+      final auth = ref.read(supabaseClientProvider).auth;
       return resolveRedirect(
         isAuthenticated: isAuthenticated,
         profile: profileState.value,
@@ -156,6 +175,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         pendingReviewBookingId: pendingReviewBookingId,
         location: state.matchedLocation,
         passwordRecovery: ref.read(passwordRecoveryProvider),
+        needsSecondFactor: profileState.value?.isAdmin == true &&
+            auth.mfa.getAuthenticatorAssuranceLevel().currentLevel != AuthenticatorAssuranceLevels.aal2,
+        isWeb: kIsWeb,
       );
     },
     routes: [
@@ -166,6 +188,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/sign-up', builder: (context, state) => const SignUpScreen()),
       GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
       GoRoute(path: _resetPasswordRoute, builder: (context, state) => const ResetPasswordScreen()),
+      GoRoute(path: _twoFactorRoute, builder: (context, state) => const TwoFactorScreen()),
+      GoRoute(path: _getTheAppRoute, builder: (context, state) => const GetTheAppScreen()),
       GoRoute(path: '/account-settings', builder: (context, state) => const AccountSettingsScreen()),
 
       StatefulShellRoute.indexedStack(

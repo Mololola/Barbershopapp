@@ -30,6 +30,12 @@ cp env.json.example env.json    # fill in your Supabase URL + anon/publishable k
 flutter run --dart-define-from-file=env.json
 ```
 
+**Business website** (the same Flutter app, built for the browser — see "Business website" in `docs/architecture.md`)
+```bash
+cd mobile
+flutter run -d chrome --web-port 8766 --dart-define-from-file=env.json   # needs WEB_APP_URL=http://localhost:8766 in backend/.env
+```
+
 Neither `.env` nor `env.json` is committed — only the `.example` files are.
 
 ## Conventions
@@ -37,6 +43,7 @@ Neither `.env` nor `env.json` is committed — only the `.example` files are.
 - New backend endpoints live under `backend/app/api/`; DB models under `backend/app/models/`; settings/config under `backend/app/core/`. Migrations via Alembic (`backend/alembic/`), configured to read `DATABASE_URL` from `app/core/config.py`, not `alembic.ini`.
 - Backend dependencies are pinned in `backend/requirements.txt` (prod) and `backend/requirements-dev.txt` (+ test deps), compiled from `backend/pyproject.toml` via `pip-compile` (pip-tools) — `pyproject.toml`'s `>=` ranges are the source of truth, the `requirements*.txt` files are the reproducible, committed lock. After changing a dependency in `pyproject.toml`, regenerate both (`pip-compile -o requirements.txt pyproject.toml` and `pip-compile --extra dev -o requirements-dev.txt pyproject.toml`) and re-run `pip-sync requirements-dev.txt` locally.
 - New Flutter screens/logic are organized by feature under `mobile/lib/features/<feature>/`; cross-cutting app setup (env, router) lives in `mobile/lib/core/`.
+- Screens must work at phone width and on the wide (website/tablet) layout: check `isWideLayout(context)` / use `ResponsiveColumns` from `mobile/lib/core/responsive.dart` rather than hardcoding a phone-only layout, and keep the phone layout unchanged when adding a wide one.
 - The booking table must keep its Postgres `EXCLUDE` constraint (see `docs/architecture.md`) as the source of truth for "no double-booking" — never rely on app-level check-then-insert alone for that guarantee.
 - [Graphify](https://github.com/Graphify-Labs/graphify) is installed for codebase-graph navigation (`graphify-out/`, gitignored/regenerable). Re-run `graphify update .` after structural changes if you want the graph current; not required for day-to-day edits.
 

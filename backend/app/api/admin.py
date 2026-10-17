@@ -7,16 +7,22 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.billing import _DESIGN_SLOT_BUNDLE_PRICE_CENTS, _DESIGN_SLOT_BUNDLE_SIZE
-from app.core.auth import get_current_user_id
+from app.core.auth import get_token_claims
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 
 router = APIRouter()
 
-def require_admin(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)) -> str:
+def require_admin(db: Session = Depends(get_db), claims: dict = Depends(get_token_claims)) -> str:
+    """An admin who signed in with their second factor too ('aal2'): admin
+    access reaches bank details and payouts, so a leaked password alone
+    mustn't be enough. The database's admin policies require the same."""
+    user_id = claims["sub"]
     is_admin = db.execute(text("select is_admin from profiles where id = :id"), {"id": user_id}).scalar()
     if not is_admin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Admins only")
+    if claims.get("aal") != "aal2":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Sign in with your authenticator code to use admin tools")
     return user_id
 
 
@@ -380,7 +386,7 @@ def set_quality_reviewer(
     _rate_limit: None = Depends(rate_limit("30/minute")),
     _admin: str = Depends(require_admin),
 ) -> None:
-    """Promote a customer to (or demote from) the $3 reward tier. Done here,
+    """Promote a customer to (or demote from) the higher (2 per review) reward tier. Done here,
     not as a client-side update: the app's database role deliberately has
     no UPDATE grant on is_quality_reviewer (see 'lock down profile
     privilege columns'), so nobody can promote themselves — which also

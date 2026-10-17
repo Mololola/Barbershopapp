@@ -6,12 +6,12 @@ from sqlalchemy.exc import IntegrityError
 from app.api.rewards import _is_duplicate_reward_error, _month_start, _tier_amount_cents
 
 
-def test_automatic_tier_is_two_dollars():
-    assert _tier_amount_cents(is_quality_reviewer=False) == 200
+def test_automatic_tier_is_one_unit_of_the_shops_currency():
+    assert _tier_amount_cents(is_quality_reviewer=False) == 100
 
 
-def test_quality_tier_replaces_automatic_with_three_dollars():
-    assert _tier_amount_cents(is_quality_reviewer=True) == 300
+def test_quality_tier_replaces_automatic_with_two():
+    assert _tier_amount_cents(is_quality_reviewer=True) == 200
 
 
 def test_month_start_truncates_to_first_of_month_midnight():

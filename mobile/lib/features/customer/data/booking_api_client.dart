@@ -53,6 +53,16 @@ class BookingApiClient {
     return Booking.fromApiJson(result as Map<String, dynamic>);
   }
 
+  /// My upcoming bookings that will be cancelled with their shop if it
+  /// doesn't renew, by booking id → when that happens.
+  Future<Map<String, DateTime>> fetchBookingsAtRisk() async {
+    final result = await _api.get('/me/bookings/at-risk');
+    return {
+      for (final row in result as List)
+        row['booking_id'] as String: DateTime.parse(row['cancelled_at'] as String),
+    };
+  }
+
   Future<RewardCredit> creditReviewReward(String bookingId) async {
     final result = await _api.post('/bookings/$bookingId/credit-review-reward');
     return RewardCredit.fromApiJson(result as Map<String, dynamic>);

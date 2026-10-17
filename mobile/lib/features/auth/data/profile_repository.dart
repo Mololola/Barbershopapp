@@ -1,7 +1,7 @@
-import 'dart:io';
-
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/picked_media.dart';
 import '../domain/profile.dart';
 
 class UsernameTakenException implements Exception {
@@ -61,7 +61,7 @@ class ProfileRepository {
     return rows.map(Profile.fromRow).toList();
   }
 
-  Future<void> updateAvatar({required String profileId, required File image}) async {
+  Future<void> updateAvatar({required String profileId, required XFile image}) async {
     final avatarUrl = await uploadAvatarImage(profileId, image);
     await updateAvatarUrl(profileId, avatarUrl);
   }
@@ -72,11 +72,11 @@ class ProfileRepository {
   /// necessarily the profile the resulting URL gets written to (a business
   /// logo upload uses the owner's own uid but also updates `businesses`).
   /// [fileName] keeps a shop's cover photo from overwriting its logo.
-  Future<String> uploadAvatarImage(String uid, File image, {String fileName = 'avatar'}) async {
-    final path = '$uid/$fileName${_extensionOf(image.path)}';
-    await _client.storage.from('avatars').upload(
+  Future<String> uploadAvatarImage(String uid, XFile image, {String fileName = 'avatar'}) async {
+    final path = '$uid/$fileName${extensionOf(image)}';
+    await _client.storage.from('avatars').uploadBinary(
           path,
-          image,
+          await image.readAsBytes(),
           fileOptions: const FileOptions(upsert: true),
         );
     // Cache-bust: the path (and therefore URL) is identical across edits
@@ -87,10 +87,5 @@ class ProfileRepository {
 
   Future<void> updateAvatarUrl(String profileId, String avatarUrl) async {
     await _client.from('profiles').update({'avatar_url': avatarUrl}).eq('id', profileId);
-  }
-
-  String _extensionOf(String path) {
-    final dot = path.lastIndexOf('.');
-    return dot == -1 ? '.jpg' : path.substring(dot);
   }
 }

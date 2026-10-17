@@ -44,7 +44,8 @@ class BusinessSubscription {
 
   bool get isInTrial => trialEndsAt != null && trialEndsAt!.isAfter(DateTime.now());
 
-  /// How long an unpaid shop's data is kept after it's hidden — mirrors
+  /// How long an unpaid shop's data is kept, counted from [suspendedAt]
+  /// (the first failed payment or the end of the subscription) — mirrors
   /// GRACE_PERIOD_DAYS in backend/app/jobs/expire_grace_periods.py.
   static const dataRetention = Duration(days: 60);
 

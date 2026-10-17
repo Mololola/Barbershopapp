@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
@@ -28,38 +29,86 @@ class PremiumSection extends StatelessWidget {
         ? premium.history[premium.history.length - 2]
         : premium.history.last;
 
+    final header = Row(
+      children: [
+        const Icon(Icons.workspace_premium, color: AppColors.brass),
+        const SizedBox(width: 6),
+        Expanded(child: Text('Premium insights', style: Theme.of(context).textTheme.titleLarge)),
+      ],
+    );
+    final suggestions = [
+      const _Heading('What to do next', 'Moves worked out from your own bookings, best first.'),
+      if (premium.suggestions.isEmpty)
+        const _Empty('Suggestions appear once you have about 10 completed bookings in the last 90 days.')
+      else
+        for (final s in premium.suggestions) _SuggestionCard(suggestion: s, currency: currency),
+    ];
+    final profit = [
+      const _Heading('Profit, last 12 months', 'Tap a bar for the month\'s figures.'),
+      _ProfitChart(months: premium.history, currency: currency),
+    ];
+    final busy = [
+      _Heading(
+        'When your chairs are busy',
+        'Share of chair time booked, last 8 weeks · overall ${_percent(premium.utilisation)}',
+      ),
+      _Heatmap(cells: premium.heatmap),
+    ];
+    final barbers = [const _Heading('Barbers', 'Last 30 days'), _BarbersCard(barbers: premium.barbers, currency: currency)];
+    final customers = [const _Heading('Customers', 'Last 30 days'), _CustomersCard(customers: premium.customers)];
+    final services = [
+      const _Heading('Services', 'Last 90 days, vs the 90 before'),
+      _ServicesCard(services: premium.services, currency: currency),
+    ];
+    final whatIf = [
+      _Heading('What if…', 'Try a change on ${monthLabel(baseline.month)}\'s figures before making it.'),
+      _WhatIfCard(baseline: baseline, currency: currency),
+    ];
+
+    if (!isWideLayout(context)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          header,
+          if (overview.premiumState.onTrial) _TrialBanner(state: overview.premiumState, currency: currency),
+          if (premium.forecast != null) _ForecastCard(forecast: premium.forecast!, currency: currency),
+          ...suggestions,
+          ...profit,
+          ...busy,
+          ...barbers,
+          ...customers,
+          ...services,
+          ...whatIf,
+        ],
+      );
+    }
+
+    // On a desktop, related panels sit side by side, each pair under the
+    // same line so their headings align.
+    Widget pair(List<Widget> left, List<Widget> right) => ResponsiveColumns(
+          children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: left),
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: right),
+          ],
+        );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.workspace_premium, color: AppColors.brass),
-            const SizedBox(width: 6),
-            Expanded(child: Text('Premium insights', style: Theme.of(context).textTheme.titleLarge)),
-          ],
-        ),
+        header,
         if (overview.premiumState.onTrial) _TrialBanner(state: overview.premiumState, currency: currency),
-        if (premium.forecast != null) _ForecastCard(forecast: premium.forecast!, currency: currency),
-        _Heading('What to do next', 'Moves worked out from your own bookings, best first.'),
-        if (premium.suggestions.isEmpty)
-          const _Empty('Suggestions appear once you have about 10 completed bookings in the last 90 days.')
-        else
-          for (final s in premium.suggestions) _SuggestionCard(suggestion: s, currency: currency),
-        _Heading('Profit, last 12 months', 'Tap a bar for the month\'s figures.'),
-        _ProfitChart(months: premium.history, currency: currency),
-        _Heading(
-          'When your chairs are busy',
-          'Share of chair time booked, last 8 weeks · overall ${_percent(premium.utilisation)}',
+        pair(
+          [
+            const _Heading('This month', 'Where you\'re heading at this pace'),
+            if (premium.forecast != null)
+              _ForecastCard(forecast: premium.forecast!, currency: currency, margin: EdgeInsets.zero)
+            else
+              const _Empty('A forecast appears once the month is under way.'),
+          ],
+          suggestions,
         ),
-        _Heatmap(cells: premium.heatmap),
-        _Heading('Barbers', 'Last 30 days'),
-        _BarbersCard(barbers: premium.barbers, currency: currency),
-        _Heading('Customers', 'Last 30 days'),
-        _CustomersCard(customers: premium.customers),
-        _Heading('Services', 'Last 90 days, vs the 90 before'),
-        _ServicesCard(services: premium.services, currency: currency),
-        _Heading('What if…', 'Try a change on ${monthLabel(baseline.month)}\'s figures before making it.'),
-        _WhatIfCard(baseline: baseline, currency: currency),
+        pair(profit, busy),
+        pair(barbers, customers),
+        pair(services, whatIf),
       ],
     );
   }
@@ -128,10 +177,11 @@ class _TrialBanner extends ConsumerWidget {
 }
 
 class _ForecastCard extends StatelessWidget {
-  const _ForecastCard({required this.forecast, required this.currency});
+  const _ForecastCard({required this.forecast, required this.currency, this.margin = const EdgeInsets.only(top: 12)});
 
   final Forecast forecast;
   final String currency;
+  final EdgeInsets margin;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +194,7 @@ class _ForecastCard extends StatelessWidget {
             ? 'At this pace you\'ll break even on ${day.day} ${monthLabel(day, short: true)}.'
             : 'At this pace you won\'t cover this month\'s costs — see the suggestions below.';
     return Card(
-      margin: const EdgeInsets.only(top: 12),
+      margin: margin,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -227,8 +277,6 @@ class _ProfitChart extends StatelessWidget {
   final List<FinanceMonth> months;
   final String currency;
 
-  static const _half = 70.0;
-
   @override
   Widget build(BuildContext context) {
     final largest = months.fold<int>(1, (m, x) => x.netCents.abs() > m ? x.netCents.abs() : m);
@@ -236,49 +284,63 @@ class _ProfitChart extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
-        child: Row(
-          children: [
-            for (final month in months)
-              Expanded(
-                child: Tooltip(
-                  triggerMode: TooltipTriggerMode.tap,
-                  message: '${monthLabel(month.month)}\n'
-                      'Revenue ${formatMoney(month.revenueCents, currency)}\n'
-                      'Costs ${formatMoney(month.costsCents, currency)}\n'
-                      '${month.netCents >= 0 ? 'Profit' : 'Loss'} ${formatMoney(month.netCents, currency)}',
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: _half,
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: month.netCents > 0 ? _bar(month.netCents / largest, financeGain, up: true) : null,
-                        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Taller bars and "Jan" rather than "J" when there's room for them.
+            final roomy = constraints.maxWidth / months.length >= 36;
+            final half = roomy ? 100.0 : 70.0;
+            return Row(
+              children: [
+                for (final month in months)
+                  Expanded(
+                    child: Tooltip(
+                      triggerMode: TooltipTriggerMode.tap,
+                      message: '${monthLabel(month.month)}\n'
+                          'Revenue ${formatMoney(month.revenueCents, currency)}\n'
+                          'Costs ${formatMoney(month.costsCents, currency)}\n'
+                          '${month.netCents >= 0 ? 'Profit' : 'Loss'} ${formatMoney(month.netCents, currency)}',
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: half,
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: month.netCents > 0
+                                  ? _bar(month.netCents / largest, financeGain, half: half, up: true)
+                                  : null,
+                            ),
+                          ),
+                          Container(height: 1, color: AppColors.steel),
+                          SizedBox(
+                            height: half,
+                            child: Align(
+                              alignment: Alignment.topCenter,
+                              child: month.netCents < 0
+                                  ? _bar(-month.netCents / largest, AppColors.rust, half: half, up: false)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            roomy ? monthLabel(month.month, short: true) : monthLabel(month.month, short: true)[0],
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                        ],
                       ),
-                      Container(height: 1, color: AppColors.steel),
-                      SizedBox(
-                        height: _half,
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: month.netCents < 0 ? _bar(-month.netCents / largest, AppColors.rust, up: false) : null,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(monthLabel(month.month, short: true)[0], style: Theme.of(context).textTheme.labelSmall),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _bar(double fraction, Color color, {required bool up}) {
+  Widget _bar(double fraction, Color color, {required double half, required bool up}) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 3),
-      height: (_half * fraction).clamp(2, _half),
+      height: (half * fraction).clamp(2, half),
       decoration: BoxDecoration(
         color: color,
         borderRadius: up

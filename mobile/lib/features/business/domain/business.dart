@@ -47,6 +47,7 @@ class Business {
     this.logoUrl,
     this.coverUrl,
     this.brandColor,
+    this.referredByCode,
     this.isSetupComplete = false,
     this.createdAt,
   });
@@ -61,6 +62,9 @@ class Business {
 
   /// "#RRGGBB", or null until chosen — see brandColorOf.
   final String? brandColor;
+
+  /// The referral code entered at signup, if any — fixed after that.
+  final String? referredByCode;
 
   /// False until the owner finishes the onboarding wizard (details, a
   /// service, a staff member) — the router keeps them in it until then.
@@ -78,6 +82,7 @@ class Business {
       logoUrl: row['logo_url'] as String?,
       coverUrl: row['cover_url'] as String?,
       brandColor: row['brand_color'] as String?,
+      referredByCode: row['referred_by_code'] as String?,
       isSetupComplete: row['setup_completed_at'] != null,
       createdAt: row['created_at'] != null ? DateTime.parse(row['created_at'] as String) : null,
     );
@@ -262,6 +267,7 @@ class Service {
     required this.priceCents,
     required this.durationMinutes,
     this.isActive = true,
+    this.isBasicCut = false,
   });
 
   final String? id;
@@ -270,6 +276,10 @@ class Service {
   final int priceCents;
   final int durationMinutes;
   final bool isActive;
+
+  /// The shop's standard haircut; the subscription is priced from it. Only
+  /// ever shown to the owner.
+  final bool isBasicCut;
 
   double get priceInMajorUnits => priceCents / 100;
 
@@ -281,6 +291,7 @@ class Service {
       priceCents: row['price_cents'] as int,
       durationMinutes: row['duration_minutes'] as int,
       isActive: row['is_active'] as bool,
+      isBasicCut: row['is_basic_cut'] as bool? ?? false,
     );
   }
 }
@@ -299,6 +310,7 @@ class CostItem {
     required this.kind,
     required this.startsOn,
     this.endsOn,
+    this.isAutomatic = false,
   });
 
   final String? id;
@@ -308,6 +320,9 @@ class CostItem {
   final CostKind kind;
   final DateTime startsOn;
   final DateTime? endsOn;
+
+  /// What the shop pays us, kept by the backend from Stripe — not editable.
+  final bool isAutomatic;
 
   bool appliesTo(DateTime month) => kind == CostKind.oneOff
       ? startsOn == month
@@ -327,6 +342,7 @@ class CostItem {
       kind: row['kind'] == 'one_off' ? CostKind.oneOff : CostKind.monthly,
       startsOn: DateTime.parse(row['starts_on'] as String),
       endsOn: row['ends_on'] == null ? null : DateTime.parse(row['ends_on'] as String),
+      isAutomatic: row['stripe_subscription_id'] != null,
     );
   }
 

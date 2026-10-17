@@ -60,4 +60,30 @@ void main() {
 
     expect(find.text('Replying to other_barber'), findsOneWidget);
   });
+
+  testWidgets('deleting your own comment asks first', (tester) async {
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    // Only "Thanks!" is mine.
+    expect(find.text('Delete'), findsOneWidget);
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete this comment?'), findsOneWidget);
+  });
+
+  testWidgets('a post with no comments invites the first one', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentProfileProvider.overrideWith((ref) async => myProfile),
+        commentsProvider.overrideWith((ref, postId) async => []),
+      ],
+      child: const MaterialApp(home: PostDetailScreen(postId: 'post-1')),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No comments yet'), findsOneWidget);
+    expect(find.text('Write a comment'), findsOneWidget);
+  });
 }

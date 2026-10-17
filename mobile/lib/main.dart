@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/adaptive_chrome.dart';
 import 'core/env.dart';
 import 'core/error_reporting.dart';
+import 'core/launch_animation.dart';
 import 'core/router.dart';
 import 'core/secure_local_storage.dart';
 import 'core/system_bars.dart';
@@ -16,6 +19,10 @@ import 'core/theme.dart';
 Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    // Real paths on the website (/business/finance, not /#/business/finance):
+    // shareable, and the URL's fragment stays free for Supabase's sign-in
+    // links. No effect in the app.
+    usePathUrlStrategy();
     // Off without a DSN (local dev). Native crashes are caught by Sentry
     // itself; Dart errors go through reportError below.
     if (Env.sentryDsn.isNotEmpty) {
@@ -61,10 +68,11 @@ class BarbershopApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'Barbershop',
+      title: 'Fadra Cut',
       theme: AppTheme.light,
       routerConfig: ref.watch(routerProvider),
-      builder: (context, child) => SystemBarsSafeArea(child: child!),
+      builder: (context, child) =>
+          LaunchAnimation(child: SystemBarsSafeArea(child: AdaptiveChrome(child: child!))),
     );
   }
 }

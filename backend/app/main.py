@@ -3,6 +3,7 @@ import time
 
 import sentry_sdk
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -15,6 +16,7 @@ from app.api.billing_return import router as billing_return_router
 from app.api.finance import router as finance_router
 from app.api.jobs import router as jobs_router
 from app.api.bookings import router as bookings_router
+from app.api.payouts import router as payouts_router
 from app.api.rewards import router as rewards_router
 from app.core.config import settings
 from app.core.logging import configure_logging
@@ -53,8 +55,21 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+# Added last so it's outermost: a browser's preflight request is answered
+# here, before rate limiting or logging. The phone app isn't a browser and
+# never needs this.
+if settings.web_app_url:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.web_app_url],
+        allow_methods=["*"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
+
+
 app.include_router(bookings_router)
 app.include_router(rewards_router)
+app.include_router(payouts_router)
 app.include_router(billing_router)
 app.include_router(finance_router)
 app.include_router(admin_router)

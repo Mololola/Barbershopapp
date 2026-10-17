@@ -1,11 +1,17 @@
 import datetime
+import uuid
 from zoneinfo import ZoneInfo
 
 import psycopg
 from fastapi import status
 from sqlalchemy.exc import IntegrityError
 
-from app.api.bookings import _effective_hours, _map_booking_integrity_error, _slot_rejection_reason
+from app.api.bookings import (
+    _effective_hours,
+    _map_booking_integrity_error,
+    _slot_rejection_reason,
+    my_bookings_at_risk,
+)
 
 
 def test_exclusion_violation_maps_to_409():
@@ -106,3 +112,22 @@ def test_opening_hours_are_checked_in_the_shops_local_time():
     assert _slot_rejection_reason(late, late + datetime.timedelta(minutes=30), _OPEN_HOURS, now, london) == (
         "Outside business hours"
     )
+
+
+def test_bookings_at_risk_use_the_grace_period_and_30_day_notice():
+    booking_id = uuid.uuid4()
+    cancelled_at = datetime.datetime(2026, 4, 2, tzinfo=datetime.UTC)
+
+    class _Db:
+        def execute(self, statement, params):
+            self.params = params
+            return self
+
+        def mappings(self):
+            return [{"booking_id": booking_id, "cancelled_at": cancelled_at}]
+
+    db = _Db()
+    result = my_bookings_at_risk(db=db, user_id="me")
+
+    assert db.params == {"user_id": "me", "days": 60, "notice_days": 30}
+    assert [(r.booking_id, r.cancelled_at) for r in result] == [(booking_id, cancelled_at)]

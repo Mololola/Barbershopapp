@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
 import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_leave_request.dart';
@@ -171,7 +172,8 @@ class StaffScreen extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => _showInviteByNameDialog(context, ref),
-              child: const Text('Invite by name', style: TextStyle(color: Colors.white)),
+              // White on the phone's dark app bar; the desktop header is light.
+              child: Text('Invite by name', style: TextStyle(color: isWideLayout(context) ? null : Colors.white)),
             ),
           ],
           bottom: const TabBar(

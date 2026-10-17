@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
@@ -256,31 +255,46 @@ class ServiceController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
+  /// [isFirst]: it becomes the basic cut (services_default_basic_cut).
   Future<void> addService({
     required String name,
     required int priceCents,
     required int durationMinutes,
-  }) async {
+    bool isFirst = false,
+  }) =>
+      _run((businessId) async {
+        await ref.read(businessRepositoryProvider).addService(
+              Service(businessId: businessId, name: name, priceCents: priceCents, durationMinutes: durationMinutes),
+            );
+        if (isFirst) await _syncSubscriptionPrice(businessId);
+      });
+
+  Future<void> updateService(Service service) => _run((businessId) async {
+        await ref.read(businessRepositoryProvider).updateService(service);
+        if (service.isBasicCut) await _syncSubscriptionPrice(businessId);
+      });
+
+  Future<void> removeService(String serviceId) =>
+      _run((_) => ref.read(businessRepositoryProvider).removeService(serviceId));
+
+  Future<void> makeBasicCut(String serviceId) => _run((businessId) async {
+        await ref.read(billingApiClientProvider).setBasicCut(businessId, serviceId);
+        ref.invalidate(businessSubscriptionProvider);
+      });
+
+  // Services are written straight to Supabase, so the backend is asked to
+  // move the subscription to the basic cut's new price now.
+  Future<void> _syncSubscriptionPrice(String businessId) async {
+    await ref.read(billingApiClientProvider).syncSubscriptionPrice(businessId);
+    ref.invalidate(businessSubscriptionProvider);
+  }
+
+  Future<void> _run(Future<void> Function(String businessId) action) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final business = await ref.read(currentBusinessProvider.future);
       if (business == null) throw StateError('No business set up yet.');
-      await ref.read(businessRepositoryProvider).addService(
-            Service(
-              businessId: business.id,
-              name: name,
-              priceCents: priceCents,
-              durationMinutes: durationMinutes,
-            ),
-          );
-      ref.invalidate(servicesProvider);
-    });
-  }
-
-  Future<void> deleteService(String serviceId) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref.read(businessRepositoryProvider).deleteService(serviceId);
+      await action(business.id);
       ref.invalidate(servicesProvider);
     });
   }
@@ -499,7 +513,7 @@ class ShopBrandingController extends AsyncNotifier<void> {
   Future<void> build() async {}
 
   /// Only what changed is uploaded/written; null means "keep as is".
-  Future<bool> save({File? logoImage, File? coverImage, String? brandColor}) async {
+  Future<bool> save({XFile? logoImage, XFile? coverImage, String? brandColor}) async {
     state = const AsyncLoading();
     var success = false;
     state = await AsyncValue.guard(() async {

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../business/application/business_controller.dart';
+import '../../business/domain/finance_overview.dart';
 import '../application/auth_controller.dart';
 import '../domain/profile.dart';
 
@@ -15,7 +17,45 @@ class AccountSettingsScreen extends ConsumerWidget {
     await ref.read(authControllerProvider.notifier).signOut();
   }
 
+  /// True to go on deleting. Unpaid rewards are offered as a cash-out first;
+  /// deleting gives them up.
+  Future<bool> _confirmGivingUpRewards(BuildContext context, WidgetRef ref) async {
+    final List<({String currency, int amountCents})> unpaid;
+    try {
+      unpaid = await ref.read(accountApiClientProvider).fetchUnpaidRewards();
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+      return false;
+    }
+    if (unpaid.isEmpty) return true;
+    if (!context.mounted) return false;
+    final amounts = unpaid.map((balance) => formatMoney(balance.amountCents, balance.currency)).join(' and ');
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('You have rewards not paid out yet'),
+        content: Text(
+          'You have $amounts that hasn\'t been paid to you. Cash it out first, or delete your account and give '
+          'it up — it can\'t be paid after your account is gone.',
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () => Navigator.pop(context, 'give-up'),
+            child: const Text('Give it up'),
+          ),
+          FilledButton(onPressed: () => Navigator.pop(context, 'cash-out'), child: const Text('Cash out')),
+        ],
+      ),
+    );
+    if (choice == 'cash-out' && context.mounted) context.push('/rewards');
+    return choice == 'give-up';
+  }
+
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    if (!await _confirmGivingUpRewards(context, ref) || !context.mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -50,6 +90,7 @@ class AccountSettingsScreen extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
     final profile = ref.watch(currentProfileProvider).value;
     final isBusiness = profile?.role == AccountRole.business;
+    final business = isBusiness ? ref.watch(currentBusinessProvider).value : null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -85,6 +126,13 @@ class AccountSettingsScreen extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/business/subscription'),
             ),
+            // Set at signup and never editable: the referrer is paid from it.
+            if (business != null)
+              ListTile(
+                leading: const Icon(Icons.card_giftcard_outlined),
+                title: const Text('Referred by'),
+                subtitle: Text(business.referredByCode ?? 'No referral code was used'),
+              ),
           ] else if (profile != null) ...[
             const _GroupHeader('Your profile'),
             ListTile(
@@ -103,7 +151,8 @@ class AccountSettingsScreen extends ConsumerWidget {
                 onTap: () => context.push('/customer/worker-profile'),
               ),
           ],
-          if (profile != null)
+          // Only customers refer shops; businesses see who referred them.
+          if (profile != null && !isBusiness)
             ListTile(
               leading: const Icon(Icons.card_giftcard_outlined),
               title: const Text('Your referral code'),

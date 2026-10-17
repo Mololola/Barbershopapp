@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/loading.dart';
+import '../../../core/responsive.dart';
 import '../../../core/quick_action_tile.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
@@ -20,7 +21,7 @@ class CustomerHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myProfile = ref.watch(currentProfileProvider).value;
-    final balance = ref.watch(rewardBalanceProvider).value ?? 0;
+    final balances = ref.watch(availableBalanceProvider).value ?? const {};
     final bookings = ref.watch(myBookingsProvider);
     final conversations = ref.watch(conversationsProvider).value ?? const [];
     final unreadCount = conversations.fold<int>(0, (sum, c) => sum + c.unreadCount);
@@ -28,14 +29,15 @@ class CustomerHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Barbershop'),
+        title: const Text('Fadra Cut'),
         actions: [
           TextButton.icon(
             onPressed: () => context.push('/rewards'),
-            icon: const Icon(Icons.paid_outlined, color: Colors.white),
+            // White on the phone's dark app bar; the desktop header is light.
+            icon: Icon(Icons.paid_outlined, color: isWideLayout(context) ? null : Colors.white),
             label: Text(
-              '\$${(balance / 100).toStringAsFixed(2)}',
-              style: const TextStyle(color: Colors.white),
+              formatBalances(balances),
+              style: TextStyle(color: isWideLayout(context) ? null : Colors.white),
             ),
           ),
           const MessagesButton(),
@@ -123,6 +125,7 @@ class _NextAppointmentCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final business = ref.watch(businessProvider(booking.businessId)).value;
+    final cancelledAt = ref.watch(bookingsAtRiskProvider).value?[booking.id];
     final start = booking.startTime.toLocal();
 
     return DecoratedBox(
@@ -168,6 +171,22 @@ class _NextAppointmentCard extends ConsumerWidget {
             ),
             const SizedBox(height: 2),
             Text(_formatTime(start), style: const TextStyle(color: AppColors.chalk, fontSize: 15)),
+            if (cancelledAt != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.brass),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      shopClosureNotice(cancelledAt, DateTime.now()),
+                      style: const TextStyle(color: AppColors.chalk, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             CustomPaint(
               painter: _DashedLinePainter(color: AppColors.brass.withValues(alpha: 0.4)),

@@ -62,8 +62,41 @@ def delete_account(
     # auth.users(id), and everything else in the app cascades transitively
     # from profiles/businesses, so this one delete removes the account and
     # every row it owns app-wide.
+    # Paid payouts are kept (tax records, migration e9a4c2f7b8d1); money not
+    # yet paid out was offered to the user first and is given up.
+    db.execute(
+        text("delete from payout_requests where profile_id = :user_id and status <> 'paid'"),
+        {"user_id": user_id},
+    )
     db.execute(text("delete from auth.users where id = :user_id"), {"user_id": user_id})
     db.commit()
+
+
+class UnpaidBalance(BaseModel):
+    currency: str
+    amount_cents: int
+
+
+@router.get("/account/unpaid-rewards", response_model=list[UnpaidBalance])
+def unpaid_rewards(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> list[UnpaidBalance]:
+    """Rewards earned but not yet paid out (requested or not), per currency
+    — what deleting the account would give up."""
+    rows = db.execute(
+        text(
+            "select l.currency, l.earned - coalesce(p.paid, 0) as amount_cents "
+            "from (select currency, sum(amount_cents) as earned from reward_ledger "
+            "      where customer_id = :user_id group by currency) l "
+            "left join (select currency, sum(amount_cents) as paid from payout_requests "
+            "           where profile_id = :user_id and status = 'paid' group by currency) p "
+            "  on p.currency = l.currency "
+            "where l.earned - coalesce(p.paid, 0) > 0 order by l.currency"
+        ),
+        {"user_id": user_id},
+    ).mappings().all()
+    return [UnpaidBalance(**row) for row in rows]
 
 
 class SignUpAvailabilityRequest(BaseModel):

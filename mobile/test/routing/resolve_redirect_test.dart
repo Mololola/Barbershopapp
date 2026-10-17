@@ -316,4 +316,84 @@ void main() {
       null,
     );
   });
+
+  group('admin second factor', () {
+    const adminProfile =
+        Profile(id: 'u4', role: AccountRole.customer, username: 'owner', referralCode: 'OWNERCODE', isAdmin: true);
+
+    test('an admin without their second factor can only reach the two-step screen', () {
+      for (final location in ['/customer', '/admin', '/rewards']) {
+        expect(
+          resolveRedirect(
+            isAuthenticated: true,
+            profile: adminProfile,
+            isBusinessSetupComplete: false,
+            pendingReviewBookingId: null,
+            location: location,
+            needsSecondFactor: true,
+          ),
+          '/two-factor',
+        );
+      }
+    });
+
+    test('once verified, the two-step screen sends an admin home', () {
+      expect(
+        resolveRedirect(
+          isAuthenticated: true,
+          profile: adminProfile,
+          isBusinessSetupComplete: false,
+          pendingReviewBookingId: null,
+          location: '/two-factor',
+        ),
+        '/customer',
+      );
+    });
+
+    test('on the website an admin with a customer account lands on Admin', () {
+      expect(
+        resolveRedirect(
+          isAuthenticated: true,
+          profile: adminProfile,
+          isBusinessSetupComplete: false,
+          pendingReviewBookingId: null,
+          location: '/sign-in',
+          isWeb: true,
+        ),
+        '/admin',
+      );
+    });
+  });
+
+  group('website', () {
+    test('a customer is shown the get-the-app page wherever they go', () {
+      for (final location in ['/customer', '/sign-in', '/feed']) {
+        expect(
+          resolveRedirect(
+            isAuthenticated: true,
+            profile: customerProfile,
+            isBusinessSetupComplete: false,
+            pendingReviewBookingId: null,
+            location: location,
+            isWeb: true,
+          ),
+          '/get-the-app',
+        );
+      }
+    });
+
+    test('a business is home as in the app', () {
+      expect(
+        resolveRedirect(
+          isAuthenticated: true,
+          profile: businessProfile,
+          isBusinessSetupComplete: true,
+          pendingReviewBookingId: null,
+          location: '/sign-in',
+          isWeb: true,
+        ),
+        '/business',
+      );
+    });
+  });
 }

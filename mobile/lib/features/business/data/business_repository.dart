@@ -190,6 +190,7 @@ class BusinessRepository {
         .from('services')
         .select()
         .eq('business_id', businessId)
+        .eq('is_active', true)
         .order('created_at');
     return rows.map(Service.fromRow).toList();
   }
@@ -203,8 +204,18 @@ class BusinessRepository {
     });
   }
 
-  Future<void> deleteService(String serviceId) async {
-    await _client.from('services').delete().eq('id', serviceId);
+  Future<void> updateService(Service service) async {
+    await _client.from('services').update({
+      'name': service.name,
+      'price_cents': service.priceCents,
+      'duration_minutes': service.durationMinutes,
+    }).eq('id', service.id!);
+  }
+
+  /// Off the menu, never deleted: bookings that used it — with their
+  /// reviews and earned rewards — are kept.
+  Future<void> removeService(String serviceId) async {
+    await _client.from('services').update({'is_active': false}).eq('id', serviceId);
   }
 
   Future<List<CostItem>> fetchCostItems(String businessId) async {

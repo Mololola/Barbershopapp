@@ -106,3 +106,17 @@ class AvailableSlot {
   @override
   int get hashCode => Object.hash(workerId, startTime);
 }
+
+const _monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/// What a customer is told about a booking that will be cancelled if its
+/// shop doesn't renew: shown from 30 days before, and reworded for the
+/// last day.
+String shopClosureNotice(DateTime cancelledAt, DateTime now) {
+  if (cancelledAt.difference(now) <= const Duration(days: 1)) {
+    return 'This booking will be cancelled within a day unless the shop renews its subscription.';
+  }
+  final local = cancelledAt.toLocal();
+  return 'This shop hasn\'t renewed its subscription. If it doesn\'t by ${local.day} '
+      '${_monthNames[local.month - 1]}, this booking will be cancelled.';
+}

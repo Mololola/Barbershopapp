@@ -1,10 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/app_network_image.dart';
+import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../business/domain/brand.dart';
 import '../application/feed_controller.dart';
 import '../domain/post.dart';
 
@@ -25,11 +29,18 @@ class _PostCardState extends ConsumerState<PostCard> {
   // button sitting disabled for a round trip to flip one boolean.
   late Post _post = widget.post;
   bool _likeInFlight = false;
+  bool _showHeart = false;
 
   @override
   void didUpdateWidget(PostCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.post.id != widget.post.id) _post = widget.post;
+    if (oldWidget.post.id != widget.post.id) {
+      _post = widget.post;
+    } else if (oldWidget.post != widget.post) {
+      // Fresh counts from the feed (e.g. a new comment), keeping a like or
+      // pin just toggled here that the feed's copy doesn't know about.
+      _post = widget.post.copyWith(likedByMe: _post.likedByMe, likeCount: _post.likeCount, isPinned: _post.isPinned);
+    }
   }
 
   Future<void> _toggleLike() async {
@@ -68,70 +79,216 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
   }
 
+  /// Double-tapping a photo only ever likes (never unlikes), with a heart
+  /// that pops over it either way — the feed's small moment of delight.
+  void _likeByDoubleTap() {
+    if (!_post.likedByMe) _toggleLike();
+    setState(() => _showHeart = true);
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (mounted) setState(() => _showHeart = false);
+    });
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this post?'),
+        content: const Text('It will be removed from the feed for everyone. This can\'t be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await ref.read(feedActionControllerProvider.notifier).deletePost(_post.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final actionState = ref.watch(feedActionControllerProvider);
     final post = _post;
     final isMinor = ref.watch(currentProfileProvider).value?.isMinor == true;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final secondary = scheme.onSurface.withValues(alpha: 0.65);
+    final hasBody = post.body != null && post.body!.isNotEmpty;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    // Flat, like a photo feed: no card around the post, the photo runs edge
+    // to edge, and the chrome around it stays slim.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ListTile(
-            title: InkWell(
-              onTap: () => context.push('/profile/${post.authorId}'),
-              child: Text(post.authorUsername),
-            ),
-            trailing: widget.isMine
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(post.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-                        tooltip: post.isPinned ? 'Remove from portfolio' : 'Add to portfolio',
-                        color: post.isPinned ? Theme.of(context).colorScheme.primary : null,
-                        onPressed: _togglePin,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 0, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => context.push('/profile/${post.authorId}'),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: scheme.primary.withValues(alpha: 0.12),
+                            foregroundColor: scheme.primary,
+                            backgroundImage: post.authorAvatarUrl != null ? NetworkImage(post.authorAvatarUrl!) : null,
+                            child: post.authorAvatarUrl == null
+                                ? Text(initialsOf(post.authorUsername), style: theme.textTheme.labelSmall)
+                                : null,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              post.authorUsername,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Text(' · ${timeAgo(post.createdAt)}', style: theme.textTheme.bodySmall?.copyWith(color: secondary)),
+                          if (widget.isMine && post.isPinned) ...[
+                            const SizedBox(width: 8),
+                            Icon(Icons.push_pin, size: 14, color: scheme.primary, semanticLabel: 'In portfolio'),
+                          ],
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: actionState.isLoading
-                            ? null
-                            : () => ref.read(feedActionControllerProvider.notifier).deletePost(post.id),
+                    ),
+                  ),
+                ),
+                if (widget.isMine)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_horiz),
+                    tooltip: 'Post options',
+                    enabled: !actionState.isLoading,
+                    onSelected: (action) => action == 'pin' ? _togglePin() : _confirmDelete(),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'pin',
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(post.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                          title: Text(post.isPinned ? 'Remove from portfolio' : 'Add to portfolio'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(Icons.delete_outline, color: scheme.error),
+                          title: Text('Delete', style: TextStyle(color: scheme.error)),
+                        ),
                       ),
                     ],
-                  )
-                : null,
+                  ),
+              ],
+            ),
           ),
           if (post.mediaUrl != null && post.mediaType == PostMediaType.video)
-            _PostVideoPlayer(url: post.mediaUrl!, height: 320)
+            _PostVideoPlayer(url: post.mediaUrl!)
           else if (post.mediaUrl != null)
-            SizedBox(
-              width: double.infinity,
-              height: 320,
-              child: AppNetworkImage(post.mediaUrl!, fit: BoxFit.contain),
+            GestureDetector(
+              onDoubleTap: isMinor ? null : _likeByDoubleTap,
+              child: AspectRatio(
+                aspectRatio: _mediaAspectRatio,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AppNetworkImage(post.mediaUrl!),
+                    Center(
+                      child: AnimatedScale(
+                        scale: _showHeart ? 1 : 0.4,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOutBack,
+                        child: AnimatedOpacity(
+                          opacity: _showHeart ? 1 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(Icons.favorite, size: 96, color: scheme.surface),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          if (post.body != null && post.body!.isNotEmpty)
+          // A text-only post is the text itself, so it comes before the actions.
+          if (hasBody && post.mediaUrl == null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(post.body!),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+              child: Text(post.body!, style: theme.textTheme.titleMedium?.copyWith(height: 1.4)),
             ),
           Row(
             children: [
               IconButton(
-                icon: Icon(post.likedByMe ? Icons.favorite : Icons.favorite_border),
-                color: post.likedByMe ? Colors.red : null,
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                  child: Icon(
+                    post.likedByMe ? Icons.favorite : Icons.favorite_border,
+                    key: ValueKey(post.likedByMe),
+                    color: post.likedByMe ? scheme.secondary : null,
+                  ),
+                ),
+                tooltip: post.likedByMe ? 'Unlike' : 'Like',
                 onPressed: isMinor ? null : _toggleLike,
               ),
-              Text('${post.likeCount}'),
-              const SizedBox(width: 16),
               IconButton(
                 icon: const Icon(Icons.mode_comment_outlined),
+                tooltip: 'Comments',
                 onPressed: () => context.push('/posts/${post.id}'),
               ),
-              Text('${post.commentCount}'),
             ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (post.likeCount > 0)
+                  Text(
+                    post.likeCount == 1 ? '1 like' : '${post.likeCount} likes',
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                if (hasBody && post.mediaUrl != null) ...[
+                  const SizedBox(height: 4),
+                  // Two lines in the feed; the whole caption is on the post.
+                  GestureDetector(
+                    onTap: () => context.push('/posts/${post.id}'),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: '${post.authorUsername} ', style: const TextStyle(fontWeight: FontWeight.w600)),
+                          TextSpan(text: post.body),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+                if (post.commentCount > 0)
+                  InkWell(
+                    onTap: () => context.push('/posts/${post.id}'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        post.commentCount == 1 ? 'View 1 comment' : 'View all ${post.commentCount} comments',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: secondary),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -139,15 +296,32 @@ class _PostCardState extends ConsumerState<PostCard> {
   }
 }
 
+/// Feed photos are square, so the feed keeps an even rhythm whatever was
+/// uploaded and a post never takes over the screen.
+const _mediaAspectRatio = 1.0;
+
+const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/// Compact age of a post or comment: "now", "5m", "3h", "2d", then the date.
+String timeAgo(DateTime at) {
+  final elapsed = DateTime.now().difference(at);
+  if (elapsed.inMinutes < 1) return 'now';
+  if (elapsed.inHours < 1) return '${elapsed.inMinutes}m';
+  if (elapsed.inDays < 1) return '${elapsed.inHours}h';
+  if (elapsed.inDays < 7) return '${elapsed.inDays}d';
+  final local = at.toLocal();
+  final year = local.year == DateTime.now().year ? '' : ' ${local.year}';
+  return '${local.day} ${_monthShort[local.month - 1]}$year';
+}
+
 /// Tap-to-play, not autoplay — a scrolling feed can have many of these
 /// mounted at once, and autoplaying video for all of them would mean
 /// several simultaneous network video streams before the user has asked
 /// for any of them.
 class _PostVideoPlayer extends StatefulWidget {
-  const _PostVideoPlayer({required this.url, required this.height});
+  const _PostVideoPlayer({required this.url});
 
   final String url;
-  final double height;
 
   @override
   State<_PostVideoPlayer> createState() => _PostVideoPlayerState();
@@ -184,21 +358,36 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     if (!_controller.value.isInitialized) {
-      return SizedBox(height: widget.height, child: const Center(child: CircularProgressIndicator()));
+      return AspectRatio(
+        aspectRatio: _mediaAspectRatio,
+        child: ColoredBox(
+          color: scheme.onSurface.withValues(alpha: 0.06),
+          child: const Center(child: BarberPoleLoader(size: 24)),
+        ),
+      );
     }
+    final videoRatio = _controller.value.aspectRatio;
     return GestureDetector(
       onTap: _toggle,
-      child: SizedBox(
-        height: widget.height,
-        width: double.infinity,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            AspectRatio(aspectRatio: _controller.value.aspectRatio, child: VideoPlayer(_controller)),
-            if (!_controller.value.isPlaying)
-              const Icon(Icons.play_circle_fill, size: 64, color: Colors.white70),
-          ],
+      // Never taller than a photo post; a taller video is letterboxed.
+      child: AspectRatio(
+        aspectRatio: max(videoRatio, _mediaAspectRatio),
+        child: ColoredBox(
+          color: scheme.onSurface,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AspectRatio(aspectRatio: videoRatio, child: VideoPlayer(_controller)),
+              if (!_controller.value.isPlaying)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: scheme.onSurface.withValues(alpha: 0.5), shape: BoxShape.circle),
+                  child: Icon(Icons.play_arrow_rounded, size: 40, color: scheme.surface),
+                ),
+            ],
+          ),
         ),
       ),
     );

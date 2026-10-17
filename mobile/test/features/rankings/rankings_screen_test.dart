@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/rankings/application/rankings_controller.dart';
 import 'package:mobile/features/rankings/domain/ranking_entry.dart';
 import 'package:mobile/features/rankings/presentation/rankings_screen.dart';
@@ -17,9 +18,19 @@ void main() {
         totalHaircutsRankingProvider.overrideWith((ref, window) async => [shopEntry]),
         haircutTypesRankingProvider.overrideWith((ref, window) async => [haircutEntry]),
         referralsRankingProvider.overrideWith((ref) async => [referralEntry]),
+        topBarbersRankingProvider.overrideWith((ref) async => []),
+        currentProfileProvider.overrideWith((ref) async => null),
       ],
       child: const MaterialApp(home: RankingsScreen()),
     );
+  }
+
+  // The ranking types scroll sideways; later ones start off-screen.
+  Future<void> selectType(WidgetTester tester, String label) async {
+    await tester.scrollUntilVisible(find.text(label), 200, scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(find.text(label));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(label));
   }
 
   testWidgets('shows entries and a window selector for the default ranking', (tester) async {
@@ -27,7 +38,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('alex'), findsOneWidget);
-    expect(find.text('5 shops'), findsOneWidget);
+    expect(find.text('5 shops', findRichText: true), findsOneWidget);
     expect(find.text('This week'), findsOneWidget);
   });
 
@@ -35,26 +46,32 @@ void main() {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Most shops visited'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Top referrers').last);
+    await selectType(tester, 'Top referrers');
     await tester.pumpAndSettle();
 
     expect(find.text('This week'), findsNothing);
     expect(find.text('sam'), findsOneWidget);
-    expect(find.text('2 businesses referred'), findsOneWidget);
+    expect(find.text('2 businesses referred', findRichText: true), findsOneWidget);
   });
 
   testWidgets('"Popular haircuts" shows haircut types, not usernames', (tester) async {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Most shops visited'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Popular haircuts').last);
+    await selectType(tester, 'Popular haircuts');
     await tester.pumpAndSettle();
 
     expect(find.text('Fade'), findsOneWidget);
-    expect(find.text('12'), findsOneWidget);
+    expect(find.text('12 cuts', findRichText: true), findsOneWidget);
+  });
+
+  testWidgets('an empty board explains itself', (tester) async {
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    await selectType(tester, 'Top-rated barbers');
+    await tester.pumpAndSettle();
+
+    expect(find.text('No rated barbers yet'), findsOneWidget);
   });
 }

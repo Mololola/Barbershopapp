@@ -40,9 +40,20 @@ void main() {
 
     expect(find.text('janedoe'), findsOneWidget);
     expect(find.text('See you Friday!'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
+    // On the conversation and on the Personal tab.
+    expect(find.text('2'), findsNWidgets(2));
 
     expect(find.text('newshop'), findsOneWidget);
-    expect(find.text('No messages yet'), findsOneWidget);
+    expect(find.textContaining('Say hello'), findsOneWidget);
+  });
+
+  testWidgets('an empty inbox explains itself', (tester) async {
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Business'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No work messages'), findsOneWidget);
   });
 }

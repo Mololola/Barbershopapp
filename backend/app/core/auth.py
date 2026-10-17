@@ -25,10 +25,10 @@ def _get_signing_key(token: str):
         return _jwks_client.get_signing_key_from_jwt(token)
 
 
-def get_current_user_id(
+def get_token_claims(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
-) -> str:
-    """Verifies a Supabase-issued access token and returns the caller's user id.
+) -> dict:
+    """Verifies a Supabase-issued access token and returns its claims.
 
     Supabase JWTs are asymmetrically signed (ES256) and verified against its
     JWKS endpoint — see docs/architecture.md for why FastAPI needs to do this
@@ -55,4 +55,8 @@ def get_current_user_id(
             detail="Invalid or expired token",
         ) from exc
 
-    return payload["sub"]
+    return payload
+
+
+def get_current_user_id(claims: dict = Depends(get_token_claims)) -> str:
+    return claims["sub"]
