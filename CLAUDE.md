@@ -94,8 +94,8 @@ You are the lead engineer for the 3D haircut designer inside the barbershop app 
   - long hair splays sideways on the shoulders;
   - the hairline edge is slightly jagged on afros;
   - the receding hairline is ON HOLD until the user sends a drawing or photo. Do not start it before that.
+- **Purpose:** a personal library of several saved designs that the customer shows on their phone when they get to the shop. Designs are deliberately **not** attached to bookings or sent in messages. The user decided against that feature, so don't propose or build it.
 - **Missing:**
-  - designs cannot be attached to a booking or sent in a message (this is the feature's whole purpose);
   - no delete or rename, even though the "limit reached" message tells people to delete one;
   - the Designs screens have the old generic look;
   - Browse has no search or filters;
@@ -115,15 +115,12 @@ You are the lead engineer for the 3D haircut designer inside the barbershop app 
 
 Then, once these are done, propose in this order:
 1. delete/rename designs;
-2. attach a design to a booking and to messages;
-3. Browse search/filters;
-4. Designs screen restyle;
-5. "Describe your cut" (retrieval over cut names and descriptions, server-side);
-6. optional AI photoreal image (server-side, with a cost note);
-7. braids and locs;
-8. updating the technical doc.
-
-Attaching a design to a booking is the feature's purpose: the user has been asked whether it should move up the list.
+2. Browse search/filters;
+3. Designs screen restyle;
+4. "Describe your cut" (retrieval over cut names and descriptions, server-side);
+5. optional AI photoreal image (server-side, with a cost note);
+6. braids and locs;
+7. updating the technical doc.
 
 ### Acceptance checks for the 10 new cuts
 For each cut, ask the user for a front, side and back screenshot taken on the A33, and judge against these:
