@@ -637,6 +637,13 @@
             // Hairs grow out of the skin one by one: no hard edge of card
             // roots along the hairline.
             alpha *= smoothstep(0.0, 0.04, vFromRoot);
+            // Alpha-to-coverage turns every in-between alpha into a fixed dot
+            // pattern on Mali GPUs (the "mesh" over the hair). So each hair
+            // is either there or not, with only about a pixel of edge. The
+            // cut-off varies by hair, so tips and roots still thin out
+            // gradually, hair by hair, rather than at one line.
+            float cutoff = mix(0.2, 0.8, hash(hairSeed + 5.0));
+            alpha = clamp((alpha - cutoff) / max(fwidth(alpha), 0.0001) + 0.5, 0.0, 1.0);
             if (alpha < 0.02) discard;
 
             vec3 view = normalize(cameraPosition - vWorld);
