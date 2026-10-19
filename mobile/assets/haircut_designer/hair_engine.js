@@ -780,8 +780,15 @@
             float grain = 0.55 + 0.7 * clump * (0.7 + 0.3 * streak);
             float alpha = mix(near, averaged * (0.6 + 0.6 * grain), far);
             // The bottom layer carries the stack's opacity, so the scalp shows
-            // through short hair exactly as much as it should.
-            if (vLayer < 0.5) alpha = max(alpha, stackOpacity * 0.6);
+            // through short hair exactly as much as it should. Beneath strands
+            // it is the roots, mostly opaque: the shell there is only 1.5 mm, so
+            // stackOpacity would leave it ~2.5% opaque, and wherever strands
+            // part (a parting, a crown) the scalp showed as a band of skin.
+            // Only well inside the hairline: at its edge the few cells left
+            // would show as dark specks on the face.
+            float covered = smoothstep(UNDERCOAT_FROM, UNDERCOAT_FROM * 2.0, hairLength(vUv));
+            float roots = covered * smoothstep(0.9, 1.0, hairlineDensity);
+            if (vLayer < 0.5) alpha = max(alpha, mix(stackOpacity * 0.6, 0.9, roots));
             // Fewer hairs toward the hairline: a soft edge, not a helmet line.
             float density = hairlineDensity * hairlineDensity;
             alpha *= mix(hash(cell + 9.0) < density ? 1.0 : 0.0, density, far);
@@ -810,7 +817,6 @@
             // matte and dark, never a shiny cap of their own — but only once
             // the strands are long enough to cover them, or the hand-over
             // from short hair to strands shows as a dark band.
-            float covered = smoothstep(UNDERCOAT_FROM, UNDERCOAT_FROM * 2.0, hairLength(vUv));
             shaded = mix(shaded, color * 0.3, covered);
             gl_FragColor = vec4(shaded, clamp(alpha, 0.0, 1.0));
             #include <colorspace_fragment>
