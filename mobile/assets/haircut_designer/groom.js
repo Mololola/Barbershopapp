@@ -360,7 +360,8 @@
   //   global: position).
   // gather: hair tied back — { style: 'bun' | 'ponytail', u, v (the tie's
   //   scalp UV), lift (cm off the scalp), size (cm: the bun's radius, or
-  //   the ponytail's at the tie), loose (share of the front hair left out) }.
+  //   the ponytail's at the tie) }. All the hair is tied: loose strands
+  //   hung past the jaw and read as a fault, not a style.
 
   const PRESETS = {
     custom: {
@@ -544,7 +545,7 @@
       defaults: { length: 40, fadeHeight: 0, partOffset: 0, hairType: '2A', volume: 1 },
       ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
       fade: 'skin', comb: 'back', volume: [0.4, 0.4, 0.4, 0.3], rise: 0.1, taper: 0, hold: 1, clump: 0.5, bend: 2.0,
-      gather: { style: 'bun', u: 0.75, v: 30 / 130, lift: 2, size: 3.5, loose: 0.3 },
+      gather: { style: 'bun', u: 0.75, v: 30 / 130, lift: 2, size: 3.5 },
       stiffness: { local: [0.98, 0.9], global: [0.85, 0.8] },
     },
     lowPonytail: {
@@ -552,7 +553,7 @@
       defaults: { length: 44, fadeHeight: 0, partOffset: 0, hairType: '1B', volume: 1 },
       ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
       fade: 'skin', comb: 'back', volume: [0.4, 0.4, 0.4, 0.3], rise: 0.1, taper: 0, hold: 1, clump: 0.5, bend: 2.4,
-      gather: { style: 'ponytail', u: 0.75, v: 100 / 130, lift: 1, size: 1.2, loose: 0 },
+      gather: { style: 'ponytail', u: 0.75, v: 100 / 130, lift: 1, size: 1.2 },
       stiffness: { local: [0.95, 0.5], global: [0.7, 0.1] },
     },
   };
@@ -1008,17 +1009,6 @@
     };
   }
 
-  // Whether the strand rooted at (u, v) is tied back: all of it, but for a
-  // share of the front left loose (a messy bun's stray strands).
-  function isGathered(preset, u, v) {
-    const gather = preset.gather;
-    if (!gather) return false;
-    if (gather.loose === 0) return true;
-    const front = smoothstep(0.55, 0.9, unitFromUV(u, v).z);
-    const hash = Math.abs(Math.sin(u * 12.9898 + v * 78.233) * 43758.5453) % 1;
-    return hash >= gather.loose * front;
-  }
-
   // A guide's rest shape (V points pushed onto `out`), rooted at (u, v):
   // the cut's comb and volume, and the volume brush. `style`:
   // { preset, params, typeAt, brushes, partX }.
@@ -1033,8 +1023,7 @@
     const lift = brushes.liftAt(u, v);
     const lifted = lift > 0 ? styled + (Math.max(styled * 2.5, 0.4) - styled) * lift : styled * (1 + 0.85 * lift);
     const height = Math.min(lifted, length * 0.7);
-    const tie = isGathered(preset, u, v) ? style.tie : null;
-    traceGuide(preset, style.typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, tie, out);
+    traceGuide(preset, style.typeAt(u, v).curliness, root, length, height, partX, partSide, jitter, style.tie, out);
   }
 
   // After a volume stroke: the guides that pass through `region`
