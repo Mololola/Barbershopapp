@@ -577,6 +577,11 @@
               slope = sign(cos(phase)) * 0.63662 * 1.5708 * b1;
             }
             p += radius * offset;
+            // Waves are lit along the lock, not the pattern: a wave tilts each
+            // strand by up to ±60°, and its highlight jumping side to side
+            // every half wave, out of step from lock to lock, reads as a
+            // criss-cross mesh. Curls keep it: it's what shows their coils.
+            vec3 lockTangent = tangent;
             tangent = normalize(tangent + radius * wavenumber * slope);
             // Frizz: fine kinks off the pattern, more toward the tips.
             float frizz = shape.w * 0.012 * smoothstep(0.0, 0.3, along);
@@ -588,7 +593,7 @@
             // Curlier hair reads bulkier: its hairs don't lie side by side.
             p += side * position.x * 0.016 * uWidth * (1.0 + ${CURL_WIDTH.toFixed(2)} * look.w) * mix(1.0, 0.45, along);
 
-            vTangent = tangent;
+            vTangent = pattern == 1.0 ? lockTangent : tangent;
             vWorld = p;
             vColor = hairColor(aRootUv.xy) * (0.9 + 0.2 * aRoot.w);
             vAlong = along;
