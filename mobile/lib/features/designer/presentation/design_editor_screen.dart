@@ -725,6 +725,8 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
           swatches: _hairSwatches,
           onChanged: (hex) => _updateParameters(_parameters.copyWith(colorHex: hex)),
         ),
+        const SizedBox(height: 8),
+        ..._ombreDetail(_parameters),
         const SizedBox(height: 16),
         Text('Skin tone', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
@@ -744,6 +746,38 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         ),
       ],
     );
+  }
+
+  List<Widget> _ombreDetail(HairParameters p) {
+    final colour = p.colour;
+    void update(ColourParameters next) => _updateParameters(p.copyWith(colour: next));
+    return [
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Ombré'),
+        subtitle: const Text('The ends fade to another colour'),
+        value: colour.ombre,
+        onChanged: (on) => update(colour.copyWith(ombre: on)),
+      ),
+      if (colour.ombre) ...[
+        _LabeledSlider(
+          label: 'Fade starts',
+          valueLabel: '${colour.ombreStart.round()} cm from the root',
+          value: colour.ombreStart,
+          min: 0,
+          max: 30,
+          onChanged: (v) => update(colour.copyWith(ombreStart: v)),
+        ),
+        Text('Ends', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        ColorPicker(
+          key: const ValueKey('ombre'),
+          hex: colour.ombreHex,
+          swatches: _hairSwatches,
+          onChanged: (hex) => update(colour.copyWith(ombreHex: hex)),
+        ),
+      ],
+    ];
   }
 
   Widget _buildMotionTab() {

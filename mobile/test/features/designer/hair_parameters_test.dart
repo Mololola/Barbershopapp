@@ -52,6 +52,19 @@ void main() {
     expect(restored.strokes[0].mirrored, isFalse);
   });
 
+  test('colour round-trips, and designs saved before it have no ombré', () {
+    const original = HairParameters(
+      colour: ColourParameters(ombre: true, ombreHex: '#d9b380', ombreStart: 12.5),
+    );
+
+    final restored = HairParameters.fromJson(original.toJson());
+
+    expect(restored.colour.ombre, isTrue);
+    expect(restored.colour.ombreHex, '#d9b380');
+    expect(restored.colour.ombreStart, 12.5);
+    expect(HairParameters.fromJson({'colorHex': '#000000'}).colour.ombre, isFalse);
+  });
+
   test('fromJson fills in defaults for missing fields', () {
     final restored = HairParameters.fromJson({'colorHex': '#000000'});
 

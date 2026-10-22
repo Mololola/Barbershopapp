@@ -4,7 +4,8 @@
 //
 // A design: { version, preset, length, volume, hairType, colorHex,
 // partOffset, fadeHeight, fadeTo, fadeShape, zones, undercut, hairline,
-// faceParams: { skinTone }, strokes: [...] }. See groom.js for what the
+// faceParams: { skinTone }, colour: { ombre, ombreHex, ombreStart (cm
+// from the root) }, strokes: [...] }. See groom.js for what the
 // parameters mean (hairType: '1A'..'4C'; zones: the fringe, crown, sides,
 // back and nape lengths; fadeTo: the guard a fade finishes at; fadeShape:
 // 'classic'|'taper'|'drop'|'burst'; undercut: { on, height, guard };
@@ -48,6 +49,7 @@
   const G = window.HairGroom;
   const DESIGN_VERSION = 4;
   const V1_MAX_POLAR = (100 * Math.PI) / 180;
+  const DEFAULT_COLOUR = { ombre: false, ombreHex: '#b08350', ombreStart: 6 };
 
   let renderer, scene, camera, bodyGroup, engine, fields;
   let keyLight;
@@ -59,6 +61,7 @@
     ...G.presetDefaults('fade'),
     colorHex: '#3b2314',
     faceParams: { skinTone: '#c68e62' },
+    colour: { ...DEFAULT_COLOUR },
     strokes: [],
   };
   let groom = null;
@@ -362,7 +365,7 @@
   }
 
   function applyLook() {
-    engine.setColor(design.colorHex);
+    engine.setColor(design.colorHex, design.colour);
     engine.setHairType(design.hairType);
     engine.setLayers(Math.round(Math.min(8, Math.max(1, design.volume * 5))));
     skinTone.set(design.faceParams.skinTone);
@@ -890,6 +893,8 @@
       version: DESIGN_VERSION,
       preset,
       faceParams: { ...design.faceParams, ...(loaded.faceParams || {}) },
+      // Never the colour on screen before: a design without one has none.
+      colour: { ...DEFAULT_COLOUR, ...(loaded.colour || {}) },
       strokes: version < 2
         ? strokes.map((s) => ({ ...s, points: s.points.map(([u, v]) => [u, (v * V1_MAX_POLAR) / G.MAX_POLAR]) }))
         : strokes,
@@ -912,8 +917,13 @@
     try {
       const update = parse(json);
       const { strokes, preset, version, ...parameters } = update;
-      const lookOnly = Object.keys(parameters).every((k) => ['colorHex', 'faceParams', 'volume'].includes(k));
-      design = { ...design, ...parameters, faceParams: { ...design.faceParams, ...(parameters.faceParams || {}) } };
+      const lookOnly = Object.keys(parameters).every((k) => ['colorHex', 'faceParams', 'colour', 'volume'].includes(k));
+      design = {
+        ...design,
+        ...parameters,
+        faceParams: { ...design.faceParams, ...(parameters.faceParams || {}) },
+        colour: { ...design.colour, ...(parameters.colour || {}) },
+      };
       applyLook();
       if (!lookOnly) scheduleRebuild();
     } catch (error) {

@@ -23,6 +23,7 @@ class HairParameters {
     this.undercut = const UndercutParameters(),
     this.hairline = const HairlineParameters(),
     this.faceParams = const FaceParameters(),
+    this.colour = const ColourParameters(),
     this.strokes = const [],
   });
 
@@ -68,6 +69,9 @@ class HairParameters {
 
   final FaceParameters faceParams;
 
+  /// Colour work on top of [colorHex] (the root colour).
+  final ColourParameters colour;
+
   /// Freehand clipper/scissors/razor/dye strokes painted onto the scalp,
   /// applied on top of the base style above. Order matters — later strokes
   /// are rasterized over earlier ones (see designer.js's mask replay).
@@ -87,6 +91,7 @@ class HairParameters {
     UndercutParameters? undercut,
     HairlineParameters? hairline,
     FaceParameters? faceParams,
+    ColourParameters? colour,
     List<HairStroke>? strokes,
   }) {
     return HairParameters(
@@ -104,6 +109,7 @@ class HairParameters {
       undercut: undercut ?? this.undercut,
       hairline: hairline ?? this.hairline,
       faceParams: faceParams ?? this.faceParams,
+      colour: colour ?? this.colour,
       strokes: strokes ?? this.strokes,
     );
   }
@@ -125,6 +131,7 @@ class HairParameters {
       'undercut': undercut.toJson(),
       'hairline': hairline.toJson(),
       'faceParams': faceParams.toJson(),
+      'colour': colour.toJson(),
       'strokes': strokes.map((s) => s.toJson()).toList(),
     };
   }
@@ -152,6 +159,9 @@ class HairParameters {
       faceParams: json['faceParams'] == null
           ? const FaceParameters()
           : FaceParameters.fromJson(json['faceParams'] as Map<String, dynamic>),
+      colour: json['colour'] == null
+          ? const ColourParameters()
+          : ColourParameters.fromJson(json['colour'] as Map<String, dynamic>),
       strokes: (json['strokes'] as List<dynamic>?)
               ?.map((s) => HairStroke.fromJson(s as Map<String, dynamic>))
               .toList() ??
@@ -326,6 +336,33 @@ class FaceParameters {
   factory FaceParameters.fromJson(Map<String, dynamic> json) {
     return FaceParameters(skinTone: json['skinTone'] as String? ?? '#e0ac69');
   }
+}
+
+/// Colour beyond the one root colour: an ombré fading to [ombreHex].
+class ColourParameters {
+  const ColourParameters({this.ombre = false, this.ombreHex = '#b08350', this.ombreStart = 6});
+
+  final bool ombre;
+
+  /// The colour the ends fade to.
+  final String ombreHex;
+
+  /// How far from the root the fade starts, in cm (0 .. 30); it takes 10 cm.
+  final double ombreStart;
+
+  ColourParameters copyWith({bool? ombre, String? ombreHex, double? ombreStart}) => ColourParameters(
+        ombre: ombre ?? this.ombre,
+        ombreHex: ombreHex ?? this.ombreHex,
+        ombreStart: ombreStart ?? this.ombreStart,
+      );
+
+  Map<String, dynamic> toJson() => {'ombre': ombre, 'ombreHex': ombreHex, 'ombreStart': ombreStart};
+
+  factory ColourParameters.fromJson(Map<String, dynamic> json) => ColourParameters(
+        ombre: json['ombre'] as bool? ?? false,
+        ombreHex: json['ombreHex'] as String? ?? '#b08350',
+        ombreStart: (json['ombreStart'] as num?)?.toDouble() ?? 6,
+      );
 }
 
 /// A single freehand tool application painted onto the scalp — the polyline

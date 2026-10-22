@@ -22,6 +22,8 @@
   // How much wider curly strands are drawn (x curliness): their hairs don't
   // lie side by side, so a lock reads bulkier.
   const CURL_WIDTH = 0.6;
+  // How far along the hair (scene units: 10 cm) an ombré blends root to end.
+  const OMBRE_BLEND = 1.0;
 
   // Length and colour of the hair at a scalp UV, from groom.js's fields.
   const FIELDS_GLSL = `
@@ -243,6 +245,9 @@
         uTypeShape: { value: G.HAIR_TYPES.map((t) => new THREE.Vector4(t.pattern, t.diameter * 0.05, (2 * Math.PI) / (t.wavelength * 0.1), t.frizz)) },
         uTypeLook: { value: G.HAIR_TYPES.map((t) => new THREE.Vector4(t.definition, t.shine, t.shrink, t.curliness)) },
         uBaseColor: { value: new THREE.Color('#3b2314') },
+        uOmbre: { value: 0 },
+        uOmbreColor: { value: new THREE.Color('#b08350') },
+        uOmbreStart: { value: 0.6 },
       };
     }
 
@@ -449,6 +454,8 @@
           uniform mat4 uBody;
           uniform vec3 uCranium;
           uniform float uWidth, uMaxPolar;
+          uniform float uOmbre, uOmbreStart;
+          uniform vec3 uOmbreColor;
           // Layout must match groom.js buildGuides:
           attribute vec4 aRoot;    // root position (body space), random
           attribute vec4 aRootUv;  // scalp u, v, clumping (0 = a stray hair), length jitter
@@ -595,7 +602,10 @@
 
             vTangent = pattern == 1.0 ? lockTangent : tangent;
             vWorld = p;
-            vColor = hairColor(aRootUv.xy) * (0.9 + 0.2 * aRoot.w);
+            // Ombré: measured from the root, not along the strand, so short
+            // hair (a fade, the sides) keeps the root colour as it would.
+            float ombre = uOmbre * smoothstep(uOmbreStart, uOmbreStart + ${OMBRE_BLEND.toFixed(2)}, s);
+            vColor = mix(hairColor(aRootUv.xy), uOmbreColor, ombre) * (0.9 + 0.2 * aRoot.w);
             vAlong = along;
             vFromRoot = s;
             vShade = mix(0.42, 1.0, clear) * mix(0.8, 1.0, aRoot.w);
@@ -838,8 +848,13 @@
       this.bodyGroup.add(this.shellMesh);
     }
 
-    setColor(hex) {
-      this.fieldUniforms.uBaseColor.value.set(hex);
+    // colour: { ombre, ombreHex, ombreStart (cm from the root) }.
+    setColor(hex, colour) {
+      const u = this.fieldUniforms;
+      u.uBaseColor.value.set(hex);
+      u.uOmbre.value = colour.ombre ? 1 : 0;
+      u.uOmbreColor.value.set(colour.ombreHex);
+      u.uOmbreStart.value = colour.ombreStart * 0.1;
     }
 
     setHairType(id) {
