@@ -553,7 +553,7 @@
       defaults: { length: 44, fadeHeight: 0, partOffset: 0, hairType: '1B', volume: 1 },
       ratios: { fringe: 1, sides: 1, back: 1, nape: 1 },
       fade: 'skin', comb: 'back', volume: [0.4, 0.4, 0.4, 0.3], rise: 0.1, taper: 0, hold: 1, clump: 0.5, bend: 2.4,
-      gather: { style: 'ponytail', u: 0.75, v: 100 / 130, lift: 1, size: 1.2 },
+      gather: { style: 'ponytail', u: 0.75, v: 100 / 130, lift: 1, size: 3 },
       stiffness: { local: [0.95, 0.5], global: [0.7, 0.1] },
     },
   };
@@ -1123,7 +1123,9 @@
               continue;
             }
             p.copy(tie.point).addScaledVector(tie.e1, Math.cos(offsetAngle) * offset * 0.5).addScaledVector(tie.e2, Math.sin(offsetAngle) * offset * 0.5);
-            traceDirection.copy(tie.normal).multiplyScalar(0.5).add(new THREE.Vector3(0, -1, 0)).normalize();
+            // Out of the tie the tail fans out a little, as a real one does.
+            traceDirection.copy(tie.normal).multiplyScalar(0.5).add(new THREE.Vector3(0, -1, 0))
+              .addScaledVector(tie.e1, Math.cos(offsetAngle) * 0.1).addScaledVector(tie.e2, Math.sin(offsetAngle) * 0.1).normalize();
             free = true;
             points.push(p.x, p.y, p.z);
             continue;
