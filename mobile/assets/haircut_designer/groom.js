@@ -515,14 +515,14 @@
     wavyAirDry: {
       label: 'Wavy Air-Dry',
       defaults: { length: 18, fadeHeight: 0, partOffset: 0, hairType: '2B', volume: 1.25 },
-      ratios: { fringe: 0.9, sides: 0.9, back: 1, nape: 0.9 },
+      ratios: { fringe: 0.5, sides: 0.9, back: 1, nape: 0.9 },
       fade: 'skin', comb: 'down', volume: [2, 2.5, 2.5, 1.5], rise: 0.25, taper: 0.3, hold: 0.4, clump: 0.8, bend: 1.6,
       stiffness: { local: [0.7, 0.2], global: [0.2, 0.03] },
     },
     shag: {
       label: 'Shag',
       defaults: { length: 16, fadeHeight: 0, partOffset: 0, hairType: '2B', volume: 1.25 },
-      ratios: { fringe: 0.7, sides: 0.8, back: 1.4, nape: 1.7 },
+      ratios: { fringe: 0.55, sides: 0.8, back: 1.4, nape: 1.7 },
       fade: 'skin', comb: 'down', volume: [1.8, 2.5, 2.5, 1.2], rise: 0.25, taper: 0.35, hold: 0.35, clump: 0.85, bend: 1.8,
       stiffness: { local: [0.7, 0.15], global: [0.2, 0.02] },
     },
