@@ -509,7 +509,7 @@
       label: 'Slicked Side Part',
       defaults: { length: 18, fadeHeight: 0, partOffset: 0.4, hairType: '1B', volume: 1 },
       ratios: { fringe: 1.05, sides: 0.6, back: 0.7, nape: 0.6 },
-      fade: 'skin', comb: 'side', volume: [1.2, 1, 0.6, 0.3], rise: 0.2, taper: 0.6, hold: 1, clump: 0.2, bend: 1.4,
+      fade: 'skin', comb: 'sideBack', volume: [1.2, 1, 0.6, 0.3], rise: 0.2, taper: 0.6, hold: 1, clump: 0.2, bend: 1.4,
       stiffness: { local: [0.9, 0.45], global: [0.4, 0.08] },
     },
     wavyAirDry: {
@@ -570,6 +570,7 @@
     switch (comb) {
       case 'back':
       case 'up':
+      case 'sideBack':
         return smoothstep(0.1, 0.9, unit.z);
       case 'forward':
         return smoothstep(-0.7, 0.3, -unit.z);
@@ -919,6 +920,13 @@
       case 'side':
         out.lerp(combTarget.set(partSide, -0.3, -0.15), styled * 0.9 * smoothstep(-0.6, 0.2, unit.z));
         break;
+      case 'sideBack':
+        // Slicked: back, and away from the parting at the front, down past
+        // the ears, so neither the fringe nor the temples drop once they
+        // leave the scalp. The back half already falls back: pulled any
+        // further, it gathers into a V at the back of the head.
+        out.lerp(combTarget.set(partSide * 0.6 * smoothstep(-0.2, 0.6, unit.z), -0.15, -1), (1 - smoothstep(100 * deg, 130 * deg, polar)) * smoothstep(-0.7, 0, unit.z));
+        break;
       case 'center':
         out.lerp(combTarget.set(Math.sign(unit.x - partX) || 1, -0.35, 0.05), styled * 0.9 * smoothstep(-0.5, 0.3, unit.z));
         break;
@@ -1254,7 +1262,7 @@
     const neighbourhood = (spacing * 1.2) / ((CRANIUM.x + CRANIUM.z) * Math.PI); // in u
     const guideLength = (u, v) => guideLengthAt(lengthAt, neighbourhood, u, v);
     const partX = params.partOffset;
-    const parted = preset.comb === 'side' || preset.comb === 'center';
+    const parted = preset.comb === 'side' || preset.comb === 'sideBack' || preset.comb === 'center';
 
     const style = { preset, params, typeAt, brushes, partX, tie: tieOf(preset) };
     const rest = [];
