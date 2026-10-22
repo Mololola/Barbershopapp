@@ -728,6 +728,16 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         const SizedBox(height: 8),
         ..._ombreDetail(_parameters),
         ..._highlightDetail(_parameters),
+        _LabeledSlider(
+          label: 'Shine direction',
+          valueLabel: _parameters.colour.shineAngle.abs() < 1
+              ? 'Along the hair'
+              : '${_parameters.colour.shineAngle.round()}°',
+          value: _parameters.colour.shineAngle,
+          min: -45,
+          max: 45,
+          onChanged: (v) => _updateParameters(_parameters.copyWith(colour: _parameters.colour.copyWith(shineAngle: v))),
+        ),
         const SizedBox(height: 16),
         Text('Skin tone', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),

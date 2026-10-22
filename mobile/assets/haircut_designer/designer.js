@@ -6,7 +6,7 @@
 // partOffset, fadeHeight, fadeTo, fadeShape, zones, undercut, hairline,
 // faceParams: { skinTone }, colour: { ombre, ombreHex, ombreStart (cm
 // from the root), highlights (share of the hair, 0..0.5), highlightHexes
-// (two colours), balayage }, strokes: [...] }. See groom.js for what the
+// (two colours), balayage, shineAngle (degrees, -45..45) }, strokes: [...] }. See groom.js for what the
 // parameters mean (hairType: '1A'..'4C'; zones: the fringe, crown, sides,
 // back and nape lengths; fadeTo: the guard a fade finishes at; fadeShape:
 // 'classic'|'taper'|'drop'|'burst'; undercut: { on, height, guard };
@@ -57,6 +57,7 @@
     highlights: 0,
     highlightHexes: ['#c9a070', '#e3c79a'],
     balayage: false,
+    shineAngle: 0,
   };
 
   let renderer, scene, camera, bodyGroup, engine, fields;

@@ -338,8 +338,8 @@ class FaceParameters {
   }
 }
 
-/// Colour beyond the one root colour: an ombré fading to [ombreHex], and
-/// highlights.
+/// Colour beyond the one root colour: an ombré fading to [ombreHex],
+/// highlights, and the shine's direction.
 class ColourParameters {
   const ColourParameters({
     this.ombre = false,
@@ -348,6 +348,7 @@ class ColourParameters {
     this.highlights = 0,
     this.highlightHexes = const ['#c9a070', '#e3c79a'],
     this.balayage = false,
+    this.shineAngle = 0,
   });
 
   final bool ombre;
@@ -367,6 +368,9 @@ class ColourParameters {
   /// Highlights painted on toward the ends, rather than from the root.
   final bool balayage;
 
+  /// How far the shine's band is turned, in degrees (-45 .. 45).
+  final double shineAngle;
+
   ColourParameters copyWith({
     bool? ombre,
     String? ombreHex,
@@ -374,6 +378,7 @@ class ColourParameters {
     double? highlights,
     List<String>? highlightHexes,
     bool? balayage,
+    double? shineAngle,
   }) =>
       ColourParameters(
         ombre: ombre ?? this.ombre,
@@ -382,6 +387,7 @@ class ColourParameters {
         highlights: highlights ?? this.highlights,
         highlightHexes: highlightHexes ?? this.highlightHexes,
         balayage: balayage ?? this.balayage,
+        shineAngle: shineAngle ?? this.shineAngle,
       );
 
   Map<String, dynamic> toJson() => {
@@ -391,6 +397,7 @@ class ColourParameters {
         'highlights': highlights,
         'highlightHexes': highlightHexes,
         'balayage': balayage,
+        'shineAngle': shineAngle,
       };
 
   factory ColourParameters.fromJson(Map<String, dynamic> json) => ColourParameters(
@@ -400,6 +407,7 @@ class ColourParameters {
         highlights: (json['highlights'] as num?)?.toDouble() ?? 0,
         highlightHexes: (json['highlightHexes'] as List<dynamic>?)?.cast<String>() ?? const ['#c9a070', '#e3c79a'],
         balayage: json['balayage'] as bool? ?? false,
+        shineAngle: (json['shineAngle'] as num?)?.toDouble() ?? 0,
       );
 }
 

@@ -61,6 +61,7 @@ void main() {
         highlights: 0.3,
         highlightHexes: ['#f0d8a8', '#a0522d'],
         balayage: true,
+        shineAngle: -20,
       ),
     );
 
@@ -72,6 +73,7 @@ void main() {
     expect(restored.colour.highlights, 0.3);
     expect(restored.colour.highlightHexes, ['#f0d8a8', '#a0522d']);
     expect(restored.colour.balayage, isTrue);
+    expect(restored.colour.shineAngle, -20);
     final old = HairParameters.fromJson({'colorHex': '#000000'}).colour;
     expect(old.ombre, isFalse);
     expect(old.highlights, 0);

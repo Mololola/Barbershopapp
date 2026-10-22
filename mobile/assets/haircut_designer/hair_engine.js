@@ -249,6 +249,7 @@
         uOmbreColor: { value: new THREE.Color('#b08350') },
         uOmbreStart: { value: 0.6 },
         uHighlights: { value: 0 },
+        uShineAngle: { value: 0 },
         uBalayage: { value: 0 },
         uHighlightColors: { value: [new THREE.Color('#c9a070'), new THREE.Color('#e3c79a')] },
       };
@@ -457,7 +458,7 @@
           uniform mat4 uBody;
           uniform vec3 uCranium;
           uniform float uWidth, uMaxPolar;
-          uniform float uOmbre, uOmbreStart, uHighlights, uBalayage;
+          uniform float uOmbre, uOmbreStart, uHighlights, uBalayage, uShineAngle;
           uniform vec3 uOmbreColor;
           uniform vec3 uHighlightColors[2];
           // Layout must match groom.js buildGuides:
@@ -605,6 +606,10 @@
             p += side * position.x * 0.016 * uWidth * (1.0 + ${CURL_WIDTH.toFixed(2)} * look.w) * mix(1.0, 0.45, along);
 
             vTangent = pattern == 1.0 ? lockTangent : tangent;
+            // The shine's direction (a flow map's one setting): the lit
+            // direction turned about the way out of the head, so the
+            // highlight band tilts.
+            vTangent = vTangent * cos(uShineAngle) + cross(outward, vTangent) * sin(uShineAngle);
             vWorld = p;
             // Ombré: measured from the root, not along the strand, so short
             // hair (a fade, the sides) keeps the root colour as it would.
@@ -868,6 +873,7 @@
       u.uOmbreStart.value = colour.ombreStart * 0.1;
       u.uHighlights.value = colour.highlights;
       u.uBalayage.value = colour.balayage ? 1 : 0;
+      u.uShineAngle.value = (colour.shineAngle * Math.PI) / 180;
       colour.highlightHexes.forEach((h, i) => u.uHighlightColors.value[i].set(h));
     }
 
