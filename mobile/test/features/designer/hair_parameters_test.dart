@@ -52,9 +52,16 @@ void main() {
     expect(restored.strokes[0].mirrored, isFalse);
   });
 
-  test('colour round-trips, and designs saved before it have no ombré', () {
+  test('colour round-trips, and designs saved before it have no ombré or highlights', () {
     const original = HairParameters(
-      colour: ColourParameters(ombre: true, ombreHex: '#d9b380', ombreStart: 12.5),
+      colour: ColourParameters(
+        ombre: true,
+        ombreHex: '#d9b380',
+        ombreStart: 12.5,
+        highlights: 0.3,
+        highlightHexes: ['#f0d8a8', '#a0522d'],
+        balayage: true,
+      ),
     );
 
     final restored = HairParameters.fromJson(original.toJson());
@@ -62,7 +69,12 @@ void main() {
     expect(restored.colour.ombre, isTrue);
     expect(restored.colour.ombreHex, '#d9b380');
     expect(restored.colour.ombreStart, 12.5);
-    expect(HairParameters.fromJson({'colorHex': '#000000'}).colour.ombre, isFalse);
+    expect(restored.colour.highlights, 0.3);
+    expect(restored.colour.highlightHexes, ['#f0d8a8', '#a0522d']);
+    expect(restored.colour.balayage, isTrue);
+    final old = HairParameters.fromJson({'colorHex': '#000000'}).colour;
+    expect(old.ombre, isFalse);
+    expect(old.highlights, 0);
   });
 
   test('fromJson fills in defaults for missing fields', () {

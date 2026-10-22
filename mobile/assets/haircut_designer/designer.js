@@ -5,7 +5,8 @@
 // A design: { version, preset, length, volume, hairType, colorHex,
 // partOffset, fadeHeight, fadeTo, fadeShape, zones, undercut, hairline,
 // faceParams: { skinTone }, colour: { ombre, ombreHex, ombreStart (cm
-// from the root) }, strokes: [...] }. See groom.js for what the
+// from the root), highlights (share of the hair, 0..0.5), highlightHexes
+// (two colours), balayage }, strokes: [...] }. See groom.js for what the
 // parameters mean (hairType: '1A'..'4C'; zones: the fringe, crown, sides,
 // back and nape lengths; fadeTo: the guard a fade finishes at; fadeShape:
 // 'classic'|'taper'|'drop'|'burst'; undercut: { on, height, guard };
@@ -49,7 +50,14 @@
   const G = window.HairGroom;
   const DESIGN_VERSION = 4;
   const V1_MAX_POLAR = (100 * Math.PI) / 180;
-  const DEFAULT_COLOUR = { ombre: false, ombreHex: '#b08350', ombreStart: 6 };
+  const DEFAULT_COLOUR = {
+    ombre: false,
+    ombreHex: '#b08350',
+    ombreStart: 6,
+    highlights: 0,
+    highlightHexes: ['#c9a070', '#e3c79a'],
+    balayage: false,
+  };
 
   let renderer, scene, camera, bodyGroup, engine, fields;
   let keyLight;

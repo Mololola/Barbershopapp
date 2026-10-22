@@ -338,9 +338,17 @@ class FaceParameters {
   }
 }
 
-/// Colour beyond the one root colour: an ombré fading to [ombreHex].
+/// Colour beyond the one root colour: an ombré fading to [ombreHex], and
+/// highlights.
 class ColourParameters {
-  const ColourParameters({this.ombre = false, this.ombreHex = '#b08350', this.ombreStart = 6});
+  const ColourParameters({
+    this.ombre = false,
+    this.ombreHex = '#b08350',
+    this.ombreStart = 6,
+    this.highlights = 0,
+    this.highlightHexes = const ['#c9a070', '#e3c79a'],
+    this.balayage = false,
+  });
 
   final bool ombre;
 
@@ -350,18 +358,48 @@ class ColourParameters {
   /// How far from the root the fade starts, in cm (0 .. 30); it takes 10 cm.
   final double ombreStart;
 
-  ColourParameters copyWith({bool? ombre, String? ombreHex, double? ombreStart}) => ColourParameters(
+  /// The share of the hair (whole locks) highlighted, 0 (none) .. 0.5.
+  final double highlights;
+
+  /// The two highlight colours, each on about half the highlighted locks.
+  final List<String> highlightHexes;
+
+  /// Highlights painted on toward the ends, rather than from the root.
+  final bool balayage;
+
+  ColourParameters copyWith({
+    bool? ombre,
+    String? ombreHex,
+    double? ombreStart,
+    double? highlights,
+    List<String>? highlightHexes,
+    bool? balayage,
+  }) =>
+      ColourParameters(
         ombre: ombre ?? this.ombre,
         ombreHex: ombreHex ?? this.ombreHex,
         ombreStart: ombreStart ?? this.ombreStart,
+        highlights: highlights ?? this.highlights,
+        highlightHexes: highlightHexes ?? this.highlightHexes,
+        balayage: balayage ?? this.balayage,
       );
 
-  Map<String, dynamic> toJson() => {'ombre': ombre, 'ombreHex': ombreHex, 'ombreStart': ombreStart};
+  Map<String, dynamic> toJson() => {
+        'ombre': ombre,
+        'ombreHex': ombreHex,
+        'ombreStart': ombreStart,
+        'highlights': highlights,
+        'highlightHexes': highlightHexes,
+        'balayage': balayage,
+      };
 
   factory ColourParameters.fromJson(Map<String, dynamic> json) => ColourParameters(
         ombre: json['ombre'] as bool? ?? false,
         ombreHex: json['ombreHex'] as String? ?? '#b08350',
         ombreStart: (json['ombreStart'] as num?)?.toDouble() ?? 6,
+        highlights: (json['highlights'] as num?)?.toDouble() ?? 0,
+        highlightHexes: (json['highlightHexes'] as List<dynamic>?)?.cast<String>() ?? const ['#c9a070', '#e3c79a'],
+        balayage: json['balayage'] as bool? ?? false,
       );
 }
 

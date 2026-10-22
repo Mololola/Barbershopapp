@@ -248,6 +248,9 @@
         uOmbre: { value: 0 },
         uOmbreColor: { value: new THREE.Color('#b08350') },
         uOmbreStart: { value: 0.6 },
+        uHighlights: { value: 0 },
+        uBalayage: { value: 0 },
+        uHighlightColors: { value: [new THREE.Color('#c9a070'), new THREE.Color('#e3c79a')] },
       };
     }
 
@@ -454,8 +457,9 @@
           uniform mat4 uBody;
           uniform vec3 uCranium;
           uniform float uWidth, uMaxPolar;
-          uniform float uOmbre, uOmbreStart;
+          uniform float uOmbre, uOmbreStart, uHighlights, uBalayage;
           uniform vec3 uOmbreColor;
+          uniform vec3 uHighlightColors[2];
           // Layout must match groom.js buildGuides:
           attribute vec4 aRoot;    // root position (body space), random
           attribute vec4 aRootUv;  // scalp u, v, clumping (0 = a stray hair), length jitter
@@ -605,7 +609,14 @@
             // Ombré: measured from the root, not along the strand, so short
             // hair (a fade, the sides) keeps the root colour as it would.
             float ombre = uOmbre * smoothstep(uOmbreStart, uOmbreStart + ${OMBRE_BLEND.toFixed(2)}, s);
-            vColor = mix(hairColor(aRootUv.xy), uOmbreColor, ombre) * (0.9 + 0.2 * aRoot.w);
+            vec3 color = mix(hairColor(aRootUv.xy), uOmbreColor, ombre);
+            // Highlights: whole locks (their first guide), as foils take
+            // sections, in one of two colours; balayage paints them on
+            // toward the ends rather than from the root.
+            float piece = hash(vec3(aGuides.x, 3.0, 11.0));
+            float lit = step(piece, uHighlights) * mix(smoothstep(0.0, 0.05, s), smoothstep(0.15, 0.7, along), uBalayage);
+            color = mix(color, uHighlightColors[int(step(0.5, fract(piece * 7.13)))], lit);
+            vColor = color * (0.9 + 0.2 * aRoot.w);
             vAlong = along;
             vFromRoot = s;
             vShade = mix(0.42, 1.0, clear) * mix(0.8, 1.0, aRoot.w);
@@ -848,13 +859,16 @@
       this.bodyGroup.add(this.shellMesh);
     }
 
-    // colour: { ombre, ombreHex, ombreStart (cm from the root) }.
+    // colour: see designer.js's design.
     setColor(hex, colour) {
       const u = this.fieldUniforms;
       u.uBaseColor.value.set(hex);
       u.uOmbre.value = colour.ombre ? 1 : 0;
       u.uOmbreColor.value.set(colour.ombreHex);
       u.uOmbreStart.value = colour.ombreStart * 0.1;
+      u.uHighlights.value = colour.highlights;
+      u.uBalayage.value = colour.balayage ? 1 : 0;
+      colour.highlightHexes.forEach((h, i) => u.uHighlightColors.value[i].set(h));
     }
 
     setHairType(id) {

@@ -727,6 +727,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         ),
         const SizedBox(height: 8),
         ..._ombreDetail(_parameters),
+        ..._highlightDetail(_parameters),
         const SizedBox(height: 16),
         Text('Skin tone', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
@@ -776,6 +777,43 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
           swatches: _hairSwatches,
           onChanged: (hex) => update(colour.copyWith(ombreHex: hex)),
         ),
+      ],
+    ];
+  }
+
+  List<Widget> _highlightDetail(HairParameters p) {
+    final colour = p.colour;
+    void update(ColourParameters next) => _updateParameters(p.copyWith(colour: next));
+    return [
+      _LabeledSlider(
+        label: 'Highlights',
+        valueLabel: colour.highlights < 0.01 ? 'Off' : '${(colour.highlights * 100).round()}% of the hair',
+        value: colour.highlights,
+        min: 0,
+        max: 0.5,
+        onChanged: (v) => update(colour.copyWith(highlights: v)),
+      ),
+      if (colour.highlights >= 0.01) ...[
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Balayage'),
+          subtitle: const Text('Painted on toward the ends, not from the root'),
+          value: colour.balayage,
+          onChanged: (on) => update(colour.copyWith(balayage: on)),
+        ),
+        for (final i in [0, 1]) ...[
+          Text('Highlight colour ${i + 1}', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          ColorPicker(
+            key: ValueKey('highlight$i'),
+            hex: colour.highlightHexes[i],
+            swatches: _hairSwatches,
+            onChanged: (hex) => update(colour.copyWith(
+              highlightHexes: [for (var j = 0; j < 2; j++) j == i ? hex : colour.highlightHexes[j]],
+            )),
+          ),
+          const SizedBox(height: 8),
+        ],
       ],
     ];
   }
