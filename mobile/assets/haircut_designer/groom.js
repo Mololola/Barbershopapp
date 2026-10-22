@@ -910,22 +910,21 @@
     switch (comb) {
       case 'back':
       case 'up':
-        // Swept back over the whole upper head, sides included, not just the
-        // top — straight back, or the two halves part along the middle.
-        out.lerp(combTarget.set(0, -0.12, -1), 1 - smoothstep(85 * deg, 112 * deg, polar));
+      case 'sideBack': {
+        // Swept back over the upper head and down past the ears, so neither
+        // the fringe nor the temples drop once they leave the scalp. The
+        // back half already falls back: pulled any further, it gathers into
+        // a V at the back of the head. A side part also leans the front away
+        // from the parting.
+        const lean = comb === 'sideBack' ? partSide * 0.6 * smoothstep(-0.2, 0.6, unit.z) : 0;
+        out.lerp(combTarget.set(lean, -0.12, -1), (1 - smoothstep(100 * deg, 130 * deg, polar)) * smoothstep(-0.7, 0, unit.z));
         break;
+      }
       case 'forward':
         out.lerp(combTarget.set(0, -0.2, 1), styled * 0.85);
         break;
       case 'side':
         out.lerp(combTarget.set(partSide, -0.3, -0.15), styled * 0.9 * smoothstep(-0.6, 0.2, unit.z));
-        break;
-      case 'sideBack':
-        // Slicked: back, and away from the parting at the front, down past
-        // the ears, so neither the fringe nor the temples drop once they
-        // leave the scalp. The back half already falls back: pulled any
-        // further, it gathers into a V at the back of the head.
-        out.lerp(combTarget.set(partSide * 0.6 * smoothstep(-0.2, 0.6, unit.z), -0.15, -1), (1 - smoothstep(100 * deg, 130 * deg, polar)) * smoothstep(-0.7, 0, unit.z));
         break;
       case 'center':
         out.lerp(combTarget.set(Math.sign(unit.x - partX) || 1, -0.35, 0.05), styled * 0.9 * smoothstep(-0.5, 0.3, unit.z));
