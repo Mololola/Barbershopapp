@@ -56,6 +56,8 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
   double _radius = 0.04;
   bool _mirror = false;
   String _dyeColorHex = '#b5502a';
+  /// The Colour tab's colour row whose picker is open, if any.
+  String? _openColour;
   String _curlBrushType = '3B';
   bool _volumeLift = true;
   double _thinAmount = 0.5;
@@ -715,31 +717,78 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
   }
 
   Widget _buildColourTab() {
+    final p = _parameters;
+    final colour = p.colour;
+    final style = colour.style;
+    void update(ColourParameters next) => _updateParameters(p.copyWith(colour: next));
+    final textTheme = Theme.of(context).textTheme;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Hair colour', style: Theme.of(context).textTheme.titleSmall),
+        Text('Colour style', style: textTheme.titleSmall),
         const SizedBox(height: 8),
-        ColorPicker(
-          hex: _parameters.colorHex,
-          swatches: _hairSwatches,
-          onChanged: (hex) => _updateParameters(_parameters.copyWith(colorHex: hex)),
+        _ColourStylePicker(
+          selected: style,
+          onSelected: (id) {
+            setState(() => _openColour = null);
+            update(colour.withStyle(id));
+          },
+        ),
+        const SizedBox(height: 12),
+        _colourRow(
+          id: 'base',
+          label: style == 'ombre' ? 'Roots' : 'Hair colour',
+          hex: p.colorHex,
+          onChanged: (hex) => _updateParameters(p.copyWith(colorHex: hex)),
+        ),
+        if (style == 'ombre') ...[
+          _colourRow(id: 'ends', label: 'Ends', hex: colour.ombreHex, onChanged: (hex) => update(colour.copyWith(ombreHex: hex))),
+          _LabeledSlider(
+            label: 'Fade starts',
+            valueLabel: '${colour.ombreStart.round()} cm from the root',
+            value: colour.ombreStart,
+            min: 0,
+            max: 30,
+            onChanged: (v) => update(colour.copyWith(ombreStart: v)),
+          ),
+        ],
+        if (style == 'highlights' || style == 'balayage') ...[
+          for (final i in [0, 1])
+            _colourRow(
+              id: 'streak$i',
+              label: 'Streak colour ${i + 1}',
+              hex: colour.highlightHexes[i],
+              onChanged: (hex) => update(colour.copyWith(
+                highlightHexes: [for (var j = 0; j < 2; j++) j == i ? hex : colour.highlightHexes[j]],
+              )),
+            ),
+          _LabeledSlider(
+            label: 'Amount',
+            valueLabel: '${(colour.highlights * 100).round()}% of the hair',
+            value: colour.highlights,
+            min: 0.05,
+            max: 0.5,
+            onChanged: (v) => update(colour.copyWith(highlights: v)),
+          ),
+        ],
+        ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          title: Text('More', style: textTheme.titleSmall),
+          children: [
+            _LabeledSlider(
+              label: 'Shine angle',
+              valueLabel: colour.shineAngle.abs() < 1 ? 'Straight across' : '${colour.shineAngle.round()}°',
+              value: colour.shineAngle,
+              min: -45,
+              max: 45,
+              onChanged: (v) => update(colour.copyWith(shineAngle: v)),
+            ),
+            Text('Tilts the band of shine on the hair.', style: textTheme.bodySmall),
+            const SizedBox(height: 8),
+          ],
         ),
         const SizedBox(height: 8),
-        ..._ombreDetail(_parameters),
-        ..._highlightDetail(_parameters),
-        _LabeledSlider(
-          label: 'Shine direction',
-          valueLabel: _parameters.colour.shineAngle.abs() < 1
-              ? 'Along the hair'
-              : '${_parameters.colour.shineAngle.round()}°',
-          value: _parameters.colour.shineAngle,
-          min: -45,
-          max: 45,
-          onChanged: (v) => _updateParameters(_parameters.copyWith(colour: _parameters.colour.copyWith(shineAngle: v))),
-        ),
-        const SizedBox(height: 16),
-        Text('Skin tone', style: Theme.of(context).textTheme.titleSmall),
+        Text('Skin tone', style: textTheme.titleSmall),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -748,10 +797,8 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
             for (final hex in _skinToneSwatches)
               SwatchButton(
                 hex: hex,
-                selected: _parameters.faceParams.skinTone == hex,
-                onTap: () => _updateParameters(
-                  _parameters.copyWith(faceParams: _parameters.faceParams.copyWith(skinTone: hex)),
-                ),
+                selected: p.faceParams.skinTone == hex,
+                onTap: () => _updateParameters(p.copyWith(faceParams: p.faceParams.copyWith(skinTone: hex))),
               ),
           ],
         ),
@@ -759,73 +806,36 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     );
   }
 
-  List<Widget> _ombreDetail(HairParameters p) {
-    final colour = p.colour;
-    void update(ColourParameters next) => _updateParameters(p.copyWith(colour: next));
-    return [
-      SwitchListTile(
-        contentPadding: EdgeInsets.zero,
-        title: const Text('Ombré'),
-        subtitle: const Text('The ends fade to another colour'),
-        value: colour.ombre,
-        onChanged: (on) => update(colour.copyWith(ombre: on)),
-      ),
-      if (colour.ombre) ...[
-        _LabeledSlider(
-          label: 'Fade starts',
-          valueLabel: '${colour.ombreStart.round()} cm from the root',
-          value: colour.ombreStart,
-          min: 0,
-          max: 30,
-          onChanged: (v) => update(colour.copyWith(ombreStart: v)),
-        ),
-        Text('Ends', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        ColorPicker(
-          key: const ValueKey('ombre'),
-          hex: colour.ombreHex,
-          swatches: _hairSwatches,
-          onChanged: (hex) => update(colour.copyWith(ombreHex: hex)),
-        ),
-      ],
-    ];
-  }
-
-  List<Widget> _highlightDetail(HairParameters p) {
-    final colour = p.colour;
-    void update(ColourParameters next) => _updateParameters(p.copyWith(colour: next));
-    return [
-      _LabeledSlider(
-        label: 'Highlights',
-        valueLabel: colour.highlights < 0.01 ? 'Off' : '${(colour.highlights * 100).round()}% of the hair',
-        value: colour.highlights,
-        min: 0,
-        max: 0.5,
-        onChanged: (v) => update(colour.copyWith(highlights: v)),
-      ),
-      if (colour.highlights >= 0.01) ...[
-        SwitchListTile(
+  /// A colour as one row (its name and a dot); tapping it opens its picker
+  /// and closes any other, so only one set of colour controls shows.
+  Widget _colourRow({
+    required String id,
+    required String label,
+    required String hex,
+    required ValueChanged<String> onChanged,
+  }) {
+    final open = _openColour == id;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Balayage'),
-          subtitle: const Text('Painted on toward the ends, not from the root'),
-          value: colour.balayage,
-          onChanged: (on) => update(colour.copyWith(balayage: on)),
-        ),
-        for (final i in [0, 1]) ...[
-          Text('Highlight colour ${i + 1}', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 8),
-          ColorPicker(
-            key: ValueKey('highlight$i'),
-            hex: colour.highlightHexes[i],
-            swatches: _hairSwatches,
-            onChanged: (hex) => update(colour.copyWith(
-              highlightHexes: [for (var j = 0; j < 2; j++) j == i ? hex : colour.highlightHexes[j]],
-            )),
+          title: Text(label),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(radius: 14, backgroundColor: colorFromHex(hex)),
+              Icon(open ? Icons.expand_less : Icons.expand_more),
+            ],
           ),
+          onTap: () => setState(() => _openColour = open ? null : id),
+        ),
+        if (open) ...[
+          ColorPicker(key: ValueKey(id), hex: hex, swatches: _hairSwatches, onChanged: onChanged),
           const SizedBox(height: 8),
         ],
       ],
-    ];
+    );
   }
 
   Widget _buildMotionTab() {
@@ -984,6 +994,61 @@ class _LabeledSlider extends StatelessWidget {
 }
 
 /// The 1A-4C hair types, grouped by family, with what the chosen one is.
+class _ColourStylePicker extends StatelessWidget {
+  const _ColourStylePicker({required this.selected, required this.onSelected});
+
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    Widget card(({String id, String label, String description}) style) {
+      final isSelected = style.id == selected;
+      return Expanded(
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Material(
+            color: isSelected ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: isSelected ? scheme.primary : Colors.transparent, width: 2),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => onSelected(style.id),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(style.label, style: textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    Text(style.description, style: textTheme.bodySmall),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < colourStyles.length; i += 2)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [card(colourStyles[i]), card(colourStyles[i + 1])],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _HairTypePicker extends StatelessWidget {
   const _HairTypePicker({required this.selected, required this.onSelected});
 

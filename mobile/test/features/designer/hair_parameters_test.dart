@@ -79,6 +79,28 @@ void main() {
     expect(old.highlights, 0);
   });
 
+  test('colour styles: one at a time, keeping their colours', () {
+    const plain = ColourParameters();
+    expect(plain.style, 'single');
+
+    final ombre = plain.copyWith(ombreHex: '#d9b380').withStyle('ombre');
+    expect(ombre.style, 'ombre');
+    expect(ombre.ombreHex, '#d9b380');
+
+    final highlights = ombre.withStyle('highlights');
+    expect(highlights.style, 'highlights');
+    expect(highlights.ombre, isFalse);
+    expect(highlights.highlights, greaterThan(0));
+
+    final balayage = highlights.copyWith(highlights: 0.4).withStyle('balayage');
+    expect(balayage.style, 'balayage');
+    expect(balayage.highlights, 0.4);
+
+    final single = balayage.withStyle('single');
+    expect(single.style, 'single');
+    expect(single.withStyle('ombre').ombreHex, '#d9b380');
+  });
+
   test('fromJson fills in defaults for missing fields', () {
     final restored = HairParameters.fromJson({'colorHex': '#000000'});
 

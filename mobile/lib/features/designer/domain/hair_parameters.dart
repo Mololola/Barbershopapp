@@ -390,6 +390,25 @@ class ColourParameters {
         shineAngle: shineAngle ?? this.shineAngle,
       );
 
+  /// One of [colourStyles]' ids, from the settings: the Colour tab shows
+  /// one style at a time.
+  String get style {
+    if (ombre) return 'ombre';
+    if (highlights > 0) return balayage ? 'balayage' : 'highlights';
+    return 'single';
+  }
+
+  /// These settings switched to [style], keeping its colours and amounts.
+  ColourParameters withStyle(String style) {
+    final streaks = highlights > 0 ? highlights : 0.25;
+    return switch (style) {
+      'ombre' => copyWith(ombre: true, highlights: 0),
+      'highlights' => copyWith(ombre: false, highlights: streaks, balayage: false),
+      'balayage' => copyWith(ombre: false, highlights: streaks, balayage: true),
+      _ => copyWith(ombre: false, highlights: 0),
+    };
+  }
+
   Map<String, dynamic> toJson() => {
         'ombre': ombre,
         'ombreHex': ombreHex,
@@ -410,6 +429,13 @@ class ColourParameters {
         shineAngle: (json['shineAngle'] as num?)?.toDouble() ?? 0,
       );
 }
+
+const colourStyles = [
+  (id: 'single', label: 'Single colour', description: 'One colour all over'),
+  (id: 'ombre', label: 'Ombré', description: 'The roots fade into different ends'),
+  (id: 'highlights', label: 'Highlights', description: 'Streaks of colour from root to tip'),
+  (id: 'balayage', label: 'Balayage', description: 'Soft streaks painted on toward the ends'),
+];
 
 /// A single freehand tool application painted onto the scalp — the polyline
 /// the finger/cursor traced, in the follicle UV space designer.js already
