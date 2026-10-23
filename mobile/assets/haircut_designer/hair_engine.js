@@ -664,7 +664,11 @@
             // Each hair ends at its own length (on average, from a distance).
             float tip = mix(0.62, 1.0, hash(hairSeed + 3.0));
             float ends = mix(1.0 - smoothstep(tip - 0.1, tip, vAlong), 1.0 - smoothstep(0.7, 1.0, vAlong), far);
-            float alpha = mix(sharp, 0.95, far) * ends * (1.0 - smoothstep(0.7, 1.0, abs(vAcross)));
+            // A distant card is solid to its edges: its triangles' edges are
+            // smoothed by multisampling, a faded edge cut by the cut-off
+            // below isn't, and thin bright locks broke up into dots.
+            float sides = mix(1.0 - smoothstep(0.7, 1.0, abs(vAcross)), 1.0, far);
+            float alpha = mix(sharp, 1.0, far) * ends * sides;
             // Hairs grow out of the skin one by one: no hard edge of card
             // roots along the hairline.
             alpha *= smoothstep(0.0, 0.04, vFromRoot);
