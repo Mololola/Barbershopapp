@@ -361,8 +361,11 @@
     const lower = 1 - smoothstep(lowerAt - (sharp || soft), lowerAt + (sharp || 0.04), polar);
     const grows = Math.max(vertical, horizontal) * lower;
     if (edges.lineUp) return grows;
+    // Baby hairs just past the front line, and past the lower line round
+    // the sides and back only: across the face polar never reaches the
+    // lower line, and that band covered the forehead down to the brows.
     const baby = 0.22 * (1 - smoothstep(front + 0.08, front + 0.16, polar)) * (1 - horizontal)
-      + 0.22 * (1 - smoothstep(lowerAt + 0.04, lowerAt + 0.1, polar));
+      + 0.22 * (1 - smoothstep(lowerAt + 0.04, lowerAt + 0.1, polar)) * horizontal;
     return Math.max(grows, Math.min(0.22, baby) * (polar > front ? 1 : 0) * (polar < lowerAt + 0.12 ? 1 : 0));
   }
 
@@ -776,9 +779,12 @@
         const h = hairlineGrid[row * BASE_WIDTH + col];
         const i = (row * BASE_WIDTH + col) * 2;
         // Baby hairs (the sparse band beyond a natural hairline) stay short
-        // and wispy whatever the cut.
-        const length = h > 0 ? baseLength(presetId, params, u, v) * h : 0;
-        fields.base[i] = h < 0.25 ? Math.min(length, BABY_HAIR_LENGTH) : length;
+        // and wispy whatever the cut, and the hairline's soft edge grows
+        // from them to the cut's length: scaled by h alone, long cuts (an
+        // afro) ended in sparse long strands, a ragged outline.
+        const full = h > 0 ? baseLength(presetId, params, u, v) : 0;
+        const baby = Math.min(full * h, BABY_HAIR_LENGTH);
+        fields.base[i] = h < 0.25 ? baby : baby + (full - baby) * smoothstep(0.25, 0.9, h);
         fields.base[i + 1] = h;
       }
     }
