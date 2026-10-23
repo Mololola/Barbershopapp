@@ -83,6 +83,16 @@
   const scalpData = decodeBase64(scalpInfo.data, Float32Array);
   const MAX_POLAR = scalpInfo.maxPolar;
   const collision = asset.collision;
+  // The scan's shoulders slope down from the neck (their top drops from
+  // 1.63 to 2.20 below the head's centre between 7 and 19 cm out), but the
+  // shoulders ellipsoid's top is nearly flat, and long hair resting on it
+  // spread sideways in a fan. A capsule per side along that line, round
+  // front to back, sheds hair to the front or the back.
+  const shoulderCapsules = [-1, 1].map((side) => ({
+    a: [0.75 * side, -2.05, -0.45],
+    b: [1.95 * side, -2.55, -0.45],
+    radius: 0.4,
+  }));
   const CRANIUM = new THREE.Vector3().fromArray(collision.cranium.radii);
   // Scene units per cranium unit, roughly: for heights above the skull.
   const CRANIUM_SCALE = (CRANIUM.x + CRANIUM.y + CRANIUM.z) / 3;
@@ -169,6 +179,25 @@
       }
     }
     pushOutOfEllipsoid(p, collision.shoulders.center, collision.shoulders.radii, 1 + margin);
+    for (const capsule of shoulderCapsules) pushOutOfCapsule(p, capsule, margin);
+  }
+
+  function pushOutOfCapsule(p, { a, b, radius }, margin) {
+    const bx = b[0] - a[0];
+    const by = b[1] - a[1];
+    const bz = b[2] - a[2];
+    const t = Math.min(1, Math.max(0, ((p.x - a[0]) * bx + (p.y - a[1]) * by + (p.z - a[2]) * bz) / (bx * bx + by * by + bz * bz)));
+    const dx = p.x - (a[0] + bx * t);
+    const dy = p.y - (a[1] + by * t);
+    const dz = p.z - (a[2] + bz * t);
+    const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const minimum = radius + margin;
+    if (d < minimum && d > 1e-9) {
+      const k = minimum / d - 1;
+      p.x += dx * k;
+      p.y += dy * k;
+      p.z += dz * k;
+    }
   }
 
   function pushOutOfEllipsoid(p, center, radii, minimum) {
@@ -1390,6 +1419,7 @@
     guideLengthAt,
     uvOf,
     pickScalp,
+    shoulderCapsules,
     decodeBase64,
   };
 })();

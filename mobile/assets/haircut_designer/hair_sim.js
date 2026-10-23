@@ -69,6 +69,7 @@ function hairSimulator(post) {
   let face = null;
   let neck = null;
   let shoulders = null;
+  let shoulderCapsules = [];
   let lift = 0;
 
   // The skin's radius (in cranium units) by direction, as a cube map: a
@@ -182,6 +183,7 @@ function hairSimulator(post) {
     [craniumX, craniumY, craniumZ] = c.cranium;
     face = ellipsoid(c.collision.face);
     shoulders = ellipsoid(c.collision.shoulders);
+    shoulderCapsules = c.collision.shoulderCapsules;
     neck = { cx: c.collision.neck.center[0], cy: c.collision.neck.center[1], cz: c.collision.neck.center[2], r: c.collision.neck.radius };
     lift = c.lift;
     buildCube(c.skin, c.maxPolar);
@@ -219,6 +221,26 @@ function hairSimulator(post) {
       }
     }
     pushOutOfEllipsoid(shoulders, 1 + margin);
+    for (let i = 0; i < shoulderCapsules.length; i++) pushOutOfCapsule(shoulderCapsules[i], margin);
+  }
+
+  // groom.js's pushOutOfCapsule, on (ox, oy, oz).
+  function pushOutOfCapsule({ a, b, radius }, margin) {
+    const bx = b[0] - a[0];
+    const by = b[1] - a[1];
+    const bz = b[2] - a[2];
+    const t = Math.min(1, Math.max(0, ((ox - a[0]) * bx + (oy - a[1]) * by + (oz - a[2]) * bz) / (bx * bx + by * by + bz * bz)));
+    const dx = ox - (a[0] + bx * t);
+    const dy = oy - (a[1] + by * t);
+    const dz = oz - (a[2] + bz * t);
+    const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const minimum = radius + margin;
+    if (d < minimum && d > 1e-9) {
+      const k = minimum / d - 1;
+      ox += dx * k;
+      oy += dy * k;
+      oz += dz * k;
+    }
   }
 
   // gx..wz: gravity and wind, in body space. `only`: just these rows
