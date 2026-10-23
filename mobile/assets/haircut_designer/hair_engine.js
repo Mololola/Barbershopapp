@@ -91,13 +91,14 @@
     }
 
     // Kajiya-Kay: a white primary highlight and a coloured secondary one,
-    // the two bands real hair shows.
-    vec3 shadeHair(vec3 color, vec3 tangent, vec3 view, vec3 key, float occlusion, float shine) {
+    // the two bands real hair shows. shift: this hair's own offset of them
+    // (no two hairs lie quite the same way, so the band is soft).
+    vec3 shadeHair(vec3 color, vec3 tangent, vec3 view, vec3 key, float occlusion, float shine, float shift) {
       float tl = dot(tangent, key);
       float diffuse = mix(0.3, 1.0, sqrt(max(0.0, 1.0 - tl * tl)));
       vec3 halfway = normalize(key + view);
-      vec3 t1 = normalize(tangent + view * 0.1);
-      vec3 t2 = normalize(tangent - view * 0.15);
+      vec3 t1 = normalize(tangent + view * (0.1 + shift));
+      vec3 t2 = normalize(tangent - view * (0.15 - shift));
       float h1 = dot(t1, halfway);
       float h2 = dot(t2, halfway);
       float primary = pow(sqrt(max(0.0, 1.0 - h1 * h1)), 90.0);
@@ -539,21 +540,22 @@
             float r = length(e);
             vec3 d = e / max(r, 1e-6);
             float polar = acos(clamp(d.y, -1.0, 1.0));
-            float clear = 1.0;
-            if (polar <= uMaxPolar) {
-              float azimuth = atan(d.z, d.x);
-              if (azimuth < 0.0) azimuth += 6.2831853;
-              vec2 size = vec2(${G.scalpInfo.width.toFixed(1)}, ${G.scalpInfo.height.toFixed(1)});
-              vec2 uv = vec2(azimuth / 6.2831853 + 0.5 / size.x, (polar / uMaxPolar * (size.y - 1.0) + 0.5) / size.y);
-              float skin = texture2D(uSkinRadius, uv).r;
-              float minimum = skin + ${(G.STRAND_LIFT * 0.6).toFixed(3)};
-              if (r < minimum) p = d * minimum * uCranium;
-              // How deep in the hair this point is: under the rest of it,
-              // hair gets less light. Measured against how thick the hair is
-              // here — short hair lying flat is the top layer, fully lit.
-              float thickness = clamp(hairLength(vec2(azimuth / 6.2831853, polar / uMaxPolar)) * 0.4, 0.015, 0.4);
-              clear = smoothstep(0.0, thickness, max(r, minimum) - skin);
-            }
+            // Below the scalp map (hair hanging past the nape) the skin at
+            // its edge stands in: lit only from inside it, that hair was in
+            // full light, a hard band across long hair where it began.
+            float edgePolar = min(polar, uMaxPolar);
+            float azimuth = atan(d.z, d.x);
+            if (azimuth < 0.0) azimuth += 6.2831853;
+            vec2 size = vec2(${G.scalpInfo.width.toFixed(1)}, ${G.scalpInfo.height.toFixed(1)});
+            vec2 uv = vec2(azimuth / 6.2831853 + 0.5 / size.x, (edgePolar / uMaxPolar * (size.y - 1.0) + 0.5) / size.y);
+            float skin = texture2D(uSkinRadius, uv).r;
+            float minimum = skin + ${(G.STRAND_LIFT * 0.6).toFixed(3)};
+            if (polar <= uMaxPolar && r < minimum) p = d * minimum * uCranium;
+            // How deep in the hair this point is: under the rest of it,
+            // hair gets less light. Measured against how thick the hair is
+            // here — short hair lying flat is the top layer, fully lit.
+            float thickness = clamp(hairLength(vec2(azimuth / 6.2831853, edgePolar / uMaxPolar)) * 0.4, 0.015, 0.4);
+            float clear = smoothstep(0.0, thickness, max(r, minimum) - skin);
 
             p = (uBody * vec4(p, 1.0)).xyz;
             vec3 tangent = normalize(uBodyRotation * dir);
@@ -687,7 +689,7 @@
             float occlusion = mix(0.55, 1.0, smoothstep(0.0, 0.12, vFromRoot)) * vShade;
             float lockShade = 0.82 + 0.3 * hash(vec3(floor(vAlong * 5.0 + vSeed * 3.0), vSeed * 97.0, 7.0));
             vec3 color = vColor * mix(mix(0.78, 1.15, hash(hairSeed + 4.0)), lockShade * (0.85 + 0.25 * sharp), far);
-            gl_FragColor = vec4(shadeHair(color, normalize(vTangent), view, uKey, occlusion, vShine), alpha);
+            gl_FragColor = vec4(shadeHair(color, normalize(vTangent), view, uKey, occlusion, vShine, (hash(hairSeed + 6.0) - 0.5) * 0.4), alpha);
             #include <colorspace_fragment>
           }`,
         side: THREE.DoubleSide,
@@ -845,7 +847,7 @@
             float occlusion = mix(0.7, 1.0, layerFraction);
             vec3 color = hairColor(vUv) * mix(0.88 + 0.24 * hash(cell + 7.0), 0.62 + 0.55 * grain, far);
             vec3 shaded = mix(
-              shadeHair(color, tangent, view, uKey, occlusion, uTypeLook[hairTypeIndex(vUv)].y),
+              shadeHair(color, tangent, view, uKey, occlusion, uTypeLook[hairTypeIndex(vUv)].y, 0.0),
               shadeShortHair(color, normalize(vNormal), view, uKey, mix(0.75, 1.0, layerFraction)),
               far);
             // Beneath strands the shells are only roots in the hair's shade:
