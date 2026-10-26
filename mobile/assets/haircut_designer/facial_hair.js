@@ -65,17 +65,26 @@
   }
 
   // Each style: where it grows (0..1 at a skin point), how long it is there
-  // relative to its length (its shape), and its usual length (mm).
+  // relative to its length (its shape, of side, y and the length in scene
+  // units), how far it spreads out sideways, and its usual length (mm).
   const BEARDS = {
     none: null,
     stubble: { length: 2, region: cheeksAndChin },
     full: { length: 30, region: cheeksAndChin },
     shortBoxed: { length: 10, region: (side, y, z) => cheeksAndChin(side, y, z, 0.1) },
-    // Wide, full and rounded, broad at the bottom.
+    // Wide, full and rounded, broad at the bottom: each hair long enough to
+    // reach a broad U under the jaw (longest only at the middle of the chin,
+    // it came to a point).
     garibaldi: {
       length: 50,
       region: cheeksAndChin,
-      shape: (side, y) => 0.55 + 0.35 * smoothstep(-0.65, -1.05, y) + 0.45 * smoothstep(-0.95, -1.3, y) * (1 - smoothstep(0.25, 0.6, side)),
+      spread: 0.35,
+      shape: (side, y, length) => {
+        const end = -1.3 - 0.8 * length + 0.6 * length * Math.min(1, side / 0.65) ** 2;
+        // The sides are kept short: long, sideburn hair flew out from the ears.
+        const sides = 0.5 + 1.7 * smoothstep(-0.6, -1.0, y);
+        return Math.min(sides, Math.max(0.3, (y - end) / length));
+      },
     },
     // Short and rounded, with a longer moustache standing apart from the cheeks.
     verdi: {
@@ -252,8 +261,8 @@
           const beardHere = growBeard ? beardAt(root.x, root.y, root.z) * density : 0;
           if (beardHere > 0 && keep * beardMost < beardHere) {
             const side = Math.abs(root.x);
-            const shape = beard.shape ? beard.shape(side, root.y) : 1;
-            strands.push(growBeardHair(root, n, length * shape * (0.8 + 0.35 * rng()), curliness, rng));
+            const shape = beard.shape ? beard.shape(side, root.y, length) : 1;
+            strands.push(growBeardHair(root, n, length * shape * (0.85 + 0.25 * rng()), curliness, beard.spread || 0, rng));
           } else if (beardHere <= 0 && keep * browMost < browRegion(brows, root.x, root.y, root.z)) {
             strands.push(growBrowHair(root, n, 0.06 * (0.7 + 0.6 * rng()), rng));
           }
@@ -324,7 +333,7 @@
   // The way a beard grows at a root, along the skin (normal: the skin's):
   // down the cheeks and slightly toward the chin, back toward the neck
   // under the jaw, down and out from the middle of the moustache.
-  function beardDirection(root, normal) {
+  function beardDirection(root, normal, spread) {
     const side = Math.abs(root.x);
     const sign = Math.sign(root.x) || 1;
     const under = smoothstep(0.3, 0.7, -normal.y);
@@ -332,7 +341,7 @@
     // Out from the middle of the moustache, but not at the middle itself:
     // parted there, the lips showed through like teeth.
     const d = new THREE.Vector3(
-      -sign * 0.25 * smoothstep(0.2, 0.6, side) * (1 - inMoustache) + sign * 0.6 * inMoustache * smoothstep(0.03, 0.14, side),
+      (spread * smoothstep(0.15, 0.5, side) * smoothstep(-0.6, -0.9, root.y) - 0.25 * smoothstep(0.2, 0.6, side)) * sign * (1 - inMoustache) + sign * 0.6 * inMoustache * smoothstep(0.03, 0.14, side),
       -1,
       0.15 - 0.6 * under,
     );
@@ -344,14 +353,18 @@
   // more the less vertical the hair already is) and curled round a helix,
   // never back into the skin. Straight hair lies flat and barely curls;
   // curly hair stands out, droops less and coils.
-  function growBeardHair(root, normal, length, curliness, rng) {
+  function growBeardHair(root, normal, length, curliness, spread, rng) {
     const step = length / BEARD_STEPS;
     const helix = 0.1 + 1.8 * curliness; // p_h: the curl's radius
     const gravity = GRAVITY * (1 - 0.6 * curliness);
-    const phase = rng() * Math.PI * 2;
-    const dir = beardDirection(root, normal)
+    // Hairs in the same ~8 mm patch form a lock: they share most of their
+    // nudge and curl, so a long beard waves in locks, not as separate strings.
+    const lock = random((Math.floor(root.x * 12) * 73856093) ^ (Math.floor(root.y * 12) * 19349663) ^ (Math.floor(root.z * 12) * 83492791));
+    const phase = (lock() + 0.15 * rng()) * Math.PI * 2;
+    const dir = beardDirection(root, normal, spread)
       .addScaledVector(normal, 0.2 + 0.7 * curliness)
-      .add(new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).multiplyScalar(0.35))
+      .add(new THREE.Vector3(lock() - 0.5, lock() - 0.5, lock() - 0.5).multiplyScalar(0.35))
+      .add(new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).multiplyScalar(0.12))
       .normalize();
     const points = [root.clone()];
     const p = root.clone();
