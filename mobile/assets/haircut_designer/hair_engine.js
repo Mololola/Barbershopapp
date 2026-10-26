@@ -92,8 +92,11 @@
 
     // Kajiya-Kay: a white primary highlight and a coloured secondary one,
     // the two bands real hair shows. shift: this hair's own offset of them
-    // (no two hairs lie quite the same way, so the band is soft).
-    vec3 shadeHair(vec3 color, vec3 tangent, vec3 view, vec3 key, float occlusion, float shine, float shift) {
+    // (no two hairs lie quite the same way, so the band is soft). spread:
+    // 1 where a pixel covers many hairs, whose highlights, each a little
+    // off the others, average to a broad, faint sheen; drawn sharp there,
+    // long hair curving under at the nape lit one hard line across the head.
+    vec3 shadeHair(vec3 color, vec3 tangent, vec3 view, vec3 key, float occlusion, float shine, float shift, float spread) {
       float tl = dot(tangent, key);
       float diffuse = mix(0.3, 1.0, sqrt(max(0.0, 1.0 - tl * tl)));
       vec3 halfway = normalize(key + view);
@@ -101,8 +104,8 @@
       vec3 t2 = normalize(tangent - view * (0.15 - shift));
       float h1 = dot(t1, halfway);
       float h2 = dot(t2, halfway);
-      float primary = pow(sqrt(max(0.0, 1.0 - h1 * h1)), 90.0);
-      float secondary = pow(sqrt(max(0.0, 1.0 - h2 * h2)), 22.0);
+      float primary = pow(sqrt(max(0.0, 1.0 - h1 * h1)), mix(90.0, 20.0, spread)) * mix(1.0, 0.35, spread);
+      float secondary = pow(sqrt(max(0.0, 1.0 - h2 * h2)), mix(22.0, 10.0, spread)) * mix(1.0, 0.5, spread);
       return (color * diffuse + ((vec3(0.03) + color * 0.25) * primary + color * 0.55 * secondary) * shine) * occlusion;
     }
 
@@ -553,8 +556,11 @@
             if (polar <= uMaxPolar && r < minimum) p = d * minimum * uCranium;
             // How deep in the hair this point is: under the rest of it,
             // hair gets less light. Measured against how thick the hair is
-            // here — short hair lying flat is the top layer, fully lit.
-            float thickness = clamp(hairLength(vec2(azimuth / 6.2831853, edgePolar / uMaxPolar)) * 0.4, 0.015, 0.4);
+            // here — short hair lying flat is the top layer, fully lit — and
+            // long hair lies no more than about 1.5 cm deep: measured against
+            // its length, its top layer over the skull was shaded as if deep
+            // inside, and hair hanging free below was lit in a hard step.
+            float thickness = clamp(hairLength(vec2(azimuth / 6.2831853, edgePolar / uMaxPolar)) * 0.4, 0.015, 0.15);
             float clear = smoothstep(0.0, thickness, max(r, minimum) - skin);
 
             p = (uBody * vec4(p, 1.0)).xyz;
@@ -689,7 +695,7 @@
             float occlusion = mix(0.55, 1.0, smoothstep(0.0, 0.12, vFromRoot)) * vShade;
             float lockShade = 0.82 + 0.3 * hash(vec3(floor(vAlong * 5.0 + vSeed * 3.0), vSeed * 97.0, 7.0));
             vec3 color = vColor * mix(mix(0.78, 1.15, hash(hairSeed + 4.0)), lockShade * (0.85 + 0.25 * sharp), far);
-            gl_FragColor = vec4(shadeHair(color, normalize(vTangent), view, uKey, occlusion, vShine, (hash(hairSeed + 6.0) - 0.5) * 0.4), alpha);
+            gl_FragColor = vec4(shadeHair(color, normalize(vTangent), view, uKey, occlusion, vShine, (hash(hairSeed + 6.0) - 0.5) * 0.4, far), alpha);
             #include <colorspace_fragment>
           }`,
         side: THREE.DoubleSide,
@@ -847,7 +853,7 @@
             float occlusion = mix(0.7, 1.0, layerFraction);
             vec3 color = hairColor(vUv) * mix(0.88 + 0.24 * hash(cell + 7.0), 0.62 + 0.55 * grain, far);
             vec3 shaded = mix(
-              shadeHair(color, tangent, view, uKey, occlusion, uTypeLook[hairTypeIndex(vUv)].y, 0.0),
+              shadeHair(color, tangent, view, uKey, occlusion, uTypeLook[hairTypeIndex(vUv)].y, 0.0, 0.0),
               shadeShortHair(color, normalize(vNormal), view, uKey, mix(0.75, 1.0, layerFraction)),
               far);
             // Beneath strands the shells are only roots in the hair's shade:
