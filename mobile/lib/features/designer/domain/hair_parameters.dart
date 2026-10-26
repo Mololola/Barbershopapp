@@ -514,13 +514,18 @@ class FacialHairParameters {
       );
 }
 
-/// Each style's usual length (mm), which choosing it sets.
+/// Each style's usual length (mm), which choosing it sets (see BEARDS in
+/// facial_hair.js).
 const beardStyles = [
   (id: 'none', label: 'None', length: 10.0),
   (id: 'stubble', label: 'Stubble', length: 2.0),
   (id: 'shortBoxed', label: 'Short boxed', length: 10.0),
-  (id: 'full', label: 'Full', length: 35.0),
-  (id: 'goatee', label: 'Goatee', length: 15.0),
+  (id: 'full', label: 'Full', length: 30.0),
+  (id: 'garibaldi', label: 'Garibaldi', length: 50.0),
+  (id: 'verdi', label: 'Verdi', length: 25.0),
+  (id: 'goatee', label: 'Circle beard', length: 15.0),
+  (id: 'vanDyke', label: 'Van Dyke', length: 20.0),
+  (id: 'muttonChops', label: 'Mutton chops', length: 15.0),
   (id: 'moustache', label: 'Moustache', length: 12.0),
 ];
 
