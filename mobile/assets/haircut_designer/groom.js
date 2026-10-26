@@ -283,6 +283,8 @@
   // A design's hairline and edges (params.hairline), as a barber shapes them:
   //   shape      'rounded' | 'straight' (flat across, square corners) |
   //              'widowsPeak' | 'receding' (temples set back, an M)
+  //   recession  for 'receding': 0 (Norwood 1, none) .. 0.5 (2, slight)
+  //              .. 1 (3, deep temples, the forelock kept)
   //   height     0 (low on the forehead) .. 1 (high)
   //   lineUp     a sharp, razor-edged line, rather than natural, soft edges
   //              with fine baby hairs
@@ -291,10 +293,22 @@
   //              'block' (squared off) | 'v' (a point at the middle)
   //   neckHeight 0 (low down the neck) .. 1 (high)
   const BABY_HAIR_LENGTH = 0.12; // scene units: 1.2 cm
-  const DEFAULT_EDGES = { shape: 'rounded', height: 0.5, lineUp: false, sideburns: 'medium', neckline: 'natural', neckHeight: 0.5 };
+  const DEFAULT_EDGES = { shape: 'rounded', height: 0.5, recession: 1, lineUp: false, sideburns: 'medium', neckline: 'natural', neckHeight: 0.5 };
 
   function edgesOf(params) {
     return { ...DEFAULT_EDGES, ...(params.hairline || {}) };
+  }
+
+  // How much of a receding hairline's temple inlet is at `delta` (angular
+  // distance from the middle of the face), 0..1, times how far it has
+  // receded: a pointed inlet that curves gently down to the forelock and
+  // more steeply down to the temple. It deepens and widens toward the
+  // forelock as it recedes, as Norwood 2 becomes 3.
+  function recessionAt(edges, delta) {
+    if (edges.shape !== 'receding') return 0;
+    const r = edges.recession;
+    const offset = delta - (40 - 4 * r) * deg;
+    return r * Math.exp(-Math.abs(offset) / (offset < 0 ? (9 + 6 * r) * deg : 6 * deg));
   }
 
   // The front hairline's polar angle, by angular distance from the middle
@@ -310,16 +324,13 @@
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across + 7 * deg * (1 - smoothstep(0, 9 * deg, delta));
         break;
       case 'receding':
-      {
-        // An M: a rounded forelock in the middle and a recession either side
-        // of it — a pointed inlet that curves gently down to the forelock
-        // and more steeply down to the temple.
-        const apex = 40 * deg;
-        const offset = delta - apex;
-        const inlet = Math.exp(-Math.abs(offset) / (offset < 0 ? 13 * deg : 6 * deg));
-        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across - 24 * deg * inlet;
+        // An M (Norwood scale): the temples recede up to 24 degrees (about
+        // 4 cm), slowly at first (Norwood 2: 1.5 cm); the forelock between
+        // them follows by up to 3 degrees.
+        line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across
+          - 24 * deg * Math.pow(edges.recession, 0.4) * recessionAt(edges, delta)
+          - 3 * deg * edges.recession * (1 - smoothstep(0, 36 * deg, delta));
         break;
-      }
       default:
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across;
     }
@@ -354,7 +365,10 @@
     const delta = angularDistance(u * 2 * Math.PI, Math.PI / 2);
     const sharp = edges.lineUp ? 0.012 : 0;
     const front = frontLine(edges, delta);
-    const vertical = 1 - smoothstep(front - (sharp || 0.08), front + (sharp || 0.08), polar);
+    // A receded temple thins out over a wider band rather than ending at a
+    // line.
+    const thinning = edges.lineUp ? 0 : recessionAt(edges, delta);
+    const vertical = 1 - smoothstep(front - (sharp || 0.08 + 0.06 * thinning), front + (sharp || 0.08), polar);
     const horizontal = smoothstep(HAIRLINE.faceHalfWidth - (sharp || 0.18), HAIRLINE.faceHalfWidth + (sharp || 0.06), delta);
     const lowerAt = lowerLine(edges, delta);
     const soft = edges.neckline === 'tapered' ? 0.22 : 0.12;
@@ -364,7 +378,10 @@
     // Baby hairs just past the front line, and past the lower line round
     // the sides and back only: across the face polar never reaches the
     // lower line, and that band covered the forehead down to the brows.
+    // A receded inlet keeps fine, sparse hair, fading out toward where the
+    // hairline used to be.
     const baby = 0.22 * (1 - smoothstep(front + 0.08, front + 0.16, polar)) * (1 - horizontal)
+      + 0.22 * thinning * (1 - smoothstep(front, front + 0.3 * thinning, polar))
       + 0.22 * (1 - smoothstep(lowerAt + 0.04, lowerAt + 0.1, polar)) * horizontal;
     return Math.max(grows, Math.min(0.22, baby) * (polar > front ? 1 : 0) * (polar < lowerAt + 0.12 ? 1 : 0));
   }

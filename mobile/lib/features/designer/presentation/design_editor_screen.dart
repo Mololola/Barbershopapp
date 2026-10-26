@@ -510,6 +510,15 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     return [
       const Divider(),
       choices('Hairline', hairlineShapes, edges.shape, (id) => update(edges.copyWith(shape: id))),
+      if (edges.shape == 'receding')
+        _LabeledSlider(
+          label: 'Recession',
+          valueLabel: _norwoodLabel(edges.recession),
+          value: edges.recession,
+          min: 0,
+          max: 1,
+          onChanged: (v) => update(edges.copyWith(recession: v)),
+        ),
       _LabeledSlider(
         label: 'Hairline height',
         valueLabel: edges.height < 0.35 ? 'Low' : (edges.height < 0.65 ? 'Natural' : 'High'),
@@ -714,6 +723,15 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
           Text('Drag to look around · pinch to zoom · two fingers to move · double-tap to reset.'),
         ];
     }
+  }
+
+  static String _norwoodLabel(double recession) {
+    final stage = (1 + recession * 2).round();
+    return switch (stage) {
+      1 => 'Norwood 1 · full hairline',
+      2 => 'Norwood 2 · slight, at the temples',
+      _ => 'Norwood 3 · deep temples',
+    };
   }
 
   Widget _buildColourTab() {

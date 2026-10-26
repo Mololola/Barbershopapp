@@ -101,6 +101,13 @@ void main() {
     expect(single.withStyle('ombre').ombreHex, '#d9b380');
   });
 
+  test('hairline recession round-trips; older receding designs stay at Norwood 3', () {
+    const original = HairParameters(hairline: HairlineParameters(shape: 'receding', recession: 0.4));
+
+    expect(HairParameters.fromJson(original.toJson()).hairline.recession, 0.4);
+    expect(HairlineParameters.fromJson({'shape': 'receding'}).recession, 1);
+  });
+
   test('fromJson fills in defaults for missing fields', () {
     final restored = HairParameters.fromJson({'colorHex': '#000000'});
 
