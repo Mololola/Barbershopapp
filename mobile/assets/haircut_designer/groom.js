@@ -246,7 +246,11 @@
     const up = top - p.y;
     const toBack = p.z - back;
     const toFront = front - p.z;
-    if (up > 0 && up < toBack && up < toFront) p.y = top;
+    // Up onto the shoulders only near their crest: hair landing just
+    // behind (or in front of) it went up, rested there held by friction,
+    // and the curtain down the back stopped at the shoulders. Pushed to
+    // the back, it drapes over and slides down it.
+    if (up > 0 && up < 0.35 * Math.min(toBack, toFront)) p.y = top;
     else if (toBack < toFront) p.z = back;
     else p.z = front;
   }
@@ -370,16 +374,27 @@
     return { ...DEFAULT_EDGES, ...(params.hairline || {}) };
   }
 
-  // How much of a receding hairline's temple inlet is at `delta` (angular
-  // distance from the middle of the face), 0..1, times how far it has
-  // receded: a pointed inlet that curves gently down to the forelock and
-  // more steeply down to the temple. It deepens and widens toward the
-  // forelock as it recedes, as Norwood 2 becomes 3.
+  // Where a receding hairline's temple inlets are deepest (angular
+  // distance from the middle of the face).
+  function inletApex(edges) {
+    return (45 + 10 * edges.templeSpacing) * deg;
+  }
+
+  // How much of a receding hairline's temple inlet is at `delta`, 0..1,
+  // times how far it has receded: a rounded inlet that curves gently down
+  // to the forelock and more steeply down to the temple. It deepens and
+  // widens toward the forelock as it recedes, as Norwood 2 becomes 3.
   function recessionAt(edges, delta) {
     if (edges.shape !== 'receding') return 0;
     const r = edges.recession;
-    const offset = delta - (45 + 10 * edges.templeSpacing) * deg;
-    return r * Math.exp(-Math.abs(offset) / (offset < 0 ? (9 + 6 * r) * deg : 6 * deg));
+    const apex = inletApex(edges);
+    if (delta >= apex) {
+      const past = (delta - apex) / (8 * deg);
+      return r * Math.exp(-past * past);
+    }
+    // Level at the middle of the forelock and at the inlet's bottom, so the
+    // forelock comes to neither a point nor a corner.
+    return r * smoothstep(apex - Math.min(apex, (20 + 25 * r) * deg), apex, delta);
   }
 
   // The front hairline's polar angle, by angular distance from the middle
@@ -394,14 +409,19 @@
       case 'widowsPeak':
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across + 7 * deg * (1 - smoothstep(0, 9 * deg, delta));
         break;
-      case 'receding':
+      case 'receding': {
         // An M (Norwood scale): the temples recede up to 24 degrees (about
-        // 4 cm), slowly at first (Norwood 2: 1.5 cm); the forelock between
-        // them follows by up to 3 degrees.
+        // 4 cm), slowly at first (Norwood 2: 1.5 cm). The forelock between
+        // them is a rounded C, its sides curving back into the inlets, not
+        // flat across with sharp turns into them.
+        const apex = inletApex(edges);
+        const past = (delta - apex) / (8 * deg);
+        const curve = delta < apex ? (delta / apex) ** 2 : Math.exp(-past * past);
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across
           - 24 * deg * Math.pow(edges.recession, 0.4) * recessionAt(edges, delta)
-          - 3 * deg * edges.recession * (1 - smoothstep(0, 36 * deg, delta));
+          - edges.recession * (2 + 9 * curve) * deg;
         break;
+      }
       default:
         line = HAIRLINE.center + (HAIRLINE.temple - HAIRLINE.center) * across;
     }

@@ -243,7 +243,11 @@ function hairSimulator(post) {
     const up = top - oy;
     const toBack = oz - back;
     const toFront = front - oz;
-    if (up > 0 && up < toBack && up < toFront) oy = top;
+    // Up onto the shoulders only near their crest: hair landing just
+    // behind (or in front of) it went up, rested there held by friction,
+    // and the curtain down the back stopped at the shoulders. Pushed to
+    // the back, it drapes over and slides down it.
+    if (up > 0 && up < 0.35 * Math.min(toBack, toFront)) oy = top;
     else if (toBack < toFront) oz = back;
     else oz = front;
   }
