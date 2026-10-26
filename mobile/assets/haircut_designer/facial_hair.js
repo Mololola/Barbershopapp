@@ -268,7 +268,8 @@
           if (beardHere > 0 && keep * beardMost < beardHere) {
             const side = Math.abs(root.x);
             const shape = beard.shape ? beard.shape(side, root.y, length) : 1;
-            strands.push(trimHair(growBeardHair(root, n, length * shape * (0.85 + 0.25 * rng()), curliness, beard.spread || 0, rng), floor));
+            const hair = trimHair(growBeardHair(root, n, length * shape * (0.85 + 0.25 * rng()), curliness, beard.spread || 0, rng), floor);
+            if (hair) strands.push(hair);
           } else if (beardHere <= 0 && keep * browMost < browRegion(brows, root.x, root.y, root.z)) {
             strands.push(growBrowHair(root, n, 0.06 * (0.7 + 0.6 * rng()), rng));
           }
@@ -390,9 +391,11 @@
   }
 
   // A hair cut where it first passes below floor(z), its points spread
-  // evenly along what's left. Hair rooted below the outline (the neckline)
-  // keeps a fifth of its length, lying along the neck.
+  // evenly along what's left; null if it's rooted below the outline (on
+  // the neck: kept short, it stood apart as a tuft under the jaw, and the
+  // stubble shading already darkens the skin there).
   function trimHair(points, floor) {
+    if (points[0].y < floor(points[0].z)) return null;
     const lengths = [0];
     for (let i = 1; i < points.length; i++) lengths.push(lengths[i - 1] + points[i].distanceTo(points[i - 1]));
     const total = lengths[lengths.length - 1];
@@ -405,7 +408,6 @@
         break;
       }
     }
-    keep = Math.max(keep, 0.2 * total);
     if (keep >= total) return points;
     const trimmed = [];
     let j = 0;
