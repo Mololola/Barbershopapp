@@ -82,7 +82,9 @@
       shape: (side, y, length) => {
         const end = -1.3 - 0.8 * length + 0.6 * length * Math.min(1, side / 0.65) ** 2;
         // The sides are kept short: long, sideburn hair flew out from the ears.
-        const sides = 0.5 + 1.7 * smoothstep(-0.6, -1.0, y);
+        // Not the moustache, which at that height was too short to cover
+        // the mouth, and the lips showed through it in stripes.
+        const sides = Math.max(moustache(side, y), 0.5 + 1.7 * smoothstep(-0.6, -1.0, y));
         return Math.min(sides, Math.max(0.3, (y - end) / length));
       },
     },
