@@ -81,51 +81,13 @@
 
   const scalpInfo = asset.scalpMap;
 
-  // The body below the jaw as the bust mesh has it, on a 1 cm grid: its
-  // back and front surfaces (z) over x, y, and its top (y) over x, z. The
-  // neck cylinder and shoulder shapes miss the base of the neck behind (up
-  // to 3.5 cm inside the skin there), where long hair sank in and came out
-  // again lower down the back.
-  const bodySlab = (() => {
-    const mesh = asset.mesh;
-    const positions = decodeBase64(mesh.positions, Int16Array);
-    const indices = decodeBase64(mesh.indices, Uint16Array);
-    const at = (i, c) => (positions[i * 3 + c] + 32768) * mesh.positionScale[c] + mesh.positionLow[c];
-    const slab = { cell: 0.1, x0: -2.6, y0: -3.0, z0: -1.6, nx: 52, ny: 16, nz: 32, top: -1.45 };
-    const back = new Float32Array(slab.nx * slab.ny).fill(Infinity);
-    const front = new Float32Array(slab.nx * slab.ny).fill(-Infinity);
-    const height = new Float32Array(slab.nx * slab.nz).fill(-Infinity);
-    const SAMPLES = 6; // per triangle edge: the torso's triangles are 2-3 cm
-    for (let t = 0; t < indices.length; t += 3) {
-      const a = indices[t];
-      const b = indices[t + 1];
-      const c = indices[t + 2];
-      for (let i = 0; i <= SAMPLES; i++) {
-        for (let j = 0; i + j <= SAMPLES; j++) {
-          const wa = i / SAMPLES;
-          const wb = j / SAMPLES;
-          const wc = 1 - wa - wb;
-          const x = wa * at(a, 0) + wb * at(b, 0) + wc * at(c, 0);
-          const y = wa * at(a, 1) + wb * at(b, 1) + wc * at(c, 1);
-          const z = wa * at(a, 2) + wb * at(b, 2) + wc * at(c, 2);
-          if (y > slab.top) continue;
-          const ix = Math.floor((x - slab.x0) / slab.cell);
-          const iy = Math.floor((y - slab.y0) / slab.cell);
-          const iz = Math.floor((z - slab.z0) / slab.cell);
-          if (ix < 0 || ix >= slab.nx) continue;
-          if (iy >= 0 && iy < slab.ny) {
-            const k = iy * slab.nx + ix;
-            back[k] = Math.min(back[k], z);
-            front[k] = Math.max(front[k], z);
-          }
-          if (iz >= 0 && iz < slab.nz) {
-            const k = iz * slab.nx + ix;
-            height[k] = Math.max(height[k], y);
-          }
-        }
-      }
-    }
-    return { ...slab, back, front, height };
+  // The body below the head: the skin's signed distance (negative inside)
+  // on a 1 cm grid, from build_head_asset.py. The fitted neck and shoulder
+  // shapes miss the base of the neck behind (up to 3.5 cm inside the skin
+  // there), where long hair sank in and came out lower down the back.
+  const bodyField = (() => {
+    const field = asset.collision.body;
+    return { ...field, data: decodeBase64(field.data, Int8Array) };
   })();
   const scalpData = decodeBase64(scalpInfo.data, Float32Array);
   const MAX_POLAR = scalpInfo.maxPolar;
@@ -230,29 +192,47 @@
     pushOutOfBody(p, margin);
   }
 
-  // Out of bodySlab, by the shortest way: back, front or up.
+  function fieldNode(f, i, j, k) {
+    return f.data[(j * f.nx + i) * f.nz + k] * f.step;
+  }
+
+  // bodyField at (x, y, z), blended between its 8 nearest nodes; NaN off
+  // the grid.
+  function bodyDistance(x, y, z) {
+    const f = bodyField;
+    const gx = (x - f.x0) / f.cell;
+    const gy = (y - f.y0) / f.cell;
+    const gz = (z - f.z0) / f.cell;
+    const i = Math.floor(gx);
+    const j = Math.floor(gy);
+    const k = Math.floor(gz);
+    if (i < 0 || j < 0 || k < 0 || i >= f.nx - 1 || j >= f.ny - 1 || k >= f.nz - 1) return NaN;
+    const tx = gx - i;
+    const ty = gy - j;
+    const tz = gz - k;
+    const x00 = fieldNode(f, i, j, k) * (1 - tx) + fieldNode(f, i + 1, j, k) * tx;
+    const x10 = fieldNode(f, i, j + 1, k) * (1 - tx) + fieldNode(f, i + 1, j + 1, k) * tx;
+    const x01 = fieldNode(f, i, j, k + 1) * (1 - tx) + fieldNode(f, i + 1, j, k + 1) * tx;
+    const x11 = fieldNode(f, i, j + 1, k + 1) * (1 - tx) + fieldNode(f, i + 1, j + 1, k + 1) * tx;
+    return (x00 * (1 - ty) + x10 * ty) * (1 - tz) + (x01 * (1 - ty) + x11 * ty) * tz;
+  }
+
+  // Out of the body along the field's gradient, which turns smoothly: a
+  // push along a fixed axis switched direction between neighbouring
+  // points, and hair resting on the shoulders shook.
   function pushOutOfBody(p, margin) {
-    const s = bodySlab;
-    if (p.y > s.top) return;
-    const ix = Math.floor((p.x - s.x0) / s.cell);
-    const iy = Math.floor((p.y - s.y0) / s.cell);
-    if (ix < 0 || ix >= s.nx || iy < 0 || iy >= s.ny) return;
-    const k = iy * s.nx + ix;
-    const back = s.back[k] - margin;
-    const front = s.front[k] + margin;
-    if (!(p.z > back && p.z < front)) return;
-    const iz = Math.floor((p.z - s.z0) / s.cell);
-    const top = iz >= 0 && iz < s.nz ? s.height[iz * s.nx + ix] + margin : Infinity;
-    const up = top - p.y;
-    const toBack = p.z - back;
-    const toFront = front - p.z;
-    // Up onto the shoulders only near their crest: hair landing just
-    // behind (or in front of) it went up, rested there held by friction,
-    // and the curtain down the back stopped at the shoulders. Pushed to
-    // the back, it drapes over and slides down it.
-    if (up > 0 && up < 0.35 * Math.min(toBack, toFront)) p.y = top;
-    else if (toBack < toFront) p.z = back;
-    else p.z = front;
+    const d = bodyDistance(p.x, p.y, p.z);
+    if (!(d < margin)) return;
+    const h = bodyField.cell * 0.5;
+    const gx = bodyDistance(p.x + h, p.y, p.z) - bodyDistance(p.x - h, p.y, p.z);
+    const gy = bodyDistance(p.x, p.y + h, p.z) - bodyDistance(p.x, p.y - h, p.z);
+    const gz = bodyDistance(p.x, p.y, p.z + h) - bodyDistance(p.x, p.y, p.z - h);
+    const length = Math.hypot(gx, gy, gz);
+    if (!(length > 1e-9)) return;
+    const k = (margin - d) / length;
+    p.x += gx * k;
+    p.y += gy * k;
+    p.z += gz * k;
   }
 
   function pushOutOfCapsule(p, { a, b, radius }, margin) {
@@ -1535,7 +1515,7 @@
     uvOf,
     pickScalp,
     shoulderCapsules,
-    bodySlab,
+    bodyField,
     decodeBase64,
   };
 })();

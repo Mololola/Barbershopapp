@@ -70,7 +70,7 @@ function hairSimulator(post) {
   let neck = null;
   let shoulders = null;
   let shoulderCapsules = [];
-  let bodySlab = null;
+  let bodyField = null;
   let lift = 0;
 
   // The skin's radius (in cranium units) by direction, as a cube map: a
@@ -185,7 +185,7 @@ function hairSimulator(post) {
     face = ellipsoid(c.collision.face);
     shoulders = ellipsoid(c.collision.shoulders);
     shoulderCapsules = c.collision.shoulderCapsules;
-    bodySlab = c.collision.body;
+    bodyField = c.collision.body;
     neck = { cx: c.collision.neck.center[0], cy: c.collision.neck.center[1], cz: c.collision.neck.center[2], r: c.collision.neck.radius };
     lift = c.lift;
     buildCube(c.skin, c.maxPolar);
@@ -227,29 +227,43 @@ function hairSimulator(post) {
     pushOutOfBody(margin);
   }
 
-  // groom.js's pushOutOfBody, on (ox, oy, oz).
+  // groom.js's bodyDistance and pushOutOfBody, on (ox, oy, oz).
+  function fieldNode(f, i, j, k) {
+    return f.data[(j * f.nx + i) * f.nz + k] * f.step;
+  }
+
+  function bodyDistance(x, y, z) {
+    const f = bodyField;
+    const gx = (x - f.x0) / f.cell;
+    const gy = (y - f.y0) / f.cell;
+    const gz = (z - f.z0) / f.cell;
+    const i = Math.floor(gx);
+    const j = Math.floor(gy);
+    const k = Math.floor(gz);
+    if (i < 0 || j < 0 || k < 0 || i >= f.nx - 1 || j >= f.ny - 1 || k >= f.nz - 1) return NaN;
+    const tx = gx - i;
+    const ty = gy - j;
+    const tz = gz - k;
+    const x00 = fieldNode(f, i, j, k) * (1 - tx) + fieldNode(f, i + 1, j, k) * tx;
+    const x10 = fieldNode(f, i, j + 1, k) * (1 - tx) + fieldNode(f, i + 1, j + 1, k) * tx;
+    const x01 = fieldNode(f, i, j, k + 1) * (1 - tx) + fieldNode(f, i + 1, j, k + 1) * tx;
+    const x11 = fieldNode(f, i, j + 1, k + 1) * (1 - tx) + fieldNode(f, i + 1, j + 1, k + 1) * tx;
+    return (x00 * (1 - ty) + x10 * ty) * (1 - tz) + (x01 * (1 - ty) + x11 * ty) * tz;
+  }
+
   function pushOutOfBody(margin) {
-    const s = bodySlab;
-    if (oy > s.top) return;
-    const ix = Math.floor((ox - s.x0) / s.cell);
-    const iy = Math.floor((oy - s.y0) / s.cell);
-    if (ix < 0 || ix >= s.nx || iy < 0 || iy >= s.ny) return;
-    const k = iy * s.nx + ix;
-    const back = s.back[k] - margin;
-    const front = s.front[k] + margin;
-    if (!(oz > back && oz < front)) return;
-    const iz = Math.floor((oz - s.z0) / s.cell);
-    const top = iz >= 0 && iz < s.nz ? s.height[iz * s.nx + ix] + margin : Infinity;
-    const up = top - oy;
-    const toBack = oz - back;
-    const toFront = front - oz;
-    // Up onto the shoulders only near their crest: hair landing just
-    // behind (or in front of) it went up, rested there held by friction,
-    // and the curtain down the back stopped at the shoulders. Pushed to
-    // the back, it drapes over and slides down it.
-    if (up > 0 && up < 0.35 * Math.min(toBack, toFront)) oy = top;
-    else if (toBack < toFront) oz = back;
-    else oz = front;
+    const d = bodyDistance(ox, oy, oz);
+    if (!(d < margin)) return;
+    const h = bodyField.cell * 0.5;
+    const gx = bodyDistance(ox + h, oy, oz) - bodyDistance(ox - h, oy, oz);
+    const gy = bodyDistance(ox, oy + h, oz) - bodyDistance(ox, oy - h, oz);
+    const gz = bodyDistance(ox, oy, oz + h) - bodyDistance(ox, oy, oz - h);
+    const length = Math.hypot(gx, gy, gz);
+    if (!(length > 1e-9)) return;
+    const k = (margin - d) / length;
+    ox += gx * k;
+    oy += gy * k;
+    oz += gz * k;
   }
 
   // groom.js's pushOutOfCapsule, on (ox, oy, oz).

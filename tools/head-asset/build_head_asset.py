@@ -13,7 +13,13 @@ angles taken on the cranium ellipsoid, azimuth pi/2 = the face), the point
 where a ray from the cranium centre meets the skin, and the skin normal
 there. Hair roots and the short-hair shells sit on it.
 
-Run with the system Python (needs numpy):  python build_head_asset.py
+Body field: the signed distance (negative inside) to the bust's skin
+below the head, on a 1 cm grid, so long hair can be kept out of the neck,
+shoulders and back without the fitted shapes' gaps, and pushed out along
+its gradient, which changes smoothly (pushes along a fixed axis switched
+direction between neighbouring points, and resting hair shook).
+
+Run with the system Python (needs numpy, scipy):  python build_head_asset.py
 """
 import base64
 import json
@@ -21,6 +27,7 @@ import math
 import pathlib
 
 import numpy as np
+from scipy.spatial import cKDTree
 
 from glb import load_glb
 
@@ -74,6 +81,45 @@ def ray_mesh(origin, direction, v0, e1, e2):
         return None
     index = np.where(hit)[0][np.argmin(t[hit])]
     return t[index], index, u[index], v[index]
+
+
+BODY_FIELD = {"x0": -2.3, "y0": -3.0, "z0": -1.5, "cell": 0.1, "nx": 47, "ny": 22, "nz": 31, "step": 0.002}
+
+
+def body_field(positions, triangles):
+    """Signed distance to the skin at the grid's nodes, in BODY_FIELD steps
+    (int8: +-25 cm). Distance: to dense samples of the triangles near the
+    body (about 1.5 mm apart); sign: crossings of the skin along +z."""
+    f = BODY_FIELD
+    near = (positions[triangles][:, :, 1] < f["y0"] + f["cell"] * f["ny"] + 0.3).any(axis=1)
+    tris = positions[triangles[near]]
+    n = 10
+    weights = np.array([(i / n, j / n, 1 - (i + j) / n) for i in range(n + 1) for j in range(n + 1 - i)])
+    samples = np.einsum("wk,tkc->twc", weights, tris).reshape(-1, 3)
+    xs = f["x0"] + np.arange(f["nx"]) * f["cell"]
+    ys = f["y0"] + np.arange(f["ny"]) * f["cell"]
+    zs = f["z0"] + np.arange(f["nz"]) * f["cell"]
+    grid = np.stack(np.meshgrid(xs, ys, zs, indexing="ij"), axis=-1)  # x, y, z
+    distance, _ = cKDTree(samples).query(grid.reshape(-1, 3))
+    distance = distance.reshape(grid.shape[:3])
+    # Inside: an odd number of skin crossings along +z before the node.
+    a, b, c = tris[:, 0], tris[:, 1], tris[:, 2]
+    for i, x in enumerate(xs):
+        for j, y in enumerate(ys):
+            # Barycentric coordinates of (x, y) in each triangle's xy shadow.
+            d = (b[:, 1] - c[:, 1]) * (a[:, 0] - c[:, 0]) + (c[:, 0] - b[:, 0]) * (a[:, 1] - c[:, 1])
+            ok = np.abs(d) > 1e-12
+            d = np.where(ok, d, 1)
+            l1 = ((b[:, 1] - c[:, 1]) * (x - c[:, 0]) + (c[:, 0] - b[:, 0]) * (y - c[:, 1])) / d
+            l2 = ((c[:, 1] - a[:, 1]) * (x - c[:, 0]) + (a[:, 0] - c[:, 0]) * (y - c[:, 1])) / d
+            l3 = 1 - l1 - l2
+            hit = ok & (l1 >= 0) & (l2 >= 0) & (l3 >= 0)
+            crossings = np.sort(l1[hit] * a[hit, 2] + l2[hit] * b[hit, 2] + l3[hit] * c[hit, 2])
+            inside = np.searchsorted(crossings, zs) % 2 == 1
+            distance[i, j, inside] *= -1
+    quantised = np.clip(np.round(distance / f["step"]), -127, 127).astype(np.int8)
+    # Stored z fastest, then x, then y: data[(y * nx + x) * nz + z].
+    return {**f, "data": b64(quantised.transpose(1, 0, 2))}
 
 
 def b64(array):
@@ -157,6 +203,7 @@ def main():
             "face": {"center": face_center.round(4).tolist(), "radii": face_radii.round(4).tolist()},
             "neck": {"center": neck_center.round(4).tolist(), "radius": round(neck_radius, 4)},
             "shoulders": {"center": shoulders_center.round(4).tolist(), "radii": shoulders_radii.round(4).tolist()},
+            "body": body_field(positions, triangles),
         },
     }
     OUTPUT.write_text(
@@ -165,7 +212,7 @@ def main():
         "window.HEAD_ASSET = " + json.dumps(asset, separators=(",", ":")) + ";\n",
         encoding="utf-8",
     )
-    print(json.dumps(asset["collision"], indent=1))
+    print(json.dumps({k: v for k, v in asset["collision"].items() if k != "body"}, indent=1))
     print("scalp map misses:", misses, "| output:", OUTPUT, f"{OUTPUT.stat().st_size / 1024:.0f} KB")
 
 

@@ -161,7 +161,7 @@
           cranium: G.CRANIUM.toArray(),
           maxPolar: G.MAX_POLAR,
           lift: G.STRAND_LIFT,
-          collision: { face: c.face, neck: c.neck, shoulders: c.shoulders, shoulderCapsules: G.shoulderCapsules, body: G.bodySlab },
+          collision: { face: c.face, neck: c.neck, shoulders: c.shoulders, shoulderCapsules: G.shoulderCapsules, body: G.bodyField },
         },
       });
     }
