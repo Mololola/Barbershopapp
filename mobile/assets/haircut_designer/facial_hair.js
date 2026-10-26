@@ -59,7 +59,9 @@
     const cheekLine = -0.7 + ((side - 0.28) / 0.44) * 0.5;
     const top = -0.6 + (cheekLine + 0.6) * smoothstep(0.2, 0.32, side);
     const neck = -1.5 + 0.75 * smoothstep(0.15, 0.68, side) + neckRaise;
-    return band(neck, top, 0.05, y) * smoothstep(0.05, 0.25, z) * (1 - lips(side, y));
+    // The cheek line fades in over ~1.5 cm, as a beard thins out there; the
+    // neckline is trimmed, so sharper.
+    return smoothstep(neck - 0.05, neck, y) * (1 - smoothstep(top - 0.06, top + 0.09, y)) * smoothstep(0.05, 0.25, z) * (1 - lips(side, y));
   }
 
   // Each style: where it grows (0..1 at a skin point), how long it is there
@@ -198,7 +200,7 @@
         const x = position.getX(i);
         const y = position.getY(i);
         const z = position.getZ(i);
-        this.stubble.array[i] = Math.max(cover * beardAt(x, y, z), 0.45 * browRegion(brows, x, y, z));
+        this.stubble.array[i] = Math.max(cover * beardAt(x, y, z), 0.6 * browRegion(brows, x, y, z));
       }
       this.stubble.needsUpdate = true;
 
@@ -327,8 +329,10 @@
     const sign = Math.sign(root.x) || 1;
     const under = smoothstep(0.3, 0.7, -normal.y);
     const inMoustache = moustache(side, root.y);
+    // Out from the middle of the moustache, but not at the middle itself:
+    // parted there, the lips showed through like teeth.
     const d = new THREE.Vector3(
-      -sign * 0.25 * smoothstep(0.2, 0.6, side) * (1 - inMoustache) + sign * 0.6 * inMoustache,
+      -sign * 0.25 * smoothstep(0.2, 0.6, side) * (1 - inMoustache) + sign * 0.6 * inMoustache * smoothstep(0.03, 0.14, side),
       -1,
       0.15 - 0.6 * under,
     );
@@ -377,9 +381,12 @@
     const points = [root.clone()];
     const p = root.clone();
     for (let i = 1; i <= BROW_STEPS; i++) {
-      // Curving back down onto the skin.
-      dir.addScaledVector(normal, -0.15).normalize();
+      // Curving back down toward the skin, but staying on it: curving into
+      // it, brows vanished on the phone, where they're about a pixel wide.
+      dir.addScaledVector(normal, -0.05).normalize();
       p.addScaledVector(dir, step);
+      const under = p.clone().sub(root).dot(normal) - 0.08 * step * i;
+      if (under < 0) p.addScaledVector(normal, -under);
       points.push(p.clone());
     }
     return points;
