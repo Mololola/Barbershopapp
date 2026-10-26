@@ -409,8 +409,86 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
             expandedCrossAxisAlignment: CrossAxisAlignment.start,
             children: _barberDetail(p),
           ),
+        ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: EdgeInsets.zero,
+          title: const Text('Beard & brows'),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          children: _facialHair(p),
+        ),
       ],
     );
+  }
+
+  List<Widget> _facialHair(HairParameters p) {
+    final facial = p.facial;
+    void update(FacialHairParameters next) => _updateParameters(p.copyWith(facial: next));
+    // Regrowing facial hair takes a moment on a phone: the sliders show
+    // their value while dragged and regrow it once let go.
+    void preview(FacialHairParameters next) => setState(() => _parameters = p.copyWith(facial: next));
+    final length = facial.beardLength;
+    return [
+      Text('Beard', style: Theme.of(context).textTheme.titleSmall),
+      const SizedBox(height: 6),
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final style in beardStyles)
+            ChoiceChip(
+              label: Text(style.label),
+              selected: facial.beard == style.id,
+              onSelected: (_) => update(facial.copyWith(beard: style.id, beardLength: style.length)),
+            ),
+        ],
+      ),
+      if (facial.beard != 'none') ...[
+        _LabeledSlider(
+          label: 'Beard length',
+          valueLabel: length < 10 ? '${length.round()} mm' : '${(length / 10).toStringAsFixed(1)} cm',
+          value: length,
+          min: 1,
+          max: 60,
+          onChanged: (v) => preview(facial.copyWith(beardLength: v)),
+          onChangeEnd: (_) => update(_parameters.facial),
+        ),
+        _LabeledSlider(
+          label: 'Beard density',
+          valueLabel: facial.beardDensity < 0.5 ? 'Patchy' : (facial.beardDensity < 0.85 ? 'Medium' : 'Full'),
+          value: facial.beardDensity,
+          min: 0.2,
+          max: 1,
+          onChanged: (v) => preview(facial.copyWith(beardDensity: v)),
+          onChangeEnd: (_) => update(_parameters.facial),
+        ),
+      ],
+      const SizedBox(height: 8),
+      Text('Brows', style: Theme.of(context).textTheme.titleSmall),
+      const SizedBox(height: 6),
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final style in browStyles)
+            ChoiceChip(
+              label: Text(style.label),
+              selected: facial.brows == style.id,
+              onSelected: (_) => update(facial.copyWith(brows: style.id)),
+            ),
+        ],
+      ),
+      if (facial.brows != 'none')
+        _LabeledSlider(
+          label: 'Brow thickness',
+          valueLabel: facial.browThickness < 0.8 ? 'Fine' : (facial.browThickness < 1.2 ? 'Medium' : 'Full'),
+          value: facial.browThickness,
+          min: 0.5,
+          max: 1.5,
+          onChanged: (v) => preview(facial.copyWith(browThickness: v)),
+          onChangeEnd: (_) => update(_parameters.facial),
+        ),
+      const SizedBox(height: 8),
+    ];
   }
 
   List<Widget> _barberDetail(HairParameters p) {

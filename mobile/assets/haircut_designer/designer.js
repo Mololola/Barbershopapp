@@ -4,7 +4,7 @@
 //
 // A design: { version, preset, length, volume, hairType, colorHex,
 // partOffset, fadeHeight, fadeTo, fadeShape, zones, undercut, hairline,
-// faceParams: { skinTone }, colour: { ombre, ombreHex, ombreStart (cm
+// faceParams: { skinTone }, facial: see facial_hair.js, colour: { ombre, ombreHex, ombreStart (cm
 // from the root), highlights (share of the hair, 0..0.5), highlightHexes
 // (two colours), balayage, shineAngle (degrees, -45..45) }, strokes: [...] }. See groom.js for what the
 // parameters mean (hairType: '1A'..'4C'; zones: the fringe, crown, sides,
@@ -50,6 +50,7 @@
   const G = window.HairGroom;
   const DESIGN_VERSION = 4;
   const V1_MAX_POLAR = (100 * Math.PI) / 180;
+  const DEFAULT_FACIAL = { beard: 'none', beardLength: 10, beardDensity: 1, brows: 'natural', browThickness: 1 };
   const DEFAULT_COLOUR = {
     ombre: false,
     ombreHex: '#b08350',
@@ -60,7 +61,7 @@
     shineAngle: 0,
   };
 
-  let renderer, scene, camera, bodyGroup, engine, fields;
+  let renderer, scene, camera, bodyGroup, engine, fields, facialHair;
   let keyLight;
   const keyDirection = new THREE.Vector3();
   const keyTarget = new THREE.Vector3();
@@ -71,6 +72,7 @@
     colorHex: '#3b2314',
     faceParams: { skinTone: '#c68e62' },
     colour: { ...DEFAULT_COLOUR },
+    facial: { ...DEFAULT_FACIAL },
     strokes: [],
   };
   let groom = null;
@@ -270,14 +272,15 @@
         uMaxPolar: { value: G.MAX_POLAR },
       });
       shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vBodyPosition;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBodyPosition = position;');
+        .replace('#include <common>', '#include <common>\nvarying vec3 vBodyPosition;\nattribute float aStubble;\nvarying float vStubble;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBodyPosition = position;\nvStubble = aStubble;');
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <common>',
           `#include <common>
            ${HairEngine.FIELDS_GLSL}
            varying vec3 vBodyPosition;
+           varying float vStubble;
            uniform vec3 uCranium;
            uniform float uMaxPolar;`,
         )
@@ -295,10 +298,17 @@
              // would draw a hard, wig-like line round the face.
              float hair = smoothstep(0.0, 0.12, hairLength(scalpUv)) * smoothstep(0.1, 0.9, texture2D(uBaseField, scalpUv).g);
              diffuseColor.rgb = mix(diffuseColor.rgb, hairColor(scalpUv) * 0.75, hair * 0.9);
+           }
+           // Stubble, and the roots under a beard or brows: hair-coloured
+           // dots, one per 0.5 mm cell of skin (see facial_hair.js).
+           if (vStubble > 0.0) {
+             float grain = hash(floor(vBodyPosition * 200.0));
+             diffuseColor.rgb = mix(diffuseColor.rgb, uBaseColor * 0.55, vStubble * mix(0.35, 1.0, grain));
            }`,
         );
     };
     bodyGroup.add(new THREE.Mesh(geometry, material));
+    facialHair = new FacialHair(bodyGroup, geometry, engine.fieldUniforms, engine.strandMaterial.uniforms.uKey);
   }
 
   const skinTone = new THREE.Color('#c68e62');
@@ -375,6 +385,7 @@
 
   function applyLook() {
     engine.setColor(design.colorHex, design.colour);
+    facialHair.update(design.facial, G.hairTypeOf(design.hairType).curliness);
     engine.setHairType(design.hairType);
     engine.setLayers(Math.round(Math.min(8, Math.max(1, design.volume * 5))));
     skinTone.set(design.faceParams.skinTone);
@@ -904,6 +915,7 @@
       faceParams: { ...design.faceParams, ...(loaded.faceParams || {}) },
       // Never the colour on screen before: a design without one has none.
       colour: { ...DEFAULT_COLOUR, ...(loaded.colour || {}) },
+      facial: { ...DEFAULT_FACIAL, ...(loaded.facial || {}) },
       strokes: version < 2
         ? strokes.map((s) => ({ ...s, points: s.points.map(([u, v]) => [u, (v * V1_MAX_POLAR) / G.MAX_POLAR]) }))
         : strokes,
@@ -926,12 +938,13 @@
     try {
       const update = parse(json);
       const { strokes, preset, version, ...parameters } = update;
-      const lookOnly = Object.keys(parameters).every((k) => ['colorHex', 'faceParams', 'colour', 'volume'].includes(k));
+      const lookOnly = Object.keys(parameters).every((k) => ['colorHex', 'faceParams', 'colour', 'facial', 'volume'].includes(k));
       design = {
         ...design,
         ...parameters,
         faceParams: { ...design.faceParams, ...(parameters.faceParams || {}) },
         colour: { ...design.colour, ...(parameters.colour || {}) },
+        facial: { ...design.facial, ...(parameters.facial || {}) },
       };
       applyLook();
       if (!lookOnly) scheduleRebuild();

@@ -24,6 +24,7 @@ class HairParameters {
     this.hairline = const HairlineParameters(),
     this.faceParams = const FaceParameters(),
     this.colour = const ColourParameters(),
+    this.facial = const FacialHairParameters(),
     this.strokes = const [],
   });
 
@@ -72,6 +73,8 @@ class HairParameters {
   /// Colour work on top of [colorHex] (the root colour).
   final ColourParameters colour;
 
+  final FacialHairParameters facial;
+
   /// Freehand clipper/scissors/razor/dye strokes painted onto the scalp,
   /// applied on top of the base style above. Order matters — later strokes
   /// are rasterized over earlier ones (see designer.js's mask replay).
@@ -92,6 +95,7 @@ class HairParameters {
     HairlineParameters? hairline,
     FaceParameters? faceParams,
     ColourParameters? colour,
+    FacialHairParameters? facial,
     List<HairStroke>? strokes,
   }) {
     return HairParameters(
@@ -110,6 +114,7 @@ class HairParameters {
       hairline: hairline ?? this.hairline,
       faceParams: faceParams ?? this.faceParams,
       colour: colour ?? this.colour,
+      facial: facial ?? this.facial,
       strokes: strokes ?? this.strokes,
     );
   }
@@ -132,6 +137,7 @@ class HairParameters {
       'hairline': hairline.toJson(),
       'faceParams': faceParams.toJson(),
       'colour': colour.toJson(),
+      'facial': facial.toJson(),
       'strokes': strokes.map((s) => s.toJson()).toList(),
     };
   }
@@ -162,6 +168,9 @@ class HairParameters {
       colour: json['colour'] == null
           ? const ColourParameters()
           : ColourParameters.fromJson(json['colour'] as Map<String, dynamic>),
+      facial: json['facial'] == null
+          ? const FacialHairParameters()
+          : FacialHairParameters.fromJson(json['facial'] as Map<String, dynamic>),
       strokes: (json['strokes'] as List<dynamic>?)
               ?.map((s) => HairStroke.fromJson(s as Map<String, dynamic>))
               .toList() ??
@@ -453,6 +462,74 @@ class ColourParameters {
         shineAngle: (json['shineAngle'] as num?)?.toDouble() ?? 0,
       );
 }
+
+/// A beard and brows, grown on the face (see facial_hair.js).
+class FacialHairParameters {
+  const FacialHairParameters({
+    this.beard = 'none',
+    this.beardLength = 10,
+    this.beardDensity = 1,
+    this.brows = 'natural',
+    this.browThickness = 1,
+  });
+
+  /// One of [beardStyles]' ids.
+  final String beard;
+
+  /// In mm, 1 .. 60.
+  final double beardLength;
+
+  /// 0.2 (patchy) .. 1 (full).
+  final double beardDensity;
+
+  /// One of [browStyles]' ids.
+  final String brows;
+
+  /// 0.5 .. 1.5.
+  final double browThickness;
+
+  FacialHairParameters copyWith({String? beard, double? beardLength, double? beardDensity, String? brows, double? browThickness}) =>
+      FacialHairParameters(
+        beard: beard ?? this.beard,
+        beardLength: beardLength ?? this.beardLength,
+        beardDensity: beardDensity ?? this.beardDensity,
+        brows: brows ?? this.brows,
+        browThickness: browThickness ?? this.browThickness,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'beard': beard,
+        'beardLength': beardLength,
+        'beardDensity': beardDensity,
+        'brows': brows,
+        'browThickness': browThickness,
+      };
+
+  factory FacialHairParameters.fromJson(Map<String, dynamic> json) => FacialHairParameters(
+        beard: json['beard'] as String? ?? 'none',
+        beardLength: (json['beardLength'] as num?)?.toDouble() ?? 10,
+        beardDensity: (json['beardDensity'] as num?)?.toDouble() ?? 1,
+        brows: json['brows'] as String? ?? 'natural',
+        browThickness: (json['browThickness'] as num?)?.toDouble() ?? 1,
+      );
+}
+
+/// Each style's usual length (mm), which choosing it sets.
+const beardStyles = [
+  (id: 'none', label: 'None', length: 10.0),
+  (id: 'stubble', label: 'Stubble', length: 2.0),
+  (id: 'shortBoxed', label: 'Short boxed', length: 10.0),
+  (id: 'full', label: 'Full', length: 35.0),
+  (id: 'goatee', label: 'Goatee', length: 15.0),
+  (id: 'moustache', label: 'Moustache', length: 12.0),
+];
+
+const browStyles = [
+  (id: 'natural', label: 'Natural'),
+  (id: 'thin', label: 'Thin'),
+  (id: 'thick', label: 'Thick'),
+  (id: 'none', label: 'None'),
+];
 
 const colourStyles = [
   (id: 'single', label: 'Single colour', description: 'One colour all over'),

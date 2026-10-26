@@ -110,6 +110,22 @@ void main() {
     expect(HairlineParameters.fromJson({'shape': 'receding'}).recession, 1);
   });
 
+  test('facial hair round-trips; designs saved before it have no beard and natural brows', () {
+    const original = HairParameters(
+      facial: FacialHairParameters(beard: 'goatee', beardLength: 18, beardDensity: 0.6, brows: 'thick', browThickness: 1.3),
+    );
+
+    final restored = HairParameters.fromJson(original.toJson()).facial;
+    expect(restored.beard, 'goatee');
+    expect(restored.beardLength, 18);
+    expect(restored.beardDensity, 0.6);
+    expect(restored.brows, 'thick');
+    expect(restored.browThickness, 1.3);
+    final old = HairParameters.fromJson({'colorHex': '#000000'}).facial;
+    expect(old.beard, 'none');
+    expect(old.brows, 'natural');
+  });
+
   test('fromJson fills in defaults for missing fields', () {
     final restored = HairParameters.fromJson({'colorHex': '#000000'});
 
