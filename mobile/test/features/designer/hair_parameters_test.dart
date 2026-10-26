@@ -52,6 +52,26 @@ void main() {
     expect(restored.strokes[0].mirrored, isFalse);
   });
 
+  test('beard strokes round-trip with their points on the face, in 3D', () {
+    const original = HairParameters(
+      strokes: [
+        HairStroke(tool: 'beard', radius: 0.23, points: [
+          [0.3, -1.1, 0.95],
+          [-0.3, -1.1, 0.95],
+        ]),
+      ],
+    );
+
+    final restored = HairParameters.fromJson(original.toJson()).strokes.single;
+
+    expect(restored.tool, 'beard');
+    expect(restored.radius, 0.23);
+    expect(restored.points, [
+      [0.3, -1.1, 0.95],
+      [-0.3, -1.1, 0.95],
+    ]);
+  });
+
   test('colour round-trips, and designs saved before it have no ombré or highlights', () {
     const original = HairParameters(
       colour: ColourParameters(

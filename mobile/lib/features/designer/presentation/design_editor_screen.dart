@@ -46,6 +46,8 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
   bool _webViewReady = false;
   bool _initializedFromExisting = false;
   int _strokeCount = 0;
+  /// Strokes on the scalp: a cut change clears them (face strokes stay).
+  int _scalpStrokeCount = 0;
   int _redoCount = 0;
   Completer<String>? _snapshotCompleter;
   Completer<String>? _designStateCompleter;
@@ -122,6 +124,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     final counts = jsonDecode(message.message) as Map<String, dynamic>;
     setState(() {
       _strokeCount = counts['strokes'] as int;
+      _scalpStrokeCount = counts['scalpStrokes'] as int;
       _redoCount = counts['redo'] as int;
     });
   }
@@ -153,7 +156,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
 
   Future<void> _choosePreset(String id) async {
     if (id == _parameters.preset) return;
-    if (_strokeCount > 0) {
+    if (_scalpStrokeCount > 0) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -188,7 +191,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       // Razor is a precision liner — small, fixed width.
       if (tool == 'razor') _radius = 0.008;
       if (tool == 'clipper') _radius = 0.05;
-      if (const ['dye', 'curl', 'volume', 'thin', 'scissors'].contains(tool)) _radius = 0.04;
+      if (const ['dye', 'curl', 'volume', 'thin', 'scissors', 'beard'].contains(tool)) _radius = 0.04;
     });
     _pushToolMode();
   }
@@ -646,8 +649,9 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       ('volume', Icons.air, 'Volume'),
       ('thin', Icons.grain, 'Thin'),
       ('curl', Icons.waves, 'Curl'),
+      ('beard', Icons.face, 'Grow beard'),
     ];
-    final brush = const ['clipper', 'razor', 'dye', 'curl', 'volume', 'thin', 'scissors'].contains(_tool);
+    final brush = const ['clipper', 'razor', 'dye', 'curl', 'volume', 'thin', 'scissors', 'beard'].contains(_tool);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -740,6 +744,11 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         ];
       case 'razor':
         return const [Text('A thin, skin-close line — for edge-ups, part lines and designs.')];
+      case 'beard':
+        return const [
+          Text('Paint where the beard grows, on top of the style chosen in Shape → Beard & brows. '
+              'Its length and density come from there too.'),
+        ];
       case 'dye':
         return [
           ColorPicker(

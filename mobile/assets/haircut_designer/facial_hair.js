@@ -21,6 +21,10 @@
 //
 // design.facial: { beard: one of BEARDS' ids, beardLength (mm), beardDensity
 // 0.2..1, brows: one of BROWS' ids, browThickness 0.5..1.5 }.
+//
+// Painted beard: the design's strokes with tool 'beard' (grow) or 'shave'
+// add to or take from the style's region, in order. Their points are on
+// the skin in body space, [x, y, z], and their radius is in scene units.
 
 (function () {
   const P_GAMMA = 0.2; // p_Γ: how far gravity may bend a hair from vertical
@@ -112,6 +116,45 @@
     },
     moustache: { length: 12, region: (side, y) => moustache(side, y) },
   };
+  // Below the scalp, above the base of the neck and in front of the ears:
+  // where facial hair can grow.
+  const onFace = (x, y, z) => y <= 0.35 && y >= -1.7 && z >= -0.1;
+  // No style, only painted strokes.
+  const PAINTED_ONLY = { length: 10, region: () => 0 };
+  const TOOLS = ['beard', 'shave'];
+
+  function distanceToSegment(a, b, x, y, z) {
+    const abx = b[0] - a[0];
+    const aby = b[1] - a[1];
+    const abz = b[2] - a[2];
+    const lengthSq = abx * abx + aby * aby + abz * abz;
+    const t = lengthSq > 0 ? Math.min(1, Math.max(0, ((x - a[0]) * abx + (y - a[1]) * aby + (z - a[2]) * abz) / lengthSq)) : 0;
+    return Math.hypot(x - a[0] - t * abx, y - a[1] - t * aby, z - a[2] - t * abz);
+  }
+
+  // A style's region (of side, y, z) with the painted strokes over it, as a
+  // function of x, y, z: each stroke covers the skin within its radius of
+  // the line the finger drew, soft over the outer 40%.
+  function paintedRegion(region, strokes) {
+    const painted = strokes.map((stroke) => {
+      const r = stroke.radius;
+      const lo = [0, 1, 2].map((k) => Math.min(...stroke.points.map((p) => p[k])) - r);
+      const hi = [0, 1, 2].map((k) => Math.max(...stroke.points.map((p) => p[k])) + r);
+      return { stroke, lo, hi };
+    });
+    return (x, y, z) => {
+      let value = region(Math.abs(x), y, z);
+      for (const { stroke, lo, hi } of painted) {
+        if (x < lo[0] || y < lo[1] || z < lo[2] || x > hi[0] || y > hi[1] || z > hi[2]) continue;
+        const points = stroke.points;
+        let distance = distanceToSegment(points[0], points[0], x, y, z);
+        for (let i = 1; i < points.length; i++) distance = Math.min(distance, distanceToSegment(points[i - 1], points[i], x, y, z));
+        const cover = 1 - smoothstep(0.6 * stroke.radius, stroke.radius, distance);
+        value = stroke.tool === 'beard' ? Math.max(value, cover) : value * (1 - cover);
+      }
+      return value;
+    };
+  }
   const BROWS = { none: 0, thin: 0.65, natural: 1, thick: 1.35 };
 
   // How much brow grows at a skin point, 0..1: an arch over each eye,
@@ -187,26 +230,60 @@
       this.mesh.frustumCulled = false;
       bodyGroup.add(this.mesh);
       this.key = '';
+
+      // The face alone, for picking where a brush touches it, in 3 cm
+      // chunks: a ray tests only the triangles of chunks whose bounding
+      // spheres it passes through (against the whole face, a pick took
+      // about 3 ms on the phone, and a frame can resolve four).
+      const index = headGeometry.index;
+      const position = headGeometry.attributes.position;
+      const chunks = new Map();
+      for (let t = 0; t < index.count; t += 3) {
+        const ids = [index.getX(t), index.getX(t + 1), index.getX(t + 2)];
+        const centre = [0, 1, 2].map((k) => ids.reduce((sum, id) => sum + position.getComponent(id, k), 0) / 3);
+        if (!onFace(...centre)) continue;
+        const cell = centre.map((v) => Math.floor(v / 0.3)).join();
+        if (!chunks.has(cell)) chunks.set(cell, []);
+        chunks.get(cell).push(...ids);
+      }
+      const material = new THREE.MeshBasicMaterial();
+      this.pickMeshes = [...chunks.values()].map((indices) => {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', position);
+        geometry.setIndex(indices);
+        // Of the chunk's own vertices (computeBoundingSphere takes all of
+        // the shared position buffer's).
+        geometry.boundingSphere = new THREE.Sphere().setFromPoints(indices.map((id) => new THREE.Vector3().fromBufferAttribute(position, id)));
+        return new THREE.Mesh(geometry, material);
+      });
+      this.raycaster = new THREE.Raycaster();
     }
 
-    // Regrows the facial hair for design.facial, if it changed. curliness:
-    // the hair type's, 0..1 (a curly head of hair grows a curly beard).
-    update(facial, curliness) {
-      const key = JSON.stringify([facial, curliness]);
-      if (key === this.key) return;
-      this.key = key;
-      const beard = BEARDS[facial.beard] || null;
-      const length = facial.beardLength * 0.01; // mm to scene units
-      const density = facial.beardDensity;
-      const brows = (BROWS[facial.brows] ?? BROWS.natural) * facial.browThickness;
-      const beardAt = (x, y, z) => (beard ? beard.region(Math.abs(x), y, z) : 0);
+    // The point on the face (body space) a ray (body space) first meets, or null.
+    pick(origin, direction) {
+      this.raycaster.set(origin, direction);
+      const hit = this.raycaster.intersectObjects(this.pickMeshes, false)[0];
+      return hit ? hit.point : null;
+    }
 
+    // The skin's shade only, while a brush is down (regrowing the hairs on
+    // every move would lag the finger); update regrows them after, or a
+    // preview of the strokes before puts the shade back.
+    preview(facial, strokes) {
+      this.shadeSkin(this.beardAt(facial, strokes), facial);
+    }
+
+    beardAt(facial, strokes) {
+      const beard = BEARDS[facial.beard] || (strokes.length > 0 ? PAINTED_ONLY : null);
+      return beard ? paintedRegion(beard.region, strokes) : () => 0;
+    }
+
+    // Stubble, or the roots' shade under longer hair, and under the brows.
+    shadeSkin(beardAt, facial) {
       const position = this.headGeometry.attributes.position;
-      const normal = this.headGeometry.attributes.normal;
-      const index = this.headGeometry.index;
-
-      // The skin: stubble, or the roots' shade under longer hair.
-      const cover = density * (0.35 + 0.45 * smoothstep(0, 0.02, length));
+      const length = facial.beardLength * 0.01;
+      const brows = (BROWS[facial.brows] ?? BROWS.natural) * facial.browThickness;
+      const cover = facial.beardDensity * (0.35 + 0.45 * smoothstep(0, 0.02, length));
       for (let i = 0; i < position.count; i++) {
         const x = position.getX(i);
         const y = position.getY(i);
@@ -214,6 +291,25 @@
         this.stubble.array[i] = Math.max(cover * beardAt(x, y, z), 0.6 * browRegion(brows, x, y, z));
       }
       this.stubble.needsUpdate = true;
+    }
+
+    // Regrows the facial hair for design.facial and the painted strokes
+    // (tool 'beard' or 'shave'), if they changed. curliness: the hair
+    // type's, 0..1 (a curly head of hair grows a curly beard).
+    update(facial, curliness, strokes) {
+      const key = JSON.stringify([facial, curliness, strokes]);
+      if (key === this.key) return;
+      this.key = key;
+      const beard = BEARDS[facial.beard] || (strokes.length > 0 ? PAINTED_ONLY : null);
+      const length = facial.beardLength * 0.01; // mm to scene units
+      const density = facial.beardDensity;
+      const brows = (BROWS[facial.brows] ?? BROWS.natural) * facial.browThickness;
+      const beardAt = this.beardAt(facial, strokes);
+
+      const position = this.headGeometry.attributes.position;
+      const normal = this.headGeometry.attributes.normal;
+      const index = this.headGeometry.index;
+      this.shadeSkin(beardAt, facial);
 
       const rng = random(97531);
       const strands = [];
@@ -236,7 +332,7 @@
         a.fromBufferAttribute(position, index.getX(t));
         b.fromBufferAttribute(position, index.getX(t + 1));
         c.fromBufferAttribute(position, index.getX(t + 2));
-        if ((a.y + b.y + c.y) / 3 > 0.35 || (a.z + b.z + c.z) / 3 < -0.1) continue; // nowhere near the face
+        if (!onFace((a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3, (a.z + b.z + c.z) / 3)) continue;
         // The most this triangle grows anywhere on it; each hair then keeps
         // to the region where it falls, so edges follow the region, not the
         // mesh's triangles.
@@ -443,5 +539,6 @@
     return points;
   }
 
+  FacialHair.TOOLS = TOOLS;
   window.FacialHair = FacialHair;
 })();

@@ -562,7 +562,8 @@ class HairStroke {
 
   /// 'clipper' | 'razor' | 'dye' | 'curl' | 'volume' | 'thin' |
   /// 'scissors' (the Length brush: paints a set length) | 'cut' (the
-  /// physics scissors).
+  /// physics scissors) | 'beard' (grows beard: painted on the face, not
+  /// the scalp).
   final String tool;
 
   /// Clipper guard, 0 (skin) .. 8 — the real guard lengths live in
@@ -584,11 +585,12 @@ class HairStroke {
   /// The mirror image of the stroke before it (undo/redo take both).
   final bool mirrored;
 
-  /// Brush radius in UV space (0..1).
+  /// Brush radius in UV space (0..1); for face strokes, in scene units.
   final double radius;
 
   /// [[u, v], ...] sampled along the drag gesture — or for 'cut',
-  /// [[u, v, length], ...]: each strand the scissors cut, at its new length.
+  /// [[u, v, length], ...]: each strand the scissors cut, at its new length;
+  /// for face strokes, [[x, y, z], ...] on the skin (see facial_hair.js).
   final List<List<double>> points;
 
   Map<String, dynamic> toJson() {

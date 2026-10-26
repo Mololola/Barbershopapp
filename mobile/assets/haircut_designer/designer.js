@@ -23,6 +23,9 @@
 // undo and redo take the pair together.
 //   cut               { tool, radius, points: [[u, v, length], ...] } one
 //                     point per strand the scissors cut, at its new length
+// and, on the face rather than the scalp (see facial_hair.js):
+//   beard / shave     { tool, radius, points: [[x, y, z], ...] } grow or
+//                     shave beard; body space, radius in scene units
 //
 // Bridge (called from Flutter via runJavaScript):
 //   loadDesign(json)          the whole design (also converts v1-v3)
@@ -43,7 +46,8 @@
 //   enableProfiling()         debug/profile builds: logs where frame time
 //                             goes to the console (see `perf` below)
 // Whenever the strokes change, { strokes, redo } (counts) is posted on
-// "EditChannel", so Flutter knows whether switching cut would throw work
+// "EditChannel", with scalpStrokes (those a cut change throws away: face
+// strokes stay), so Flutter knows whether switching cut would throw work
 // away and whether there's anything to redo.
 
 (function () {
@@ -320,8 +324,14 @@
   let redoStack = [];
 
   function editsChanged() {
-    window.EditChannel?.postMessage(JSON.stringify({ strokes: design.strokes.length, redo: redoStack.length }));
+    window.EditChannel?.postMessage(JSON.stringify({
+      strokes: design.strokes.length,
+      scalpStrokes: design.strokes.filter((s) => !isFaceStroke(s)).length,
+      redo: redoStack.length,
+    }));
   }
+
+  const isFaceStroke = (stroke) => FacialHair.TOOLS.includes(stroke.tool);
 
   function addStrokes(...strokes) {
     design.strokes.push(...strokes);
@@ -385,7 +395,7 @@
 
   function applyLook() {
     engine.setColor(design.colorHex, design.colour);
-    facialHair.update(design.facial, G.hairTypeOf(design.hairType).curliness);
+    facialHair.update(design.facial, G.hairTypeOf(design.hairType).curliness, design.strokes.filter(isFaceStroke));
     engine.setHairType(design.hairType);
     engine.setLayers(Math.round(Math.min(8, Math.max(1, design.volume * 5))));
     skinTone.set(design.faceParams.skinTone);
@@ -398,25 +408,34 @@
   const pointerNDC = new THREE.Vector2();
   const bodyInverse = new THREE.Matrix4();
 
-  // Scalp UV under a screen point, or null off the scalp.
-  function raycastToUV(clientX, clientY) {
+  // Where a stroke's point is under a screen point: scalp UV, or for a face
+  // tool the point on the face ([x, y, z], body space); null off it.
+  function pickPoint(tool, clientX, clientY) {
     pointerNDC.x = (clientX / window.innerWidth) * 2 - 1;
     pointerNDC.y = -(clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(pointerNDC, camera);
     bodyInverse.copy(bodyGroup.matrix).invert();
     const ray = raycaster.ray.applyMatrix4(bodyInverse);
-    return G.pickScalp(ray.origin, ray.direction.normalize());
+    ray.direction.normalize();
+    if (!isFaceStroke({ tool })) return G.pickScalp(ray.origin, ray.direction);
+    const point = facialHair.pick(ray.origin, ray.direction);
+    return point ? [point.x, point.y, point.z] : null;
   }
 
   // The same point on the other side of the head (x mirrored).
-  function mirrored([u, v]) {
-    return [(1.5 - u) % 1, v];
+  function mirrored(point) {
+    return point.length === 3 ? [-point[0], point[1], point[2]] : [(1.5 - point[0]) % 1, point[1]];
   }
 
+  // Scene units round the head at brow height: a face brush is as wide as
+  // a scalp brush of the same size (whose radius is a share of the way round).
+  const HEAD_ROUND = 5.7;
+
   function startBrush(clientX, clientY) {
-    const uv = raycastToUV(clientX, clientY);
-    if (!uv) return;
-    const stroke = { tool: toolConfig.tool, radius: toolConfig.radius ?? 0.03, points: [] };
+    const point = pickPoint(toolConfig.tool, clientX, clientY);
+    if (!point) return;
+    const radius = toolConfig.radius ?? 0.03;
+    const stroke = { tool: toolConfig.tool, radius: isFaceStroke(toolConfig) ? radius * HEAD_ROUND : radius, points: [] };
     if (toolConfig.tool === 'clipper') stroke.guard = toolConfig.guard ?? 2;
     if (toolConfig.tool === 'razor') stroke.guard = 0;
     if (toolConfig.tool === 'dye') stroke.colorHex = toolConfig.colorHex || '#000000';
@@ -426,7 +445,7 @@
     activeStroke = stroke;
     activeMirror = toolConfig.mirror ? { ...stroke, points: [], mirrored: true } : null;
     activeRasterized = 0;
-    pendingPoints = [uv];
+    pendingPoints = [point];
     pendingScreenPoints = [];
   }
 
@@ -441,11 +460,17 @@
     const count = Math.min(4, screen.length);
     for (let i = 1; i <= count; i++) {
       const point = screen[Math.round((i / count) * (screen.length - 1))];
-      const uv = raycastToUV(point.x, point.y);
-      if (uv) pendingPoints.push(uv);
+      const picked = pickPoint(activeStroke.tool, point.x, point.y);
+      if (picked) pendingPoints.push(picked);
     }
     if (pendingPoints.length === 0) return;
     activeStroke.points.push(...pendingPoints);
+    if (isFaceStroke(activeStroke)) {
+      if (activeMirror) activeMirror.points.push(...pendingPoints.map(mirrored));
+      pendingPoints = [];
+      previewFace([activeStroke, activeMirror]);
+      return;
+    }
     G.paintStroke(fields, activeStroke, activeRasterized);
     if (activeMirror) {
       activeMirror.points.push(...pendingPoints.map(mirrored));
@@ -497,9 +522,19 @@
     timed('endStroke', endBrushNow);
   }
 
+  // The skin's shade with the face strokes so far and these (null: none).
+  function previewFace(active) {
+    facialHair.preview(design.facial, [...design.strokes.filter(isFaceStroke), ...active.filter(Boolean)]);
+    requestRender();
+  }
+
   function endBrushNow() {
     flushBrush();
-    if (activeStroke && activeStroke.points.length > 0) {
+    if (activeStroke && activeStroke.points.length > 0 && isFaceStroke(activeStroke)) {
+      addStrokes(activeStroke, ...(activeMirror ? [activeMirror] : []));
+      applyLook(); // regrows the beard
+      editsChanged();
+    } else if (activeStroke && activeStroke.points.length > 0) {
       addStrokes(activeStroke, ...(activeMirror ? [activeMirror] : []));
       // A hair type changes how the hair is laid out: the groom rebuilds.
       // Volume reshapes just the guides it touches; thinning
@@ -611,7 +646,7 @@
   let lastMoveTime = 0;
 
   function isBrush(tool) {
-    return ['clipper', 'razor', 'dye', 'curl', 'volume', 'thin', 'scissors'].includes(tool);
+    return ['clipper', 'razor', 'dye', 'curl', 'volume', 'thin', 'scissors', ...FacialHair.TOOLS].includes(tool);
   }
 
   function setupControls() {
@@ -629,7 +664,10 @@
 
       if (pointers.size === 2) {
         // The first finger was the start of a pinch, not a stroke.
-        if (activeStroke && isBrush(activeStroke.tool)) {
+        if (activeStroke && isFaceStroke(activeStroke)) {
+          activeStroke = activeMirror = null;
+          previewFace([]);
+        } else if (activeStroke && isBrush(activeStroke.tool)) {
           activeStroke = activeMirror = null;
           G.repaint(fields, design.strokes);
           engine.masksChanged();
@@ -956,7 +994,7 @@
   window.setPreset = function (id) {
     if (!G.PRESETS[id]) return;
     perfEvent(`preset ${id}`);
-    design = { ...design, preset: id, ...G.presetDefaults(id), strokes: [] };
+    design = { ...design, preset: id, ...G.presetDefaults(id), strokes: design.strokes.filter(isFaceStroke) };
     redoStack = [];
     rebuild();
     editsChanged();
@@ -1012,18 +1050,25 @@
     return last.mirrored && from.length > 0 ? [from.pop(), last] : [last];
   }
 
+  // After an undo or redo: a face edit only regrows the beard.
+  function strokesChanged(edit) {
+    if (edit.every(isFaceStroke)) applyLook();
+    else rebuild();
+    editsChanged();
+  }
+
   window.undoLastStroke = function () {
     if (design.strokes.length === 0) return;
-    redoStack.push(...takeLastEdit(design.strokes));
-    rebuild();
-    editsChanged();
+    const edit = takeLastEdit(design.strokes);
+    redoStack.push(...edit);
+    strokesChanged(edit);
   };
 
   window.redoStroke = function () {
     if (redoStack.length === 0) return;
-    design.strokes.push(...takeLastEdit(redoStack));
-    rebuild();
-    editsChanged();
+    const edit = takeLastEdit(redoStack);
+    design.strokes.push(...edit);
+    strokesChanged(edit);
   };
 
   window.clearStrokes = function () {
