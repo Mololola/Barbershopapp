@@ -510,7 +510,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     return [
       const Divider(),
       choices('Hairline', hairlineShapes, edges.shape, (id) => update(edges.copyWith(shape: id))),
-      if (edges.shape == 'receding')
+      if (edges.shape == 'receding') ...[
         _LabeledSlider(
           label: 'Recession',
           valueLabel: _norwoodLabel(edges.recession),
@@ -519,6 +519,15 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
           max: 1,
           onChanged: (v) => update(edges.copyWith(recession: v)),
         ),
+        _LabeledSlider(
+          label: 'Temple spacing',
+          valueLabel: edges.templeSpacing < -0.33 ? 'Closer' : (edges.templeSpacing > 0.33 ? 'Wider' : 'Natural'),
+          value: edges.templeSpacing,
+          min: -1,
+          max: 1,
+          onChanged: (v) => update(edges.copyWith(templeSpacing: v)),
+        ),
+      ],
       _LabeledSlider(
         label: 'Hairline height',
         valueLabel: edges.height < 0.35 ? 'Low' : (edges.height < 0.65 ? 'Natural' : 'High'),

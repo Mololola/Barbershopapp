@@ -354,6 +354,8 @@
   //              'widowsPeak' | 'receding' (temples set back, an M)
   //   recession  for 'receding': 0 (Norwood 1, none) .. 0.5 (2, slight)
   //              .. 1 (3, deep temples, the forelock kept)
+  //   templeSpacing  for 'receding': -1 (inlets closer together) .. 1
+  //              (further apart), about 2 cm each side
   //   height     0 (low on the forehead) .. 1 (high)
   //   lineUp     a sharp, razor-edged line, rather than natural, soft edges
   //              with fine baby hairs
@@ -362,7 +364,7 @@
   //              'block' (squared off) | 'v' (a point at the middle)
   //   neckHeight 0 (low down the neck) .. 1 (high)
   const BABY_HAIR_LENGTH = 0.12; // scene units: 1.2 cm
-  const DEFAULT_EDGES = { shape: 'rounded', height: 0.5, recession: 1, lineUp: false, sideburns: 'medium', neckline: 'natural', neckHeight: 0.5 };
+  const DEFAULT_EDGES = { shape: 'rounded', height: 0.5, recession: 1, templeSpacing: 0, lineUp: false, sideburns: 'medium', neckline: 'natural', neckHeight: 0.5 };
 
   function edgesOf(params) {
     return { ...DEFAULT_EDGES, ...(params.hairline || {}) };
@@ -376,7 +378,7 @@
   function recessionAt(edges, delta) {
     if (edges.shape !== 'receding') return 0;
     const r = edges.recession;
-    const offset = delta - (40 - 4 * r) * deg;
+    const offset = delta - (45 + 10 * edges.templeSpacing) * deg;
     return r * Math.exp(-Math.abs(offset) / (offset < 0 ? (9 + 6 * r) * deg : 6 * deg));
   }
 
@@ -442,7 +444,8 @@
     const lowerAt = lowerLine(edges, delta);
     const soft = edges.neckline === 'tapered' ? 0.22 : 0.12;
     const lower = 1 - smoothstep(lowerAt - (sharp || soft), lowerAt + (sharp || 0.04), polar);
-    const grows = Math.max(vertical, horizontal) * lower;
+    // The sides' hair stops short of a receded temple's inlet.
+    const grows = Math.max(vertical, horizontal * (1 - thinning)) * lower;
     if (edges.lineUp) return grows;
     // Baby hairs just past the front line, and past the lower line round
     // the sides and back only: across the face polar never reaches the

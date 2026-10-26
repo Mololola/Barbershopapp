@@ -201,6 +201,7 @@ class HairlineParameters {
     this.shape = 'rounded',
     this.height = 0.5,
     this.recession = 1,
+    this.templeSpacing = 0,
     this.lineUp = false,
     this.sideburns = 'medium',
     this.neckline = 'natural',
@@ -216,6 +217,10 @@ class HairlineParameters {
   /// How far a 'receding' hairline has receded on the Norwood scale:
   /// 0 (Norwood 1, none) .. 0.5 (2, slight) .. 1 (3, deep temples).
   final double recession;
+
+  /// Where a 'receding' hairline's temple inlets sit: -1 (closer together)
+  /// .. 1 (further apart), about 2 cm each side.
+  final double templeSpacing;
 
   /// A sharp, razor-edged line-up, rather than soft, natural edges.
   final bool lineUp;
@@ -233,6 +238,7 @@ class HairlineParameters {
     String? shape,
     double? height,
     double? recession,
+    double? templeSpacing,
     bool? lineUp,
     String? sideburns,
     String? neckline,
@@ -242,6 +248,7 @@ class HairlineParameters {
         shape: shape ?? this.shape,
         height: height ?? this.height,
         recession: recession ?? this.recession,
+        templeSpacing: templeSpacing ?? this.templeSpacing,
         lineUp: lineUp ?? this.lineUp,
         sideburns: sideburns ?? this.sideburns,
         neckline: neckline ?? this.neckline,
@@ -252,6 +259,7 @@ class HairlineParameters {
         'shape': shape,
         'height': height,
         'recession': recession,
+        'templeSpacing': templeSpacing,
         'lineUp': lineUp,
         'sideburns': sideburns,
         'neckline': neckline,
@@ -262,6 +270,7 @@ class HairlineParameters {
         shape: json['shape'] as String? ?? 'rounded',
         height: (json['height'] as num?)?.toDouble() ?? 0.5,
         recession: (json['recession'] as num?)?.toDouble() ?? 1,
+        templeSpacing: (json['templeSpacing'] as num?)?.toDouble() ?? 0,
         lineUp: json['lineUp'] as bool? ?? false,
         sideburns: json['sideburns'] as String? ?? 'medium',
         neckline: json['neckline'] as String? ?? 'natural',

@@ -102,9 +102,11 @@ void main() {
   });
 
   test('hairline recession round-trips; older receding designs stay at Norwood 3', () {
-    const original = HairParameters(hairline: HairlineParameters(shape: 'receding', recession: 0.4));
+    const original = HairParameters(hairline: HairlineParameters(shape: 'receding', recession: 0.4, templeSpacing: -0.5));
 
-    expect(HairParameters.fromJson(original.toJson()).hairline.recession, 0.4);
+    final restored = HairParameters.fromJson(original.toJson()).hairline;
+    expect(restored.recession, 0.4);
+    expect(restored.templeSpacing, -0.5);
     expect(HairlineParameters.fromJson({'shape': 'receding'}).recession, 1);
   });
 
