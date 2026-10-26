@@ -224,6 +224,12 @@
       const root = new THREE.Vector3();
       const n = new THREE.Vector3();
       const growBeard = beard && length >= STRAND_MIN;
+      // The beard's outline in profile, as a barber trims it: free at the
+      // front of the chin, then rising from just below it back to the neck
+      // (left to hang, hair under the jaw drew a curtain below the ear,
+      // lower at the back than at the chin).
+      const chinZ = 1.1;
+      const floor = (z) => (z >= chinZ ? -Infinity : -1.28 - 0.95 * length + (chinZ - z) * (0.25 + 0.7 * length));
       for (let t = 0; t < index.count; t += 3) {
         a.fromBufferAttribute(position, index.getX(t));
         b.fromBufferAttribute(position, index.getX(t + 1));
@@ -262,7 +268,7 @@
           if (beardHere > 0 && keep * beardMost < beardHere) {
             const side = Math.abs(root.x);
             const shape = beard.shape ? beard.shape(side, root.y, length) : 1;
-            strands.push(growBeardHair(root, n, length * shape * (0.85 + 0.25 * rng()), curliness, beard.spread || 0, rng));
+            strands.push(trimHair(growBeardHair(root, n, length * shape * (0.85 + 0.25 * rng()), curliness, beard.spread || 0, rng), floor));
           } else if (beardHere <= 0 && keep * browMost < browRegion(brows, root.x, root.y, root.z)) {
             strands.push(growBrowHair(root, n, 0.06 * (0.7 + 0.6 * rng()), rng));
           }
@@ -381,6 +387,34 @@
       points.push(p.clone());
     }
     return points;
+  }
+
+  // A hair cut where it first passes below floor(z), its points spread
+  // evenly along what's left. Hair rooted below the outline (the neckline)
+  // keeps a fifth of its length, lying along the neck.
+  function trimHair(points, floor) {
+    const lengths = [0];
+    for (let i = 1; i < points.length; i++) lengths.push(lengths[i - 1] + points[i].distanceTo(points[i - 1]));
+    const total = lengths[lengths.length - 1];
+    let keep = total;
+    for (let i = 1; i < points.length; i++) {
+      const below = floor(points[i].z) - points[i].y;
+      if (below > 0) {
+        const above = Math.max(0, points[i - 1].y - floor(points[i - 1].z));
+        keep = lengths[i - 1] + ((lengths[i] - lengths[i - 1]) * above) / (above + below);
+        break;
+      }
+    }
+    keep = Math.max(keep, 0.2 * total);
+    if (keep >= total) return points;
+    const trimmed = [];
+    let j = 0;
+    for (let k = 0; k < points.length; k++) {
+      const d = (keep * k) / (points.length - 1);
+      while (lengths[j + 1] < d) j++;
+      trimmed.push(points[j].clone().lerp(points[j + 1], (d - lengths[j]) / (lengths[j + 1] - lengths[j] || 1)));
+    }
+    return trimmed;
   }
 
   // One brow hair: lying flat along the skin toward the temple, rising
