@@ -80,6 +80,53 @@
   }
 
   const scalpInfo = asset.scalpMap;
+
+  // The body below the jaw as the bust mesh has it, on a 1 cm grid: its
+  // back and front surfaces (z) over x, y, and its top (y) over x, z. The
+  // neck cylinder and shoulder shapes miss the base of the neck behind (up
+  // to 3.5 cm inside the skin there), where long hair sank in and came out
+  // again lower down the back.
+  const bodySlab = (() => {
+    const mesh = asset.mesh;
+    const positions = decodeBase64(mesh.positions, Int16Array);
+    const indices = decodeBase64(mesh.indices, Uint16Array);
+    const at = (i, c) => (positions[i * 3 + c] + 32768) * mesh.positionScale[c] + mesh.positionLow[c];
+    const slab = { cell: 0.1, x0: -2.6, y0: -3.0, z0: -1.6, nx: 52, ny: 16, nz: 32, top: -1.45 };
+    const back = new Float32Array(slab.nx * slab.ny).fill(Infinity);
+    const front = new Float32Array(slab.nx * slab.ny).fill(-Infinity);
+    const height = new Float32Array(slab.nx * slab.nz).fill(-Infinity);
+    const SAMPLES = 6; // per triangle edge: the torso's triangles are 2-3 cm
+    for (let t = 0; t < indices.length; t += 3) {
+      const a = indices[t];
+      const b = indices[t + 1];
+      const c = indices[t + 2];
+      for (let i = 0; i <= SAMPLES; i++) {
+        for (let j = 0; i + j <= SAMPLES; j++) {
+          const wa = i / SAMPLES;
+          const wb = j / SAMPLES;
+          const wc = 1 - wa - wb;
+          const x = wa * at(a, 0) + wb * at(b, 0) + wc * at(c, 0);
+          const y = wa * at(a, 1) + wb * at(b, 1) + wc * at(c, 1);
+          const z = wa * at(a, 2) + wb * at(b, 2) + wc * at(c, 2);
+          if (y > slab.top) continue;
+          const ix = Math.floor((x - slab.x0) / slab.cell);
+          const iy = Math.floor((y - slab.y0) / slab.cell);
+          const iz = Math.floor((z - slab.z0) / slab.cell);
+          if (ix < 0 || ix >= slab.nx) continue;
+          if (iy >= 0 && iy < slab.ny) {
+            const k = iy * slab.nx + ix;
+            back[k] = Math.min(back[k], z);
+            front[k] = Math.max(front[k], z);
+          }
+          if (iz >= 0 && iz < slab.nz) {
+            const k = iz * slab.nx + ix;
+            height[k] = Math.max(height[k], y);
+          }
+        }
+      }
+    }
+    return { ...slab, back, front, height };
+  })();
   const scalpData = decodeBase64(scalpInfo.data, Float32Array);
   const MAX_POLAR = scalpInfo.maxPolar;
   const collision = asset.collision;
@@ -180,6 +227,28 @@
     }
     pushOutOfEllipsoid(p, collision.shoulders.center, collision.shoulders.radii, 1 + margin);
     for (const capsule of shoulderCapsules) pushOutOfCapsule(p, capsule, margin);
+    pushOutOfBody(p, margin);
+  }
+
+  // Out of bodySlab, by the shortest way: back, front or up.
+  function pushOutOfBody(p, margin) {
+    const s = bodySlab;
+    if (p.y > s.top) return;
+    const ix = Math.floor((p.x - s.x0) / s.cell);
+    const iy = Math.floor((p.y - s.y0) / s.cell);
+    if (ix < 0 || ix >= s.nx || iy < 0 || iy >= s.ny) return;
+    const k = iy * s.nx + ix;
+    const back = s.back[k] - margin;
+    const front = s.front[k] + margin;
+    if (!(p.z > back && p.z < front)) return;
+    const iz = Math.floor((p.z - s.z0) / s.cell);
+    const top = iz >= 0 && iz < s.nz ? s.height[iz * s.nx + ix] + margin : Infinity;
+    const up = top - p.y;
+    const toBack = p.z - back;
+    const toFront = front - p.z;
+    if (up > 0 && up < toBack && up < toFront) p.y = top;
+    else if (toBack < toFront) p.z = back;
+    else p.z = front;
   }
 
   function pushOutOfCapsule(p, { a, b, radius }, margin) {
@@ -1443,6 +1512,7 @@
     uvOf,
     pickScalp,
     shoulderCapsules,
+    bodySlab,
     decodeBase64,
   };
 })();

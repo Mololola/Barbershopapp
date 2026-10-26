@@ -70,6 +70,7 @@ function hairSimulator(post) {
   let neck = null;
   let shoulders = null;
   let shoulderCapsules = [];
+  let bodySlab = null;
   let lift = 0;
 
   // The skin's radius (in cranium units) by direction, as a cube map: a
@@ -184,6 +185,7 @@ function hairSimulator(post) {
     face = ellipsoid(c.collision.face);
     shoulders = ellipsoid(c.collision.shoulders);
     shoulderCapsules = c.collision.shoulderCapsules;
+    bodySlab = c.collision.body;
     neck = { cx: c.collision.neck.center[0], cy: c.collision.neck.center[1], cz: c.collision.neck.center[2], r: c.collision.neck.radius };
     lift = c.lift;
     buildCube(c.skin, c.maxPolar);
@@ -222,6 +224,28 @@ function hairSimulator(post) {
     }
     pushOutOfEllipsoid(shoulders, 1 + margin);
     for (let i = 0; i < shoulderCapsules.length; i++) pushOutOfCapsule(shoulderCapsules[i], margin);
+    pushOutOfBody(margin);
+  }
+
+  // groom.js's pushOutOfBody, on (ox, oy, oz).
+  function pushOutOfBody(margin) {
+    const s = bodySlab;
+    if (oy > s.top) return;
+    const ix = Math.floor((ox - s.x0) / s.cell);
+    const iy = Math.floor((oy - s.y0) / s.cell);
+    if (ix < 0 || ix >= s.nx || iy < 0 || iy >= s.ny) return;
+    const k = iy * s.nx + ix;
+    const back = s.back[k] - margin;
+    const front = s.front[k] + margin;
+    if (!(oz > back && oz < front)) return;
+    const iz = Math.floor((oz - s.z0) / s.cell);
+    const top = iz >= 0 && iz < s.nz ? s.height[iz * s.nx + ix] + margin : Infinity;
+    const up = top - oy;
+    const toBack = oz - back;
+    const toFront = front - oz;
+    if (up > 0 && up < toBack && up < toFront) oy = top;
+    else if (toBack < toFront) oz = back;
+    else oz = front;
   }
 
   // groom.js's pushOutOfCapsule, on (ox, oy, oz).
