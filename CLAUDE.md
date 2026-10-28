@@ -2,7 +2,7 @@
 
 Two-sided marketplace: customers book barbershop appointments, shops manage bookings/staff/services. Full product vision lives in [`docs/product-spec.docx`](docs/product-spec.docx); the derived technical plan is in [`docs/architecture.md`](docs/architecture.md) — read that first for the client/backend split, the booking-concurrency design, and the Phase 1 vs Phase 2+ roadmap.
 
-**Currently in Phase 1 (MVP)**: auth, business/customer profiles, service catalog, booking engine, reviews, basic post feed. Everything else in the spec (rankings, referral payouts, business finance ML tool, 3D haircut designer, chat) is intentionally deferred — don't build toward those yet without an explicit go-ahead.
+**Currently preparing for launch** (UK and Spain, Android and iOS together; work on the `launch-prep` branch, taken from master). Built: auth, profiles, services, booking engine, reviews, feed, messages, rankings, review and referral rewards with payouts, shop subscriptions and Finance Premium (Stripe), and the 3D haircut designer, which is **paused and hidden** (`designerEnabled = false` in `mobile/lib/core/router.dart`; don't work on it or turn it on unless the user asks). Paid services (Supabase/Render plans, Stripe live, Apple, domains) are switched on last, each with the user's OK.
 
 ## Stack
 
@@ -85,35 +85,15 @@ You are the lead engineer for the 3D haircut designer inside the barbershop app 
      - tune our parameters until our numbers are within 10% of those.
 
 ### Current state (verify it first, do not assume)
-- **Branch:** `haircut-designer-v3`, with master merged in (local commit `3de7f97`, NOT pushed). The live app still has the older designer. Do not push or merge to master unless the user says so.
-- **Analyzer clean, 178 tests passing, designer JS passes a syntax check.** Every patch must keep all three true.
-- **Already approved by the user:** physics smooth on the A33 (45–53 fps, a cut change settles in a fraction of a second), plain mannequin head, hair types 1A–4C, Barber detail section, brushes, mirror, undo/redo.
-- **26 cuts** in Short / Medium / Long. **The 10 newest were never checked visually:** French Crop, Caesar, Side Part, Slicked Side Part, Wavy Air-Dry, Shag, Wavy Long Layers, Long Slicked Back, Man Bun, Low Ponytail.
+- **Paused since 28 Oct 2026 and hidden** (`designerEnabled = false`), merged into master at `60dbaee`. Resume only when the user asks; `HANDOFF.md` has the full state.
+- **Every patch must keep** the analyzer clean, all tests passing, and the designer JS passing `node --check`.
+- **Done and confirmed on the A33:** physics (45–53 fps), mannequin head, hair types 1A–4C, Barber detail, brushes, mirror, undo/redo, 26 cuts (all checked), colour tools (ombré, highlights, balayage, shine angle), long hair on the shoulders, the afro hairline, the receding hairline, beard and brow presets with a profile trim.
+- **Item 5 left unfinished:** the Grow beard brush and its length slider exist; the Shave brush and brow painting don't.
 - **Flow:** Designs tab (My Designs, Browse) → Editor (3D head + tabs: Cut, Shape with Barber detail, Tools, Colour, Motion) → Save (name, public or private, thumbnail). Free limit 3 designs, +2 slots for £2. Browse lets people view public designs and Fork them.
-- **Known open issues:**
-  - long hair splays sideways on the shoulders;
-  - the hairline edge is slightly jagged on afros;
-  - the receding hairline is ON HOLD until the user sends a drawing or photo. Do not start it before that.
 - **Purpose:** a personal library of several saved designs that the customer shows on their phone when they get to the shop. Designs are deliberately **not** attached to bookings or sent in messages. The user decided against that feature, so don't propose or build it.
-- **Missing:**
-  - no delete or rename, even though the "limit reached" message tells people to delete one;
-  - the Designs screens have the old generic look;
-  - Browse has no search or filters;
-  - no colour tools, no AI photoreal image, no "Describe your cut";
-  - no beards or brows, no braids or locs;
-  - the technical doc is out of date.
+- **Speed:** about 30 ms GPU per frame at full quality against a 22 ms budget; the user has their own solution in mind, so don't start it unasked.
 
-### Work order (the order the user agreed; follow it, and tell them before changing it)
-1. Verify the 10 new cuts visually, with the acceptance checks below.
-2. **Colour tools:**
-   - ombré (root and end colour, with a root map);
-   - highlights/balayage (two highlight colours, with an ID map);
-   - anisotropic specular with a flow-direction control.
-3. Long hair on the shoulders, and the jagged afro hairline.
-4. Receding hairline, only after the user provides a drawing or photo.
-5. Beards and brows (procedural growth from painted regions, using the formulas above).
-
-Then, once these are done, propose in this order:
+### When work resumes, propose in this order
 1. delete/rename designs;
 2. Browse search/filters;
 3. Designs screen restyle;
