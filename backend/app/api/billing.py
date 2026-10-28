@@ -32,6 +32,38 @@ _FINANCE_PRODUCT = "finance_premium"
 # Per the spec, a referrer earns 5% of what the shop they signed up pays.
 _REFERRAL_SHARE = 0.05
 
+# Loyalty: every 2 months paid on the same subscription, the following
+# months cost less. The shop subscription 5 less each time, at most 100 off
+# and never below 100 (a shop paying 100 or less gets no discount); Finance
+# Premium 1 less, at most 5 off. In the shop's own currency.
+_LOYALTY_MONTHS_PER_STEP = 2
+_SHOP_LOYALTY_STEP_CENTS = 500
+_SHOP_LOYALTY_MAX_CENTS = 10000
+_SHOP_LOYALTY_FLOOR_CENTS = 10000
+_FINANCE_LOYALTY_STEP_CENTS = 100
+_FINANCE_LOYALTY_MAX_CENTS = 500
+
+
+def shop_monthly_cents(full_price_cents: int, paid_months: int) -> int:
+    discount = min(_SHOP_LOYALTY_MAX_CENTS, _SHOP_LOYALTY_STEP_CENTS * (paid_months // _LOYALTY_MONTHS_PER_STEP))
+    return max(min(full_price_cents, _SHOP_LOYALTY_FLOOR_CENTS), full_price_cents - discount)
+
+
+def finance_monthly_cents(paid_months: int) -> int:
+    discount = min(_FINANCE_LOYALTY_MAX_CENTS, _FINANCE_LOYALTY_STEP_CENTS * (paid_months // _LOYALTY_MONTHS_PER_STEP))
+    return _FINANCE_PREMIUM_MONTHLY_CENTS - discount
+
+
+def paid_months(db: Session, subscription_id: str | None) -> int:
+    """Regular monthly invoices paid on this subscription (see
+    _apply_loyalty): a new subscription starts again from none."""
+    if subscription_id is None:
+        return 0
+    return db.execute(
+        text("select count(*) from subscription_paid_invoices where stripe_subscription_id = :sub"),
+        {"sub": subscription_id},
+    ).scalar()
+
 # 3D designer: a repeatable, per-user bundle — buy again any time you fill
 # up. Fixed GBP price since profiles (unlike businesses) have no currency.
 _DESIGN_SLOT_BUNDLE_SIZE = 2
@@ -261,14 +293,16 @@ def quote_subscription_price(
     # Same subscriptions as app/jobs/sync_subscription_prices.py moves.
     current = db.execute(
         text(
-            "select monthly_amount_cents from business_subscriptions where business_id = :business_id "
-            "and stripe_subscription_id is not null and status in ('active', 'suspended') and not grandfathered"
+            "select monthly_amount_cents, stripe_subscription_id from business_subscriptions "
+            "where business_id = :business_id and stripe_subscription_id is not null "
+            "and status in ('active', 'suspended') and not grandfathered"
         ),
         {"business_id": business_id},
-    ).scalar()
+    ).mappings().first()
+    months = paid_months(db, current["stripe_subscription_id"] if current else None)
     return PriceQuoteResponse(
-        current_monthly_cents=current,
-        new_monthly_cents=_price_from_basic_cut(basic_cut_price_cents),
+        current_monthly_cents=current["monthly_amount_cents"] if current else None,
+        new_monthly_cents=shop_monthly_cents(_price_from_basic_cut(basic_cut_price_cents), months),
     )
 
 
@@ -483,12 +517,13 @@ def _handle_checkout_completed(db: Session, session: dict) -> None:
     if mode == "subscription" and metadata.get("product") == _FINANCE_PRODUCT:
         db.execute(
             text(
-                "insert into business_finance_access (business_id, stripe_subscription_id, subscription_status) "
-                "values (:business_id, :sub, 'active') "
+                "insert into business_finance_access "
+                "(business_id, stripe_subscription_id, subscription_status, monthly_amount_cents) "
+                "values (:business_id, :sub, 'active', :amount) "
                 "on conflict (business_id) do update set stripe_subscription_id = :sub, subscription_status = 'active', "
-                "cancel_at = null"
+                "cancel_at = null, monthly_amount_cents = :amount"
             ),
-            {"business_id": metadata["business_id"], "sub": session["subscription"]},
+            {"business_id": metadata["business_id"], "sub": session["subscription"], "amount": _FINANCE_PREMIUM_MONTHLY_CENTS},
         )
     elif mode == "subscription":
         db.execute(
@@ -568,6 +603,44 @@ def _handle_invoice_payment_succeeded(db: Session, invoice: dict) -> None:
     )
     _credit_referral(db, invoice)
     _record_subscription_cost(db, invoice)
+    _apply_loyalty(db, invoice)
+
+
+def _apply_loyalty(db: Session, invoice: dict) -> None:
+    """Counts a paid monthly invoice (trial and proration invoices aren't
+    one) and sets the subscription's next price from the count. Recorded
+    per invoice, so a webhook delivered twice can't count a month twice."""
+    metadata = _invoice_subscription_metadata(invoice)
+    subscription_id = _invoice_subscription_id(invoice)
+    if (
+        invoice.get("billing_reason") not in ("subscription_create", "subscription_cycle")
+        or invoice.get("amount_paid", 0) <= 0
+        or "business_id" not in metadata
+    ):
+        return
+    db.execute(
+        text(
+            "insert into subscription_paid_invoices (stripe_invoice_id, stripe_subscription_id) "
+            "values (:invoice, :sub) on conflict do nothing"
+        ),
+        {"invoice": invoice["id"], "sub": subscription_id},
+    )
+    # Imported here, as in _sync_price: the job imports from this module.
+    from app.jobs.sync_subscription_prices import set_monthly_amount, sync_subscription_prices
+
+    if metadata.get("product") != _FINANCE_PRODUCT:
+        sync_subscription_prices(db, uuid.UUID(metadata["business_id"]))
+        return
+    amount = finance_monthly_cents(paid_months(db, subscription_id))
+    current = db.execute(
+        text("select monthly_amount_cents from business_finance_access where stripe_subscription_id = :sub"),
+        {"sub": subscription_id},
+    ).scalar()
+    if current is not None and current != amount and set_monthly_amount(subscription_id, amount):
+        db.execute(
+            text("update business_finance_access set monthly_amount_cents = :amount where stripe_subscription_id = :sub"),
+            {"amount": amount, "sub": subscription_id},
+        )
 
 
 _THIS_MONTH = "date_trunc('month', now())::date"

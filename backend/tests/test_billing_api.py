@@ -5,6 +5,8 @@ from app.api.billing import (
     _price_from_basic_cut,
     _scheduled_cancellation,
     _trial_end_timestamp,
+    finance_monthly_cents,
+    shop_monthly_cents,
 )
 
 
@@ -14,6 +16,26 @@ def test_price_is_ten_times_the_basic_cut():
 
 def test_no_basic_cut_returns_none():
     assert _price_from_basic_cut(None) is None
+
+
+def test_shop_loyalty_is_5_off_every_two_paid_months():
+    assert [shop_monthly_cents(15000, months) for months in (0, 1, 2, 3, 4)] == [15000, 15000, 14500, 14500, 14000]
+
+
+def test_shop_loyalty_never_goes_below_100():
+    assert shop_monthly_cents(12000, 100) == 10000
+    assert shop_monthly_cents(10000, 100) == 10000
+    # Already 100 or less: no discount at all.
+    assert shop_monthly_cents(9000, 100) == 9000
+
+
+def test_shop_loyalty_takes_at_most_100_off():
+    assert shop_monthly_cents(25000, 40) == 15000
+    assert shop_monthly_cents(25000, 400) == 15000
+
+
+def test_finance_loyalty_is_1_off_every_two_paid_months_up_to_5():
+    assert [finance_monthly_cents(months) for months in (0, 2, 4, 10, 100)] == [999, 899, 799, 499, 499]
 
 
 
@@ -295,3 +317,58 @@ def test_trial_and_proration_invoices_add_no_cost():
     _record_subscription_cost(session, _cycle_invoice(1234, {"business_id": "b1"}, "subscription_update"))
 
     assert session.params == []
+
+
+class _LoyaltySession:
+    """Answers the paid-month count and the Finance Premium price."""
+
+    def __init__(self, paid_months, current_cents):
+        self.answers = {"count(*)": paid_months, "select monthly_amount_cents": current_cents}
+        self.statements = []
+
+    def execute(self, statement, params=None):
+        self.statements.append(str(statement))
+        self.last = str(statement)
+        return self
+
+    def scalar(self):
+        return next(value for key, value in self.answers.items() if key in self.last)
+
+
+def _finance_invoice(amount_paid):
+    return {
+        "id": "in_2",
+        "billing_reason": "subscription_cycle",
+        "amount_paid": amount_paid,
+        "parent": {
+            "subscription_details": {
+                "subscription": "sub_f",
+                "metadata": {"business_id": "b1", "product": "finance_premium"},
+            }
+        },
+    }
+
+
+def test_a_second_paid_finance_month_makes_the_next_one_899(monkeypatch):
+    from app.api.billing import _apply_loyalty
+    from app.jobs import sync_subscription_prices as job
+
+    moved = []
+    monkeypatch.setattr(job, "set_monthly_amount", lambda sub, amount: moved.append((sub, amount)) or True)
+    session = _LoyaltySession(paid_months=2, current_cents=999)
+
+    _apply_loyalty(session, _finance_invoice(999))
+
+    assert moved == [("sub_f", 899)]
+    assert "insert into subscription_paid_invoices" in session.statements[0]
+    assert session.statements[-1].startswith("update business_finance_access")
+
+
+def test_a_free_trial_invoice_is_not_a_paid_month():
+    session = _LoyaltySession(paid_months=0, current_cents=999)
+
+    from app.api.billing import _apply_loyalty
+
+    _apply_loyalty(session, _finance_invoice(0))
+
+    assert session.statements == []

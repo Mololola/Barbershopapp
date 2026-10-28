@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/loading.dart';
 import '../../../core/theme.dart';
 import '../application/business_controller.dart';
+import '../domain/business.dart' show currencySymbol;
 import '../domain/business_subscription.dart';
 import '../domain/finance_overview.dart';
 import 'subscription_banner.dart';
@@ -209,12 +210,15 @@ class SubscriptionScreen extends ConsumerWidget {
         action: action,
       );
     }
+    final symbol = currencySymbol(currency ?? 'GBP');
     return _PlanCard(
       name: 'Shop subscription',
       badge: 'Active',
       price: price,
       title: 'Renews every month',
-      message: 'Cancel any time — you keep access until the end of the month you\'ve paid for.',
+      message: 'Cancel any time — you keep access until the end of the month you\'ve paid for.'
+          '${sub.monthlyAmountCents > 10000 ? ' Every 2 months you stay, it costs ${symbol}5 less, never below '
+              '${symbol}100 and at most ${symbol}100 off in all.' : ''}',
       action: action,
     );
   }
@@ -226,7 +230,7 @@ class SubscriptionScreen extends ConsumerWidget {
     String? currency,
     bool busy,
   ) {
-    final price = currency == null ? null : formatMoney(FinancePremiumSubscription.monthlyAmountCents, currency);
+    final price = currency == null ? null : formatMoney(premium.monthlyAmountCents, currency);
     final cancelAt = premium.cancelAt;
     return _PlanCard(
       name: 'Finance Premium',
@@ -237,7 +241,9 @@ class SubscriptionScreen extends ConsumerWidget {
       message: cancelAt != null
           ? 'Premium insights stay on until then and you won\'t be charged again. The free finance summary '
                 'stays after that.'
-          : 'Cancel any time — you keep Premium insights until the end of the month you\'ve paid for.',
+          : 'Cancel any time — you keep Premium insights until the end of the month you\'ve paid for. Every 2 '
+                'months you stay, it costs ${currencySymbol(currency ?? 'GBP')}1 less, up to '
+                '${currencySymbol(currency ?? 'GBP')}5 off.',
       action: _cancelOrResubscribe(
         context,
         busy,

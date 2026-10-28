@@ -115,7 +115,7 @@ void main() {
 
   testWidgets('Finance Premium has its own card and can be cancelled on its own', (tester) async {
     final api = _FakeBillingApi();
-    var premium = const FinancePremiumSubscription();
+    var premium = const FinancePremiumSubscription(monthlyAmountCents: 999);
     await tester.pumpWidget(buildTestable(subscription, api, premium: () => premium));
     await tester.pumpAndSettle();
 
@@ -127,7 +127,7 @@ void main() {
     expect(find.text('Cancel Finance Premium?'), findsOneWidget);
 
     final premiumEnd = DateTime.now().toUtc().add(const Duration(days: 20));
-    premium = FinancePremiumSubscription(cancelAt: premiumEnd);
+    premium = FinancePremiumSubscription(monthlyAmountCents: 999, cancelAt: premiumEnd);
     await tester.tap(find.text('Cancel Premium'));
     await tester.pumpAndSettle();
 

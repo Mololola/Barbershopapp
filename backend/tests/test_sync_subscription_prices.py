@@ -2,7 +2,7 @@ from app.jobs import sync_subscription_prices as job
 
 
 class _Session:
-    """Returns `rows` for the mismatch query and records later updates."""
+    """Returns `rows` for the subscriptions query and records later updates."""
 
     def __init__(self, rows):
         self.rows = rows
@@ -37,7 +37,7 @@ def test_a_changed_basic_cut_moves_the_subscription_from_its_next_payment(monkey
     monkeypatch.setattr(job.stripe.Subscription, "retrieve", _StripeSubscription)
     monkeypatch.setattr(job.stripe.Subscription, "modify", lambda sub_id, **kwargs: modified.append((sub_id, kwargs)))
 
-    session = _Session([{"business_id": "b1", "stripe_subscription_id": "sub_1", "amount": 18000}])
+    session = _Session([{"business_id": "b1", "stripe_subscription_id": "sub_1", "monthly_amount_cents": 15000, "full_price": 18000, "paid_months": 0}])
     assert job.sync_subscription_prices(session) == ["b1"]
 
     sub_id, kwargs = modified[0]
@@ -57,7 +57,7 @@ def test_a_stripe_failure_is_left_for_the_next_run(monkeypatch):
 
     monkeypatch.setattr(job.stripe.Subscription, "retrieve", fail)
 
-    session = _Session([{"business_id": "b1", "stripe_subscription_id": "sub_1", "amount": 18000}])
+    session = _Session([{"business_id": "b1", "stripe_subscription_id": "sub_1", "monthly_amount_cents": 15000, "full_price": 18000, "paid_months": 0}])
     assert job.sync_subscription_prices(session) == []
     assert session.updates == []
 
@@ -66,3 +66,20 @@ def test_an_owner_change_syncs_only_their_shop():
     session = _Session([])
     assert job.sync_subscription_prices(session, "b1") == []
     assert session.params["business_id"] == "b1"
+
+
+def test_every_two_paid_months_the_next_payment_is_5_less(monkeypatch):
+    modified = []
+    monkeypatch.setattr(job.stripe.Subscription, "retrieve", _StripeSubscription)
+    monkeypatch.setattr(job.stripe.Subscription, "modify", lambda sub_id, **kwargs: modified.append(kwargs))
+
+    session = _Session([{"business_id": "b1", "stripe_subscription_id": "sub_1", "monthly_amount_cents": 15000, "full_price": 15000, "paid_months": 4}])
+    assert job.sync_subscription_prices(session) == ["b1"]
+    assert modified[0]["items"][0]["price_data"]["unit_amount"] == 14000
+
+
+def test_a_price_already_right_is_left_alone(monkeypatch):
+    monkeypatch.setattr(job.stripe.Subscription, "retrieve", lambda *a: (_ for _ in ()).throw(AssertionError("no Stripe call")))
+
+    session = _Session([{"business_id": "b1", "stripe_subscription_id": "sub_1", "monthly_amount_cents": 14500, "full_price": 15000, "paid_months": 3}])
+    assert job.sync_subscription_prices(session) == []

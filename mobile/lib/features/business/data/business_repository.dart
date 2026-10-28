@@ -61,7 +61,7 @@ class BusinessRepository {
   Future<FinancePremiumSubscription?> fetchFinancePremiumSubscription(String businessId) async {
     final row = await _client
         .from('business_finance_access')
-        .select('cancel_at')
+        .select('cancel_at, monthly_amount_cents')
         .eq('business_id', businessId)
         .not('stripe_subscription_id', 'is', null)
         .inFilter('subscription_status', ['active', 'past_due'])
