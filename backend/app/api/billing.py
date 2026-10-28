@@ -738,6 +738,10 @@ _WEBHOOK_HANDLERS = {
 # Stripe events (many businesses' subscriptions renewing around the same time, etc.) must
 # never be dropped just because it looks like a flood.
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)) -> dict:
+    # Without a secret, Stripe's check accepts events signed with the empty
+    # key: anyone could fake a payment.
+    if not settings.stripe_webhook_secret:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Webhooks are not configured")
     payload = await request.body()
     signature = request.headers.get("stripe-signature", "")
     try:

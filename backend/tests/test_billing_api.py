@@ -99,6 +99,38 @@ class _RecordingSession:
         pass
 
 
+def test_webhook_refuses_everything_without_a_secret(monkeypatch):
+    # With no secret configured, Stripe's check would accept any event
+    # signed with the empty key, so anyone could fake a payment.
+    import json
+    import time
+
+    import stripe
+    from fastapi.testclient import TestClient
+
+    from app.core.config import settings
+    from app.db.session import get_db
+    from app.main import app
+
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "")
+    session = _RecordingSession()
+    app.dependency_overrides[get_db] = lambda: session
+    payload = json.dumps({"id": "evt_forged", "object": "event", "type": "invoice.payment_succeeded", "data": {"object": {}}})
+    timestamp = int(time.time())
+    signature = stripe.WebhookSignature._compute_signature(f"{timestamp}.{payload}", "")
+    try:
+        response = TestClient(app).post(
+            "/webhooks/stripe",
+            content=payload,
+            headers={"stripe-signature": f"t={timestamp},v1={signature}"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert session.params == []
+
+
 def test_webhook_hands_handlers_plain_dicts(monkeypatch):
     # stripe-python 13+ objects have no .get, so a real signed event (not a
     # dict passed straight to a handler) is what catches a regression here.
@@ -262,4 +294,4 @@ def test_trial_and_proration_invoices_add_no_cost():
     _record_subscription_cost(session, _cycle_invoice(0, {"business_id": "b1"}, "subscription_create"))
     _record_subscription_cost(session, _cycle_invoice(1234, {"business_id": "b1"}, "subscription_update"))
 
-    assert session.statements == []
+    assert session.params == []
