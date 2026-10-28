@@ -129,11 +129,17 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   void ping() => notifyListeners();
 }
 
+/// The 3D haircut designer (Designs tab and its screens), paused for launch
+/// in Oct 2026: off, no tab, link or route reaches it, but its code stays
+/// so work can resume by turning this back on.
+const designerEnabled = false;
+
 const _customerDestinations = [
   NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
   NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Browse'),
   NavigationDestination(icon: Icon(Icons.photo_outlined), selectedIcon: Icon(Icons.photo), label: 'Feed'),
-  NavigationDestination(icon: Icon(Icons.content_cut_outlined), selectedIcon: Icon(Icons.content_cut), label: 'Designs'),
+  if (designerEnabled)
+    NavigationDestination(icon: Icon(Icons.content_cut_outlined), selectedIcon: Icon(Icons.content_cut), label: 'Designs'),
   NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
 ];
 
@@ -224,23 +230,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [
             GoRoute(path: '/feed', builder: (context, state) => const FeedScreen()),
           ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/designs',
-              builder: (context, state) => const DesignerGalleryScreen(),
-              routes: [
-                GoRoute(path: 'new', builder: (context, state) => const DesignEditorScreen()),
-                GoRoute(
-                  path: ':designId/edit',
-                  builder: (context, state) => DesignEditorScreen(designId: state.pathParameters['designId']!),
-                ),
-                GoRoute(
-                  path: ':designId',
-                  builder: (context, state) => DesignDetailScreen(designId: state.pathParameters['designId']!),
-                ),
-              ],
-            ),
-          ]),
+          if (designerEnabled)
+            StatefulShellBranch(routes: [
+              GoRoute(
+                path: '/designs',
+                builder: (context, state) => const DesignerGalleryScreen(),
+                routes: [
+                  GoRoute(path: 'new', builder: (context, state) => const DesignEditorScreen()),
+                  GoRoute(
+                    path: ':designId/edit',
+                    builder: (context, state) => DesignEditorScreen(designId: state.pathParameters['designId']!),
+                  ),
+                  GoRoute(
+                    path: ':designId',
+                    builder: (context, state) => DesignDetailScreen(designId: state.pathParameters['designId']!),
+                  ),
+                ],
+              ),
+            ]),
           StatefulShellBranch(routes: [
             GoRoute(path: '/customer/profile', builder: (context, state) => const MyProfileScreen()),
           ]),

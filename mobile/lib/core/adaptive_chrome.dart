@@ -289,7 +289,7 @@ class _Sidebar extends ConsumerWidget {
         (icon: Icons.home_outlined, label: 'Home', path: '/customer', badge: 0),
         (icon: Icons.storefront_outlined, label: 'Browse', path: '/customer/businesses', badge: 0),
         (icon: Icons.photo_outlined, label: 'Feed', path: '/feed', badge: 0),
-        (icon: Icons.content_cut_outlined, label: 'Designs', path: '/designs', badge: 0),
+        if (designerEnabled) (icon: Icons.content_cut_outlined, label: 'Designs', path: '/designs', badge: 0),
         if (!profile.isMinor) (icon: Icons.mode_comment_outlined, label: 'Messages', path: '/messages', badge: unread),
         (icon: Icons.paid_outlined, label: 'Rewards', path: '/rewards', badge: 0),
         (icon: Icons.leaderboard_outlined, label: 'Rankings', path: '/rankings', badge: 0),
