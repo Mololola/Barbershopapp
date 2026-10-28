@@ -35,7 +35,7 @@ _PAGE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Barbershop app</title>
+<title>Fadra Cut</title>
 <style>
   body { font-family: -apple-system, Roboto, Arial, sans-serif; background: #EDEAE3; color: #221D1A;
          display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px;

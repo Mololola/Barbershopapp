@@ -22,7 +22,7 @@ _PAGE_TEMPLATE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Barbershop app</title>
+<title>Fadra Cut</title>
 <style>
   body { font-family: -apple-system, Roboto, Arial, sans-serif; background: #fafafa; color: #1a1a1a;
          display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; }
