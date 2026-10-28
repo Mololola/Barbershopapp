@@ -13,6 +13,7 @@ from app.api.admin import router as admin_router
 from app.api.auth_bridge import router as auth_bridge_router
 from app.api.billing import router as billing_router
 from app.api.billing_return import router as billing_return_router
+from app.api.delete_account_page import router as delete_account_page_router
 from app.api.finance import router as finance_router
 from app.api.jobs import router as jobs_router
 from app.api.bookings import router as bookings_router
@@ -76,6 +77,7 @@ app.include_router(admin_router)
 app.include_router(account_router)
 app.include_router(auth_bridge_router)
 app.include_router(billing_return_router)
+app.include_router(delete_account_page_router)
 app.include_router(jobs_router)
 
 
