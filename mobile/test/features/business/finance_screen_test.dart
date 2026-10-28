@@ -5,6 +5,7 @@ import 'package:mobile/features/business/application/business_controller.dart';
 import 'package:mobile/features/business/domain/business.dart';
 import 'package:mobile/features/business/domain/finance_overview.dart';
 import 'package:mobile/features/business/presentation/finance_screen.dart';
+import 'package:mobile/features/business/presentation/pay_on_website.dart';
 
 Map<String, dynamic> _month(String month, {int revenue = 9000, int costs = 60000}) => {
       'month': month,
@@ -81,6 +82,10 @@ Map<String, dynamic> _overview({required bool premium, bool trialUsed = false}) 
 }
 
 void main() {
+  // These tests cover the business website, where shops pay.
+  setUp(() => canPayInThisApp = true);
+  tearDown(() => canPayInThisApp = false);
+
   final now = DateTime.now();
   final thisMonth = DateTime(now.year, now.month);
   final rent = CostItem(

@@ -9,6 +9,7 @@ import '../application/business_controller.dart';
 import '../domain/business.dart';
 import '../domain/finance_overview.dart';
 import 'finance_premium.dart';
+import 'pay_on_website.dart';
 
 /// Profit green — always paired with a sign or arrow, never colour alone.
 const financeGain = Color(0xFF2E7D4F);
@@ -490,8 +491,10 @@ class _UpgradeCard extends ConsumerWidget {
                     : () => ref.read(billingActionControllerProvider.notifier).startFinanceTrial(),
                 child: const Text('Try it free for 14 days'),
               )
+            else if (canPayInThisApp)
+              FilledButton(onPressed: () => _subscribe(context, ref), child: Text('Get Premium — ${currencySymbol(currency)}9.99/month'))
             else
-              FilledButton(onPressed: () => _subscribe(context, ref), child: Text('Get Premium — ${currencySymbol(currency)}9.99/month')),
+              const Center(child: PayOnWebsiteNote(color: AppColors.chalk)),
             const SizedBox(height: 6),
             Text(
               state.trialUsed ? 'Cancel anytime from Settings › Subscription & billing.' : 'No card needed for the trial.',

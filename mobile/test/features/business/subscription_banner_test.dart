@@ -4,10 +4,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/business/application/business_controller.dart';
 import 'package:mobile/features/business/domain/business.dart';
 import 'package:mobile/features/business/domain/business_subscription.dart';
+import 'package:mobile/features/business/presentation/pay_on_website.dart';
 import 'package:mobile/features/business/presentation/subscription_banner.dart';
 import 'package:mobile/features/business/presentation/subscription_screen.dart';
 
 void main() {
+  // These tests cover the business website, where shops pay.
+  setUp(() => canPayInThisApp = true);
+  tearDown(() => canPayInThisApp = false);
+
   Widget buildTestable(BusinessSubscription? subscription, {DateTime? businessCreatedAt}) {
     return ProviderScope(
       overrides: [
@@ -19,6 +24,15 @@ void main() {
       child: const MaterialApp(home: Scaffold(body: SubscriptionBanner())),
     );
   }
+
+  testWidgets('the phone app shows where to pay instead of a Subscribe button', (tester) async {
+    canPayInThisApp = false;
+    await tester.pumpWidget(buildTestable(null));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Subscribe'), findsNothing);
+    expect(find.byType(PayOnWebsiteNote), findsOneWidget);
+  });
 
   testWidgets('renders nothing for an active subscription', (tester) async {
     await tester.pumpWidget(buildTestable(

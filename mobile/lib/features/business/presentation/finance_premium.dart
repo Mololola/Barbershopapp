@@ -8,6 +8,7 @@ import '../application/business_controller.dart';
 import '../domain/business.dart';
 import '../domain/finance_overview.dart';
 import 'finance_screen.dart';
+import 'pay_on_website.dart';
 
 const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -158,8 +159,10 @@ class _TrialBanner extends ConsumerWidget {
       child: ListTile(
         leading: const Icon(Icons.hourglass_bottom, color: AppColors.brass),
         title: Text('Free trial · $daysLeft day${daysLeft == 1 ? '' : 's'} left'),
-        subtitle: Text('Keep Premium for ${currencySymbol(currency)}9.99/month'),
-        trailing: TextButton(
+        subtitle: canPayInThisApp
+            ? Text('Keep Premium for ${currencySymbol(currency)}9.99/month')
+            : const PayOnWebsiteNote(),
+        trailing: !canPayInThisApp ? null : TextButton(
           onPressed: () async {
             final messenger = ScaffoldMessenger.of(context);
             try {

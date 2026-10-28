@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../application/business_controller.dart';
 import '../domain/business_subscription.dart';
+import 'pay_on_website.dart';
 import 'subscription_screen.dart';
 
 /// Shown on the business home screen. Nothing renders for an active or
@@ -106,15 +107,18 @@ class SubscriptionBanner extends ConsumerWidget {
                 const SizedBox(height: 12),
                 // A failed payment is fixed in the billing portal; a canceled
                 // subscription is gone in Stripe and needs a new checkout.
-                FilledButton(
-                  onPressed: () => _launch(
-                    context,
-                    paymentFailed
-                        ? () => ref.read(billingActionControllerProvider.notifier).openPortal()
-                        : () => ref.read(billingActionControllerProvider.notifier).startCheckout(),
-                  ),
-                  child: Text(paymentFailed ? 'Update payment' : 'Subscribe'),
-                ),
+                if (canPayInThisApp)
+                  FilledButton(
+                    onPressed: () => _launch(
+                      context,
+                      paymentFailed
+                          ? () => ref.read(billingActionControllerProvider.notifier).openPortal()
+                          : () => ref.read(billingActionControllerProvider.notifier).startCheckout(),
+                    ),
+                    child: Text(paymentFailed ? 'Update payment' : 'Subscribe'),
+                  )
+                else
+                  const PayOnWebsiteNote(),
               ],
             ),
           );
@@ -138,11 +142,14 @@ class SubscriptionBanner extends ConsumerWidget {
                 Text(_deletionNotice(createdAt.add(BusinessSubscription.dataRetention), now)),
               ],
               const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () =>
-                    _launch(context, () => ref.read(billingActionControllerProvider.notifier).startCheckout()),
-                child: const Text('Subscribe'),
-              ),
+              if (canPayInThisApp)
+                FilledButton(
+                  onPressed: () =>
+                      _launch(context, () => ref.read(billingActionControllerProvider.notifier).startCheckout()),
+                  child: const Text('Subscribe'),
+                )
+              else
+                const PayOnWebsiteNote(),
             ],
           ),
         );
