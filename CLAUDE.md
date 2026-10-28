@@ -85,7 +85,7 @@ You are the lead engineer for the 3D haircut designer inside the barbershop app 
      - tune our parameters until our numbers are within 10% of those.
 
 ### Current state (verify it first, do not assume)
-- **Paused since 28 Oct 2026 and hidden** (`designerEnabled = false`), merged into master at `60dbaee`. Resume only when the user asks; `HANDOFF.md` has the full state.
+- **Paused since 28 Oct 2026 and hidden** (`designerEnabled = false`), merged into master at `60dbaee`. Resume only when the user asks; `HANDOFF-designer-v3.md` has the full state.
 - **Every patch must keep** the analyzer clean, all tests passing, and the designer JS passing `node --check`.
 - **Done and confirmed on the A33:** physics (45–53 fps), mannequin head, hair types 1A–4C, Barber detail, brushes, mirror, undo/redo, 26 cuts (all checked), colour tools (ombré, highlights, balayage, shine angle), long hair on the shoulders, the afro hairline, the receding hairline, beard and brow presets with a profile trim.
 - **Item 5 left unfinished:** the Grow beard brush and its length slider exist; the Shave brush and brow painting don't.
