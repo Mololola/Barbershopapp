@@ -423,13 +423,30 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
     );
   }
 
+  /// In Beard & brows and under the Grow beard brush (whose painted beard
+  /// takes this length, with or without a style).
+  Widget _beardLengthSlider() {
+    final facial = _parameters.facial;
+    final length = facial.beardLength;
+    return _LabeledSlider(
+      label: 'Beard length',
+      valueLabel: length < 10 ? '${length.round()} mm' : '${(length / 10).toStringAsFixed(1)} cm',
+      value: length,
+      min: 1,
+      max: 60,
+      // Regrowing takes a moment on a phone: the value shows while dragged
+      // and the beard regrows once let go.
+      onChanged: (v) => setState(() => _parameters = _parameters.copyWith(facial: facial.copyWith(beardLength: v))),
+      onChangeEnd: (_) => _updateParameters(_parameters),
+    );
+  }
+
   List<Widget> _facialHair(HairParameters p) {
     final facial = p.facial;
     void update(FacialHairParameters next) => _updateParameters(p.copyWith(facial: next));
     // Regrowing facial hair takes a moment on a phone: the sliders show
     // their value while dragged and regrow it once let go.
     void preview(FacialHairParameters next) => setState(() => _parameters = p.copyWith(facial: next));
-    final length = facial.beardLength;
     return [
       Text('Beard', style: Theme.of(context).textTheme.titleSmall),
       const SizedBox(height: 6),
@@ -446,15 +463,7 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
         ],
       ),
       if (facial.beard != 'none') ...[
-        _LabeledSlider(
-          label: 'Beard length',
-          valueLabel: length < 10 ? '${length.round()} mm' : '${(length / 10).toStringAsFixed(1)} cm',
-          value: length,
-          min: 1,
-          max: 60,
-          onChanged: (v) => preview(facial.copyWith(beardLength: v)),
-          onChangeEnd: (_) => update(_parameters.facial),
-        ),
+        _beardLengthSlider(),
         _LabeledSlider(
           label: 'Beard density',
           valueLabel: facial.beardDensity < 0.5 ? 'Patchy' : (facial.beardDensity < 0.85 ? 'Medium' : 'Full'),
@@ -745,9 +754,9 @@ class _DesignEditorScreenState extends ConsumerState<DesignEditorScreen> {
       case 'razor':
         return const [Text('A thin, skin-close line — for edge-ups, part lines and designs.')];
       case 'beard':
-        return const [
-          Text('Paint where the beard grows, on top of the style chosen in Shape → Beard & brows. '
-              'Its length and density come from there too.'),
+        return [
+          const Text('Paint where the beard grows, on top of the style chosen in Shape → Beard & brows.'),
+          _beardLengthSlider(),
         ];
       case 'dye':
         return [
