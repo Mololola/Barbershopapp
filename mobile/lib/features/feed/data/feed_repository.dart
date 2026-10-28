@@ -68,7 +68,7 @@ class FeedRepository {
     final path = '$authorId/${post['id']}$extension';
     await _client.storage.from('post-media').uploadBinary(
           path,
-          await mediaFile.readAsBytes(),
+          await uploadBytes(mediaFile),
           fileOptions: FileOptions(contentType: _contentTypeOf(extension)),
         );
     final mediaUrl = _client.storage.from('post-media').getPublicUrl(path);

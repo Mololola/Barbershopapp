@@ -76,7 +76,7 @@ class ProfileRepository {
     final path = '$uid/$fileName${extensionOf(image)}';
     await _client.storage.from('avatars').uploadBinary(
           path,
-          await image.readAsBytes(),
+          await uploadBytes(image),
           fileOptions: const FileOptions(upsert: true),
         );
     // Cache-bust: the path (and therefore URL) is identical across edits
