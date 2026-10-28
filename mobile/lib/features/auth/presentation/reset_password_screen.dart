@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n.dart';
 import '../application/auth_controller.dart';
 
 /// Reached only via the password-reset email's deep link, which signs the
@@ -35,7 +36,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Set a new password')),
+      appBar: AppBar(title: Text(context.l10n.setNewPasswordTitle)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -44,22 +45,22 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             children: [
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'New password'),
+                decoration: InputDecoration(labelText: context.l10n.newPasswordLabel),
                 obscureText: true,
                 autofocus: true,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Required';
-                  if (value.length < 6) return 'At least 6 characters';
+                  if (value == null || value.isEmpty) return context.l10n.requiredField;
+                  if (value.length < 6) return context.l10n.atLeast6Characters;
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _confirmController,
-                decoration: const InputDecoration(labelText: 'Confirm new password'),
+                decoration: InputDecoration(labelText: context.l10n.confirmNewPasswordLabel),
                 obscureText: true,
                 validator: (value) {
-                  if (value != _passwordController.text) return 'Passwords don\'t match';
+                  if (value != _passwordController.text) return context.l10n.passwordsDontMatch;
                   return null;
                 },
               ),
@@ -76,7 +77,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 onPressed: authState.isLoading ? null : _submit,
                 child: authState.isLoading
                     ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Update password'),
+                    : Text(context.l10n.updatePassword),
               ),
             ],
           ),

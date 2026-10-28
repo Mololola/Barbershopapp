@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/adaptive_chrome.dart';
 import 'core/env.dart';
 import 'core/error_reporting.dart';
+import 'core/l10n.dart';
 import 'core/launch_animation.dart';
 import 'core/router.dart';
 import 'core/secure_local_storage.dart';
@@ -70,6 +71,8 @@ class BarbershopApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Fadra Cut',
       theme: AppTheme.light,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: ref.watch(routerProvider),
       builder: (context, child) =>
           LaunchAnimation(child: SystemBarsSafeArea(child: AdaptiveChrome(child: child!))),

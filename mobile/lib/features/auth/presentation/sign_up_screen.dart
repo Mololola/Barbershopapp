@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/legal.dart';
 import '../../../core/supabase_providers.dart';
+import '../../../core/l10n.dart';
 import '../application/auth_controller.dart';
 import '../domain/profile.dart';
 
@@ -56,7 +57,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (fourteenthBirthday.isAfter(now)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('You must be at least 14 to create an account.')));
+          .showSnackBar(SnackBar(content: Text(context.l10n.mustBe14)));
       return;
     }
     setState(() {
@@ -89,17 +90,17 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     // of running a business (profiles_minor_role_check covers the rest).
     final dob = _isBusiness ? null : _dateOfBirth;
     if (!_isBusiness && dob == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Date of birth is required.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.dateOfBirthRequired)));
       return;
     }
     if (_isBusiness && !_attestedAdultOwner) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Confirm you're 18 or over and authorised to register this business.")));
+          SnackBar(content: Text(context.l10n.confirmAdultOwner)));
       return;
     }
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('You must agree to the Terms of Service and Privacy Policy.')));
+          .showSnackBar(SnackBar(content: Text(context.l10n.mustAgreeToTerms)));
       return;
     }
 
@@ -134,10 +135,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isOAuthCompletion
-            ? 'Finish setting up your account'
+            ? context.l10n.finishAccountSetupTitle
             : _isBusiness
-                ? 'Create business account'
-                : 'Create account'),
+                ? context.l10n.createBusinessAccountTitle
+                : context.l10n.createAccountTitle),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -151,31 +152,30 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               children: [
                 SegmentedButton<AccountRole>(
                   segments: [
-                    const ButtonSegment(value: AccountRole.customer, label: Text('Customer')),
+                    ButtonSegment(value: AccountRole.customer, label: Text(context.l10n.roleCustomer)),
                     // A minor can only ever be a customer account — see
                     // profiles_minor_role_check.
                     if (!_isMinorSelected)
-                      const ButtonSegment(value: AccountRole.business, label: Text('Business')),
+                      ButtonSegment(value: AccountRole.business, label: Text(context.l10n.roleBusiness)),
                   ],
                   selected: {_role},
                   onSelectionChanged: (selection) => setState(() => _role = selection.first),
                 ),
                 if (_isBusiness)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      "Step 1 of 2: your login. After confirming your email you'll set up your business — "
-                      'locations, opening hours, services and staff.',
-                      style: TextStyle(fontSize: 12.5),
+                      context.l10n.businessSignUpStepHint,
+                      style: const TextStyle(fontSize: 12.5),
                     ),
                   ),
                 if (_isBusiness && !_isOAuthCompletion) ...[
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _businessNameController,
-                    decoration: const InputDecoration(labelText: 'Business name'),
+                    decoration: InputDecoration(labelText: context.l10n.businessNameLabel),
                     textCapitalization: TextCapitalization.words,
-                    validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
+                    validator: (value) => (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
                   ),
                 ],
                 if (!_isBusiness) ...[
@@ -183,20 +183,20 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   InkWell(
                     onTap: _pickDateOfBirth,
                     child: InputDecorator(
-                      decoration: const InputDecoration(labelText: 'Date of birth'),
+                      decoration: InputDecoration(labelText: context.l10n.dateOfBirthLabel),
                       child: Text(
                         _dateOfBirth == null
-                            ? 'Select date'
+                            ? context.l10n.selectDate
                             : '${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}',
                       ),
                     ),
                   ),
                   if (_isMinorSelected)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
                       child: Text(
-                        'Under 18 — messaging, posting, and business/worker features aren\'t available on your account.',
-                        style: TextStyle(fontSize: 12.5),
+                        context.l10n.minorAccountNotice,
+                        style: const TextStyle(fontSize: 12.5),
                       ),
                     ),
                 ],
@@ -204,11 +204,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 TextFormField(
                   controller: _usernameController,
                   decoration: _isBusiness
-                      ? const InputDecoration(labelText: 'Business handle', helperText: 'Must be unique — your @name on posts')
-                      : const InputDecoration(labelText: 'Username', helperText: 'Must be unique — shown on rankings and posts'),
+                      ? InputDecoration(labelText: context.l10n.businessHandleLabel, helperText: context.l10n.businessHandleHelper)
+                      : InputDecoration(labelText: context.l10n.usernameLabel, helperText: context.l10n.usernameHelper),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Required';
-                    if (value.trim().length < 3) return 'At least 3 characters';
+                    if (value == null || value.trim().isEmpty) return context.l10n.requiredField;
+                    if (value.trim().length < 3) return context.l10n.atLeast3Characters;
                     return null;
                   },
                 ),
@@ -216,22 +216,22 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(labelText: context.l10n.emailLabel),
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) return 'Required';
-                      if (!value.contains('@')) return 'Enter a valid email';
+                      if (value == null || value.trim().isEmpty) return context.l10n.requiredField;
+                      if (!value.contains('@')) return context.l10n.invalidEmail;
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(labelText: context.l10n.passwordLabel),
                     obscureText: true,
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Required';
-                      if (value.length < 6) return 'At least 6 characters';
+                      if (value == null || value.isEmpty) return context.l10n.requiredField;
+                      if (value.length < 6) return context.l10n.atLeast6Characters;
                       return null;
                     },
                   ),
@@ -243,7 +243,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     onChanged: (value) => setState(() => _attestedAdultOwner = value ?? false),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
-                    title: const Text("I'm 18 or over and authorised to register this business"),
+                    title: Text(context.l10n.adultOwnerCheckbox),
                   ),
                 CheckboxListTile(
                   value: _agreedToTerms,
@@ -253,10 +253,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   title: Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      const Text('I agree to the '),
-                      _LegalLink(label: 'Terms of Service', url: termsOfServiceUrl),
-                      const Text(' and '),
-                      _LegalLink(label: 'Privacy Policy', url: privacyPolicyUrl),
+                      Text(context.l10n.agreePrefix),
+                      _LegalLink(label: context.l10n.termsOfService, url: termsOfServiceUrl),
+                      Text(context.l10n.agreeAnd),
+                      _LegalLink(label: context.l10n.privacyPolicy, url: privacyPolicyUrl),
                     ],
                   ),
                 ),
@@ -273,7 +273,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   onPressed: authState.isLoading ? null : _submit,
                   child: authState.isLoading
                       ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(_isOAuthCompletion ? 'Finish' : 'Sign up'),
+                      : Text(_isOAuthCompletion ? context.l10n.finishButton : context.l10n.signUpButton),
                 ),
                 // Otherwise someone who picked the wrong Google account has
                 // no way off this screen: the router keeps a signed-in user
@@ -286,23 +286,23 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             await ref.read(authControllerProvider.notifier).signOut();
                             if (context.mounted) context.go('/sign-in');
                           },
-                    child: const Text('Use a different account'),
+                    child: Text(context.l10n.useDifferentAccount),
                   ),
                 if (!_isOAuthCompletion) ...[
                   TextButton(
                     onPressed: () => context.go('/sign-in'),
-                    child: const Text('Already have an account? Sign in'),
+                    child: Text(context.l10n.haveAccountSignIn),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('or')), Expanded(child: Divider())]),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(children: [const Expanded(child: Divider()), Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(context.l10n.orDivider)), const Expanded(child: Divider())]),
                   ),
                   OutlinedButton.icon(
                     onPressed: authState.isLoading
                         ? null
                         : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.google),
                     icon: const Icon(Icons.g_mobiledata),
-                    label: const Text('Continue with Google'),
+                    label: Text(context.l10n.continueWithGoogle),
                   ),
                 ],
               ],
