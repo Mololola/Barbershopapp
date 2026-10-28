@@ -19,7 +19,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.barbershopapp.mobile"
+    namespace = "com.mololola.fadracut"
     compileSdk = flutter.compileSdkVersion
     // Pinned above Flutter's default (flutter.ndkVersion) — several plugins
     // (webview_flutter_android among them) require this newer NDK; it's
@@ -36,7 +36,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.barbershopapp.mobile"
+        applicationId = "com.mololola.fadracut"
         // flutter_secure_storage requires 23+ — Flutter's own template default (21)
         // fails the manifest merge outright, so this can't stay at the default.
         minSdk = 23

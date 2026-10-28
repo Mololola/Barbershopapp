@@ -57,7 +57,7 @@ _PAGE = """<!doctype html>
     <h1 id="title"></h1>
     <p id="body"></p>
     <a class="button" id="open-app" hidden
-       href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.barbershopapp.mobile;end">Back to the app</a>
+       href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.mololola.fadracut;end">Back to the app</a>
     <p class="hint" id="hint" hidden>You can close this tab and go back to the app.</p>
   </div>
   <script>
