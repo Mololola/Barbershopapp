@@ -17,6 +17,9 @@ router = APIRouter()
 _AUTOMATIC_REWARD_CENTS = 100
 _QUALITY_REWARD_CENTS = 200
 _MONTHLY_CAP = 3
+# A shop's customers earn at most this share of what the shop pays a month,
+# so a busy shop's rewards can never cost more than its subscription brings in.
+_SHOP_BUDGET_PERCENT = 15
 
 
 class RewardCreditResponse(BaseModel):
@@ -31,6 +34,12 @@ def _month_start(now: datetime.datetime) -> datetime.datetime:
 
 def _tier_amount_cents(is_quality_reviewer: bool) -> int:
     return _QUALITY_REWARD_CENTS if is_quality_reviewer else _AUTOMATIC_REWARD_CENTS
+
+
+def _fits_shop_budget(spent_cents: int, amount_cents: int, shop_monthly_cents: int | None) -> bool:
+    """A shop with no subscription row is hidden from customers, so it has no budget."""
+    budget_cents = (shop_monthly_cents or 0) * _SHOP_BUDGET_PERCENT // 100
+    return spent_cents + amount_cents <= budget_cents
 
 
 def _is_duplicate_reward_error(exc: IntegrityError) -> bool:
@@ -85,10 +94,21 @@ def credit_review_reward(
     ).scalar()
     amount_cents = _tier_amount_cents(bool(is_quality_reviewer))
     # Paid in the reviewed shop's currency: £1 at a UK shop, €1 at a Spanish one.
-    currency = db.execute(
-        text("select bz.currency from bookings b join businesses bz on bz.id = b.business_id where b.id = :id"),
-        {"id": booking_id},
-    ).scalar()
+    shop = db.execute(
+        text(
+            "select bz.currency, "
+            "(select s.monthly_amount_cents from business_subscriptions s where s.business_id = bz.id) "
+            "as monthly_amount_cents, "
+            "(select coalesce(sum(r.amount_cents), 0) from reward_ledger r "
+            " join reviews rv on rv.id = r.review_id join bookings rb on rb.id = rv.booking_id "
+            " where rb.business_id = bz.id and r.source = 'review' and r.created_at >= :month_start) "
+            "as spent_cents "
+            "from bookings b join businesses bz on bz.id = b.business_id where b.id = :id"
+        ),
+        {"id": booking_id, "month_start": month_start},
+    ).mappings().one()
+    if not _fits_shop_budget(shop["spent_cents"], amount_cents, shop["monthly_amount_cents"]):
+        return RewardCreditResponse(credited=False, amount_cents=0, reason="shop budget reached")
 
     db.add(
         RewardLedger(
@@ -96,7 +116,7 @@ def credit_review_reward(
             source="review",
             review_id=review.id,
             amount_cents=amount_cents,
-            currency=currency,
+            currency=shop["currency"],
         )
     )
     try:

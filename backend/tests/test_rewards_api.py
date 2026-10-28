@@ -3,7 +3,7 @@ import datetime
 import psycopg
 from sqlalchemy.exc import IntegrityError
 
-from app.api.rewards import _is_duplicate_reward_error, _month_start, _tier_amount_cents
+from app.api.rewards import _fits_shop_budget, _is_duplicate_reward_error, _month_start, _tier_amount_cents
 
 
 def test_automatic_tier_is_one_unit_of_the_shops_currency():
@@ -36,3 +36,16 @@ def test_other_integrity_error_is_not_a_duplicate_reward():
     exc = IntegrityError("insert", {}, psycopg.errors.ForeignKeyViolation("not present"))
 
     assert _is_duplicate_reward_error(exc) is False
+
+
+def test_a_150_shop_funds_rewards_up_to_22_50_a_month():
+    assert _fits_shop_budget(spent_cents=2100, amount_cents=100, shop_monthly_cents=15000) is True
+    assert _fits_shop_budget(spent_cents=2200, amount_cents=100, shop_monthly_cents=15000) is False
+
+
+def test_a_quality_reward_that_overshoots_the_budget_is_refused():
+    assert _fits_shop_budget(spent_cents=2100, amount_cents=200, shop_monthly_cents=15000) is False
+
+
+def test_a_shop_without_a_subscription_has_no_budget():
+    assert _fits_shop_budget(spent_cents=0, amount_cents=100, shop_monthly_cents=None) is False
