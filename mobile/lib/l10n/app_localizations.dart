@@ -775,6 +775,576 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Barbershop'**
   String get barbershopSubtitle;
+
+  /// No description provided for @errorWithDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String errorWithDetail(String error);
+
+  /// No description provided for @greeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hey, {name}'**
+  String greeting(String name);
+
+  /// No description provided for @greetingNoName.
+  ///
+  /// In en, this message translates to:
+  /// **'Hey there'**
+  String get greetingNoName;
+
+  /// No description provided for @whatsNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s what\'s next.'**
+  String get whatsNext;
+
+  /// No description provided for @quickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get quickActions;
+
+  /// No description provided for @myBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'My bookings'**
+  String get myBookings;
+
+  /// No description provided for @nextUp.
+  ///
+  /// In en, this message translates to:
+  /// **'NEXT UP'**
+  String get nextUp;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @tomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get tomorrow;
+
+  /// No description provided for @inDays.
+  ///
+  /// In en, this message translates to:
+  /// **'In {days} days'**
+  String inDays(int days);
+
+  /// No description provided for @loadingEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get loadingEllipsis;
+
+  /// No description provided for @view.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get view;
+
+  /// No description provided for @jobInvitations.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{A barbershop wants to hire you — 1 job invitation waiting.} other{A barbershop wants to hire you — {count} job invitations waiting.}}'**
+  String jobInvitations(int count);
+
+  /// No description provided for @noAppointments.
+  ///
+  /// In en, this message translates to:
+  /// **'No appointments booked'**
+  String get noAppointments;
+
+  /// No description provided for @noAppointmentsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a shop and get in the chair.'**
+  String get noAppointmentsHint;
+
+  /// No description provided for @browseBarbershops.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse barbershops'**
+  String get browseBarbershops;
+
+  /// No description provided for @closureWithinADay.
+  ///
+  /// In en, this message translates to:
+  /// **'This booking will be cancelled within a day unless the shop renews its subscription.'**
+  String get closureWithinADay;
+
+  /// No description provided for @closureBy.
+  ///
+  /// In en, this message translates to:
+  /// **'This shop hasn\'t renewed its subscription. If it doesn\'t by {date}, this booking will be cancelled.'**
+  String closureBy(DateTime date);
+
+  /// No description provided for @noBookingsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No bookings yet.'**
+  String get noBookingsYet;
+
+  /// No description provided for @reviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed'**
+  String get reviewed;
+
+  /// No description provided for @leaveAReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a review'**
+  String get leaveAReview;
+
+  /// No description provided for @bookingConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get bookingConfirmed;
+
+  /// No description provided for @bookingCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get bookingCancelled;
+
+  /// No description provided for @bookingCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get bookingCompleted;
+
+  /// No description provided for @bookAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Book appointment'**
+  String get bookAppointment;
+
+  /// No description provided for @day.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get day;
+
+  /// No description provided for @calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendar;
+
+  /// No description provided for @pickATime.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a time to continue'**
+  String get pickATime;
+
+  /// No description provided for @withBarber.
+  ///
+  /// In en, this message translates to:
+  /// **'with {name}'**
+  String withBarber(String name);
+
+  /// No description provided for @book.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get book;
+
+  /// No description provided for @findingFreeTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding free times…'**
+  String get findingFreeTimes;
+
+  /// No description provided for @couldntLoadTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load times'**
+  String get couldntLoadTimes;
+
+  /// No description provided for @checkConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get checkConnection;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @noFreeTimesOn.
+  ///
+  /// In en, this message translates to:
+  /// **'No free times on {day}'**
+  String noFreeTimesOn(String day);
+
+  /// No description provided for @shopClosedOrFull.
+  ///
+  /// In en, this message translates to:
+  /// **'The shop is closed or fully booked that day.'**
+  String get shopClosedOrFull;
+
+  /// No description provided for @tryDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Try {day}'**
+  String tryDay(String day);
+
+  /// No description provided for @morning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get morning;
+
+  /// No description provided for @afternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon'**
+  String get afternoon;
+
+  /// No description provided for @evening.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening'**
+  String get evening;
+
+  /// No description provided for @barber.
+  ///
+  /// In en, this message translates to:
+  /// **'Barber'**
+  String get barber;
+
+  /// No description provided for @freeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} free'**
+  String freeCount(int count);
+
+  /// No description provided for @anyBarber.
+  ///
+  /// In en, this message translates to:
+  /// **'Any barber'**
+  String get anyBarber;
+
+  /// No description provided for @findAShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a shop'**
+  String get findAShop;
+
+  /// No description provided for @searchBarbershops.
+  ///
+  /// In en, this message translates to:
+  /// **'Search barbershops'**
+  String get searchBarbershops;
+
+  /// No description provided for @noBarbershopsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No barbershops yet'**
+  String get noBarbershopsYet;
+
+  /// No description provided for @noBarbershopsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back soon — new shops show up here.'**
+  String get noBarbershopsHint;
+
+  /// No description provided for @noMatchesFor.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches for \"{query}\"'**
+  String noMatchesFor(String query);
+
+  /// No description provided for @tryDifferentName.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different name.'**
+  String get tryDifferentName;
+
+  /// No description provided for @skipRatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip this rating?'**
+  String get skipRatingTitle;
+
+  /// No description provided for @skipRatingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings can earn you rewards later on — if you skip this one, you won\'t get anything for it. Skip anyway?'**
+  String get skipRatingBody;
+
+  /// No description provided for @skipAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip anyway'**
+  String get skipAnyway;
+
+  /// No description provided for @omit.
+  ///
+  /// In en, this message translates to:
+  /// **'Omit'**
+  String get omit;
+
+  /// No description provided for @submitReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit review'**
+  String get submitReview;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @rateTheShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the shop'**
+  String get rateTheShop;
+
+  /// No description provided for @rateTheBarber.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the barber'**
+  String get rateTheBarber;
+
+  /// No description provided for @rateTheHaircut.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the haircut'**
+  String get rateTheHaircut;
+
+  /// No description provided for @haircutTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Haircut type'**
+  String get haircutTypeLabel;
+
+  /// No description provided for @commentOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment (optional)'**
+  String get commentOptional;
+
+  /// No description provided for @hcBuzzCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Buzz Cut'**
+  String get hcBuzzCut;
+
+  /// No description provided for @hcCrewCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Crew Cut'**
+  String get hcCrewCut;
+
+  /// No description provided for @hcFade.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade'**
+  String get hcFade;
+
+  /// No description provided for @hcUndercut.
+  ///
+  /// In en, this message translates to:
+  /// **'Undercut'**
+  String get hcUndercut;
+
+  /// No description provided for @hcPompadour.
+  ///
+  /// In en, this message translates to:
+  /// **'Pompadour'**
+  String get hcPompadour;
+
+  /// No description provided for @hcQuiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiff'**
+  String get hcQuiff;
+
+  /// No description provided for @hcSlickBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Slick Back'**
+  String get hcSlickBack;
+
+  /// No description provided for @hcTexturedCrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Textured Crop'**
+  String get hcTexturedCrop;
+
+  /// No description provided for @hcMullet.
+  ///
+  /// In en, this message translates to:
+  /// **'Mullet'**
+  String get hcMullet;
+
+  /// No description provided for @hcAfro.
+  ///
+  /// In en, this message translates to:
+  /// **'Afro'**
+  String get hcAfro;
+
+  /// No description provided for @hcBaldShaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Bald/Shaved'**
+  String get hcBaldShaved;
+
+  /// No description provided for @hcBeardTrim.
+  ///
+  /// In en, this message translates to:
+  /// **'Beard Trim'**
+  String get hcBeardTrim;
+
+  /// No description provided for @hcOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get hcOther;
+
+  /// No description provided for @shopHiddenOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shop page is hidden from customers until your subscription is active.'**
+  String get shopHiddenOwner;
+
+  /// No description provided for @shopUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This shop isn\'t available right now.'**
+  String get shopUnavailable;
+
+  /// No description provided for @editShopPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit shop page'**
+  String get editShopPage;
+
+  /// No description provided for @newOnTheApp.
+  ///
+  /// In en, this message translates to:
+  /// **'New on the app'**
+  String get newOnTheApp;
+
+  /// No description provided for @moreLocations.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String moreLocations(int count);
+
+  /// No description provided for @newPost.
+  ///
+  /// In en, this message translates to:
+  /// **'New post'**
+  String get newPost;
+
+  /// No description provided for @editPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit page'**
+  String get editPage;
+
+  /// No description provided for @messageTheShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Message the shop'**
+  String get messageTheShop;
+
+  /// No description provided for @barbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Barbers'**
+  String get barbers;
+
+  /// No description provided for @openingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening hours'**
+  String get openingHours;
+
+  /// No description provided for @locations.
+  ///
+  /// In en, this message translates to:
+  /// **'Locations'**
+  String get locations;
+
+  /// No description provided for @posts.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts'**
+  String get posts;
+
+  /// No description provided for @reviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get reviews;
+
+  /// No description provided for @closedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed today'**
+  String get closedToday;
+
+  /// No description provided for @openNowUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Open now · until {time}'**
+  String openNowUntil(String time);
+
+  /// No description provided for @opensAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens {time}'**
+  String opensAt(String time);
+
+  /// No description provided for @closedNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed now'**
+  String get closedNow;
+
+  /// No description provided for @closed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get closed;
+
+  /// No description provided for @noServicesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No services listed yet.'**
+  String get noServicesYet;
+
+  /// No description provided for @noBarbersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No barbers listed yet.'**
+  String get noBarbersYet;
+
+  /// No description provided for @noReviewsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No reviews yet.'**
+  String get noReviewsYet;
+
+  /// No description provided for @noPostsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet.'**
+  String get noPostsYet;
 }
 
 class _AppLocalizationsDelegate

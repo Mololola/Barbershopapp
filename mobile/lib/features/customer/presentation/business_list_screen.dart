@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/app_network_image.dart';
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/theme.dart';
 import '../application/browse_controller.dart';
@@ -30,7 +31,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
     final businesses = ref.watch(businessesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Find a shop')),
+      appBar: AppBar(title: Text(context.l10n.findAShop)),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -40,7 +41,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
               controller: _queryController,
               onChanged: (value) => setState(() => _query = value),
               decoration: InputDecoration(
-                hintText: 'Search barbershops',
+                hintText: context.l10n.searchBarbershops,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _query.isEmpty
                     ? null
@@ -57,24 +58,24 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
           Expanded(
             child: businesses.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Center(child: Text('Error: $error')),
+              error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
               data: (list) {
                 final filtered = _query.isEmpty
                     ? list
                     : list.where((b) => b.name.toLowerCase().contains(_query.toLowerCase())).toList();
 
                 if (list.isEmpty) {
-                  return const _EmptyState(
+                  return _EmptyState(
                     icon: Icons.storefront_outlined,
-                    title: 'No barbershops yet',
-                    subtitle: 'Check back soon — new shops show up here.',
+                    title: context.l10n.noBarbershopsYet,
+                    subtitle: context.l10n.noBarbershopsHint,
                   );
                 }
                 if (filtered.isEmpty) {
                   return _EmptyState(
                     icon: Icons.search_off,
-                    title: 'No matches for "$_query"',
-                    subtitle: 'Try a different name.',
+                    title: context.l10n.noMatchesFor(_query),
+                    subtitle: context.l10n.tryDifferentName,
                   );
                 }
                 return ListView.separated(

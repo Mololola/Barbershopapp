@@ -372,4 +372,331 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get barbershopSubtitle => 'Barbería';
+
+  @override
+  String errorWithDetail(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String greeting(String name) {
+    return 'Hola, $name';
+  }
+
+  @override
+  String get greetingNoName => 'Hola';
+
+  @override
+  String get whatsNext => 'Esto es lo próximo.';
+
+  @override
+  String get quickActions => 'Accesos rápidos';
+
+  @override
+  String get myBookings => 'Mis reservas';
+
+  @override
+  String get nextUp => 'PRÓXIMA CITA';
+
+  @override
+  String get today => 'Hoy';
+
+  @override
+  String get tomorrow => 'Mañana';
+
+  @override
+  String inDays(int days) {
+    return 'En $days días';
+  }
+
+  @override
+  String get loadingEllipsis => 'Cargando…';
+
+  @override
+  String get view => 'Ver';
+
+  @override
+  String jobInvitations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Una barbería quiere contratarte: tienes $count ofertas de trabajo pendientes.',
+      one:
+          'Una barbería quiere contratarte: tienes 1 oferta de trabajo pendiente.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noAppointments => 'No tienes citas reservadas';
+
+  @override
+  String get noAppointmentsHint =>
+      'Encuentra una barbería y siéntate en el sillón.';
+
+  @override
+  String get browseBarbershops => 'Explorar barberías';
+
+  @override
+  String get closureWithinADay =>
+      'Esta reserva se cancelará en menos de un día si la barbería no renueva su suscripción.';
+
+  @override
+  String closureBy(DateTime date) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.MMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    return 'Esta barbería no ha renovado su suscripción. Si no lo hace antes del $dateString, esta reserva se cancelará.';
+  }
+
+  @override
+  String get noBookingsYet => 'Aún no tienes reservas.';
+
+  @override
+  String get reviewed => 'Valorada';
+
+  @override
+  String get leaveAReview => 'Dejar una reseña';
+
+  @override
+  String get bookingConfirmed => 'Confirmada';
+
+  @override
+  String get bookingCancelled => 'Cancelada';
+
+  @override
+  String get bookingCompleted => 'Completada';
+
+  @override
+  String get bookAppointment => 'Reservar cita';
+
+  @override
+  String get day => 'Día';
+
+  @override
+  String get calendar => 'Calendario';
+
+  @override
+  String get pickATime => 'Elige una hora para continuar';
+
+  @override
+  String withBarber(String name) {
+    return 'con $name';
+  }
+
+  @override
+  String get book => 'Reservar';
+
+  @override
+  String get findingFreeTimes => 'Buscando horas libres…';
+
+  @override
+  String get couldntLoadTimes => 'No se han podido cargar las horas';
+
+  @override
+  String get checkConnection => 'Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get tryAgain => 'Reintentar';
+
+  @override
+  String noFreeTimesOn(String day) {
+    return 'No hay horas libres el $day';
+  }
+
+  @override
+  String get shopClosedOrFull => 'La barbería está cerrada o completa ese día.';
+
+  @override
+  String tryDay(String day) {
+    return 'Probar el $day';
+  }
+
+  @override
+  String get morning => 'Mañana';
+
+  @override
+  String get afternoon => 'Tarde';
+
+  @override
+  String get evening => 'Noche';
+
+  @override
+  String get barber => 'Barbero';
+
+  @override
+  String freeCount(int count) {
+    return '$count libres';
+  }
+
+  @override
+  String get anyBarber => 'Cualquiera';
+
+  @override
+  String get findAShop => 'Buscar barbería';
+
+  @override
+  String get searchBarbershops => 'Buscar barberías';
+
+  @override
+  String get noBarbershopsYet => 'Aún no hay barberías';
+
+  @override
+  String get noBarbershopsHint =>
+      'Vuelve pronto: aquí aparecerán las barberías nuevas.';
+
+  @override
+  String noMatchesFor(String query) {
+    return 'No hay resultados para «$query»';
+  }
+
+  @override
+  String get tryDifferentName => 'Prueba con otro nombre.';
+
+  @override
+  String get skipRatingTitle => '¿Saltar esta valoración?';
+
+  @override
+  String get skipRatingBody =>
+      'Las valoraciones pueden darte recompensas: si te saltas esta, no recibirás nada por ella. ¿Saltarla igualmente?';
+
+  @override
+  String get skipAnyway => 'Saltar igualmente';
+
+  @override
+  String get omit => 'Omitir';
+
+  @override
+  String get submitReview => 'Enviar reseña';
+
+  @override
+  String get next => 'Siguiente';
+
+  @override
+  String get rateTheShop => 'Valora la barbería';
+
+  @override
+  String get rateTheBarber => 'Valora al barbero';
+
+  @override
+  String get rateTheHaircut => 'Valora el corte';
+
+  @override
+  String get haircutTypeLabel => 'Tipo de corte';
+
+  @override
+  String get commentOptional => 'Comentario (opcional)';
+
+  @override
+  String get hcBuzzCut => 'Rapado a máquina';
+
+  @override
+  String get hcCrewCut => 'Crew cut';
+
+  @override
+  String get hcFade => 'Degradado';
+
+  @override
+  String get hcUndercut => 'Undercut';
+
+  @override
+  String get hcPompadour => 'Pompadour';
+
+  @override
+  String get hcQuiff => 'Tupé';
+
+  @override
+  String get hcSlickBack => 'Peinado hacia atrás';
+
+  @override
+  String get hcTexturedCrop => 'Crop texturizado';
+
+  @override
+  String get hcMullet => 'Mullet';
+
+  @override
+  String get hcAfro => 'Afro';
+
+  @override
+  String get hcBaldShaved => 'Calvo/Rapado';
+
+  @override
+  String get hcBeardTrim => 'Arreglo de barba';
+
+  @override
+  String get hcOther => 'Otro';
+
+  @override
+  String get shopHiddenOwner =>
+      'Los clientes no verán el perfil de tu barbería hasta que tu suscripción esté activa.';
+
+  @override
+  String get shopUnavailable => 'Esta barbería no está disponible ahora mismo.';
+
+  @override
+  String get editShopPage => 'Editar perfil de la barbería';
+
+  @override
+  String get newOnTheApp => 'Nueva en la app';
+
+  @override
+  String moreLocations(int count) {
+    return '+$count más';
+  }
+
+  @override
+  String get newPost => 'Nueva publicación';
+
+  @override
+  String get editPage => 'Editar perfil';
+
+  @override
+  String get messageTheShop => 'Escribir a la barbería';
+
+  @override
+  String get barbers => 'Barberos';
+
+  @override
+  String get openingHours => 'Horario';
+
+  @override
+  String get locations => 'Locales';
+
+  @override
+  String get posts => 'Publicaciones';
+
+  @override
+  String get reviews => 'Reseñas';
+
+  @override
+  String get closedToday => 'Cerrado hoy';
+
+  @override
+  String openNowUntil(String time) {
+    return 'Abierto · hasta las $time';
+  }
+
+  @override
+  String opensAt(String time) {
+    return 'Abre a las $time';
+  }
+
+  @override
+  String get closedNow => 'Cerrado ahora';
+
+  @override
+  String get closed => 'Cerrado';
+
+  @override
+  String get noServicesYet => 'Aún no hay servicios.';
+
+  @override
+  String get noBarbersYet => 'Aún no hay barberos.';
+
+  @override
+  String get noReviewsYet => 'Aún no hay reseñas.';
+
+  @override
+  String get noPostsYet => 'Aún no hay publicaciones.';
 }

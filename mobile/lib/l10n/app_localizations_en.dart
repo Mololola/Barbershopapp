@@ -367,4 +367,327 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get barbershopSubtitle => 'Barbershop';
+
+  @override
+  String errorWithDetail(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String greeting(String name) {
+    return 'Hey, $name';
+  }
+
+  @override
+  String get greetingNoName => 'Hey there';
+
+  @override
+  String get whatsNext => 'Here\'s what\'s next.';
+
+  @override
+  String get quickActions => 'Quick actions';
+
+  @override
+  String get myBookings => 'My bookings';
+
+  @override
+  String get nextUp => 'NEXT UP';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get tomorrow => 'Tomorrow';
+
+  @override
+  String inDays(int days) {
+    return 'In $days days';
+  }
+
+  @override
+  String get loadingEllipsis => 'Loading…';
+
+  @override
+  String get view => 'View';
+
+  @override
+  String jobInvitations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'A barbershop wants to hire you — $count job invitations waiting.',
+      one: 'A barbershop wants to hire you — 1 job invitation waiting.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noAppointments => 'No appointments booked';
+
+  @override
+  String get noAppointmentsHint => 'Find a shop and get in the chair.';
+
+  @override
+  String get browseBarbershops => 'Browse barbershops';
+
+  @override
+  String get closureWithinADay =>
+      'This booking will be cancelled within a day unless the shop renews its subscription.';
+
+  @override
+  String closureBy(DateTime date) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.MMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    return 'This shop hasn\'t renewed its subscription. If it doesn\'t by $dateString, this booking will be cancelled.';
+  }
+
+  @override
+  String get noBookingsYet => 'No bookings yet.';
+
+  @override
+  String get reviewed => 'Reviewed';
+
+  @override
+  String get leaveAReview => 'Leave a review';
+
+  @override
+  String get bookingConfirmed => 'Confirmed';
+
+  @override
+  String get bookingCancelled => 'Cancelled';
+
+  @override
+  String get bookingCompleted => 'Completed';
+
+  @override
+  String get bookAppointment => 'Book appointment';
+
+  @override
+  String get day => 'Day';
+
+  @override
+  String get calendar => 'Calendar';
+
+  @override
+  String get pickATime => 'Pick a time to continue';
+
+  @override
+  String withBarber(String name) {
+    return 'with $name';
+  }
+
+  @override
+  String get book => 'Book';
+
+  @override
+  String get findingFreeTimes => 'Finding free times…';
+
+  @override
+  String get couldntLoadTimes => 'Couldn\'t load times';
+
+  @override
+  String get checkConnection => 'Check your connection and try again.';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String noFreeTimesOn(String day) {
+    return 'No free times on $day';
+  }
+
+  @override
+  String get shopClosedOrFull => 'The shop is closed or fully booked that day.';
+
+  @override
+  String tryDay(String day) {
+    return 'Try $day';
+  }
+
+  @override
+  String get morning => 'Morning';
+
+  @override
+  String get afternoon => 'Afternoon';
+
+  @override
+  String get evening => 'Evening';
+
+  @override
+  String get barber => 'Barber';
+
+  @override
+  String freeCount(int count) {
+    return '$count free';
+  }
+
+  @override
+  String get anyBarber => 'Any barber';
+
+  @override
+  String get findAShop => 'Find a shop';
+
+  @override
+  String get searchBarbershops => 'Search barbershops';
+
+  @override
+  String get noBarbershopsYet => 'No barbershops yet';
+
+  @override
+  String get noBarbershopsHint => 'Check back soon — new shops show up here.';
+
+  @override
+  String noMatchesFor(String query) {
+    return 'No matches for \"$query\"';
+  }
+
+  @override
+  String get tryDifferentName => 'Try a different name.';
+
+  @override
+  String get skipRatingTitle => 'Skip this rating?';
+
+  @override
+  String get skipRatingBody =>
+      'Ratings can earn you rewards later on — if you skip this one, you won\'t get anything for it. Skip anyway?';
+
+  @override
+  String get skipAnyway => 'Skip anyway';
+
+  @override
+  String get omit => 'Omit';
+
+  @override
+  String get submitReview => 'Submit review';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get rateTheShop => 'Rate the shop';
+
+  @override
+  String get rateTheBarber => 'Rate the barber';
+
+  @override
+  String get rateTheHaircut => 'Rate the haircut';
+
+  @override
+  String get haircutTypeLabel => 'Haircut type';
+
+  @override
+  String get commentOptional => 'Comment (optional)';
+
+  @override
+  String get hcBuzzCut => 'Buzz Cut';
+
+  @override
+  String get hcCrewCut => 'Crew Cut';
+
+  @override
+  String get hcFade => 'Fade';
+
+  @override
+  String get hcUndercut => 'Undercut';
+
+  @override
+  String get hcPompadour => 'Pompadour';
+
+  @override
+  String get hcQuiff => 'Quiff';
+
+  @override
+  String get hcSlickBack => 'Slick Back';
+
+  @override
+  String get hcTexturedCrop => 'Textured Crop';
+
+  @override
+  String get hcMullet => 'Mullet';
+
+  @override
+  String get hcAfro => 'Afro';
+
+  @override
+  String get hcBaldShaved => 'Bald/Shaved';
+
+  @override
+  String get hcBeardTrim => 'Beard Trim';
+
+  @override
+  String get hcOther => 'Other';
+
+  @override
+  String get shopHiddenOwner =>
+      'Your shop page is hidden from customers until your subscription is active.';
+
+  @override
+  String get shopUnavailable => 'This shop isn\'t available right now.';
+
+  @override
+  String get editShopPage => 'Edit shop page';
+
+  @override
+  String get newOnTheApp => 'New on the app';
+
+  @override
+  String moreLocations(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String get newPost => 'New post';
+
+  @override
+  String get editPage => 'Edit page';
+
+  @override
+  String get messageTheShop => 'Message the shop';
+
+  @override
+  String get barbers => 'Barbers';
+
+  @override
+  String get openingHours => 'Opening hours';
+
+  @override
+  String get locations => 'Locations';
+
+  @override
+  String get posts => 'Posts';
+
+  @override
+  String get reviews => 'Reviews';
+
+  @override
+  String get closedToday => 'Closed today';
+
+  @override
+  String openNowUntil(String time) {
+    return 'Open now · until $time';
+  }
+
+  @override
+  String opensAt(String time) {
+    return 'Opens $time';
+  }
+
+  @override
+  String get closedNow => 'Closed now';
+
+  @override
+  String get closed => 'Closed';
+
+  @override
+  String get noServicesYet => 'No services listed yet.';
+
+  @override
+  String get noBarbersYet => 'No barbers listed yet.';
+
+  @override
+  String get noReviewsYet => 'No reviews yet.';
+
+  @override
+  String get noPostsYet => 'No posts yet.';
 }

@@ -10,6 +10,7 @@ import 'package:mobile/features/customer/data/review_repository.dart';
 import 'package:mobile/features/customer/domain/booking.dart';
 import 'package:mobile/features/customer/domain/review.dart';
 import 'package:mobile/features/customer/presentation/my_bookings_screen.dart';
+import 'package:mobile/l10n/app_localizations.dart';
 
 void main() {
   const me = Profile(id: 'me-1', role: AccountRole.customer, username: 'me', referralCode: 'MYCODE01');
@@ -74,14 +75,15 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text(shopClosureNotice(cancelledAt, DateTime.now())), findsOneWidget);
+    expect(find.text(shopClosureNotice(lookupAppLocalizations(const Locale('en')), cancelledAt, DateTime.now())), findsOneWidget);
     expect(find.textContaining('this booking will be cancelled.'), findsOneWidget);
   });
 
   test('the notice is reworded for the last day', () {
     final now = DateTime.utc(2026, 4, 1, 13);
-    expect(shopClosureNotice(DateTime.utc(2026, 4, 2, 12), now), contains('within a day'));
-    expect(shopClosureNotice(DateTime.utc(2026, 4, 2, 12), now.subtract(const Duration(days: 5))), contains('2 Apr'));
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(shopClosureNotice(l10n, DateTime.utc(2026, 4, 2, 12), now), contains('within a day'));
+    expect(shopClosureNotice(l10n, DateTime.utc(2026, 4, 2, 12), now.subtract(const Duration(days: 5))), contains('Apr 2'));
   });
 }
 

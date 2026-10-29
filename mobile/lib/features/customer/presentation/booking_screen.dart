@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/status_message.dart';
 import '../../business/domain/brand.dart';
@@ -10,13 +12,10 @@ import '../application/booking_controller.dart';
 import '../application/browse_controller.dart';
 import '../domain/booking.dart';
 
-const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /// How far ahead a customer can book.
 const _bookingWindowDays = 60;
 
-String _dayLabel(DateTime day) => '${_weekdayShort[day.weekday - 1]} ${day.day} ${_monthShort[day.month - 1]}';
+String _dayLabel(BuildContext context, DateTime day) => DateFormat.MMMEd(context.l10n.localeName).format(day);
 
 String _timeLabel(BuildContext context, DateTime time) => TimeOfDay.fromDateTime(time.toLocal()).format(context);
 
@@ -107,18 +106,18 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Book appointment')),
+      appBar: AppBar(title: Text(context.l10n.bookAppointment)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           _ServiceSummary(businessId: widget.businessId, serviceId: widget.serviceId),
           const SizedBox(height: 24),
           _SectionHeader(
-            title: 'Day',
+            title: context.l10n.day,
             trailing: TextButton.icon(
               onPressed: _pickDate,
               icon: const Icon(Icons.calendar_month_outlined, size: 18),
-              label: const Text('Calendar'),
+              label: Text(context.l10n.calendar),
             ),
           ),
           SizedBox(
@@ -168,7 +167,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     Expanded(
                       child: _selectedSlot == null
                           ? Text(
-                              'Pick a time to continue',
+                              context.l10n.pickATime,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                               ),
@@ -178,11 +177,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '${_dayLabel(_date)} · ${_timeLabel(context, _selectedSlot!.startTime)}',
+                                  '${_dayLabel(context, _date)} · ${_timeLabel(context, _selectedSlot!.startTime)}',
                                   style: theme.textTheme.titleLarge,
                                 ),
                                 Text(
-                                  'with ${_selectedSlot!.workerName}',
+                                  context.l10n.withBarber(_selectedSlot!.workerName),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.bodySmall?.copyWith(
@@ -201,7 +200,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                               width: 16,
                               child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.onPrimary),
                             )
-                          : const Text('Book'),
+                          : Text(context.l10n.book),
                     ),
                   ],
                 ),
@@ -216,15 +215,15 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   Widget _buildAvailability(BuildContext context) {
     final availability = ref.watch(availabilityProvider(_query));
     return availability.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
-        child: LoadingView(caption: 'Finding free times…'),
+      loading: () => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: LoadingView(caption: context.l10n.findingFreeTimes),
       ),
       error: (_, _) => StatusMessage(
         icon: Icons.wifi_off_rounded,
-        title: 'Couldn\'t load times',
-        message: 'Check your connection and try again.',
-        actionLabel: 'Try again',
+        title: context.l10n.couldntLoadTimes,
+        message: context.l10n.checkConnection,
+        actionLabel: context.l10n.tryAgain,
         onAction: () => ref.invalidate(availabilityProvider(_query)),
         isError: true,
       ),
@@ -234,9 +233,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           final canTryNext = !nextDay.isAfter(_today.add(const Duration(days: _bookingWindowDays)));
           return StatusMessage(
             icon: Icons.event_busy_outlined,
-            title: 'No free times on ${_dayLabel(_date)}',
-            message: 'The shop is closed or fully booked that day.',
-            actionLabel: canTryNext ? 'Try ${_dayLabel(nextDay)}' : null,
+            title: context.l10n.noFreeTimesOn(_dayLabel(context, _date)),
+            message: context.l10n.shopClosedOrFull,
+            actionLabel: canTryNext ? context.l10n.tryDay(_dayLabel(context, nextDay)) : null,
             onAction: canTryNext ? () => _jumpToDate(nextDay) : null,
           );
         }
@@ -252,13 +251,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         final periods = <String, List<AvailableSlot>>{};
         for (final slot in shown) {
           final hour = slot.startTime.toLocal().hour;
-          final period = hour < 12 ? 'Morning' : (hour < 17 ? 'Afternoon' : 'Evening');
+          final period = hour < 12 ? context.l10n.morning : (hour < 17 ? context.l10n.afternoon : context.l10n.evening);
           periods.putIfAbsent(period, () => []).add(slot);
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _SectionHeader(title: 'Barber'),
+            _SectionHeader(title: context.l10n.barber),
             SizedBox(
               height: _BarberChoice.height,
               child: ListView(
@@ -286,7 +285,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             ),
             for (final period in periods.entries) ...[
               const SizedBox(height: 24),
-              _SectionHeader(title: period.key, count: '${period.value.length} free'),
+              _SectionHeader(title: period.key, count: context.l10n.freeCount(period.value.length)),
               _TimeGrid(
                 slots: period.value,
                 selected: _selectedSlot,
@@ -420,9 +419,9 @@ class _DayTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(isToday ? 'Today' : _weekdayShort[day.weekday - 1], style: small),
+              Text(isToday ? context.l10n.today : DateFormat.E(context.l10n.localeName).format(day), style: small),
               Text('${day.day}', style: theme.textTheme.headlineSmall?.copyWith(color: foreground, height: 1.1)),
-              Text(_monthShort[day.month - 1], style: small),
+              Text(DateFormat.MMM(context.l10n.localeName).format(day), style: small),
             ],
           ),
         ),
@@ -468,7 +467,7 @@ class _BarberChoice extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              name == null ? 'Any barber' : name!.split(' ').first,
+              name == null ? context.l10n.anyBarber : name!.split(' ').first,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(

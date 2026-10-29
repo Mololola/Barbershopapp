@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../application/booking_controller.dart';
 import '../application/review_controller.dart';
@@ -15,13 +16,13 @@ class MyBookingsScreen extends ConsumerWidget {
     final bookings = ref.watch(myBookingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My bookings')),
+      appBar: AppBar(title: Text(context.l10n.myBookings)),
       body: bookings.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(child: Text('No bookings yet.'));
+            return Center(child: Text(context.l10n.noBookingsYet));
           }
           return ListView(
             children: [for (final booking in list) _BookingTile(booking: booking)],
@@ -46,16 +47,16 @@ class _BookingTile extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: ListTile(
-        title: Text(_formatDateTime(booking.startTime.toLocal())),
+        title: Text(_formatDateTime(context, booking.startTime.toLocal())),
         subtitle: cancelledAt == null
-            ? Text(_statusLabel(booking.status))
+            ? Text(_statusLabel(context, booking.status))
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_statusLabel(booking.status)),
+                  Text(_statusLabel(context, booking.status)),
                   const SizedBox(height: 4),
                   Text(
-                    shopClosureNotice(cancelledAt, DateTime.now()),
+                    shopClosureNotice(context.l10n, cancelledAt, DateTime.now()),
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ],
@@ -71,7 +72,7 @@ class _BookingTile extends ConsumerWidget {
         onPressed: actionState.isLoading
             ? null
             : () => ref.read(bookingActionControllerProvider.notifier).cancelBooking(booking.id),
-        child: const Text('Cancel'),
+        child: Text(context.l10n.cancel),
       );
     }
 
@@ -83,14 +84,14 @@ class _BookingTile extends ConsumerWidget {
           width: 16,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
-        error: (error, _) => Text('Error: $error'),
+        error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
         data: (reviews) {
           if (reviews[booking.id] != null) {
-            return const Text('Reviewed');
+            return Text(context.l10n.reviewed);
           }
           return TextButton(
             onPressed: () => context.push('/customer/bookings/${booking.id}/review'),
-            child: const Text('Leave a review'),
+            child: Text(context.l10n.leaveAReview),
           );
         },
       );
@@ -99,23 +100,14 @@ class _BookingTile extends ConsumerWidget {
     return null;
   }
 
-  String _statusLabel(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.confirmed:
-        return 'Confirmed';
-      case BookingStatus.cancelled:
-        return 'Cancelled';
-      case BookingStatus.completed:
-        return 'Completed';
-    }
-  }
+  String _statusLabel(BuildContext context, BookingStatus status) => switch (status) {
+        BookingStatus.confirmed => context.l10n.bookingConfirmed,
+        BookingStatus.cancelled => context.l10n.bookingCancelled,
+        BookingStatus.completed => context.l10n.bookingCompleted,
+      };
 
-  String _formatDateTime(DateTime dt) {
+  String _formatDateTime(BuildContext context, DateTime dt) {
     final date = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-    final time = TimeOfDay.fromDateTime(dt);
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$date $hour:$minute $period';
+    return '$date ${TimeOfDay.fromDateTime(dt).format(context)}';
   }
 }

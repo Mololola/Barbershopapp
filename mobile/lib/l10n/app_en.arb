@@ -127,5 +127,192 @@
   "navDesigns": "Designs",
   "navRewards": "Rewards",
   "navRankings": "Rankings",
-  "barbershopSubtitle": "Barbershop"
+  "barbershopSubtitle": "Barbershop",
+  "errorWithDetail": "Error: {error}",
+  "greeting": "Hey, {name}",
+  "greetingNoName": "Hey there",
+  "whatsNext": "Here's what's next.",
+  "quickActions": "Quick actions",
+  "myBookings": "My bookings",
+  "nextUp": "NEXT UP",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "inDays": "In {days} days",
+  "loadingEllipsis": "Loading…",
+  "view": "View",
+  "jobInvitations": "{count, plural, =1{A barbershop wants to hire you — 1 job invitation waiting.} other{A barbershop wants to hire you — {count} job invitations waiting.}}",
+  "noAppointments": "No appointments booked",
+  "noAppointmentsHint": "Find a shop and get in the chair.",
+  "browseBarbershops": "Browse barbershops",
+  "closureWithinADay": "This booking will be cancelled within a day unless the shop renews its subscription.",
+  "closureBy": "This shop hasn't renewed its subscription. If it doesn't by {date}, this booking will be cancelled.",
+  "@errorWithDetail": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@greeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@inDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@jobInvitations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@closureBy": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "MMMd"
+      }
+    }
+  },
+  "noBookingsYet": "No bookings yet.",
+  "reviewed": "Reviewed",
+  "leaveAReview": "Leave a review",
+  "bookingConfirmed": "Confirmed",
+  "bookingCancelled": "Cancelled",
+  "bookingCompleted": "Completed",
+  "bookAppointment": "Book appointment",
+  "day": "Day",
+  "calendar": "Calendar",
+  "pickATime": "Pick a time to continue",
+  "withBarber": "with {name}",
+  "@withBarber": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "book": "Book",
+  "findingFreeTimes": "Finding free times…",
+  "couldntLoadTimes": "Couldn't load times",
+  "checkConnection": "Check your connection and try again.",
+  "tryAgain": "Try again",
+  "noFreeTimesOn": "No free times on {day}",
+  "@noFreeTimesOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "shopClosedOrFull": "The shop is closed or fully booked that day.",
+  "tryDay": "Try {day}",
+  "@tryDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "morning": "Morning",
+  "afternoon": "Afternoon",
+  "evening": "Evening",
+  "barber": "Barber",
+  "freeCount": "{count} free",
+  "@freeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "anyBarber": "Any barber",
+  "findAShop": "Find a shop",
+  "searchBarbershops": "Search barbershops",
+  "noBarbershopsYet": "No barbershops yet",
+  "noBarbershopsHint": "Check back soon — new shops show up here.",
+  "noMatchesFor": "No matches for \"{query}\"",
+  "@noMatchesFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "tryDifferentName": "Try a different name.",
+  "skipRatingTitle": "Skip this rating?",
+  "skipRatingBody": "Ratings can earn you rewards later on — if you skip this one, you won't get anything for it. Skip anyway?",
+  "skipAnyway": "Skip anyway",
+  "omit": "Omit",
+  "submitReview": "Submit review",
+  "next": "Next",
+  "rateTheShop": "Rate the shop",
+  "rateTheBarber": "Rate the barber",
+  "rateTheHaircut": "Rate the haircut",
+  "haircutTypeLabel": "Haircut type",
+  "commentOptional": "Comment (optional)",
+  "hcBuzzCut": "Buzz Cut",
+  "hcCrewCut": "Crew Cut",
+  "hcFade": "Fade",
+  "hcUndercut": "Undercut",
+  "hcPompadour": "Pompadour",
+  "hcQuiff": "Quiff",
+  "hcSlickBack": "Slick Back",
+  "hcTexturedCrop": "Textured Crop",
+  "hcMullet": "Mullet",
+  "hcAfro": "Afro",
+  "hcBaldShaved": "Bald/Shaved",
+  "hcBeardTrim": "Beard Trim",
+  "hcOther": "Other",
+  "shopHiddenOwner": "Your shop page is hidden from customers until your subscription is active.",
+  "shopUnavailable": "This shop isn't available right now.",
+  "editShopPage": "Edit shop page",
+  "newOnTheApp": "New on the app",
+  "moreLocations": "+{count} more",
+  "@moreLocations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "newPost": "New post",
+  "editPage": "Edit page",
+  "messageTheShop": "Message the shop",
+  "barbers": "Barbers",
+  "openingHours": "Opening hours",
+  "locations": "Locations",
+  "posts": "Posts",
+  "reviews": "Reviews",
+  "closedToday": "Closed today",
+  "openNowUntil": "Open now · until {time}",
+  "@openNowUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "opensAt": "Opens {time}",
+  "@opensAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "closedNow": "Closed now",
+  "closed": "Closed",
+  "noServicesYet": "No services listed yet.",
+  "noBarbersYet": "No barbers listed yet.",
+  "noReviewsYet": "No reviews yet.",
+  "noPostsYet": "No posts yet."
 }

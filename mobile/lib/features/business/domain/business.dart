@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n.dart';
+
 const supportedCurrencies = ['GBP', 'EUR', 'USD'];
 
 const _currencySymbols = {'GBP': '£', 'EUR': '€', 'USD': '\$'};
@@ -181,8 +183,8 @@ class OpeningHours {
   }
 
   /// "Closed", "09:00 – 18:00", or "09:00 – 13:30, 16:00 – 20:00".
-  String format(BuildContext context, {String closedLabel = 'Closed'}) {
-    if (isClosed) return closedLabel;
+  String format(BuildContext context, {String? closedLabel}) {
+    if (isClosed) return closedLabel ?? context.l10n.closed;
     final open = openTime?.format(context);
     final close = closeTime?.format(context);
     if (!hasBreak) return '$open – $close';
