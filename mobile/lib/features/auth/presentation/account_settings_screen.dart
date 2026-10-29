@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/app_language.dart';
+import '../../../core/l10n.dart';
 import '../../business/application/business_controller.dart';
 import '../../business/domain/finance_overview.dart';
 import '../application/auth_controller.dart';
@@ -31,22 +33,19 @@ class AccountSettingsScreen extends ConsumerWidget {
     }
     if (unpaid.isEmpty) return true;
     if (!context.mounted) return false;
-    final amounts = unpaid.map((balance) => formatMoney(balance.amountCents, balance.currency)).join(' and ');
+    final amounts = unpaid.map((balance) => formatMoney(balance.amountCents, balance.currency)).join(context.l10n.listAnd);
     final choice = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('You have rewards not paid out yet'),
-        content: Text(
-          'You have $amounts that hasn\'t been paid to you. Cash it out first, or delete your account and give '
-          'it up — it can\'t be paid after your account is gone.',
-        ),
+        title: Text(context.l10n.unpaidRewardsTitle),
+        content: Text(context.l10n.unpaidRewardsBody(amounts)),
         actions: [
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             onPressed: () => Navigator.pop(context, 'give-up'),
-            child: const Text('Give it up'),
+            child: Text(context.l10n.giveItUp),
           ),
-          FilledButton(onPressed: () => Navigator.pop(context, 'cash-out'), child: const Text('Cash out')),
+          FilledButton(onPressed: () => Navigator.pop(context, 'cash-out'), child: Text(context.l10n.cashOut)),
         ],
       ),
     );
@@ -59,17 +58,14 @@ class AccountSettingsScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete your account?'),
-        content: const Text(
-          'This permanently deletes your account and everything tied to it — profile, bookings, '
-          'reviews, posts, messages. This can\'t be undone.',
-        ),
+        title: Text(context.l10n.deleteAccountTitle),
+        content: Text(context.l10n.deleteAccountBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete account'),
+            child: Text(context.l10n.deleteAccount),
           ),
         ],
       ),
@@ -85,6 +81,36 @@ class AccountSettingsScreen extends ConsumerWidget {
     }
   }
 
+  /// Language names are written in their own language, so anyone can find
+  /// theirs whatever the app is showing.
+  String _languageName(BuildContext context, Locale? locale) => switch (locale?.languageCode) {
+        'en' => 'English',
+        'es' => 'Español',
+        _ => context.l10n.phoneLanguage,
+      };
+
+  Future<void> _chooseLanguage(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(appLanguageProvider);
+    final options = <Locale?>[null, const Locale('en'), const Locale('es')];
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text(context.l10n.language),
+        children: [
+          for (final option in options)
+            ListTile(
+              title: Text(_languageName(context, option)),
+              trailing: option?.languageCode == current?.languageCode ? const Icon(Icons.check) : null,
+              onTap: () {
+                ref.read(appLanguageProvider.notifier).choose(option);
+                Navigator.pop(dialogContext);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
@@ -93,36 +119,36 @@ class AccountSettingsScreen extends ConsumerWidget {
     final business = isBusiness ? ref.watch(currentBusinessProvider).value : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(context.l10n.settingsTitle)),
       body: ListView(
         children: [
           if (isBusiness) ...[
-            const _GroupHeader('Your shop'),
+            _GroupHeader(context.l10n.yourShopGroup),
             ListTile(
               leading: const Icon(Icons.brush_outlined),
-              title: const Text('Shop page'),
-              subtitle: const Text('Logo, cover photo and brand colour'),
+              title: Text(context.l10n.shopPage),
+              subtitle: Text(context.l10n.shopPageSubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/business/shop/edit'),
             ),
             ListTile(
               leading: const Icon(Icons.storefront_outlined),
-              title: const Text('Business details'),
-              subtitle: const Text('Locations and opening hours'),
+              title: Text(context.l10n.businessDetails),
+              subtitle: Text(context.l10n.businessDetailsSubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/business/edit'),
             ),
             ListTile(
               leading: const Icon(Icons.content_cut),
-              title: const Text('Services'),
-              subtitle: const Text('What you offer, prices and durations'),
+              title: Text(context.l10n.services),
+              subtitle: Text(context.l10n.servicesSubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/business/services'),
             ),
             ListTile(
               leading: const Icon(Icons.receipt_long_outlined),
-              title: const Text('Subscription & billing'),
-              subtitle: const Text('Your plan, free trial, cancel, invoices'),
+              title: Text(context.l10n.subscriptionBilling),
+              subtitle: Text(context.l10n.subscriptionBillingSubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/business/subscription'),
             ),
@@ -130,14 +156,14 @@ class AccountSettingsScreen extends ConsumerWidget {
             if (business != null)
               ListTile(
                 leading: const Icon(Icons.card_giftcard_outlined),
-                title: const Text('Referred by'),
-                subtitle: Text(business.referredByCode ?? 'No referral code was used'),
+                title: Text(context.l10n.referredBy),
+                subtitle: Text(business.referredByCode ?? context.l10n.noReferralCodeUsed),
               ),
           ] else if (profile != null) ...[
-            const _GroupHeader('Your profile'),
+            _GroupHeader(context.l10n.yourProfileGroup),
             ListTile(
               leading: const Icon(Icons.account_circle_outlined),
-              title: const Text('Profile photo'),
+              title: Text(context.l10n.profilePhoto),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/profile/edit'),
             ),
@@ -145,8 +171,8 @@ class AccountSettingsScreen extends ConsumerWidget {
             if (profile.isMinor != true)
               ListTile(
                 leading: const Icon(Icons.content_cut),
-                title: const Text('Worker profile'),
-                subtitle: const Text('Legal name, bio and availability to work at a shop'),
+                title: Text(context.l10n.workerProfile),
+                subtitle: Text(context.l10n.workerProfileSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/customer/worker-profile'),
               ),
@@ -155,33 +181,40 @@ class AccountSettingsScreen extends ConsumerWidget {
           if (profile != null && !isBusiness)
             ListTile(
               leading: const Icon(Icons.card_giftcard_outlined),
-              title: const Text('Your referral code'),
+              title: Text(context.l10n.yourReferralCode),
               subtitle: Text(profile.referralCode),
               trailing: const Icon(Icons.copy),
               onTap: () {
                 Clipboard.setData(ClipboardData(text: profile.referralCode));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Referral code copied')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.referralCodeCopied)));
               },
             ),
-          const _GroupHeader('Account'),
+          _GroupHeader(context.l10n.accountGroup),
+          ListTile(
+            leading: const Icon(Icons.language),
+            title: Text(context.l10n.language),
+            subtitle: Text(_languageName(context, ref.watch(appLanguageProvider))),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _chooseLanguage(context, ref),
+          ),
           if (profile?.isAdmin == true)
             ListTile(
               leading: const Icon(Icons.shield_outlined),
-              title: const Text('Admin'),
-              subtitle: const Text('Dashboard, customers, businesses, payouts'),
+              title: Text(context.l10n.adminEntry),
+              subtitle: Text(context.l10n.adminEntrySubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/admin'),
             ),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Sign out'),
+            title: Text(context.l10n.signOut),
             onTap: authState.isLoading ? null : () => _signOut(context, ref),
           ),
           const Divider(height: 1),
           ListTile(
             leading: Icon(Icons.delete_forever, color: Theme.of(context).colorScheme.error),
-            title: Text('Delete account', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            subtitle: const Text('Permanently deletes your account and all its data'),
+            title: Text(context.l10n.deleteAccount, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            subtitle: Text(context.l10n.deleteAccountSubtitle),
             onTap: authState.isLoading ? null : () => _deleteAccount(context, ref),
           ),
         ],

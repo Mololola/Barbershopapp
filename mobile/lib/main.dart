@@ -8,6 +8,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/adaptive_chrome.dart';
+import 'core/app_language.dart';
 import 'core/env.dart';
 import 'core/error_reporting.dart';
 import 'core/l10n.dart';
@@ -71,6 +72,7 @@ class BarbershopApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Fadra Cut',
       theme: AppTheme.light,
+      locale: ref.watch(appLanguageProvider),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: ref.watch(routerProvider),

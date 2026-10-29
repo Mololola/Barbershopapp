@@ -30,6 +30,7 @@ void main() {
     }
     // A business doesn't refer anyone; it only sees, read-only, who referred it.
     expect(find.text('SHOPCODE'), findsNothing);
+    await tester.scrollUntilVisible(find.text('Delete account'), 200);
     expect(find.text('Sign out'), findsOneWidget);
     expect(find.text('Delete account'), findsOneWidget);
   });

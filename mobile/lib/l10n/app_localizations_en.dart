@@ -178,4 +178,109 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signOut => 'Sign out';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get yourShopGroup => 'Your shop';
+
+  @override
+  String get shopPage => 'Shop page';
+
+  @override
+  String get shopPageSubtitle => 'Logo, cover photo and brand colour';
+
+  @override
+  String get businessDetails => 'Business details';
+
+  @override
+  String get businessDetailsSubtitle => 'Locations and opening hours';
+
+  @override
+  String get services => 'Services';
+
+  @override
+  String get servicesSubtitle => 'What you offer, prices and durations';
+
+  @override
+  String get subscriptionBilling => 'Subscription & billing';
+
+  @override
+  String get subscriptionBillingSubtitle =>
+      'Your plan, free trial, cancel, invoices';
+
+  @override
+  String get referredBy => 'Referred by';
+
+  @override
+  String get noReferralCodeUsed => 'No referral code was used';
+
+  @override
+  String get yourProfileGroup => 'Your profile';
+
+  @override
+  String get profilePhoto => 'Profile photo';
+
+  @override
+  String get workerProfile => 'Worker profile';
+
+  @override
+  String get workerProfileSubtitle =>
+      'Legal name, bio and availability to work at a shop';
+
+  @override
+  String get yourReferralCode => 'Your referral code';
+
+  @override
+  String get referralCodeCopied => 'Referral code copied';
+
+  @override
+  String get accountGroup => 'Account';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get phoneLanguage => 'Phone language';
+
+  @override
+  String get adminEntry => 'Admin';
+
+  @override
+  String get adminEntrySubtitle => 'Dashboard, customers, businesses, payouts';
+
+  @override
+  String get deleteAccount => 'Delete account';
+
+  @override
+  String get deleteAccountSubtitle =>
+      'Permanently deletes your account and all its data';
+
+  @override
+  String get deleteAccountTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountBody =>
+      'This permanently deletes your account and everything tied to it — profile, bookings, reviews, posts, messages. This can\'t be undone.';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get unpaidRewardsTitle => 'You have rewards not paid out yet';
+
+  @override
+  String unpaidRewardsBody(String amounts) {
+    return 'You have $amounts that hasn\'t been paid to you. Cash it out first, or delete your account and give it up — it can\'t be paid after your account is gone.';
+  }
+
+  @override
+  String get giveItUp => 'Give it up';
+
+  @override
+  String get cashOut => 'Cash out';
+
+  @override
+  String get listAnd => ' and ';
 }

@@ -421,6 +421,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign out'**
   String get signOut;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @yourShopGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shop'**
+  String get yourShopGroup;
+
+  /// No description provided for @shopPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop page'**
+  String get shopPage;
+
+  /// No description provided for @shopPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Logo, cover photo and brand colour'**
+  String get shopPageSubtitle;
+
+  /// No description provided for @businessDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Business details'**
+  String get businessDetails;
+
+  /// No description provided for @businessDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Locations and opening hours'**
+  String get businessDetailsSubtitle;
+
+  /// No description provided for @services.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get services;
+
+  /// No description provided for @servicesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you offer, prices and durations'**
+  String get servicesSubtitle;
+
+  /// No description provided for @subscriptionBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription & billing'**
+  String get subscriptionBilling;
+
+  /// No description provided for @subscriptionBillingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan, free trial, cancel, invoices'**
+  String get subscriptionBillingSubtitle;
+
+  /// No description provided for @referredBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Referred by'**
+  String get referredBy;
+
+  /// No description provided for @noReferralCodeUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'No referral code was used'**
+  String get noReferralCodeUsed;
+
+  /// No description provided for @yourProfileGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile'**
+  String get yourProfileGroup;
+
+  /// No description provided for @profilePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo'**
+  String get profilePhoto;
+
+  /// No description provided for @workerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Worker profile'**
+  String get workerProfile;
+
+  /// No description provided for @workerProfileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal name, bio and availability to work at a shop'**
+  String get workerProfileSubtitle;
+
+  /// No description provided for @yourReferralCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Your referral code'**
+  String get yourReferralCode;
+
+  /// No description provided for @referralCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral code copied'**
+  String get referralCodeCopied;
+
+  /// No description provided for @accountGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountGroup;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @phoneLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone language'**
+  String get phoneLanguage;
+
+  /// No description provided for @adminEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get adminEntry;
+
+  /// No description provided for @adminEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard, customers, businesses, payouts'**
+  String get adminEntrySubtitle;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently deletes your account and all its data'**
+  String get deleteAccountSubtitle;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes your account and everything tied to it — profile, bookings, reviews, posts, messages. This can\'t be undone.'**
+  String get deleteAccountBody;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @unpaidRewardsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You have rewards not paid out yet'**
+  String get unpaidRewardsTitle;
+
+  /// No description provided for @unpaidRewardsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {amounts} that hasn\'t been paid to you. Cash it out first, or delete your account and give it up — it can\'t be paid after your account is gone.'**
+  String unpaidRewardsBody(String amounts);
+
+  /// No description provided for @giveItUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Give it up'**
+  String get giveItUp;
+
+  /// No description provided for @cashOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash out'**
+  String get cashOut;
+
+  /// No description provided for @listAnd.
+  ///
+  /// In en, this message translates to:
+  /// **' and '**
+  String get listAnd;
 }
 
 class _AppLocalizationsDelegate
