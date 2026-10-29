@@ -3,15 +3,19 @@ import uuid
 from zoneinfo import ZoneInfo
 
 import psycopg
-from fastapi import status
+import pytest
+from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
+from app.api import bookings as bookings_api
 from app.api.bookings import (
     _effective_hours,
     _map_booking_integrity_error,
     _slot_rejection_reason,
+    complete_booking,
     my_bookings_at_risk,
 )
+from app.models.booking import Booking
 
 
 def test_exclusion_violation_maps_to_409():
@@ -131,3 +135,37 @@ def test_bookings_at_risk_use_the_grace_period_and_30_day_notice():
 
     assert db.params == {"user_id": "me", "days": 60, "notice_days": 30}
     assert [(r.booking_id, r.cancelled_at) for r in result] == [(booking_id, cancelled_at)]
+
+
+class _CommitDb:
+    def commit(self):
+        pass
+
+    def refresh(self, booking):
+        pass
+
+
+def _owned_booking(monkeypatch, start_time):
+    booking = Booking(id=uuid.uuid4(), business_id=uuid.uuid4(), status="confirmed", start_time=start_time)
+    monkeypatch.setattr(bookings_api, "_get_booking_or_404", lambda db, booking_id: booking)
+    monkeypatch.setattr(bookings_api, "_is_business_owner", lambda db, business_id, user_id: True)
+    return booking
+
+
+def test_a_booking_cant_be_marked_done_before_it_starts(monkeypatch):
+    booking = _owned_booking(monkeypatch, datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1))
+
+    with pytest.raises(HTTPException) as exc:
+        complete_booking(booking.id, db=_CommitDb(), user_id="owner")
+
+    assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert booking.status == "confirmed"
+
+
+def test_a_booking_that_has_started_can_be_marked_done(monkeypatch):
+    booking = _owned_booking(monkeypatch, datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=5))
+
+    complete_booking(booking.id, db=_CommitDb(), user_id="owner")
+
+    assert booking.status == "completed"
+    assert booking.completed_at is not None

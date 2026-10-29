@@ -23,6 +23,7 @@ _SPANISH = {
     "Not your booking to cancel": "No puedes cancelar esta reserva.",
     "Not your business's booking": "Esta reserva no es de tu negocio.",
     "Only confirmed bookings can be marked done": "Solo se pueden marcar como hechas las reservas confirmadas.",
+    "This booking hasn't started yet": "Esta reserva todavía no ha empezado.",
     "That month hasn't happened yet": "Ese mes todavía no ha llegado.",
     "That IBAN isn't valid — check it and try again.": "Ese IBAN no es válido: revísalo y vuelve a intentarlo.",
     "Add your bank details first.": "Añade antes tus datos bancarios.",

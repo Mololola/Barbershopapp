@@ -358,9 +358,14 @@ def complete_booking(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business's booking")
     if booking.status != "confirmed":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only confirmed bookings can be marked done")
+    # Marking done triggers the customer's compulsory review, so it can't come
+    # before the cut has even started.
+    now = datetime.datetime.now(datetime.UTC)
+    if booking.start_time > now:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This booking hasn't started yet")
 
     booking.status = "completed"
-    booking.completed_at = datetime.datetime.now(datetime.UTC)
+    booking.completed_at = now
     db.commit()
     db.refresh(booking)
     return booking

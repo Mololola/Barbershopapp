@@ -56,7 +56,8 @@ class BookingsScreen extends ConsumerWidget {
                     child: ListTile(
                       title: Text(TimeOfDay.fromDateTime(booking.startTime.toLocal()).format(context)),
                       subtitle: Text(_statusLabel(context, booking.status)),
-                      trailing: booking.status == BookingStatus.confirmed
+                      // Marking done asks the customer for a review, so not before the cut starts.
+                      trailing: booking.status == BookingStatus.confirmed && booking.startTime.isBefore(DateTime.now())
                           ? TextButton(
                               onPressed: actionState.isLoading
                                   ? null
