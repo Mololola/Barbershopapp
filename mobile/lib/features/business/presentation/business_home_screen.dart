@@ -88,7 +88,7 @@ class BusinessHomeScreen extends ConsumerWidget {
             ],
           );
           final hoursSection = _Section(
-            header: _SectionHeader(title: 'This week', onManage: () => context.push('/business/edit')),
+            header: _SectionHeader(title: context.l10n.thisWeek, onManage: () => context.push('/business/edit')),
             child: hours.when(
               loading: () => const LoadingView(),
               error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
@@ -96,7 +96,7 @@ class BusinessHomeScreen extends ConsumerWidget {
             ),
           );
           final servicesSection = _Section(
-            header: _SectionHeader(title: 'Services', onManage: () => context.push('/business/services')),
+            header: _SectionHeader(title: context.l10n.services, onManage: () => context.push('/business/services')),
             child: services.when(
               loading: () => const LoadingView(),
               error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
@@ -123,7 +123,7 @@ class BusinessHomeScreen extends ConsumerWidget {
             ),
           );
           final staffSection = _Section(
-            header: _SectionHeader(title: 'Staff', onManage: () => context.go('/business/staff')),
+            header: _SectionHeader(title: context.l10n.navStaff, onManage: () => context.go('/business/staff')),
             child: workers.when(
               loading: () => const LoadingView(),
               error: (error, _) => Text(context.l10n.errorWithDetail('$error')),

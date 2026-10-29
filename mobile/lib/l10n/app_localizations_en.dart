@@ -1714,4 +1714,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enterValidPostcode => 'Enter a valid postcode';
+
+  @override
+  String get thisWeek => 'This week';
 }

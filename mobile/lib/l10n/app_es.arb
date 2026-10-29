@@ -471,5 +471,6 @@
   "countrySpain": "España",
   "streetAddress": "Dirección",
   "postcode": "Código postal",
-  "enterValidPostcode": "Introduce un código postal válido"
+  "enterValidPostcode": "Introduce un código postal válido",
+  "thisWeek": "Esta semana"
 }

@@ -1729,4 +1729,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get enterValidPostcode => 'Introduce un código postal válido';
+
+  @override
+  String get thisWeek => 'Esta semana';
 }

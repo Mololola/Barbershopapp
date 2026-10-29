@@ -2929,6 +2929,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a valid postcode'**
   String get enterValidPostcode;
+
+  /// No description provided for @thisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeek;
 }
 
 class _AppLocalizationsDelegate
