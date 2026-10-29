@@ -1401,5 +1401,6 @@
   "offlineShowingSaved": "No connection — showing what was last saved.",
   "sending": "Sending…",
   "savedWillSend": "Saved — it will be sent when you're back online.",
-  "bookingNeedsConnection": "You need a connection to book"
+  "bookingNeedsConnection": "You need a connection to book",
+  "videoUnavailable": "Video unavailable — tap to try again"
 }

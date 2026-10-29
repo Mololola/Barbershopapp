@@ -2395,4 +2395,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get bookingNeedsConnection => 'Necesitas conexión para reservar';
+
+  @override
+  String get videoUnavailable => 'Vídeo no disponible: toca para reintentar';
 }

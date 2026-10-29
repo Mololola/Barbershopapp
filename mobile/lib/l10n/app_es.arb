@@ -648,5 +648,6 @@
   "offlineShowingSaved": "Sin conexión: mostrando lo último guardado.",
   "sending": "Enviando…",
   "savedWillSend": "Guardado: se enviará cuando vuelvas a tener conexión.",
-  "bookingNeedsConnection": "Necesitas conexión para reservar"
+  "bookingNeedsConnection": "Necesitas conexión para reservar",
+  "videoUnavailable": "Vídeo no disponible: toca para reintentar"
 }

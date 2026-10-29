@@ -329,18 +329,37 @@ class _PostVideoPlayer extends StatefulWidget {
 }
 
 class _PostVideoPlayerState extends State<_PostVideoPlayer> {
-  late final VideoPlayerController _controller;
+  late VideoPlayerController _controller;
+
+  /// The video couldn't be loaded, e.g. no connection: videos aren't kept
+  /// on the phone. Tapping tries again.
+  bool _failed = false;
 
   @override
   void initState() {
     super.initState();
+    _load();
+  }
+
+  void _load() {
+    _failed = false;
     _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
-      ..initialize().then((_) {
-        if (mounted) setState(() {});
-      })
       ..addListener(() {
         if (mounted) setState(() {});
       });
+    _controller.initialize().then(
+      (_) {
+        if (mounted) setState(() {});
+      },
+      onError: (Object _) {
+        if (mounted) setState(() => _failed = true);
+      },
+    );
+  }
+
+  void _retry() {
+    _controller.dispose();
+    setState(_load);
   }
 
   @override
@@ -360,6 +379,25 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    if (_failed) {
+      return GestureDetector(
+        onTap: _retry,
+        child: AspectRatio(
+          aspectRatio: _mediaAspectRatio,
+          child: ColoredBox(
+            color: scheme.onSurface.withValues(alpha: 0.06),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.videocam_off_outlined, color: scheme.onSurface.withValues(alpha: 0.5)),
+                const SizedBox(height: 8),
+                Text(context.l10n.videoUnavailable, style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6))),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     if (!_controller.value.isInitialized) {
       return AspectRatio(
         aspectRatio: _mediaAspectRatio,

@@ -2373,4 +2373,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bookingNeedsConnection => 'You need a connection to book';
+
+  @override
+  String get videoUnavailable => 'Video unavailable — tap to try again';
 }

@@ -3991,6 +3991,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You need a connection to book'**
   String get bookingNeedsConnection;
+
+  /// No description provided for @videoUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Video unavailable — tap to try again'**
+  String get videoUnavailable;
 }
 
 class _AppLocalizationsDelegate
