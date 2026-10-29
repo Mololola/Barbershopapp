@@ -3757,6 +3757,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No users found.'**
   String get noUsersFound;
+
+  /// No description provided for @noMessagesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet — say hello.'**
+  String get noMessagesYet;
+
+  /// No description provided for @messageTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Message {name}'**
+  String messageTo(String name);
+
+  /// No description provided for @kindBarber.
+  ///
+  /// In en, this message translates to:
+  /// **'Barber · '**
+  String get kindBarber;
+
+  /// No description provided for @kindShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop · '**
+  String get kindShop;
+
+  /// No description provided for @viewProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View profile'**
+  String get viewProfile;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @readMarker.
+  ///
+  /// In en, this message translates to:
+  /// **' · Read'**
+  String get readMarker;
+
+  /// No description provided for @workerAskedToLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'This worker has asked to leave. They stay on staff until you confirm.'**
+  String get workerAskedToLeave;
+
+  /// No description provided for @confirmLeaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm they\'re leaving'**
+  String get confirmLeaving;
+
+  /// No description provided for @allCaughtUpShort.
+  ///
+  /// In en, this message translates to:
+  /// **'All caught up'**
+  String get allCaughtUpShort;
+
+  /// No description provided for @unreadCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unread'**
+  String unreadCount(int count);
+
+  /// No description provided for @inboxPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get inboxPersonal;
+
+  /// No description provided for @inboxBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get inboxBusiness;
+
+  /// No description provided for @loadingConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading conversations…'**
+  String get loadingConversations;
+
+  /// No description provided for @couldntLoadMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load messages'**
+  String get couldntLoadMessages;
+
+  /// No description provided for @noConversationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get noConversationsYet;
+
+  /// No description provided for @noConversationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a barber or a friend and say hello from their profile.'**
+  String get noConversationsHint;
+
+  /// No description provided for @noWorkMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'No work messages'**
+  String get noWorkMessages;
+
+  /// No description provided for @noWorkMessagesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When a shop and a barber talk about work, it shows up here.'**
+  String get noWorkMessagesHint;
+
+  /// No description provided for @sayHello.
+  ///
+  /// In en, this message translates to:
+  /// **'Say hello 👋'**
+  String get sayHello;
+
+  /// No description provided for @messagesUnreadTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages, {count} unread'**
+  String messagesUnreadTooltip(int count);
+
+  /// No description provided for @messagesWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages ({count})'**
+  String messagesWithCount(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n.dart';
 import '../application/messaging_controller.dart';
 
 /// Shared "Messages" entry point for both home screens — a plain button
@@ -16,7 +17,7 @@ class MessagesEntryButton extends ConsumerWidget {
 
     return FilledButton(
       onPressed: () => context.push('/messages'),
-      child: Text(unreadCount > 0 ? 'Messages ($unreadCount)' : 'Messages'),
+      child: Text(unreadCount > 0 ? context.l10n.messagesWithCount(unreadCount) : context.l10n.navMessages),
     );
   }
 }

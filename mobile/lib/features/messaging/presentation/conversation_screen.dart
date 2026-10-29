@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
@@ -88,10 +90,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           Expanded(
             child: messages.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Center(child: Text('Error: $error')),
+              error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
               data: (list) {
                 if (list.isEmpty) {
-                  return const Center(child: Text('No messages yet — say hello.'));
+                  return Center(child: Text(context.l10n.noMessagesYet));
                 }
                 _scrollToBottom();
                 final lastMine = list.lastIndexWhere((m) => m.senderId == myId);
@@ -127,7 +129,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       minLines: 1,
                       maxLines: 4,
                       decoration: InputDecoration(
-                        hintText: other == null ? 'Message' : 'Message $other',
+                        hintText: other == null ? context.l10n.message : context.l10n.messageTo(other),
                         filled: true,
                         fillColor: AppColors.chalk,
                         isDense: true,
@@ -144,7 +146,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   const SizedBox(width: 8),
                   IconButton.filled(
                     style: IconButton.styleFrom(backgroundColor: AppColors.brass, foregroundColor: AppColors.onBrass),
-                    tooltip: 'Send',
+                    tooltip: context.l10n.send,
                     icon: const Icon(Icons.send_rounded),
                     onPressed: actionState.isLoading ? null : _send,
                   ),
@@ -171,7 +173,7 @@ class _ChatHeader extends ConsumerWidget {
     final role = ref.watch(profileByIdProvider(otherId)).value?.role;
     // The same fact the profile's Barber badge shows: a worker profile exists.
     final isBarber = role == AccountRole.customer && ref.watch(workerProfileByIdProvider(otherId)).value != null;
-    final kind = isBarber ? 'Barber · ' : (role == AccountRole.business ? 'Shop · ' : '');
+    final kind = isBarber ? context.l10n.kindBarber : (role == AccountRole.business ? context.l10n.kindShop : '');
     final avatarUrl = conversation.otherAvatarUrl;
     final textTheme = Theme.of(context).textTheme;
 
@@ -201,7 +203,7 @@ class _ChatHeader extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.titleSmall?.copyWith(color: AppColors.chalk, fontWeight: FontWeight.w600),
                   ),
-                  Text('${kind}View profile', style: textTheme.labelSmall?.copyWith(color: AppColors.brass)),
+                  Text('$kind${context.l10n.viewProfile}', style: textTheme.labelSmall?.copyWith(color: AppColors.brass)),
                 ],
               ),
             ),
@@ -211,8 +213,6 @@ class _ChatHeader extends ConsumerWidget {
     );
   }
 }
-
-const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /// One message, with a day marker above it when the day changes and its
 /// time below the last message of a run. Messages from the same person
@@ -241,14 +241,14 @@ class _MessageItem extends StatelessWidget {
       DateUtils.isSameDay(earlier.createdAt.toLocal(), later.createdAt.toLocal()) &&
       later.createdAt.difference(earlier.createdAt) < _runGap;
 
-  static String _dayLabel(DateTime at) {
+  static String _dayLabel(BuildContext context, DateTime at) {
     final local = at.toLocal();
     final now = DateTime.now();
     final days = DateUtils.dateOnly(now).difference(DateUtils.dateOnly(local)).inDays;
-    if (days == 0) return 'Today';
-    if (days == 1) return 'Yesterday';
-    final year = local.year == now.year ? '' : ' ${local.year}';
-    return '${local.day} ${_monthShort[local.month - 1]}$year';
+    if (days == 0) return context.l10n.today;
+    if (days == 1) return context.l10n.yesterday;
+    final format = local.year == now.year ? DateFormat.MMMd(context.l10n.localeName) : DateFormat.yMMMd(context.l10n.localeName);
+    return format.format(local);
   }
 
   @override
@@ -261,7 +261,7 @@ class _MessageItem extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     const round = Radius.circular(18);
     const tail = Radius.circular(6);
-    final read = isMine && showRead && message.readAt != null ? ' · Read' : '';
+    final read = isMine && showRead && message.readAt != null ? context.l10n.readMarker : '';
 
     return Column(
       crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -275,7 +275,7 @@ class _MessageItem extends StatelessWidget {
                 color: AppColors.charcoal.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: Text(_dayLabel(message.createdAt), style: textTheme.labelSmall?.copyWith(color: AppColors.steel)),
+              child: Text(_dayLabel(context, message.createdAt), style: textTheme.labelSmall?.copyWith(color: AppColors.steel)),
             ),
           ),
         Align(
@@ -331,9 +331,9 @@ class _LeaveRequestBanner extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'This worker has asked to leave. They stay on staff until you confirm.',
-            style: TextStyle(fontWeight: FontWeight.w600),
+          Text(
+            context.l10n.workerAskedToLeave,
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Row(
@@ -342,7 +342,7 @@ class _LeaveRequestBanner extends ConsumerWidget {
                 onPressed: actionState.isLoading
                     ? null
                     : () => ref.read(leaveRequestControllerProvider.notifier).reject(request),
-                child: const Text('Reject'),
+                child: Text(context.l10n.reject),
               ),
               const SizedBox(width: 8),
               FilledButton(
@@ -350,7 +350,7 @@ class _LeaveRequestBanner extends ConsumerWidget {
                 onPressed: actionState.isLoading
                     ? null
                     : () => ref.read(leaveRequestControllerProvider.notifier).acknowledge(request),
-                child: const Text('Confirm they\'re leaving'),
+                child: Text(context.l10n.confirmLeaving),
               ),
             ],
           ),

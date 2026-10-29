@@ -2237,4 +2237,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noUsersFound => 'No users found.';
+
+  @override
+  String get noMessagesYet => 'No messages yet — say hello.';
+
+  @override
+  String messageTo(String name) {
+    return 'Message $name';
+  }
+
+  @override
+  String get kindBarber => 'Barber · ';
+
+  @override
+  String get kindShop => 'Shop · ';
+
+  @override
+  String get viewProfile => 'View profile';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get readMarker => ' · Read';
+
+  @override
+  String get workerAskedToLeave =>
+      'This worker has asked to leave. They stay on staff until you confirm.';
+
+  @override
+  String get confirmLeaving => 'Confirm they\'re leaving';
+
+  @override
+  String get allCaughtUpShort => 'All caught up';
+
+  @override
+  String unreadCount(int count) {
+    return '$count unread';
+  }
+
+  @override
+  String get inboxPersonal => 'Personal';
+
+  @override
+  String get inboxBusiness => 'Business';
+
+  @override
+  String get loadingConversations => 'Loading conversations…';
+
+  @override
+  String get couldntLoadMessages => 'Couldn\'t load messages';
+
+  @override
+  String get noConversationsYet => 'No conversations yet';
+
+  @override
+  String get noConversationsHint =>
+      'Find a barber or a friend and say hello from their profile.';
+
+  @override
+  String get noWorkMessages => 'No work messages';
+
+  @override
+  String get noWorkMessagesHint =>
+      'When a shop and a barber talk about work, it shows up here.';
+
+  @override
+  String get sayHello => 'Say hello 👋';
+
+  @override
+  String messagesUnreadTooltip(int count) {
+    return 'Messages, $count unread';
+  }
+
+  @override
+  String messagesWithCount(int count) {
+    return 'Messages ($count)';
+  }
 }

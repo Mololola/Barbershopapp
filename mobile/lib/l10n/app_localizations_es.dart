@@ -2260,4 +2260,81 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noUsersFound => 'No se han encontrado usuarios.';
+
+  @override
+  String get noMessagesYet => 'Aún no hay mensajes: saluda.';
+
+  @override
+  String messageTo(String name) {
+    return 'Mensaje para $name';
+  }
+
+  @override
+  String get kindBarber => 'Barbero · ';
+
+  @override
+  String get kindShop => 'Barbería · ';
+
+  @override
+  String get viewProfile => 'Ver perfil';
+
+  @override
+  String get yesterday => 'Ayer';
+
+  @override
+  String get readMarker => ' · Leído';
+
+  @override
+  String get workerAskedToLeave =>
+      'Este barbero ha pedido irse. Sigue en tu equipo hasta que lo confirmes.';
+
+  @override
+  String get confirmLeaving => 'Confirmar su salida';
+
+  @override
+  String get allCaughtUpShort => 'Todo leído';
+
+  @override
+  String unreadCount(int count) {
+    return '$count sin leer';
+  }
+
+  @override
+  String get inboxPersonal => 'Personal';
+
+  @override
+  String get inboxBusiness => 'Trabajo';
+
+  @override
+  String get loadingConversations => 'Cargando conversaciones…';
+
+  @override
+  String get couldntLoadMessages => 'No se han podido cargar los mensajes';
+
+  @override
+  String get noConversationsYet => 'Aún no hay conversaciones';
+
+  @override
+  String get noConversationsHint =>
+      'Busca a un barbero o a un amigo y salúdale desde su perfil.';
+
+  @override
+  String get noWorkMessages => 'No hay mensajes de trabajo';
+
+  @override
+  String get noWorkMessagesHint =>
+      'Cuando una barbería y un barbero hablan de trabajo, aparece aquí.';
+
+  @override
+  String get sayHello => 'Saluda 👋';
+
+  @override
+  String messagesUnreadTooltip(int count) {
+    return 'Mensajes, $count sin leer';
+  }
+
+  @override
+  String messagesWithCount(int count) {
+    return 'Mensajes ($count)';
+  }
 }

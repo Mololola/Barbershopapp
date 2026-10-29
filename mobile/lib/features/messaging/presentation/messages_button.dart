@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/messaging_controller.dart';
 
@@ -17,7 +18,7 @@ class MessagesButton extends ConsumerWidget {
     final conversations = ref.watch(conversationsProvider).value ?? const [];
     final unreadChats = conversations.where((c) => c.unreadCount > 0).length;
     return IconButton(
-      tooltip: unreadChats == 0 ? 'Messages' : 'Messages, $unreadChats unread',
+      tooltip: unreadChats == 0 ? context.l10n.navMessages : context.l10n.messagesUnreadTooltip(unreadChats),
       onPressed: () => context.push('/messages'),
       icon: Badge(
         isLabelVisible: unreadChats > 0,

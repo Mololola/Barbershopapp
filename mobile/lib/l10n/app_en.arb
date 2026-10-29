@@ -1341,5 +1341,55 @@
   "noPostsYetTitle": "No posts yet",
   "showOffLatestCut": "Show off your latest cut. Your posts appear here and in the feed.",
   "shareFirstPost": "Share your first post",
-  "noUsersFound": "No users found."
+  "noUsersFound": "No users found.",
+  "noMessagesYet": "No messages yet — say hello.",
+  "messageTo": "Message {name}",
+  "@messageTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kindBarber": "Barber · ",
+  "kindShop": "Shop · ",
+  "viewProfile": "View profile",
+  "yesterday": "Yesterday",
+  "readMarker": " · Read",
+  "workerAskedToLeave": "This worker has asked to leave. They stay on staff until you confirm.",
+  "confirmLeaving": "Confirm they're leaving",
+  "allCaughtUpShort": "All caught up",
+  "unreadCount": "{count} unread",
+  "@unreadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inboxPersonal": "Personal",
+  "inboxBusiness": "Business",
+  "loadingConversations": "Loading conversations…",
+  "couldntLoadMessages": "Couldn't load messages",
+  "noConversationsYet": "No conversations yet",
+  "noConversationsHint": "Find a barber or a friend and say hello from their profile.",
+  "noWorkMessages": "No work messages",
+  "noWorkMessagesHint": "When a shop and a barber talk about work, it shows up here.",
+  "sayHello": "Say hello 👋",
+  "messagesUnreadTooltip": "Messages, {count} unread",
+  "@messagesUnreadTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesWithCount": "Messages ({count})",
+  "@messagesWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
