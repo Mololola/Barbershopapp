@@ -83,10 +83,20 @@ class OfflineCache {
     return await _read(key, fetch) as Map<String, dynamic>?;
   }
 
+  /// A request taking longer than this is treated as having no connection,
+  /// so a weak signal doesn't leave a screen loading indefinitely.
+  static const timeout = Duration(seconds: 6);
+
   Future<Object?> _read(String key, Future<Object?> Function() fetch) async {
     final storeKey = _storeKey(key);
+    // Already known to be offline: show the saved copy straight away. The
+    // connection check brings the screen back to fresh data when it returns.
+    if (!_ref.read(connectionProvider).online && storeKey != null) {
+      final saved = (await SharedPreferences.getInstance()).getString(storeKey);
+      if (saved != null) return jsonDecode(saved);
+    }
     try {
-      final fresh = await fetch();
+      final fresh = await fetch().timeout(timeout);
       _ref.read(connectionProvider.notifier).reportOnline();
       if (storeKey != null) await (await SharedPreferences.getInstance()).setString(storeKey, jsonEncode(fresh));
       return fresh;

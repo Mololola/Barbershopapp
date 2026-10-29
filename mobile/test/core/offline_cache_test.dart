@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/offline_cache.dart';
@@ -40,6 +43,37 @@ void main() {
     await expectLater(other.rows('bookings', offline), throwsA(isA<http.ClientException>()));
   });
 
+  test('a request with no answer gives up after the time limit; once offline, the saved copy is instant', () {
+    fakeAsync((async) {
+      final container = containerFor('u1');
+      List<Map<String, dynamic>>? shown;
+      container.read(offlineCacheProvider).rows('bookings', () async => [
+            {'id': 'b1'},
+          ]);
+      async.flushMicrotasks();
+
+      container.read(offlineCacheProvider).rows('bookings', () => Completer<List<Map<String, dynamic>>>().future).then(
+            (rows) => shown = rows,
+          );
+      async.elapse(OfflineCache.timeout - const Duration(seconds: 1));
+      expect(shown, isNull);
+      async.elapse(const Duration(seconds: 1));
+      expect(shown!.single['id'], 'b1');
+      expect(container.read(connectionProvider).online, isFalse);
+
+      var fetched = false;
+      shown = null;
+      container.read(offlineCacheProvider).rows('bookings', () async {
+        fetched = true;
+        return [];
+      }).then((rows) => shown = rows);
+      async.flushMicrotasks();
+      expect(fetched, isFalse);
+      expect(shown!.single['id'], 'b1');
+      container.dispose();
+    });
+  });
+
   test('a server refusal is not mistaken for being offline', () async {
     final container = containerFor('u1');
     await expectLater(
@@ -57,9 +91,10 @@ void main() {
         ]);
     await cache.rows('bookings', offline);
 
-    await container.read(offlineCacheProvider).rows('bookings', () async => []);
-    expect(container.read(connectionProvider).online, isTrue);
+    // What the periodic connection check does once it gets an answer.
+    container.read(connectionProvider.notifier).reportOnline();
     expect(container.read(connectionProvider).reconnects, 1);
+    expect(await container.read(offlineCacheProvider).rows('bookings', () async => []), isEmpty);
 
     await OfflineCache.clear();
     await expectLater(container.read(offlineCacheProvider).rows('bookings', offline), throwsA(isA<http.ClientException>()));
