@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -84,7 +85,7 @@ class _ProfileSearchScreenState extends ConsumerState<ProfileSearchScreen> {
                             ListTile(
                               leading: CircleAvatar(
                                 backgroundImage:
-                                    profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
+                                    profile.avatarUrl != null ? CachedNetworkImageProvider(profile.avatarUrl!) : null,
                                 child: profile.avatarUrl == null ? const Icon(Icons.person) : null,
                               ),
                               title: Text(profile.username),

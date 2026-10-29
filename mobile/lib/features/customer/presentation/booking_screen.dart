@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
+import '../../../core/offline_cache.dart';
 import '../../../core/status_message.dart';
 import '../../business/domain/brand.dart';
 import '../../business/domain/finance_overview.dart';
@@ -219,9 +221,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: LoadingView(caption: context.l10n.findingFreeTimes),
       ),
-      error: (_, _) => StatusMessage(
+      // Booking always needs a connection: the free times have to be live.
+      error: (error, _) => StatusMessage(
         icon: Icons.wifi_off_rounded,
-        title: context.l10n.couldntLoadTimes,
+        title: isOfflineError(error) ? context.l10n.bookingNeedsConnection : context.l10n.couldntLoadTimes,
         message: context.l10n.checkConnection,
         actionLabel: context.l10n.tryAgain,
         onAction: () => ref.invalidate(availabilityProvider(_query)),
@@ -323,7 +326,7 @@ class _ServiceSummary extends ConsumerWidget {
               radius: 24,
               backgroundColor: brandColorOf(businessId: shop.id, storedHex: shop.brandColor),
               foregroundColor: Colors.white,
-              backgroundImage: shop.logoUrl != null ? NetworkImage(shop.logoUrl!) : null,
+              backgroundImage: shop.logoUrl != null ? CachedNetworkImageProvider(shop.logoUrl!) : null,
               child: shop.logoUrl == null ? Text(initialsOf(shop.name)) : null,
             ),
             const SizedBox(width: 16),

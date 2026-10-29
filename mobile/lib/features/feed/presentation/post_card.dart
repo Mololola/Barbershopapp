@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -143,7 +144,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                             radius: 16,
                             backgroundColor: scheme.primary.withValues(alpha: 0.12),
                             foregroundColor: scheme.primary,
-                            backgroundImage: post.authorAvatarUrl != null ? NetworkImage(post.authorAvatarUrl!) : null,
+                            backgroundImage: post.authorAvatarUrl != null ? CachedNetworkImageProvider(post.authorAvatarUrl!) : null,
                             child: post.authorAvatarUrl == null
                                 ? Text(initialsOf(post.authorUsername), style: theme.textTheme.labelSmall)
                                 : null,

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -53,7 +54,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 radius: 48,
                 backgroundImage: _pickedImage != null
                     ? pickedImage(_pickedImage!)
-                    : (profile?.avatarUrl != null ? NetworkImage(profile!.avatarUrl!) : null) as ImageProvider?,
+                    : (profile?.avatarUrl != null ? CachedNetworkImageProvider(profile!.avatarUrl!) : null) as ImageProvider?,
                 child: (_pickedImage == null && profile?.avatarUrl == null)
                     ? const Icon(Icons.person, size: 48)
                     : null,

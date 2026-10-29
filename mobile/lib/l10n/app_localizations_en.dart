@@ -2370,4 +2370,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get savedWillSend =>
       'Saved — it will be sent when you\'re back online.';
+
+  @override
+  String get bookingNeedsConnection => 'You need a connection to book';
 }

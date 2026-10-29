@@ -3985,6 +3985,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved — it will be sent when you\'re back online.'**
   String get savedWillSend;
+
+  /// No description provided for @bookingNeedsConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'You need a connection to book'**
+  String get bookingNeedsConnection;
 }
 
 class _AppLocalizationsDelegate

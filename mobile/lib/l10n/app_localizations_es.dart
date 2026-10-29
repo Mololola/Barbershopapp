@@ -2392,4 +2392,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get savedWillSend =>
       'Guardado: se enviará cuando vuelvas a tener conexión.';
+
+  @override
+  String get bookingNeedsConnection => 'Necesitas conexión para reservar';
 }

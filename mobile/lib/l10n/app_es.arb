@@ -647,5 +647,6 @@
   "authLinkExpired": "Ese enlace ha caducado: pide uno nuevo.",
   "offlineShowingSaved": "Sin conexión: mostrando lo último guardado.",
   "sending": "Enviando…",
-  "savedWillSend": "Guardado: se enviará cuando vuelvas a tener conexión."
+  "savedWillSend": "Guardado: se enviará cuando vuelvas a tener conexión.",
+  "bookingNeedsConnection": "Necesitas conexión para reservar"
 }

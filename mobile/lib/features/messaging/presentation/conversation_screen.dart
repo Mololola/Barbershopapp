@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -193,7 +194,7 @@ class _ChatHeader extends ConsumerWidget {
               radius: 18,
               backgroundColor: AppColors.brass.withValues(alpha: 0.2),
               foregroundColor: AppColors.brass,
-              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+              backgroundImage: avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
               child: avatarUrl == null ? Text(initialsOf(conversation.otherUsername)) : null,
             ),
             const SizedBox(width: 12),

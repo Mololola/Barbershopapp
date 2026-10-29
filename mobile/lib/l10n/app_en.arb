@@ -1400,5 +1400,6 @@
   "authLinkExpired": "That link has expired — ask for a new one.",
   "offlineShowingSaved": "No connection — showing what was last saved.",
   "sending": "Sending…",
-  "savedWillSend": "Saved — it will be sent when you're back online."
+  "savedWillSend": "Saved — it will be sent when you're back online.",
+  "bookingNeedsConnection": "You need a connection to book"
 }

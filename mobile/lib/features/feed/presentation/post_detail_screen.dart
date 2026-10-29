@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -146,7 +147,7 @@ class _Avatar extends StatelessWidget {
       radius: radius,
       backgroundColor: scheme.primary.withValues(alpha: 0.12),
       foregroundColor: scheme.primary,
-      backgroundImage: url != null ? NetworkImage(url!) : null,
+      backgroundImage: url != null ? CachedNetworkImageProvider(url!) : null,
       child: url == null
           ? Text(initialsOf(username), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.primary))
           : null,

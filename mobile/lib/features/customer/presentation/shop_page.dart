@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -118,8 +119,8 @@ class ShopHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brand = brandColorOverride ?? brandColorOf(businessId: shop.id, storedHex: shop.brandColor);
-    final cover = coverImage ?? (shop.coverUrl != null ? NetworkImage(shop.coverUrl!) : null);
-    final logo = logoImage ?? (shop.logoUrl != null ? NetworkImage(shop.logoUrl!) : null);
+    final cover = coverImage ?? (shop.coverUrl != null ? CachedNetworkImageProvider(shop.coverUrl!) : null);
+    final logo = logoImage ?? (shop.logoUrl != null ? CachedNetworkImageProvider(shop.logoUrl!) : null);
     return LayoutBuilder(
       builder: (context, constraints) => SizedBox(
         height: heightFor(constraints.maxWidth),

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -219,7 +220,7 @@ class _ConversationRow extends StatelessWidget {
                   radius: 24,
                   backgroundColor: scheme.primary.withValues(alpha: 0.12),
                   foregroundColor: scheme.primary,
-                  backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  backgroundImage: avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
                   child: avatarUrl == null ? Text(initialsOf(conversation.otherUsername)) : null,
                 ),
               ),
