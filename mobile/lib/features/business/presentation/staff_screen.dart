@@ -260,7 +260,7 @@ class _MyWorkforceTab extends ConsumerWidget {
                       title: Text(invitation.workerLegalFullName ?? invitation.workerUsername ?? context.l10n.unknown),
                       subtitle: Text(DateFormat.yMMMd(context.l10n.localeName).format(invitation.createdAt.toLocal())),
                       trailing: Chip(
-                        label: Text(invitation.status.label),
+                        label: Text(invitation.status.label(context.l10n)),
                         backgroundColor: invitation.status.color.withValues(alpha: 0.15),
                         labelStyle: TextStyle(color: invitation.status.color),
                         side: BorderSide.none,

@@ -1,18 +1,14 @@
+import '../../../l10n/app_localizations.dart';
+
 enum RankingWindow { week, month, year, allTime }
 
 extension RankingWindowX on RankingWindow {
-  String get label {
-    switch (this) {
-      case RankingWindow.week:
-        return 'This week';
-      case RankingWindow.month:
-        return 'This month';
-      case RankingWindow.year:
-        return 'This year';
-      case RankingWindow.allTime:
-        return 'All time';
-    }
-  }
+  String label(AppLocalizations l10n) => switch (this) {
+        RankingWindow.week => l10n.windowWeek,
+        RankingWindow.month => l10n.windowMonth,
+        RankingWindow.year => l10n.windowYear,
+        RankingWindow.allTime => l10n.windowAllTime,
+      };
 
   /// Rolling window, not calendar-aligned — simplest to compute and a
   /// standard leaderboard convention. Null means "no lower bound".

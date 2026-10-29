@@ -1717,4 +1717,317 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thisWeek => 'This week';
+
+  @override
+  String get bankAccountTitle => 'Bank account for withdrawals';
+
+  @override
+  String get accountHolderName => 'Account holder name';
+
+  @override
+  String get enterAccountName => 'Enter the name on the account';
+
+  @override
+  String get iban => 'IBAN';
+
+  @override
+  String get ibanHelper =>
+      'In your banking app. UK accounts have one too (starts GB).';
+
+  @override
+  String get enterYourIban => 'Enter your IBAN';
+
+  @override
+  String get bankAccountSaved => 'Bank account saved.';
+
+  @override
+  String withdrawCurrency(String currency) {
+    return 'Withdraw $currency';
+  }
+
+  @override
+  String get enterValidAmount => 'Enter a valid amount';
+
+  @override
+  String get moreThanBalance => 'More than your available balance';
+
+  @override
+  String payoutTo(String holder, String iban) {
+    return 'To $holder, $iban';
+  }
+
+  @override
+  String get request => 'Request';
+
+  @override
+  String get withdrawalRequested => 'Withdrawal requested.';
+
+  @override
+  String get rewardHistory => 'Reward history';
+
+  @override
+  String balanceLabel(String amount) {
+    return 'Balance: $amount';
+  }
+
+  @override
+  String amountAvailable(String amount) {
+    return '$amount available';
+  }
+
+  @override
+  String get withdraw => 'Withdraw';
+
+  @override
+  String get noBankAccountYet => 'No bank account yet';
+
+  @override
+  String get withdrawalsSentHere =>
+      'Withdrawals are sent here by bank transfer';
+
+  @override
+  String get change => 'Change';
+
+  @override
+  String get withdrawals => 'Withdrawals';
+
+  @override
+  String get referrals => 'Referrals';
+
+  @override
+  String referralSummary(int count, Object earned) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count businesses referred — $earned earned (5% of their subscription payments)',
+      one:
+          '1 business referred — $earned earned (5% of their subscription payments)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noRewardsYet => 'No rewards yet.';
+
+  @override
+  String get payoutPending => 'Pending review';
+
+  @override
+  String get payoutApproved => 'Approved — payment on its way';
+
+  @override
+  String get payoutRejected => 'Rejected';
+
+  @override
+  String get payoutPaid => 'Paid';
+
+  @override
+  String get invitationPending => 'Pending';
+
+  @override
+  String get invitationAccepted => 'Accepted';
+
+  @override
+  String get invitationDeclined => 'Declined';
+
+  @override
+  String get profileSaved => 'Profile saved.';
+
+  @override
+  String askedShopToConfirmLeaving(String shop) {
+    return 'Asked $shop to confirm you\'re leaving.';
+  }
+
+  @override
+  String get theShop => 'the shop';
+
+  @override
+  String get workerMarketplaceUnavailable =>
+      'The worker marketplace isn\'t available on this account.';
+
+  @override
+  String get availableAsWorker => 'Available as worker';
+
+  @override
+  String get availableAsWorkerSub =>
+      'Let barbershops find and invite you as staff';
+
+  @override
+  String get useRealNameHint =>
+      'Use your real name — this is what businesses and customers will see you as once you accept a job.';
+
+  @override
+  String get legalSecondLastNameOptional => 'Legal second last name (optional)';
+
+  @override
+  String get yearsExperienceOptional => 'Years of experience (optional)';
+
+  @override
+  String get experienceBio => 'Experience / bio';
+
+  @override
+  String get lookingForWork => 'Looking for work';
+
+  @override
+  String get addLegalNameFirst => 'Add your legal first and last name first';
+
+  @override
+  String get currentJob => 'Current job';
+
+  @override
+  String get notCurrentlyWorking => 'Not currently working at a business.';
+
+  @override
+  String get aBusiness => 'A business';
+
+  @override
+  String get leaveRequestSent => 'Leave request sent — awaiting confirmation';
+
+  @override
+  String get requestToLeave => 'Request to leave';
+
+  @override
+  String get invitations => 'Invitations';
+
+  @override
+  String get noPendingInvitations => 'No pending invitations.';
+
+  @override
+  String get wantsToAddYou => 'wants to add you as staff';
+
+  @override
+  String get accept => 'Accept';
+
+  @override
+  String get decline => 'Decline';
+
+  @override
+  String get windowWeek => 'This week';
+
+  @override
+  String get windowMonth => 'This month';
+
+  @override
+  String get windowYear => 'This year';
+
+  @override
+  String get windowAllTime => 'All time';
+
+  @override
+  String get rankShopsVisited => 'Most shops visited';
+
+  @override
+  String get rankMostHaircuts => 'Most haircuts';
+
+  @override
+  String get rankTopReferrers => 'Top referrers';
+
+  @override
+  String get rankPopularHaircuts => 'Popular haircuts';
+
+  @override
+  String get rankTopBarbers => 'Top-rated barbers';
+
+  @override
+  String unitShops(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'shops',
+      one: 'shop',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitHaircuts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'haircuts',
+      one: 'haircut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitBusinessesReferred(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'businesses referred',
+      one: 'business referred',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitCuts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'cuts',
+      one: 'cut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noReferralsYet => 'No referrals yet';
+
+  @override
+  String get noReferralsHint =>
+      'Share your referral code with a shop and you could top this board.';
+
+  @override
+  String get noRatedBarbers => 'No rated barbers yet';
+
+  @override
+  String get noRatedBarbersHint =>
+      'Barbers appear here once customers start reviewing their cuts.';
+
+  @override
+  String noHaircutsInWindow(String window) {
+    String _temp0 = intl.Intl.selectLogic(window, {
+      'week': 'No haircuts this week',
+      'month': 'No haircuts this month',
+      'year': 'No haircuts this year',
+      'other': 'No haircuts yet',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get popularStylesHint =>
+      'Popular styles show up as soon as cuts are booked and done.';
+
+  @override
+  String get boardEmpty => 'The board is empty';
+
+  @override
+  String boardEmptyHint(String window) {
+    String _temp0 = intl.Intl.selectLogic(window, {
+      'week': 'Nobody has a cut this week yet. Book one and take the top spot.',
+      'month':
+          'Nobody has a cut this month yet. Book one and take the top spot.',
+      'year': 'Nobody has a cut this year yet. Book one and take the top spot.',
+      'other': 'Nobody has a cut yet. Book one and take the top spot.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get tallyingBoard => 'Tallying the board…';
+
+  @override
+  String get couldntLoadRankings => 'Couldn\'t load rankings';
+
+  @override
+  String get you => 'You';
+
+  @override
+  String nameYou(String name) {
+    return '$name (you)';
+  }
 }

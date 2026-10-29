@@ -2935,6 +2935,474 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This week'**
   String get thisWeek;
+
+  /// No description provided for @bankAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account for withdrawals'**
+  String get bankAccountTitle;
+
+  /// No description provided for @accountHolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Account holder name'**
+  String get accountHolderName;
+
+  /// No description provided for @enterAccountName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the name on the account'**
+  String get enterAccountName;
+
+  /// No description provided for @iban.
+  ///
+  /// In en, this message translates to:
+  /// **'IBAN'**
+  String get iban;
+
+  /// No description provided for @ibanHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'In your banking app. UK accounts have one too (starts GB).'**
+  String get ibanHelper;
+
+  /// No description provided for @enterYourIban.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your IBAN'**
+  String get enterYourIban;
+
+  /// No description provided for @bankAccountSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account saved.'**
+  String get bankAccountSaved;
+
+  /// No description provided for @withdrawCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw {currency}'**
+  String withdrawCurrency(String currency);
+
+  /// No description provided for @enterValidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid amount'**
+  String get enterValidAmount;
+
+  /// No description provided for @moreThanBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'More than your available balance'**
+  String get moreThanBalance;
+
+  /// No description provided for @payoutTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To {holder}, {iban}'**
+  String payoutTo(String holder, String iban);
+
+  /// No description provided for @request.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get request;
+
+  /// No description provided for @withdrawalRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal requested.'**
+  String get withdrawalRequested;
+
+  /// No description provided for @rewardHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward history'**
+  String get rewardHistory;
+
+  /// No description provided for @balanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance: {amount}'**
+  String balanceLabel(String amount);
+
+  /// No description provided for @amountAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} available'**
+  String amountAvailable(String amount);
+
+  /// No description provided for @withdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get withdraw;
+
+  /// No description provided for @noBankAccountYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No bank account yet'**
+  String get noBankAccountYet;
+
+  /// No description provided for @withdrawalsSentHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawals are sent here by bank transfer'**
+  String get withdrawalsSentHere;
+
+  /// No description provided for @change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get change;
+
+  /// No description provided for @withdrawals.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawals'**
+  String get withdrawals;
+
+  /// No description provided for @referrals.
+  ///
+  /// In en, this message translates to:
+  /// **'Referrals'**
+  String get referrals;
+
+  /// No description provided for @referralSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 business referred — {earned} earned (5% of their subscription payments)} other{{count} businesses referred — {earned} earned (5% of their subscription payments)}}'**
+  String referralSummary(int count, Object earned);
+
+  /// No description provided for @noRewardsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No rewards yet.'**
+  String get noRewardsYet;
+
+  /// No description provided for @payoutPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending review'**
+  String get payoutPending;
+
+  /// No description provided for @payoutApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved — payment on its way'**
+  String get payoutApproved;
+
+  /// No description provided for @payoutRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get payoutRejected;
+
+  /// No description provided for @payoutPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get payoutPaid;
+
+  /// No description provided for @invitationPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get invitationPending;
+
+  /// No description provided for @invitationAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get invitationAccepted;
+
+  /// No description provided for @invitationDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get invitationDeclined;
+
+  /// No description provided for @profileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile saved.'**
+  String get profileSaved;
+
+  /// No description provided for @askedShopToConfirmLeaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked {shop} to confirm you\'re leaving.'**
+  String askedShopToConfirmLeaving(String shop);
+
+  /// No description provided for @theShop.
+  ///
+  /// In en, this message translates to:
+  /// **'the shop'**
+  String get theShop;
+
+  /// No description provided for @workerMarketplaceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The worker marketplace isn\'t available on this account.'**
+  String get workerMarketplaceUnavailable;
+
+  /// No description provided for @availableAsWorker.
+  ///
+  /// In en, this message translates to:
+  /// **'Available as worker'**
+  String get availableAsWorker;
+
+  /// No description provided for @availableAsWorkerSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Let barbershops find and invite you as staff'**
+  String get availableAsWorkerSub;
+
+  /// No description provided for @useRealNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your real name — this is what businesses and customers will see you as once you accept a job.'**
+  String get useRealNameHint;
+
+  /// No description provided for @legalSecondLastNameOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal second last name (optional)'**
+  String get legalSecondLastNameOptional;
+
+  /// No description provided for @yearsExperienceOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Years of experience (optional)'**
+  String get yearsExperienceOptional;
+
+  /// No description provided for @experienceBio.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience / bio'**
+  String get experienceBio;
+
+  /// No description provided for @lookingForWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for work'**
+  String get lookingForWork;
+
+  /// No description provided for @addLegalNameFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your legal first and last name first'**
+  String get addLegalNameFirst;
+
+  /// No description provided for @currentJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Current job'**
+  String get currentJob;
+
+  /// No description provided for @notCurrentlyWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Not currently working at a business.'**
+  String get notCurrentlyWorking;
+
+  /// No description provided for @aBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'A business'**
+  String get aBusiness;
+
+  /// No description provided for @leaveRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave request sent — awaiting confirmation'**
+  String get leaveRequestSent;
+
+  /// No description provided for @requestToLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Request to leave'**
+  String get requestToLeave;
+
+  /// No description provided for @invitations.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitations'**
+  String get invitations;
+
+  /// No description provided for @noPendingInvitations.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending invitations.'**
+  String get noPendingInvitations;
+
+  /// No description provided for @wantsToAddYou.
+  ///
+  /// In en, this message translates to:
+  /// **'wants to add you as staff'**
+  String get wantsToAddYou;
+
+  /// No description provided for @accept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get accept;
+
+  /// No description provided for @decline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get decline;
+
+  /// No description provided for @windowWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get windowWeek;
+
+  /// No description provided for @windowMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get windowMonth;
+
+  /// No description provided for @windowYear.
+  ///
+  /// In en, this message translates to:
+  /// **'This year'**
+  String get windowYear;
+
+  /// No description provided for @windowAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get windowAllTime;
+
+  /// No description provided for @rankShopsVisited.
+  ///
+  /// In en, this message translates to:
+  /// **'Most shops visited'**
+  String get rankShopsVisited;
+
+  /// No description provided for @rankMostHaircuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Most haircuts'**
+  String get rankMostHaircuts;
+
+  /// No description provided for @rankTopReferrers.
+  ///
+  /// In en, this message translates to:
+  /// **'Top referrers'**
+  String get rankTopReferrers;
+
+  /// No description provided for @rankPopularHaircuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular haircuts'**
+  String get rankPopularHaircuts;
+
+  /// No description provided for @rankTopBarbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Top-rated barbers'**
+  String get rankTopBarbers;
+
+  /// No description provided for @unitShops.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{shop} other{shops}}'**
+  String unitShops(int count);
+
+  /// No description provided for @unitHaircuts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{haircut} other{haircuts}}'**
+  String unitHaircuts(int count);
+
+  /// No description provided for @unitBusinessesReferred.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{business referred} other{businesses referred}}'**
+  String unitBusinessesReferred(int count);
+
+  /// No description provided for @unitCuts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{cut} other{cuts}}'**
+  String unitCuts(int count);
+
+  /// No description provided for @noReferralsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No referrals yet'**
+  String get noReferralsYet;
+
+  /// No description provided for @noReferralsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your referral code with a shop and you could top this board.'**
+  String get noReferralsHint;
+
+  /// No description provided for @noRatedBarbers.
+  ///
+  /// In en, this message translates to:
+  /// **'No rated barbers yet'**
+  String get noRatedBarbers;
+
+  /// No description provided for @noRatedBarbersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Barbers appear here once customers start reviewing their cuts.'**
+  String get noRatedBarbersHint;
+
+  /// No description provided for @noHaircutsInWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'{window, select, week{No haircuts this week} month{No haircuts this month} year{No haircuts this year} other{No haircuts yet}}'**
+  String noHaircutsInWindow(String window);
+
+  /// No description provided for @popularStylesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular styles show up as soon as cuts are booked and done.'**
+  String get popularStylesHint;
+
+  /// No description provided for @boardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The board is empty'**
+  String get boardEmpty;
+
+  /// No description provided for @boardEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{window, select, week{Nobody has a cut this week yet. Book one and take the top spot.} month{Nobody has a cut this month yet. Book one and take the top spot.} year{Nobody has a cut this year yet. Book one and take the top spot.} other{Nobody has a cut yet. Book one and take the top spot.}}'**
+  String boardEmptyHint(String window);
+
+  /// No description provided for @tallyingBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Tallying the board…'**
+  String get tallyingBoard;
+
+  /// No description provided for @couldntLoadRankings.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load rankings'**
+  String get couldntLoadRankings;
+
+  /// No description provided for @you.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get you;
+
+  /// No description provided for @nameYou.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (you)'**
+  String nameYou(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/business.dart';
@@ -60,7 +61,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
         );
     if (!mounted) return;
     if (!ref.read(workerProfileControllerProvider).hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile saved.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.profileSaved)));
     }
   }
 
@@ -69,7 +70,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
     if (!mounted) return;
     if (!ref.read(jobControllerProvider).hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Asked ${job.businessName ?? 'the shop'} to confirm you\'re leaving.')),
+        SnackBar(content: Text(context.l10n.askedShopToConfirmLeaving(job.businessName ?? context.l10n.theShop))),
       );
     }
   }
@@ -104,24 +105,24 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
     // owner-insert-worker-profile RLS policy actually enforce this).
     if (ref.watch(currentProfileProvider).value?.isMinor == true) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Worker profile')),
-        body: const Center(
+        appBar: AppBar(title: Text(context.l10n.workerProfile)),
+        body: Center(
           child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text('The worker marketplace isn\'t available on this account.'),
+            padding: const EdgeInsets.all(24),
+            child: Text(context.l10n.workerMarketplaceUnavailable),
           ),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Worker profile')),
+      appBar: AppBar(title: Text(context.l10n.workerProfile)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           SwitchListTile(
-            title: const Text('Available as worker'),
-            subtitle: const Text('Let barbershops find and invite you as staff'),
+            title: Text(context.l10n.availableAsWorker),
+            subtitle: Text(context.l10n.availableAsWorkerSub),
             value: _isWorker,
             onChanged: (value) => setState(() => _isWorker = value),
           ),
@@ -131,54 +132,53 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
               key: _formKey,
               child: Column(
                 children: [
-                  const Text(
-                    'Use your real name — this is what businesses and customers will see '
-                    'you as once you accept a job.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  Text(
+                    context.l10n.useRealNameHint,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _legalFirstNameController,
-                    decoration: const InputDecoration(labelText: 'Legal first name'),
+                    decoration: InputDecoration(labelText: context.l10n.legalFirstName),
                     validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                        (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _legalLastNameController,
-                    decoration: const InputDecoration(labelText: 'Legal last name'),
+                    decoration: InputDecoration(labelText: context.l10n.legalLastName),
                     validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                        (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _legalSecondLastNameController,
-                    decoration: const InputDecoration(labelText: 'Legal second last name (optional)'),
+                    decoration: InputDecoration(labelText: context.l10n.legalSecondLastNameOptional),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _yearsExperienceController,
-                    decoration: const InputDecoration(labelText: 'Years of experience (optional)'),
+                    decoration: InputDecoration(labelText: context.l10n.yearsExperienceOptional),
                     keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) return null;
-                      return int.tryParse(value.trim()) == null ? 'Enter a whole number' : null;
+                      return int.tryParse(value.trim()) == null ? context.l10n.enterAWholeNumber : null;
                     },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _bioController,
-                    decoration: const InputDecoration(labelText: 'Experience / bio'),
+                    decoration: InputDecoration(labelText: context.l10n.experienceBio),
                     maxLines: 3,
                     validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                        (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _cityController,
-                    decoration: const InputDecoration(labelText: 'City'),
+                    decoration: InputDecoration(labelText: context.l10n.city),
                     validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                        (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
                   ),
                   const SizedBox(height: 8),
                   ListenableBuilder(
@@ -187,10 +187,10 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
                       _legalLastNameController,
                     ]),
                     builder: (context, _) => SwitchListTile(
-                      title: const Text('Looking for work'),
+                      title: Text(context.l10n.lookingForWork),
                       subtitle: _hasRequiredName
                           ? null
-                          : const Text('Add your legal first and last name first'),
+                          : Text(context.l10n.addLegalNameFirst),
                       value: _hasRequiredName && _isLookingForWork,
                       onChanged: _hasRequiredName
                           ? (value) => setState(() => _isLookingForWork = value)
@@ -211,10 +211,10 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
             onPressed: saveState.isLoading ? null : _save,
             child: saveState.isLoading
                 ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Save'),
+                : Text(context.l10n.save),
           ),
           const Divider(height: 48),
-          Text('Current job', style: Theme.of(context).textTheme.titleMedium),
+          Text(context.l10n.currentJob, style: Theme.of(context).textTheme.titleMedium),
           if (jobState.hasError)
             Text(
               jobState.error.toString(),
@@ -222,10 +222,10 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
             ),
           currentJobAsync.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Text('Error: $error'),
+            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
             data: (job) {
               if (job == null) {
-                return const Text('Not currently working at a business.');
+                return Text(context.l10n.notCurrentlyWorking);
               }
               // Leaving isn't unilateral — this only files the request; the
               // job stays active (and this button stays disabled) until the
@@ -234,17 +234,17 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
               final isPending = pendingLeaveRequest != null && pendingLeaveRequest.workerId == job.id;
               return ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(job.businessName ?? 'A business'),
-                subtitle: isPending ? const Text('Leave request sent — awaiting confirmation') : null,
+                title: Text(job.businessName ?? context.l10n.aBusiness),
+                subtitle: isPending ? Text(context.l10n.leaveRequestSent) : null,
                 trailing: TextButton(
                   onPressed: (jobState.isLoading || isPending) ? null : () => _requestLeave(job),
-                  child: const Text('Request to leave'),
+                  child: Text(context.l10n.requestToLeave),
                 ),
               );
             },
           ),
           const Divider(height: 48),
-          Text('Invitations', style: Theme.of(context).textTheme.titleMedium),
+          Text(context.l10n.invitations, style: Theme.of(context).textTheme.titleMedium),
           if (invitationState.hasError)
             Text(
               invitationState.error.toString(),
@@ -252,10 +252,10 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
             ),
           invitationsAsync.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Text('Error: $error'),
+            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
             data: (invitations) {
               if (invitations.isEmpty) {
-                return const Text('No pending invitations.');
+                return Text(context.l10n.noPendingInvitations);
               }
               return Column(
                 children: [
@@ -265,13 +265,13 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
                       child: ListTile(
                         leading: Icon(invitation.status.icon, color: invitation.status.color),
                         title: Text(invitation.businessName),
-                        subtitle: const Text('wants to add you as staff'),
+                        subtitle: Text(context.l10n.wantsToAddYou),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon: const Icon(Icons.check, color: Colors.green),
-                              tooltip: 'Accept',
+                              tooltip: context.l10n.accept,
                               onPressed: invitationState.isLoading
                                   ? null
                                   : () => ref
@@ -280,7 +280,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.close, color: Colors.red),
-                              tooltip: 'Decline',
+                              tooltip: context.l10n.decline,
                               onPressed: invitationState.isLoading
                                   ? null
                                   : () => ref

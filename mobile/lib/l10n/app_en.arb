@@ -1051,5 +1051,177 @@
   "streetAddress": "Street address",
   "postcode": "Postcode",
   "enterValidPostcode": "Enter a valid postcode",
-  "thisWeek": "This week"
+  "thisWeek": "This week",
+  "bankAccountTitle": "Bank account for withdrawals",
+  "accountHolderName": "Account holder name",
+  "enterAccountName": "Enter the name on the account",
+  "iban": "IBAN",
+  "ibanHelper": "In your banking app. UK accounts have one too (starts GB).",
+  "enterYourIban": "Enter your IBAN",
+  "bankAccountSaved": "Bank account saved.",
+  "withdrawCurrency": "Withdraw {currency}",
+  "@withdrawCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "enterValidAmount": "Enter a valid amount",
+  "moreThanBalance": "More than your available balance",
+  "payoutTo": "To {holder}, {iban}",
+  "@payoutTo": {
+    "placeholders": {
+      "holder": {
+        "type": "String"
+      },
+      "iban": {
+        "type": "String"
+      }
+    }
+  },
+  "request": "Request",
+  "withdrawalRequested": "Withdrawal requested.",
+  "rewardHistory": "Reward history",
+  "balanceLabel": "Balance: {amount}",
+  "@balanceLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "amountAvailable": "{amount} available",
+  "@amountAvailable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "withdraw": "Withdraw",
+  "noBankAccountYet": "No bank account yet",
+  "withdrawalsSentHere": "Withdrawals are sent here by bank transfer",
+  "change": "Change",
+  "withdrawals": "Withdrawals",
+  "referrals": "Referrals",
+  "referralSummary": "{count, plural, =1{1 business referred — {earned} earned (5% of their subscription payments)} other{{count} businesses referred — {earned} earned (5% of their subscription payments)}}",
+  "@referralSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noRewardsYet": "No rewards yet.",
+  "payoutPending": "Pending review",
+  "payoutApproved": "Approved — payment on its way",
+  "payoutRejected": "Rejected",
+  "payoutPaid": "Paid",
+  "invitationPending": "Pending",
+  "invitationAccepted": "Accepted",
+  "invitationDeclined": "Declined",
+  "profileSaved": "Profile saved.",
+  "askedShopToConfirmLeaving": "Asked {shop} to confirm you're leaving.",
+  "@askedShopToConfirmLeaving": {
+    "placeholders": {
+      "shop": {
+        "type": "String"
+      }
+    }
+  },
+  "theShop": "the shop",
+  "workerMarketplaceUnavailable": "The worker marketplace isn't available on this account.",
+  "availableAsWorker": "Available as worker",
+  "availableAsWorkerSub": "Let barbershops find and invite you as staff",
+  "useRealNameHint": "Use your real name — this is what businesses and customers will see you as once you accept a job.",
+  "legalSecondLastNameOptional": "Legal second last name (optional)",
+  "yearsExperienceOptional": "Years of experience (optional)",
+  "experienceBio": "Experience / bio",
+  "lookingForWork": "Looking for work",
+  "addLegalNameFirst": "Add your legal first and last name first",
+  "currentJob": "Current job",
+  "notCurrentlyWorking": "Not currently working at a business.",
+  "aBusiness": "A business",
+  "leaveRequestSent": "Leave request sent — awaiting confirmation",
+  "requestToLeave": "Request to leave",
+  "invitations": "Invitations",
+  "noPendingInvitations": "No pending invitations.",
+  "wantsToAddYou": "wants to add you as staff",
+  "accept": "Accept",
+  "decline": "Decline",
+  "windowWeek": "This week",
+  "windowMonth": "This month",
+  "windowYear": "This year",
+  "windowAllTime": "All time",
+  "rankShopsVisited": "Most shops visited",
+  "rankMostHaircuts": "Most haircuts",
+  "rankTopReferrers": "Top referrers",
+  "rankPopularHaircuts": "Popular haircuts",
+  "rankTopBarbers": "Top-rated barbers",
+  "unitShops": "{count, plural, =1{shop} other{shops}}",
+  "@unitShops": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unitHaircuts": "{count, plural, =1{haircut} other{haircuts}}",
+  "@unitHaircuts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unitBusinessesReferred": "{count, plural, =1{business referred} other{businesses referred}}",
+  "@unitBusinessesReferred": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unitCuts": "{count, plural, =1{cut} other{cuts}}",
+  "@unitCuts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noReferralsYet": "No referrals yet",
+  "noReferralsHint": "Share your referral code with a shop and you could top this board.",
+  "noRatedBarbers": "No rated barbers yet",
+  "noRatedBarbersHint": "Barbers appear here once customers start reviewing their cuts.",
+  "noHaircutsInWindow": "{window, select, week{No haircuts this week} month{No haircuts this month} year{No haircuts this year} other{No haircuts yet}}",
+  "@noHaircutsInWindow": {
+    "placeholders": {
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "popularStylesHint": "Popular styles show up as soon as cuts are booked and done.",
+  "boardEmpty": "The board is empty",
+  "boardEmptyHint": "{window, select, week{Nobody has a cut this week yet. Book one and take the top spot.} month{Nobody has a cut this month yet. Book one and take the top spot.} year{Nobody has a cut this year yet. Book one and take the top spot.} other{Nobody has a cut yet. Book one and take the top spot.}}",
+  "@boardEmptyHint": {
+    "placeholders": {
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "tallyingBoard": "Tallying the board…",
+  "couldntLoadRankings": "Couldn't load rankings",
+  "you": "You",
+  "nameYou": "{name} (you)",
+  "@nameYou": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

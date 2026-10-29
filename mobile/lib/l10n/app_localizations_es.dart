@@ -1732,4 +1732,322 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get thisWeek => 'Esta semana';
+
+  @override
+  String get bankAccountTitle => 'Cuenta bancaria para retiradas';
+
+  @override
+  String get accountHolderName => 'Titular de la cuenta';
+
+  @override
+  String get enterAccountName => 'Introduce el nombre del titular';
+
+  @override
+  String get iban => 'IBAN';
+
+  @override
+  String get ibanHelper =>
+      'Está en la app de tu banco. Las cuentas del Reino Unido también tienen uno (empieza por GB).';
+
+  @override
+  String get enterYourIban => 'Introduce tu IBAN';
+
+  @override
+  String get bankAccountSaved => 'Cuenta bancaria guardada.';
+
+  @override
+  String withdrawCurrency(String currency) {
+    return 'Retirar $currency';
+  }
+
+  @override
+  String get enterValidAmount => 'Introduce un importe válido';
+
+  @override
+  String get moreThanBalance => 'Supera tu saldo disponible';
+
+  @override
+  String payoutTo(String holder, String iban) {
+    return 'A $holder, $iban';
+  }
+
+  @override
+  String get request => 'Solicitar';
+
+  @override
+  String get withdrawalRequested => 'Retirada solicitada.';
+
+  @override
+  String get rewardHistory => 'Historial de recompensas';
+
+  @override
+  String balanceLabel(String amount) {
+    return 'Saldo: $amount';
+  }
+
+  @override
+  String amountAvailable(String amount) {
+    return '$amount disponibles';
+  }
+
+  @override
+  String get withdraw => 'Retirar';
+
+  @override
+  String get noBankAccountYet => 'Aún no hay cuenta bancaria';
+
+  @override
+  String get withdrawalsSentHere =>
+      'Las retiradas se envían aquí por transferencia';
+
+  @override
+  String get change => 'Cambiar';
+
+  @override
+  String get withdrawals => 'Retiradas';
+
+  @override
+  String get referrals => 'Recomendaciones';
+
+  @override
+  String referralSummary(int count, Object earned) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count negocios recomendados: $earned ganados (el 5% de lo que pagan de suscripción)',
+      one:
+          '1 negocio recomendado: $earned ganados (el 5% de lo que paga de suscripción)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noRewardsYet => 'Aún no tienes recompensas.';
+
+  @override
+  String get payoutPending => 'Pendiente de revisión';
+
+  @override
+  String get payoutApproved => 'Aprobada: el pago está en camino';
+
+  @override
+  String get payoutRejected => 'Rechazada';
+
+  @override
+  String get payoutPaid => 'Pagada';
+
+  @override
+  String get invitationPending => 'Pendiente';
+
+  @override
+  String get invitationAccepted => 'Aceptada';
+
+  @override
+  String get invitationDeclined => 'Rechazada';
+
+  @override
+  String get profileSaved => 'Perfil guardado.';
+
+  @override
+  String askedShopToConfirmLeaving(String shop) {
+    return 'Has pedido a $shop que confirme tu salida.';
+  }
+
+  @override
+  String get theShop => 'la barbería';
+
+  @override
+  String get workerMarketplaceUnavailable =>
+      'La bolsa de barberos no está disponible en esta cuenta.';
+
+  @override
+  String get availableAsWorker => 'Disponible como barbero';
+
+  @override
+  String get availableAsWorkerSub =>
+      'Deja que las barberías te encuentren y te inviten a su equipo';
+
+  @override
+  String get useRealNameHint =>
+      'Usa tu nombre real: es el que verán los negocios y los clientes cuando aceptes un trabajo.';
+
+  @override
+  String get legalSecondLastNameOptional => 'Segundo apellido (opcional)';
+
+  @override
+  String get yearsExperienceOptional => 'Años de experiencia (opcional)';
+
+  @override
+  String get experienceBio => 'Experiencia / biografía';
+
+  @override
+  String get lookingForWork => 'Buscando trabajo';
+
+  @override
+  String get addLegalNameFirst => 'Añade antes tu nombre y primer apellido';
+
+  @override
+  String get currentJob => 'Trabajo actual';
+
+  @override
+  String get notCurrentlyWorking =>
+      'Ahora mismo no trabajas en ningún negocio.';
+
+  @override
+  String get aBusiness => 'Un negocio';
+
+  @override
+  String get leaveRequestSent =>
+      'Petición de salida enviada: esperando confirmación';
+
+  @override
+  String get requestToLeave => 'Pedir la salida';
+
+  @override
+  String get invitations => 'Invitaciones';
+
+  @override
+  String get noPendingInvitations => 'No hay invitaciones pendientes.';
+
+  @override
+  String get wantsToAddYou => 'quiere añadirte a su equipo';
+
+  @override
+  String get accept => 'Aceptar';
+
+  @override
+  String get decline => 'Rechazar';
+
+  @override
+  String get windowWeek => 'Esta semana';
+
+  @override
+  String get windowMonth => 'Este mes';
+
+  @override
+  String get windowYear => 'Este año';
+
+  @override
+  String get windowAllTime => 'Siempre';
+
+  @override
+  String get rankShopsVisited => 'Más barberías visitadas';
+
+  @override
+  String get rankMostHaircuts => 'Más cortes';
+
+  @override
+  String get rankTopReferrers => 'Más recomendaciones';
+
+  @override
+  String get rankPopularHaircuts => 'Cortes populares';
+
+  @override
+  String get rankTopBarbers => 'Barberos mejor valorados';
+
+  @override
+  String unitShops(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'barberías',
+      one: 'barbería',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitHaircuts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'cortes',
+      one: 'corte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitBusinessesReferred(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'negocios recomendados',
+      one: 'negocio recomendado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitCuts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'cortes',
+      one: 'corte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noReferralsYet => 'Aún no hay recomendaciones';
+
+  @override
+  String get noReferralsHint =>
+      'Comparte tu código de recomendación con una barbería y podrías encabezar esta tabla.';
+
+  @override
+  String get noRatedBarbers => 'Aún no hay barberos valorados';
+
+  @override
+  String get noRatedBarbersHint =>
+      'Los barberos aparecen aquí cuando los clientes empiezan a valorar sus cortes.';
+
+  @override
+  String noHaircutsInWindow(String window) {
+    String _temp0 = intl.Intl.selectLogic(window, {
+      'week': 'No hay cortes esta semana',
+      'month': 'No hay cortes este mes',
+      'year': 'No hay cortes este año',
+      'other': 'Aún no hay cortes',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get popularStylesHint =>
+      'Los estilos populares aparecen en cuanto se reservan y se hacen cortes.';
+
+  @override
+  String get boardEmpty => 'La tabla está vacía';
+
+  @override
+  String boardEmptyHint(String window) {
+    String _temp0 = intl.Intl.selectLogic(window, {
+      'week':
+          'Nadie se ha cortado el pelo esta semana. Reserva y ponte el primero.',
+      'month':
+          'Nadie se ha cortado el pelo este mes. Reserva y ponte el primero.',
+      'year':
+          'Nadie se ha cortado el pelo este año. Reserva y ponte el primero.',
+      'other':
+          'Nadie se ha cortado el pelo todavía. Reserva y ponte el primero.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get tallyingBoard => 'Contando puntos…';
+
+  @override
+  String get couldntLoadRankings => 'No se han podido cargar los rankings';
+
+  @override
+  String get you => 'Tú';
+
+  @override
+  String nameYou(String name) {
+    return '$name (tú)';
+  }
 }

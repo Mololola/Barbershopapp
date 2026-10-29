@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/business.dart';
@@ -26,7 +28,7 @@ class RewardHistoryScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Bank account for withdrawals'),
+        title: Text(context.l10n.bankAccountTitle),
         content: Form(
           key: formKey,
           child: Column(
@@ -35,28 +37,28 @@ class RewardHistoryScreen extends ConsumerWidget {
               TextFormField(
                 controller: holder,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Account holder name'),
-                validator: (value) => (value ?? '').trim().length < 2 ? 'Enter the name on the account' : null,
+                decoration: InputDecoration(labelText: context.l10n.accountHolderName),
+                validator: (value) => (value ?? '').trim().length < 2 ? context.l10n.enterAccountName : null,
               ),
               TextFormField(
                 controller: iban,
                 textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'IBAN',
-                  helperText: 'In your banking app. UK accounts have one too (starts GB).',
+                decoration: InputDecoration(
+                  labelText: context.l10n.iban,
+                  helperText: context.l10n.ibanHelper,
                 ),
-                validator: (value) => (value ?? '').trim().isEmpty ? 'Enter your IBAN' : null,
+                validator: (value) => (value ?? '').trim().isEmpty ? context.l10n.enterYourIban : null,
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
           FilledButton(
             onPressed: () {
               if (formKey.currentState!.validate()) Navigator.pop(context, true);
             },
-            child: const Text('Save'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),
@@ -67,7 +69,7 @@ class RewardHistoryScreen extends ConsumerWidget {
         .read(payoutControllerProvider.notifier)
         .savePayoutDetails(accountHolder: holder.text.trim(), iban: iban.text);
     if (!context.mounted) return false;
-    _show(context, error ?? 'Bank account saved.');
+    _show(context, error ?? context.l10n.bankAccountSaved);
     return error == null;
   }
 
@@ -91,7 +93,7 @@ class RewardHistoryScreen extends ConsumerWidget {
     final amountCents = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Withdraw $currency'),
+        title: Text(context.l10n.withdrawCurrency(currency)),
         content: Form(
           key: formKey,
           child: Column(
@@ -101,26 +103,26 @@ class RewardHistoryScreen extends ConsumerWidget {
               TextFormField(
                 controller: controller,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Amount', prefixText: symbol),
+                decoration: InputDecoration(labelText: context.l10n.amount, prefixText: symbol),
                 validator: (value) {
                   final cents = parseCents(value);
-                  if (cents == null || cents <= 0) return 'Enter a valid amount';
-                  if (cents > availableCents) return 'More than your available balance';
+                  if (cents == null || cents <= 0) return context.l10n.enterValidAmount;
+                  if (cents > availableCents) return context.l10n.moreThanBalance;
                   return null;
                 },
               ),
               const SizedBox(height: 12),
-              Text('To ${details!.accountHolder}, ${details.maskedIban}'),
+              Text(context.l10n.payoutTo(details!.accountHolder, details.maskedIban)),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.cancel)),
           FilledButton(
             onPressed: () {
               if (formKey.currentState!.validate()) Navigator.pop(context, parseCents(controller.text));
             },
-            child: const Text('Request'),
+            child: Text(context.l10n.request),
           ),
         ],
       ),
@@ -130,7 +132,7 @@ class RewardHistoryScreen extends ConsumerWidget {
     final error =
         await ref.read(payoutControllerProvider.notifier).requestPayout(amountCents: amountCents, currency: currency);
     if (!context.mounted) return;
-    _show(context, error ?? 'Withdrawal requested.');
+    _show(context, error ?? context.l10n.withdrawalRequested);
   }
 
   @override
@@ -144,7 +146,7 @@ class RewardHistoryScreen extends ConsumerWidget {
     final payoutState = ref.watch(payoutControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reward history')),
+      appBar: AppBar(title: Text(context.l10n.rewardHistory)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -152,20 +154,20 @@ class RewardHistoryScreen extends ConsumerWidget {
           // money already requested is listed under Withdrawals below.
           availableBalance.when(
             loading: () => const CircularProgressIndicator(),
-            error: (error, _) => Text('Error: $error'),
+            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
             data: (balances) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Balance: ${formatBalances(balances)}', style: Theme.of(context).textTheme.headlineSmall),
+                Text(context.l10n.balanceLabel(formatBalances(balances)), style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 for (final MapEntry(key: currency, value: cents) in balances.entries)
                   if (cents > 0)
                     Row(
                       children: [
-                        Expanded(child: Text('${formatMoney(cents, currency)} available')),
+                        Expanded(child: Text(context.l10n.amountAvailable(formatMoney(cents, currency)))),
                         FilledButton(
                           onPressed: payoutState.isLoading ? null : () => _requestPayout(context, ref, currency, cents),
-                          child: const Text('Withdraw'),
+                          child: Text(context.l10n.withdraw),
                         ),
                       ],
                     ),
@@ -174,43 +176,43 @@ class RewardHistoryScreen extends ConsumerWidget {
           ),
           payoutDetails.when(
             loading: () => const SizedBox.shrink(),
-            error: (error, _) => Text('Error: $error'),
+            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
             data: (details) => ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.account_balance_outlined),
-              title: Text(details == null ? 'No bank account yet' : '${details.accountHolder}, ${details.maskedIban}'),
-              subtitle: const Text('Withdrawals are sent here by bank transfer'),
+              title: Text(details == null ? context.l10n.noBankAccountYet : '${details.accountHolder}, ${details.maskedIban}'),
+              subtitle: Text(context.l10n.withdrawalsSentHere),
               trailing: TextButton(
                 onPressed: payoutState.isLoading ? null : () => _editBankDetails(context, ref, details),
-                child: Text(details == null ? 'Add' : 'Change'),
+                child: Text(details == null ? context.l10n.add : context.l10n.change),
               ),
             ),
           ),
           const SizedBox(height: 16),
           myPayoutRequests.when(
             loading: () => const SizedBox.shrink(),
-            error: (error, _) => Text('Error: $error'),
+            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
             data: (requests) {
               if (requests.isEmpty) return const SizedBox.shrink();
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Withdrawals', style: Theme.of(context).textTheme.titleMedium),
+                  Text(context.l10n.withdrawals, style: Theme.of(context).textTheme.titleMedium),
                   for (final request in requests)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(formatMoney(request.amountCents, request.currency)),
-                      subtitle: Text(_payoutStatusLabel(request.status)),
+                      subtitle: Text(_payoutStatusLabel(context, request.status)),
                     ),
                 ],
               );
             },
           ),
           const SizedBox(height: 24),
-          Text('Referrals', style: Theme.of(context).textTheme.titleMedium),
+          Text(context.l10n.referrals, style: Theme.of(context).textTheme.titleMedium),
           referrals.when(
             loading: () => const CircularProgressIndicator(),
-            error: (error, _) => Text('Error: $error'),
+            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
             data: (entries) {
               final matches = entries.where((e) => e.customerId == myProfile?.id);
               final count = matches.isEmpty ? 0 : matches.first.value;
@@ -218,28 +220,25 @@ class RewardHistoryScreen extends ConsumerWidget {
               for (final entry in (history.value ?? []).where((e) => e.isReferral)) {
                 earned[entry.currency] = (earned[entry.currency] ?? 0) + entry.amountCents;
               }
-              return Text(
-                '$count business${count == 1 ? '' : 'es'} referred — '
-                '${formatBalances(earned)} earned (5% of their subscription payments)',
-              );
+              return Text(context.l10n.referralSummary(count, formatBalances(earned)));
             },
           ),
           const SizedBox(height: 24),
-          Text('Reviews', style: Theme.of(context).textTheme.titleMedium),
+          Text(context.l10n.reviews, style: Theme.of(context).textTheme.titleMedium),
           history.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Text('Error: $error'),
+            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
             data: (entries) {
               final reviewRewards = entries.where((e) => !e.isReferral);
               if (reviewRewards.isEmpty) {
-                return const Text('No rewards yet.');
+                return Text(context.l10n.noRewardsYet);
               }
               return Column(
                 children: [
                   for (final entry in reviewRewards)
                     ListTile(
                       title: Text('+${formatMoney(entry.amountCents, entry.currency)}'),
-                      subtitle: Text(entry.createdAt.toLocal().toString().split('.').first),
+                      subtitle: Text(DateFormat.yMMMd(context.l10n.localeName).add_Hm().format(entry.createdAt.toLocal())),
                     ),
                 ],
               );
@@ -251,11 +250,9 @@ class RewardHistoryScreen extends ConsumerWidget {
   }
 }
 
-String _payoutStatusLabel(PayoutRequestStatus status) {
-  return switch (status) {
-    PayoutRequestStatus.pending => 'Pending review',
-    PayoutRequestStatus.approved => 'Approved — payment on its way',
-    PayoutRequestStatus.rejected => 'Rejected',
-    PayoutRequestStatus.paid => 'Paid',
-  };
-}
+String _payoutStatusLabel(BuildContext context, PayoutRequestStatus status) => switch (status) {
+      PayoutRequestStatus.pending => context.l10n.payoutPending,
+      PayoutRequestStatus.approved => context.l10n.payoutApproved,
+      PayoutRequestStatus.rejected => context.l10n.payoutRejected,
+      PayoutRequestStatus.paid => context.l10n.payoutPaid,
+    };

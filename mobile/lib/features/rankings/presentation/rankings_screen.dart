@@ -1,30 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/brand.dart';
+import '../../customer/domain/review.dart';
 import '../application/rankings_controller.dart';
 import '../domain/ranking_window.dart';
 
 enum _RankingType { distinctShops, totalHaircuts, referrals, haircutTypes, topBarbers }
 
 extension on _RankingType {
-  String get label {
-    switch (this) {
-      case _RankingType.distinctShops:
-        return 'Most shops visited';
-      case _RankingType.totalHaircuts:
-        return 'Most haircuts';
-      case _RankingType.referrals:
-        return 'Top referrers';
-      case _RankingType.haircutTypes:
-        return 'Popular haircuts';
-      case _RankingType.topBarbers:
-        return 'Top-rated barbers';
-    }
-  }
+  String label(AppLocalizations l10n) => switch (this) {
+        _RankingType.distinctShops => l10n.rankShopsVisited,
+        _RankingType.totalHaircuts => l10n.rankMostHaircuts,
+        _RankingType.referrals => l10n.rankTopReferrers,
+        _RankingType.haircutTypes => l10n.rankPopularHaircuts,
+        _RankingType.topBarbers => l10n.rankTopBarbers,
+      };
 
   IconData get icon {
     switch (this) {
@@ -65,8 +60,6 @@ class _Row {
   /// False for haircut styles, which get the category icon instead of initials.
   final bool isPerson;
 }
-
-String _plural(int n, String one, String many) => n == 1 ? one : many;
 
 class RankingsScreen extends ConsumerStatefulWidget {
   const RankingsScreen({super.key});
@@ -114,7 +107,7 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
                     title: e.username,
                     avatarUrl: e.avatarUrl,
                     value: '${e.value}',
-                    unit: _plural(e.value, 'shop', 'shops'),
+                    unit: context.l10n.unitShops(e.value),
                   ),
               ],
             );
@@ -127,7 +120,7 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
                     title: e.username,
                     avatarUrl: e.avatarUrl,
                     value: '${e.value}',
-                    unit: _plural(e.value, 'haircut', 'haircuts'),
+                    unit: context.l10n.unitHaircuts(e.value),
                   ),
               ],
             );
@@ -140,7 +133,7 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
                     title: e.username,
                     avatarUrl: e.avatarUrl,
                     value: '${e.value}',
-                    unit: _plural(e.value, 'business referred', 'businesses referred'),
+                    unit: context.l10n.unitBusinessesReferred(e.value),
                   ),
               ],
             );
@@ -150,9 +143,9 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
                 for (final e in entries)
                   _Row(
                     id: e.haircutType,
-                    title: e.haircutType,
+                    title: haircutTypeLabel(context.l10n, e.haircutType),
                     value: '${e.value}',
-                    unit: _plural(e.value, 'cut', 'cuts'),
+                    unit: context.l10n.unitCuts(e.value),
                     isPerson: false,
                   ),
               ],
@@ -176,29 +169,29 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
   StatusMessage get _empty {
     switch (_type) {
       case _RankingType.referrals:
-        return const StatusMessage(
+        return StatusMessage(
           icon: Icons.group_add_outlined,
-          title: 'No referrals yet',
-          message: 'Share your referral code with a shop and you could top this board.',
+          title: context.l10n.noReferralsYet,
+          message: context.l10n.noReferralsHint,
         );
       case _RankingType.topBarbers:
-        return const StatusMessage(
+        return StatusMessage(
           icon: Icons.star_outline,
-          title: 'No rated barbers yet',
-          message: 'Barbers appear here once customers start reviewing their cuts.',
+          title: context.l10n.noRatedBarbers,
+          message: context.l10n.noRatedBarbersHint,
         );
       case _RankingType.haircutTypes:
         return StatusMessage(
           icon: Icons.style_outlined,
-          title: 'No haircuts ${_window.label.toLowerCase()}',
-          message: 'Popular styles show up as soon as cuts are booked and done.',
+          title: context.l10n.noHaircutsInWindow(_window.name),
+          message: context.l10n.popularStylesHint,
         );
       case _RankingType.distinctShops:
       case _RankingType.totalHaircuts:
         return StatusMessage(
           icon: Icons.emoji_events_outlined,
-          title: 'The board is empty',
-          message: 'Nobody has a cut ${_window.label.toLowerCase()} yet. Book one and take the top spot.',
+          title: context.l10n.boardEmpty,
+          message: context.l10n.boardEmptyHint(_window.name),
         );
     }
   }
@@ -208,9 +201,9 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
     final myId = ref.watch(currentProfileProvider).value?.id;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rankings'),
+        title: Text(context.l10n.navRankings),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Refresh', onPressed: _refresh),
+          IconButton(icon: const Icon(Icons.refresh), tooltip: context.l10n.refresh, onPressed: _refresh),
         ],
       ),
       body: Column(
@@ -238,13 +231,13 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
           const SizedBox(height: 8),
           Expanded(
             child: _rows().when(
-              loading: () => const LoadingView(caption: 'Tallying the board…'),
+              loading: () => LoadingView(caption: context.l10n.tallyingBoard),
               error: (_, _) => Center(
                 child: StatusMessage(
                   icon: Icons.wifi_off_rounded,
-                  title: 'Couldn\'t load rankings',
-                  message: 'Check your connection and try again.',
-                  actionLabel: 'Try again',
+                  title: context.l10n.couldntLoadRankings,
+                  message: context.l10n.checkConnection,
+                  actionLabel: context.l10n.tryAgain,
                   onAction: _refresh,
                   isError: true,
                 ),
@@ -303,7 +296,7 @@ class _TypePill extends StatelessWidget {
               Icon(type.icon, size: 18, color: selected ? foreground : scheme.primary),
               const SizedBox(width: 8),
               Text(
-                type.label,
+                type.label(context.l10n),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: foreground,
                   fontWeight: selected ? FontWeight.w600 : null,
@@ -345,7 +338,7 @@ class _WindowSwitch extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      window.label,
+                      window.label(context.l10n),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       style: theme.textTheme.labelMedium?.copyWith(
@@ -445,7 +438,7 @@ class _PodiumPlace extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            isMe ? 'You' : row.title,
+            isMe ? context.l10n.you : row.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
@@ -518,7 +511,7 @@ class _RestOfBoard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      row.id == myId ? '${row.title} (you)' : row.title,
+                      row.id == myId ? context.l10n.nameYou(row.title) : row.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
