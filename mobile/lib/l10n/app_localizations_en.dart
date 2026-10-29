@@ -1452,4 +1452,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get off => 'Off';
+
+  @override
+  String get price => 'Price';
+
+  @override
+  String get enterANumber => 'Enter a number';
+
+  @override
+  String get durationMinutes => 'Duration (minutes)';
+
+  @override
+  String get enterAWholeNumber => 'Enter a whole number';
+
+  @override
+  String get subscriptionChangesTitle => 'Your monthly subscription changes';
+
+  @override
+  String subscriptionChangesBody(String from, String to) {
+    return 'From your next payment it goes from $from to $to a month. Nothing changes for the month you\'ve already paid.';
+  }
+
+  @override
+  String get continueButton => 'Continue';
+
+  @override
+  String get yourBasicCut => 'Your basic cut';
+
+  @override
+  String get addService => 'Add service';
+
+  @override
+  String get basicCutHelper =>
+      'Your standard haircut, with its price and duration.';
+
+  @override
+  String get editBasicCut => 'Edit your basic cut';
+
+  @override
+  String get editService => 'Edit service';
+
+  @override
+  String get shopNeedsBasicCut => 'Your shop needs a basic cut';
+
+  @override
+  String get shopNeedsBasicCutBody =>
+      'To change it, edit it, or add another service and make that your basic cut. Then you can remove this one.';
+
+  @override
+  String removeServiceTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get removeServiceBody =>
+      'Customers won\'t be able to book it any more. Bookings already made for it are kept.';
+
+  @override
+  String get addYourBasicCut => 'Add your basic cut';
+
+  @override
+  String get startWithBasicCut =>
+      'Start with your basic cut — your standard haircut.';
+
+  @override
+  String get basicCut => 'Basic cut';
+
+  @override
+  String get serviceOptions => 'Service options';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get makeBasicCut => 'Make basic cut';
+
+  @override
+  String get markAsDone => 'Mark as done';
 }

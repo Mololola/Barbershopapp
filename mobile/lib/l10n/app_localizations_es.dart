@@ -1465,4 +1465,81 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get off => 'Libre';
+
+  @override
+  String get price => 'Precio';
+
+  @override
+  String get enterANumber => 'Introduce un número';
+
+  @override
+  String get durationMinutes => 'Duración (minutos)';
+
+  @override
+  String get enterAWholeNumber => 'Introduce un número entero';
+
+  @override
+  String get subscriptionChangesTitle => 'Cambia tu suscripción mensual';
+
+  @override
+  String subscriptionChangesBody(String from, String to) {
+    return 'A partir de tu próximo pago pasa de $from a $to al mes. El mes que ya has pagado no cambia.';
+  }
+
+  @override
+  String get continueButton => 'Continuar';
+
+  @override
+  String get yourBasicCut => 'Tu corte básico';
+
+  @override
+  String get addService => 'Añadir servicio';
+
+  @override
+  String get basicCutHelper =>
+      'Tu corte de pelo estándar, con su precio y duración.';
+
+  @override
+  String get editBasicCut => 'Editar tu corte básico';
+
+  @override
+  String get editService => 'Editar servicio';
+
+  @override
+  String get shopNeedsBasicCut => 'Tu barbería necesita un corte básico';
+
+  @override
+  String get shopNeedsBasicCutBody =>
+      'Para cambiarlo, edítalo, o añade otro servicio y conviértelo en tu corte básico. Después podrás quitar este.';
+
+  @override
+  String removeServiceTitle(String name) {
+    return '¿Quitar $name?';
+  }
+
+  @override
+  String get removeServiceBody =>
+      'Los clientes ya no podrán reservarlo. Las reservas que ya se hicieron se conservan.';
+
+  @override
+  String get addYourBasicCut => 'Añade tu corte básico';
+
+  @override
+  String get startWithBasicCut =>
+      'Empieza por tu corte básico: tu corte de pelo estándar.';
+
+  @override
+  String get basicCut => 'Corte básico';
+
+  @override
+  String get serviceOptions => 'Opciones del servicio';
+
+  @override
+  String get edit => 'Editar';
+
+  @override
+  String get makeBasicCut => 'Convertir en corte básico';
+
+  @override
+  String get markAsDone => 'Marcar como hecha';
 }

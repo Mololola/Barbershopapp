@@ -919,5 +919,45 @@
     }
   },
   "daysOffUseShopHours": "Days left off use the shop's own opening hours instead.",
-  "off": "Off"
+  "off": "Off",
+  "price": "Price",
+  "enterANumber": "Enter a number",
+  "durationMinutes": "Duration (minutes)",
+  "enterAWholeNumber": "Enter a whole number",
+  "subscriptionChangesTitle": "Your monthly subscription changes",
+  "subscriptionChangesBody": "From your next payment it goes from {from} to {to} a month. Nothing changes for the month you've already paid.",
+  "@subscriptionChangesBody": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "continueButton": "Continue",
+  "yourBasicCut": "Your basic cut",
+  "addService": "Add service",
+  "basicCutHelper": "Your standard haircut, with its price and duration.",
+  "editBasicCut": "Edit your basic cut",
+  "editService": "Edit service",
+  "shopNeedsBasicCut": "Your shop needs a basic cut",
+  "shopNeedsBasicCutBody": "To change it, edit it, or add another service and make that your basic cut. Then you can remove this one.",
+  "removeServiceTitle": "Remove {name}?",
+  "@removeServiceTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeServiceBody": "Customers won't be able to book it any more. Bookings already made for it are kept.",
+  "addYourBasicCut": "Add your basic cut",
+  "startWithBasicCut": "Start with your basic cut — your standard haircut.",
+  "basicCut": "Basic cut",
+  "serviceOptions": "Service options",
+  "edit": "Edit",
+  "makeBasicCut": "Make basic cut",
+  "markAsDone": "Mark as done"
 }

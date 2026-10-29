@@ -2497,6 +2497,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Off'**
   String get off;
+
+  /// No description provided for @price.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get price;
+
+  /// No description provided for @enterANumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number'**
+  String get enterANumber;
+
+  /// No description provided for @durationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration (minutes)'**
+  String get durationMinutes;
+
+  /// No description provided for @enterAWholeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number'**
+  String get enterAWholeNumber;
+
+  /// No description provided for @subscriptionChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your monthly subscription changes'**
+  String get subscriptionChangesTitle;
+
+  /// No description provided for @subscriptionChangesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'From your next payment it goes from {from} to {to} a month. Nothing changes for the month you\'ve already paid.'**
+  String subscriptionChangesBody(String from, String to);
+
+  /// No description provided for @continueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueButton;
+
+  /// No description provided for @yourBasicCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Your basic cut'**
+  String get yourBasicCut;
+
+  /// No description provided for @addService.
+  ///
+  /// In en, this message translates to:
+  /// **'Add service'**
+  String get addService;
+
+  /// No description provided for @basicCutHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Your standard haircut, with its price and duration.'**
+  String get basicCutHelper;
+
+  /// No description provided for @editBasicCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit your basic cut'**
+  String get editBasicCut;
+
+  /// No description provided for @editService.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit service'**
+  String get editService;
+
+  /// No description provided for @shopNeedsBasicCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shop needs a basic cut'**
+  String get shopNeedsBasicCut;
+
+  /// No description provided for @shopNeedsBasicCutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To change it, edit it, or add another service and make that your basic cut. Then you can remove this one.'**
+  String get shopNeedsBasicCutBody;
+
+  /// No description provided for @removeServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String removeServiceTitle(String name);
+
+  /// No description provided for @removeServiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers won\'t be able to book it any more. Bookings already made for it are kept.'**
+  String get removeServiceBody;
+
+  /// No description provided for @addYourBasicCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your basic cut'**
+  String get addYourBasicCut;
+
+  /// No description provided for @startWithBasicCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with your basic cut — your standard haircut.'**
+  String get startWithBasicCut;
+
+  /// No description provided for @basicCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic cut'**
+  String get basicCut;
+
+  /// No description provided for @serviceOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Service options'**
+  String get serviceOptions;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @makeBasicCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Make basic cut'**
+  String get makeBasicCut;
+
+  /// No description provided for @markAsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as done'**
+  String get markAsDone;
 }
 
 class _AppLocalizationsDelegate

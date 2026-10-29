@@ -1,35 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/responsive.dart';
 import '../../customer/application/booking_controller.dart';
 import '../../customer/domain/booking.dart';
 import '../application/business_controller.dart';
 
-const _weekdayNames = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
-const _monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 
 class BookingsScreen extends ConsumerWidget {
   const BookingsScreen({super.key});
@@ -41,12 +20,12 @@ class BookingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bookings'),
+        title: Text(context.l10n.navBookings),
         actions: [
           // A desktop page stays open for hours; this fetches bookings made since.
           if (isWideLayout(context))
             IconButton(
-              tooltip: 'Refresh',
+              tooltip: context.l10n.refresh,
               icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(businessBookingsProvider),
             ),
@@ -54,10 +33,10 @@ class BookingsScreen extends ConsumerWidget {
       ),
       body: bookings.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(child: Text('No bookings yet.'));
+            return Center(child: Text(context.l10n.noBookingsYet));
           }
 
           final groups = _groupByDate(list);
@@ -67,7 +46,7 @@ class BookingsScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Text(
-                    _formatDateHeader(entry.key),
+                    _formatDateHeader(context, entry.key),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -75,8 +54,8 @@ class BookingsScreen extends ConsumerWidget {
                   Card(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: ListTile(
-                      title: Text(_formatTime(booking.startTime.toLocal())),
-                      subtitle: Text(_statusLabel(booking.status)),
+                      title: Text(TimeOfDay.fromDateTime(booking.startTime.toLocal()).format(context)),
+                      subtitle: Text(_statusLabel(context, booking.status)),
                       trailing: booking.status == BookingStatus.confirmed
                           ? TextButton(
                               onPressed: actionState.isLoading
@@ -87,7 +66,7 @@ class BookingsScreen extends ConsumerWidget {
                                           .completeBooking(booking.id);
                                       ref.invalidate(businessBookingsProvider);
                                     },
-                              child: const Text('Mark as done'),
+                              child: Text(context.l10n.markAsDone),
                             )
                           : null,
                     ),
@@ -113,28 +92,15 @@ class BookingsScreen extends ConsumerWidget {
     return groups;
   }
 
-  String _formatDateHeader(DateTime date) {
-    final weekday = _weekdayNames[date.weekday - 1];
-    final month = _monthNames[date.month - 1];
-    return '$weekday, ${date.day} $month ${date.year}';
+  /// "Monday, October 5, 2026" / "Lunes, 5 de octubre de 2026".
+  String _formatDateHeader(BuildContext context, DateTime date) {
+    final header = DateFormat.yMMMMEEEEd(context.l10n.localeName).format(date);
+    return header[0].toUpperCase() + header.substring(1);
   }
 
-  String _statusLabel(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.confirmed:
-        return 'Confirmed';
-      case BookingStatus.cancelled:
-        return 'Cancelled';
-      case BookingStatus.completed:
-        return 'Completed';
-    }
-  }
-
-  String _formatTime(DateTime dt) {
-    final time = TimeOfDay.fromDateTime(dt);
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$hour:$minute $period';
-  }
+  String _statusLabel(BuildContext context, BookingStatus status) => switch (status) {
+        BookingStatus.confirmed => context.l10n.bookingConfirmed,
+        BookingStatus.cancelled => context.l10n.bookingCancelled,
+        BookingStatus.completed => context.l10n.bookingCompleted,
+      };
 }
