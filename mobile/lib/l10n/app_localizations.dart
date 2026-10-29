@@ -1645,6 +1645,594 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Payments are handled on the Fadra Cut business website.'**
   String get payOnWebsite;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @couldntLoadFigures.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your figures: {error}'**
+  String couldntLoadFigures(String error);
+
+  /// No description provided for @previousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get previousMonth;
+
+  /// No description provided for @nextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get nextMonth;
+
+  /// No description provided for @profit.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get profit;
+
+  /// No description provided for @loss.
+  ///
+  /// In en, this message translates to:
+  /// **'Loss'**
+  String get loss;
+
+  /// No description provided for @bookingsCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings ({count} completed)'**
+  String bookingsCompleted(int count);
+
+  /// No description provided for @otherIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Other income'**
+  String get otherIncome;
+
+  /// No description provided for @costs.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs'**
+  String get costs;
+
+  /// No description provided for @addCostsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your costs below to see where you stand.'**
+  String get addCostsHint;
+
+  /// No description provided for @costsCovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs covered — everything from here is profit.'**
+  String get costsCovered;
+
+  /// No description provided for @breakEvenProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of the way to breaking even'**
+  String breakEvenProgress(int percent);
+
+  /// No description provided for @bookingsToBreakEven.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more booking at your average {average} would cover this month\'s costs.} other{{count} more bookings at your average {average} would cover this month\'s costs.}}'**
+  String bookingsToBreakEven(int count, Object average);
+
+  /// No description provided for @addACost.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cost'**
+  String get addACost;
+
+  /// No description provided for @everyMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month'**
+  String get everyMonth;
+
+  /// No description provided for @oneOff.
+  ///
+  /// In en, this message translates to:
+  /// **'One-off'**
+  String get oneOff;
+
+  /// No description provided for @monthlyCostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Rent, wages, software… counted from {month} on.'**
+  String monthlyCostHint(String month);
+
+  /// No description provided for @oneOffCostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted in {month} only.'**
+  String oneOffCostHint(String month);
+
+  /// No description provided for @whatIsIt.
+  ///
+  /// In en, this message translates to:
+  /// **'What is it?'**
+  String get whatIsIt;
+
+  /// No description provided for @amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get amount;
+
+  /// No description provided for @enterAnAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount'**
+  String get enterAnAmount;
+
+  /// No description provided for @add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// No description provided for @costsIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs in {month}'**
+  String costsIn(String month);
+
+  /// No description provided for @noCostsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No costs yet. Add rent, wages and anything else you pay to run the shop.'**
+  String get noCostsYet;
+
+  /// No description provided for @everyMonthAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month · added automatically'**
+  String get everyMonthAutomatic;
+
+  /// No description provided for @stopAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop after {month}'**
+  String stopAfter(String month);
+
+  /// No description provided for @deleteFromEveryMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete from every month'**
+  String get deleteFromEveryMonth;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @otherIncomeFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Other income, {month}'**
+  String otherIncomeFor(String month);
+
+  /// No description provided for @otherIncomeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-ins, cash, product sales…'**
+  String get otherIncomeHint;
+
+  /// No description provided for @otherIncomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-ins and cash not booked through the app'**
+  String get otherIncomeSubtitle;
+
+  /// No description provided for @premiumFeatureForecast.
+  ///
+  /// In en, this message translates to:
+  /// **'Month-end forecast and the day you\'ll break even'**
+  String get premiumFeatureForecast;
+
+  /// No description provided for @premiumFeatureOffers.
+  ///
+  /// In en, this message translates to:
+  /// **'Offers worked out for your shop, with what they\'ll earn you'**
+  String get premiumFeatureOffers;
+
+  /// No description provided for @premiumFeatureHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'12 months of profit history'**
+  String get premiumFeatureHistory;
+
+  /// No description provided for @premiumFeatureBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'When your chairs are busy — and when they sit empty'**
+  String get premiumFeatureBusy;
+
+  /// No description provided for @premiumFeatureBarbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Each barber\'s bookings, revenue and how full they are'**
+  String get premiumFeatureBarbers;
+
+  /// No description provided for @premiumFeatureRegulars.
+  ///
+  /// In en, this message translates to:
+  /// **'Returning customers, and regulars you\'re losing'**
+  String get premiumFeatureRegulars;
+
+  /// No description provided for @premiumFeatureWhatIf.
+  ///
+  /// In en, this message translates to:
+  /// **'What-if: try a price change before you make it'**
+  String get premiumFeatureWhatIf;
+
+  /// No description provided for @premiumTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your numbers, turned into decisions.'**
+  String get premiumTagline;
+
+  /// No description provided for @tryFree14Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Try it free for 14 days'**
+  String get tryFree14Days;
+
+  /// No description provided for @getPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Premium — {price}/month'**
+  String getPremium(String price);
+
+  /// No description provided for @cancelFromSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel anytime from Settings › Subscription & billing.'**
+  String get cancelFromSettings;
+
+  /// No description provided for @noCardForTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'No card needed for the trial.'**
+  String get noCardForTrial;
+
+  /// No description provided for @premiumInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium insights'**
+  String get premiumInsights;
+
+  /// No description provided for @whatToDoNext.
+  ///
+  /// In en, this message translates to:
+  /// **'What to do next'**
+  String get whatToDoNext;
+
+  /// No description provided for @whatToDoNextSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Moves worked out from your own bookings, best first.'**
+  String get whatToDoNextSub;
+
+  /// No description provided for @suggestionsAppear.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions appear once you have about 10 completed bookings in the last 90 days.'**
+  String get suggestionsAppear;
+
+  /// No description provided for @profit12Months.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit, last 12 months'**
+  String get profit12Months;
+
+  /// No description provided for @tapABar.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a bar for the month\'s figures.'**
+  String get tapABar;
+
+  /// No description provided for @chairsBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'When your chairs are busy'**
+  String get chairsBusy;
+
+  /// No description provided for @chairsBusySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of chair time booked, last 8 weeks · overall {percent}'**
+  String chairsBusySub(String percent);
+
+  /// No description provided for @last30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get last30Days;
+
+  /// No description provided for @customersHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers'**
+  String get customersHeading;
+
+  /// No description provided for @servicesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 90 days, vs the 90 before'**
+  String get servicesSub;
+
+  /// No description provided for @whatIf.
+  ///
+  /// In en, this message translates to:
+  /// **'What if…'**
+  String get whatIf;
+
+  /// No description provided for @whatIfSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a change on {month}\'s figures before making it.'**
+  String whatIfSub(String month);
+
+  /// No description provided for @thisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get thisMonth;
+
+  /// No description provided for @thisMonthSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Where you\'re heading at this pace'**
+  String get thisMonthSub;
+
+  /// No description provided for @forecastAppears.
+  ///
+  /// In en, this message translates to:
+  /// **'A forecast appears once the month is under way.'**
+  String get forecastAppears;
+
+  /// No description provided for @freeTrialDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Free trial · 1 day left} other{Free trial · {count} days left}}'**
+  String freeTrialDaysLeft(int count);
+
+  /// No description provided for @keepPremiumFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Premium for {price}/month'**
+  String keepPremiumFor(String price);
+
+  /// No description provided for @alreadyCoveredCosts.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve already covered this month\'s costs.'**
+  String get alreadyCoveredCosts;
+
+  /// No description provided for @breakEvenOn.
+  ///
+  /// In en, this message translates to:
+  /// **'At this pace you\'ll break even on {date}.'**
+  String breakEvenOn(DateTime date);
+
+  /// No description provided for @wontCoverCosts.
+  ///
+  /// In en, this message translates to:
+  /// **'At this pace you won\'t cover this month\'s costs — see the suggestions below.'**
+  String get wontCoverCosts;
+
+  /// No description provided for @monthEndForecast.
+  ///
+  /// In en, this message translates to:
+  /// **'Month-end forecast'**
+  String get monthEndForecast;
+
+  /// No description provided for @projectedProfitOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Projected profit on {revenue} revenue'**
+  String projectedProfitOn(String revenue);
+
+  /// No description provided for @projectedLossOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Projected loss on {revenue} revenue'**
+  String projectedLossOn(String revenue);
+
+  /// No description provided for @alreadyBookedRest.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} already booked for the rest of the month.'**
+  String alreadyBookedRest(String amount);
+
+  /// No description provided for @basedOnPace.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on your pace so far this month and bookings already in the diary.'**
+  String get basedOnPace;
+
+  /// No description provided for @gainPerMonthShort.
+  ///
+  /// In en, this message translates to:
+  /// **'+{amount}/mo'**
+  String gainPerMonthShort(String amount);
+
+  /// No description provided for @estimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate: {text}'**
+  String estimate(String text);
+
+  /// No description provided for @revenueLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue {amount}'**
+  String revenueLine(String amount);
+
+  /// No description provided for @costsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs {amount}'**
+  String costsLine(String amount);
+
+  /// No description provided for @profitLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit {amount}'**
+  String profitLine(String amount);
+
+  /// No description provided for @lossLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Loss {amount}'**
+  String lossLine(String amount);
+
+  /// No description provided for @setHoursToSee.
+  ///
+  /// In en, this message translates to:
+  /// **'Set your opening hours and staff to see this.'**
+  String get setHoursToSee;
+
+  /// No description provided for @heatClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} {hour}:00 · closed'**
+  String heatClosed(String day, int hour);
+
+  /// No description provided for @heatBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} {hour}:00 · {percent} booked'**
+  String heatBooked(String day, int hour, String percent);
+
+  /// No description provided for @heatEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty '**
+  String get heatEmpty;
+
+  /// No description provided for @heatFull.
+  ///
+  /// In en, this message translates to:
+  /// **' Full'**
+  String get heatFull;
+
+  /// No description provided for @noStaffYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff yet.'**
+  String get noStaffYet;
+
+  /// No description provided for @barberStats.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 booking · {percent} of their hours booked} other{{count} bookings · {percent} of their hours booked}}'**
+  String barberStats(int count, Object percent);
+
+  /// No description provided for @statCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'customers'**
+  String get statCustomers;
+
+  /// No description provided for @statNew.
+  ///
+  /// In en, this message translates to:
+  /// **'new'**
+  String get statNew;
+
+  /// No description provided for @statReturning.
+  ///
+  /// In en, this message translates to:
+  /// **'returning'**
+  String get statReturning;
+
+  /// No description provided for @statCameBack.
+  ///
+  /// In en, this message translates to:
+  /// **'came back*'**
+  String get statCameBack;
+
+  /// No description provided for @cameBackFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'* Of customers who visited 6–12 weeks ago, the share who have been back since.'**
+  String get cameBackFootnote;
+
+  /// No description provided for @regularsLosing.
+  ///
+  /// In en, this message translates to:
+  /// **'Regulars you\'re losing'**
+  String get regularsLosing;
+
+  /// No description provided for @regularsLosingSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Usually back every few weeks — now well overdue. Worth a message.'**
+  String get regularsLosingSub;
+
+  /// No description provided for @visitsUsually.
+  ///
+  /// In en, this message translates to:
+  /// **'{visits} visits · usually every {days} days'**
+  String visitsUsually(int visits, int days);
+
+  /// No description provided for @daysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days ago'**
+  String daysAgo(int count);
+
+  /// No description provided for @noCompletedBookings90.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed bookings in the last 90 days.'**
+  String get noCompletedBookings90;
+
+  /// No description provided for @serviceStats.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} bookings · {percent} of all · {arrow} from {previous}'**
+  String serviceStats(int count, String percent, String arrow, int previous);
+
+  /// No description provided for @pricesChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices {change}'**
+  String pricesChange(String change);
+
+  /// No description provided for @bookingsChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of bookings {change}'**
+  String bookingsChange(String change);
+
+  /// No description provided for @monthActual.
+  ///
+  /// In en, this message translates to:
+  /// **'{month} actual: {amount}'**
+  String monthActual(String month, String amount);
+
+  /// No description provided for @wouldBe.
+  ///
+  /// In en, this message translates to:
+  /// **'Would be {amount}'**
+  String wouldBe(String amount);
+
+  /// No description provided for @amountAMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} a month'**
+  String amountAMonth(String amount);
 }
 
 class _AppLocalizationsDelegate

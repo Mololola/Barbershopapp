@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
@@ -34,12 +35,12 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Finance'),
+        title: Text(context.l10n.navFinance),
         actions: [
           // Pull-to-refresh needs a touch screen.
           if (wide)
             IconButton(
-              tooltip: 'Refresh',
+              tooltip: context.l10n.refresh,
               icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(financeOverviewProvider(_month)),
             ),
@@ -47,7 +48,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       ),
       body: overview.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Couldn\'t load your figures: $error')),
+        error: (error, _) => Center(child: Text(context.l10n.couldntLoadFigures('$error'))),
         data: (data) => RefreshIndicator(
           onRefresh: () => ref.refresh(financeOverviewProvider(_month).future),
           child: ListView(
@@ -111,15 +112,15 @@ class _MonthSwitcher extends StatelessWidget {
     return Row(
       children: [
         IconButton(
-          tooltip: 'Previous month',
+          tooltip: context.l10n.previousMonth,
           icon: const Icon(Icons.chevron_left),
           onPressed: () => onChanged(DateTime(month.year, month.month - 1)),
         ),
         Expanded(
-          child: Text(monthLabel(month), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
+          child: Text(monthLabel(context.l10n, month), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
         ),
         IconButton(
-          tooltip: 'Next month',
+          tooltip: context.l10n.nextMonth,
           icon: const Icon(Icons.chevron_right),
           onPressed: canGoForward ? () => onChanged(DateTime(month.year, month.month + 1)) : null,
         ),
@@ -150,7 +151,7 @@ class _ResultCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(inProfit ? 'Profit' : 'Loss', style: textTheme.labelLarge?.copyWith(color: AppColors.steel)),
+            Text(inProfit ? context.l10n.profit : context.l10n.loss, style: textTheme.labelLarge?.copyWith(color: AppColors.steel)),
             Row(
               children: [
                 Icon(inProfit ? Icons.trending_up : Icons.trending_down,
@@ -171,16 +172,16 @@ class _ResultCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            _Line('Bookings (${s.completedBookings} completed)', formatMoney(s.bookingRevenueCents, currency)),
-            if (s.otherIncomeCents > 0) _Line('Other income', formatMoney(s.otherIncomeCents, currency)),
-            _Line('Costs', formatMoney(-s.costsCents, currency)),
+            _Line(context.l10n.bookingsCompleted(s.completedBookings), formatMoney(s.bookingRevenueCents, currency)),
+            if (s.otherIncomeCents > 0) _Line(context.l10n.otherIncome, formatMoney(s.otherIncomeCents, currency)),
+            _Line(context.l10n.costs, formatMoney(-s.costsCents, currency)),
             const SizedBox(height: 14),
             Text(
               s.costsCents == 0
-                  ? 'Add your costs below to see where you stand.'
+                  ? context.l10n.addCostsHint
                   : inProfit
-                      ? 'Costs covered — everything from here is profit.'
-                      : '${(progress * 100).round()}% of the way to breaking even',
+                      ? context.l10n.costsCovered
+                      : context.l10n.breakEvenProgress((progress * 100).round()),
               style: textTheme.bodySmall,
             ),
             const SizedBox(height: 6),
@@ -196,8 +197,7 @@ class _ResultCard extends StatelessWidget {
             if (s.bookingsToBreakEven != null && s.costsCents > 0) ...[
               const SizedBox(height: 12),
               Text(
-                '${s.bookingsToBreakEven} more booking${s.bookingsToBreakEven == 1 ? '' : 's'} at your average '
-                '${formatMoney(s.averageTicketCents, currency)} would cover this month\'s costs.',
+                context.l10n.bookingsToBreakEven(s.bookingsToBreakEven!, formatMoney(s.averageTicketCents, currency)),
                 style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
@@ -238,16 +238,16 @@ class _CostsCard extends ConsumerWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Add a cost'),
+          title: Text(context.l10n.addACost),
           content: Form(
             key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SegmentedButton<CostKind>(
-                  segments: const [
-                    ButtonSegment(value: CostKind.monthly, label: Text('Every month')),
-                    ButtonSegment(value: CostKind.oneOff, label: Text('One-off')),
+                  segments: [
+                    ButtonSegment(value: CostKind.monthly, label: Text(context.l10n.everyMonth)),
+                    ButtonSegment(value: CostKind.oneOff, label: Text(context.l10n.oneOff)),
                   ],
                   selected: {kind},
                   onSelectionChanged: (s) => setState(() => kind = s.first),
@@ -255,31 +255,31 @@ class _CostsCard extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   kind == CostKind.monthly
-                      ? 'Rent, wages, software… counted from ${monthLabel(month)} on.'
-                      : 'Counted in ${monthLabel(month)} only.',
+                      ? context.l10n.monthlyCostHint(monthLabel(context.l10n, month))
+                      : context.l10n.oneOffCostHint(monthLabel(context.l10n, month)),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 TextFormField(
                   controller: label,
-                  decoration: const InputDecoration(labelText: 'What is it?'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  decoration: InputDecoration(labelText: context.l10n.whatIsIt),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? context.l10n.requiredField : null,
                 ),
                 TextFormField(
                   controller: amount,
-                  decoration: InputDecoration(labelText: 'Amount', prefixText: currencySymbol(currency)),
+                  decoration: InputDecoration(labelText: context.l10n.amount, prefixText: currencySymbol(currency)),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  validator: (v) => double.tryParse(v ?? '') == null ? 'Enter an amount' : null,
+                  validator: (v) => double.tryParse(v ?? '') == null ? context.l10n.enterAnAmount : null,
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
             FilledButton(
               onPressed: () {
                 if (formKey.currentState!.validate()) Navigator.pop(context, true);
               },
-              child: const Text('Add'),
+              child: Text(context.l10n.add),
             ),
           ],
         ),
@@ -309,14 +309,14 @@ class _CostsCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text('Costs in ${monthLabel(month)}', style: Theme.of(context).textTheme.titleMedium)),
-                TextButton.icon(onPressed: () => _add(context, ref), icon: const Icon(Icons.add), label: const Text('Add')),
+                Expanded(child: Text(context.l10n.costsIn(monthLabel(context.l10n, month)), style: Theme.of(context).textTheme.titleMedium)),
+                TextButton.icon(onPressed: () => _add(context, ref), icon: const Icon(Icons.add), label: Text(context.l10n.add)),
               ],
             ),
             if (thisMonth.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('No costs yet. Add rent, wages and anything else you pay to run the shop.'),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(context.l10n.noCostsYet),
               ),
             for (final cost in thisMonth)
               ListTile(
@@ -324,10 +324,10 @@ class _CostsCard extends ConsumerWidget {
                 title: Text(cost.label),
                 subtitle: Text(
                   cost.isAutomatic
-                      ? 'Every month · added automatically'
+                      ? context.l10n.everyMonthAutomatic
                       : cost.kind == CostKind.oneOff
-                          ? 'One-off'
-                          : 'Every month',
+                          ? context.l10n.oneOff
+                          : context.l10n.everyMonth,
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -342,10 +342,10 @@ class _CostsCard extends ConsumerWidget {
                             : controller.deleteCost(cost.id!),
                         itemBuilder: (_) => [
                           if (cost.kind == CostKind.monthly)
-                            PopupMenuItem(value: 'stop', child: Text('Stop after ${monthLabel(month)}')),
+                            PopupMenuItem(value: 'stop', child: Text(context.l10n.stopAfter(monthLabel(context.l10n, month)))),
                           PopupMenuItem(
                             value: 'delete',
-                            child: Text(cost.kind == CostKind.monthly ? 'Delete from every month' : 'Delete'),
+                            child: Text(cost.kind == CostKind.monthly ? context.l10n.deleteFromEveryMonth : context.l10n.delete),
                           ),
                         ],
                       ),
@@ -373,21 +373,21 @@ class _OtherIncomeCard extends ConsumerWidget {
     final value = await showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Other income, ${monthLabel(month)}'),
+        title: Text(context.l10n.otherIncomeFor(monthLabel(context.l10n, month))),
         content: TextField(
           controller: amount,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: 'Walk-ins, cash, product sales…',
+            labelText: context.l10n.otherIncomeHint,
             prefixText: currencySymbol(currency),
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.cancel)),
           FilledButton(
             onPressed: () => Navigator.pop(context, double.tryParse(amount.text.isEmpty ? '0' : amount.text)),
-            child: const Text('Save'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),
@@ -401,10 +401,10 @@ class _OtherIncomeCard extends ConsumerWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
-        title: const Text('Other income'),
-        subtitle: const Text('Walk-ins and cash not booked through the app'),
+        title: Text(context.l10n.otherIncome),
+        subtitle: Text(context.l10n.otherIncomeSubtitle),
         trailing: Text(
-          summary.otherIncomeCents == 0 ? 'Add' : formatMoney(summary.otherIncomeCents, currency),
+          summary.otherIncomeCents == 0 ? context.l10n.add : formatMoney(summary.otherIncomeCents, currency),
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         onTap: () => _edit(context, ref),
@@ -436,14 +436,14 @@ class _UpgradeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final actionState = ref.watch(billingActionControllerProvider);
-    const features = [
-      (Icons.insights_outlined, 'Month-end forecast and the day you\'ll break even'),
-      (Icons.lightbulb_outline, 'Offers worked out for your shop, with what they\'ll earn you'),
-      (Icons.bar_chart, '12 months of profit history'),
-      (Icons.grid_view, 'When your chairs are busy — and when they sit empty'),
-      (Icons.content_cut, 'Each barber\'s bookings, revenue and how full they are'),
-      (Icons.people_outline, 'Returning customers, and regulars you\'re losing'),
-      (Icons.tune, 'What-if: try a price change before you make it'),
+    final features = [
+      (Icons.insights_outlined, context.l10n.premiumFeatureForecast),
+      (Icons.lightbulb_outline, context.l10n.premiumFeatureOffers),
+      (Icons.bar_chart, context.l10n.premiumFeatureHistory),
+      (Icons.grid_view, context.l10n.premiumFeatureBusy),
+      (Icons.content_cut, context.l10n.premiumFeatureBarbers),
+      (Icons.people_outline, context.l10n.premiumFeatureRegulars),
+      (Icons.tune, context.l10n.premiumFeatureWhatIf),
     ];
     return Card(
       margin: EdgeInsets.zero,
@@ -455,7 +455,7 @@ class _UpgradeCard extends ConsumerWidget {
           children: [
             Text('Finance Premium', style: textTheme.titleLarge?.copyWith(color: AppColors.chalk)),
             const SizedBox(height: 4),
-            const Text('Your numbers, turned into decisions.', style: TextStyle(color: AppColors.chalk)),
+            Text(context.l10n.premiumTagline, style: const TextStyle(color: AppColors.chalk)),
             const SizedBox(height: 14),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -489,15 +489,15 @@ class _UpgradeCard extends ConsumerWidget {
                 onPressed: actionState.isLoading
                     ? null
                     : () => ref.read(billingActionControllerProvider.notifier).startFinanceTrial(),
-                child: const Text('Try it free for 14 days'),
+                child: Text(context.l10n.tryFree14Days),
               )
             else if (canPayInThisApp)
-              FilledButton(onPressed: () => _subscribe(context, ref), child: Text('Get Premium — ${currencySymbol(currency)}9.99/month'))
+              FilledButton(onPressed: () => _subscribe(context, ref), child: Text(context.l10n.getPremium('${currencySymbol(currency)}9.99')))
             else
               const Center(child: PayOnWebsiteNote(color: AppColors.chalk)),
             const SizedBox(height: 6),
             Text(
-              state.trialUsed ? 'Cancel anytime from Settings › Subscription & billing.' : 'No card needed for the trial.',
+              state.trialUsed ? context.l10n.cancelFromSettings : context.l10n.noCardForTrial,
               textAlign: TextAlign.center,
               style: textTheme.bodySmall?.copyWith(color: AppColors.chalk),
             ),

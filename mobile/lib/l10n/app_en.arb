@@ -465,5 +465,373 @@
   "subscriptionEnded": "Subscription ended",
   "updatePayment": "Update payment",
   "hiddenUntilSubscribe": "Your shop is hidden from customers until you subscribe.",
-  "payOnWebsite": "Payments are handled on the Fadra Cut business website."
+  "payOnWebsite": "Payments are handled on the Fadra Cut business website.",
+  "refresh": "Refresh",
+  "couldntLoadFigures": "Couldn't load your figures: {error}",
+  "@couldntLoadFigures": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "previousMonth": "Previous month",
+  "nextMonth": "Next month",
+  "profit": "Profit",
+  "loss": "Loss",
+  "bookingsCompleted": "Bookings ({count} completed)",
+  "@bookingsCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "otherIncome": "Other income",
+  "costs": "Costs",
+  "addCostsHint": "Add your costs below to see where you stand.",
+  "costsCovered": "Costs covered — everything from here is profit.",
+  "breakEvenProgress": "{percent}% of the way to breaking even",
+  "@breakEvenProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingsToBreakEven": "{count, plural, =1{1 more booking at your average {average} would cover this month's costs.} other{{count} more bookings at your average {average} would cover this month's costs.}}",
+  "@bookingsToBreakEven": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addACost": "Add a cost",
+  "everyMonth": "Every month",
+  "oneOff": "One-off",
+  "monthlyCostHint": "Rent, wages, software… counted from {month} on.",
+  "@monthlyCostHint": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "oneOffCostHint": "Counted in {month} only.",
+  "@oneOffCostHint": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "whatIsIt": "What is it?",
+  "amount": "Amount",
+  "enterAnAmount": "Enter an amount",
+  "add": "Add",
+  "costsIn": "Costs in {month}",
+  "@costsIn": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "noCostsYet": "No costs yet. Add rent, wages and anything else you pay to run the shop.",
+  "everyMonthAutomatic": "Every month · added automatically",
+  "stopAfter": "Stop after {month}",
+  "@stopAfter": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFromEveryMonth": "Delete from every month",
+  "delete": "Delete",
+  "otherIncomeFor": "Other income, {month}",
+  "@otherIncomeFor": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "otherIncomeHint": "Walk-ins, cash, product sales…",
+  "otherIncomeSubtitle": "Walk-ins and cash not booked through the app",
+  "premiumFeatureForecast": "Month-end forecast and the day you'll break even",
+  "premiumFeatureOffers": "Offers worked out for your shop, with what they'll earn you",
+  "premiumFeatureHistory": "12 months of profit history",
+  "premiumFeatureBusy": "When your chairs are busy — and when they sit empty",
+  "premiumFeatureBarbers": "Each barber's bookings, revenue and how full they are",
+  "premiumFeatureRegulars": "Returning customers, and regulars you're losing",
+  "premiumFeatureWhatIf": "What-if: try a price change before you make it",
+  "premiumTagline": "Your numbers, turned into decisions.",
+  "tryFree14Days": "Try it free for 14 days",
+  "getPremium": "Get Premium — {price}/month",
+  "@getPremium": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelFromSettings": "Cancel anytime from Settings › Subscription & billing.",
+  "noCardForTrial": "No card needed for the trial.",
+  "premiumInsights": "Premium insights",
+  "whatToDoNext": "What to do next",
+  "whatToDoNextSub": "Moves worked out from your own bookings, best first.",
+  "suggestionsAppear": "Suggestions appear once you have about 10 completed bookings in the last 90 days.",
+  "profit12Months": "Profit, last 12 months",
+  "tapABar": "Tap a bar for the month's figures.",
+  "chairsBusy": "When your chairs are busy",
+  "chairsBusySub": "Share of chair time booked, last 8 weeks · overall {percent}",
+  "@chairsBusySub": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "last30Days": "Last 30 days",
+  "customersHeading": "Customers",
+  "servicesSub": "Last 90 days, vs the 90 before",
+  "whatIf": "What if…",
+  "whatIfSub": "Try a change on {month}'s figures before making it.",
+  "@whatIfSub": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "thisMonth": "This month",
+  "thisMonthSub": "Where you're heading at this pace",
+  "forecastAppears": "A forecast appears once the month is under way.",
+  "freeTrialDaysLeft": "{count, plural, =1{Free trial · 1 day left} other{Free trial · {count} days left}}",
+  "@freeTrialDaysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "keepPremiumFor": "Keep Premium for {price}/month",
+  "@keepPremiumFor": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "alreadyCoveredCosts": "You've already covered this month's costs.",
+  "breakEvenOn": "At this pace you'll break even on {date}.",
+  "@breakEvenOn": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "MMMd"
+      }
+    }
+  },
+  "wontCoverCosts": "At this pace you won't cover this month's costs — see the suggestions below.",
+  "monthEndForecast": "Month-end forecast",
+  "projectedProfitOn": "Projected profit on {revenue} revenue",
+  "@projectedProfitOn": {
+    "placeholders": {
+      "revenue": {
+        "type": "String"
+      }
+    }
+  },
+  "projectedLossOn": "Projected loss on {revenue} revenue",
+  "@projectedLossOn": {
+    "placeholders": {
+      "revenue": {
+        "type": "String"
+      }
+    }
+  },
+  "alreadyBookedRest": "{amount} already booked for the rest of the month.",
+  "@alreadyBookedRest": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "basedOnPace": "Based on your pace so far this month and bookings already in the diary.",
+  "gainPerMonthShort": "+{amount}/mo",
+  "@gainPerMonthShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "estimate": "Estimate: {text}",
+  "@estimate": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "revenueLine": "Revenue {amount}",
+  "@revenueLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "costsLine": "Costs {amount}",
+  "@costsLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "profitLine": "Profit {amount}",
+  "@profitLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "lossLine": "Loss {amount}",
+  "@lossLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "setHoursToSee": "Set your opening hours and staff to see this.",
+  "heatClosed": "{day} {hour}:00 · closed",
+  "@heatClosed": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "hour": {
+        "type": "int"
+      }
+    }
+  },
+  "heatBooked": "{day} {hour}:00 · {percent} booked",
+  "@heatBooked": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "hour": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "heatEmpty": "Empty ",
+  "heatFull": " Full",
+  "noStaffYet": "No staff yet.",
+  "barberStats": "{count, plural, =1{1 booking · {percent} of their hours booked} other{{count} bookings · {percent} of their hours booked}}",
+  "@barberStats": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statCustomers": "customers",
+  "statNew": "new",
+  "statReturning": "returning",
+  "statCameBack": "came back*",
+  "cameBackFootnote": "* Of customers who visited 6–12 weeks ago, the share who have been back since.",
+  "regularsLosing": "Regulars you're losing",
+  "regularsLosingSub": "Usually back every few weeks — now well overdue. Worth a message.",
+  "visitsUsually": "{visits} visits · usually every {days} days",
+  "@visitsUsually": {
+    "placeholders": {
+      "visits": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{count} days ago",
+  "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noCompletedBookings90": "No completed bookings in the last 90 days.",
+  "serviceStats": "{count} bookings · {percent} of all · {arrow} from {previous}",
+  "@serviceStats": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "String"
+      },
+      "arrow": {
+        "type": "String"
+      },
+      "previous": {
+        "type": "int"
+      }
+    }
+  },
+  "pricesChange": "Prices {change}",
+  "@pricesChange": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingsChange": "Number of bookings {change}",
+  "@bookingsChange": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "monthActual": "{month} actual: {amount}",
+  "@monthActual": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "wouldBe": "Would be {amount}",
+  "@wouldBe": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "amountAMonth": "{amount} a month",
+  "@amountAMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
 }

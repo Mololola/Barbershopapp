@@ -1,3 +1,6 @@
+import 'package:intl/intl.dart';
+
+import '../../../l10n/app_localizations.dart';
 import 'business.dart';
 
 /// GET /businesses/{id}/finance — mirrors backend/app/api/finance.py. All
@@ -5,15 +8,11 @@ import 'business.dart';
 
 DateTime _date(Object? value) => DateTime.parse(value as String);
 
-const _monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June', //
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-/// "September 2026" (or "Sep" when [short]).
-String monthLabel(DateTime month, {bool short = false}) {
-  final name = _monthNames[month.month - 1];
-  return short ? name.substring(0, 3) : '$name ${month.year}';
+/// "September 2026" (or "Sep" when [short]), capitalised (Spanish writes
+/// month names in lower case).
+String monthLabel(AppLocalizations l10n, DateTime month, {bool short = false}) {
+  final label = (short ? DateFormat.MMM(l10n.localeName) : DateFormat.yMMMM(l10n.localeName)).format(month);
+  return label[0].toUpperCase() + label.substring(1);
 }
 
 /// "£1,240" for whole amounts, "£12.50" otherwise; negative as "-£85".

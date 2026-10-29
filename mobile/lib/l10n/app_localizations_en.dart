@@ -892,4 +892,409 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get payOnWebsite =>
       'Payments are handled on the Fadra Cut business website.';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String couldntLoadFigures(String error) {
+    return 'Couldn\'t load your figures: $error';
+  }
+
+  @override
+  String get previousMonth => 'Previous month';
+
+  @override
+  String get nextMonth => 'Next month';
+
+  @override
+  String get profit => 'Profit';
+
+  @override
+  String get loss => 'Loss';
+
+  @override
+  String bookingsCompleted(int count) {
+    return 'Bookings ($count completed)';
+  }
+
+  @override
+  String get otherIncome => 'Other income';
+
+  @override
+  String get costs => 'Costs';
+
+  @override
+  String get addCostsHint => 'Add your costs below to see where you stand.';
+
+  @override
+  String get costsCovered => 'Costs covered — everything from here is profit.';
+
+  @override
+  String breakEvenProgress(int percent) {
+    return '$percent% of the way to breaking even';
+  }
+
+  @override
+  String bookingsToBreakEven(int count, Object average) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count more bookings at your average $average would cover this month\'s costs.',
+      one:
+          '1 more booking at your average $average would cover this month\'s costs.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addACost => 'Add a cost';
+
+  @override
+  String get everyMonth => 'Every month';
+
+  @override
+  String get oneOff => 'One-off';
+
+  @override
+  String monthlyCostHint(String month) {
+    return 'Rent, wages, software… counted from $month on.';
+  }
+
+  @override
+  String oneOffCostHint(String month) {
+    return 'Counted in $month only.';
+  }
+
+  @override
+  String get whatIsIt => 'What is it?';
+
+  @override
+  String get amount => 'Amount';
+
+  @override
+  String get enterAnAmount => 'Enter an amount';
+
+  @override
+  String get add => 'Add';
+
+  @override
+  String costsIn(String month) {
+    return 'Costs in $month';
+  }
+
+  @override
+  String get noCostsYet =>
+      'No costs yet. Add rent, wages and anything else you pay to run the shop.';
+
+  @override
+  String get everyMonthAutomatic => 'Every month · added automatically';
+
+  @override
+  String stopAfter(String month) {
+    return 'Stop after $month';
+  }
+
+  @override
+  String get deleteFromEveryMonth => 'Delete from every month';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String otherIncomeFor(String month) {
+    return 'Other income, $month';
+  }
+
+  @override
+  String get otherIncomeHint => 'Walk-ins, cash, product sales…';
+
+  @override
+  String get otherIncomeSubtitle =>
+      'Walk-ins and cash not booked through the app';
+
+  @override
+  String get premiumFeatureForecast =>
+      'Month-end forecast and the day you\'ll break even';
+
+  @override
+  String get premiumFeatureOffers =>
+      'Offers worked out for your shop, with what they\'ll earn you';
+
+  @override
+  String get premiumFeatureHistory => '12 months of profit history';
+
+  @override
+  String get premiumFeatureBusy =>
+      'When your chairs are busy — and when they sit empty';
+
+  @override
+  String get premiumFeatureBarbers =>
+      'Each barber\'s bookings, revenue and how full they are';
+
+  @override
+  String get premiumFeatureRegulars =>
+      'Returning customers, and regulars you\'re losing';
+
+  @override
+  String get premiumFeatureWhatIf =>
+      'What-if: try a price change before you make it';
+
+  @override
+  String get premiumTagline => 'Your numbers, turned into decisions.';
+
+  @override
+  String get tryFree14Days => 'Try it free for 14 days';
+
+  @override
+  String getPremium(String price) {
+    return 'Get Premium — $price/month';
+  }
+
+  @override
+  String get cancelFromSettings =>
+      'Cancel anytime from Settings › Subscription & billing.';
+
+  @override
+  String get noCardForTrial => 'No card needed for the trial.';
+
+  @override
+  String get premiumInsights => 'Premium insights';
+
+  @override
+  String get whatToDoNext => 'What to do next';
+
+  @override
+  String get whatToDoNextSub =>
+      'Moves worked out from your own bookings, best first.';
+
+  @override
+  String get suggestionsAppear =>
+      'Suggestions appear once you have about 10 completed bookings in the last 90 days.';
+
+  @override
+  String get profit12Months => 'Profit, last 12 months';
+
+  @override
+  String get tapABar => 'Tap a bar for the month\'s figures.';
+
+  @override
+  String get chairsBusy => 'When your chairs are busy';
+
+  @override
+  String chairsBusySub(String percent) {
+    return 'Share of chair time booked, last 8 weeks · overall $percent';
+  }
+
+  @override
+  String get last30Days => 'Last 30 days';
+
+  @override
+  String get customersHeading => 'Customers';
+
+  @override
+  String get servicesSub => 'Last 90 days, vs the 90 before';
+
+  @override
+  String get whatIf => 'What if…';
+
+  @override
+  String whatIfSub(String month) {
+    return 'Try a change on $month\'s figures before making it.';
+  }
+
+  @override
+  String get thisMonth => 'This month';
+
+  @override
+  String get thisMonthSub => 'Where you\'re heading at this pace';
+
+  @override
+  String get forecastAppears =>
+      'A forecast appears once the month is under way.';
+
+  @override
+  String freeTrialDaysLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Free trial · $count days left',
+      one: 'Free trial · 1 day left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String keepPremiumFor(String price) {
+    return 'Keep Premium for $price/month';
+  }
+
+  @override
+  String get alreadyCoveredCosts =>
+      'You\'ve already covered this month\'s costs.';
+
+  @override
+  String breakEvenOn(DateTime date) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.MMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    return 'At this pace you\'ll break even on $dateString.';
+  }
+
+  @override
+  String get wontCoverCosts =>
+      'At this pace you won\'t cover this month\'s costs — see the suggestions below.';
+
+  @override
+  String get monthEndForecast => 'Month-end forecast';
+
+  @override
+  String projectedProfitOn(String revenue) {
+    return 'Projected profit on $revenue revenue';
+  }
+
+  @override
+  String projectedLossOn(String revenue) {
+    return 'Projected loss on $revenue revenue';
+  }
+
+  @override
+  String alreadyBookedRest(String amount) {
+    return '$amount already booked for the rest of the month.';
+  }
+
+  @override
+  String get basedOnPace =>
+      'Based on your pace so far this month and bookings already in the diary.';
+
+  @override
+  String gainPerMonthShort(String amount) {
+    return '+$amount/mo';
+  }
+
+  @override
+  String estimate(String text) {
+    return 'Estimate: $text';
+  }
+
+  @override
+  String revenueLine(String amount) {
+    return 'Revenue $amount';
+  }
+
+  @override
+  String costsLine(String amount) {
+    return 'Costs $amount';
+  }
+
+  @override
+  String profitLine(String amount) {
+    return 'Profit $amount';
+  }
+
+  @override
+  String lossLine(String amount) {
+    return 'Loss $amount';
+  }
+
+  @override
+  String get setHoursToSee => 'Set your opening hours and staff to see this.';
+
+  @override
+  String heatClosed(String day, int hour) {
+    return '$day $hour:00 · closed';
+  }
+
+  @override
+  String heatBooked(String day, int hour, String percent) {
+    return '$day $hour:00 · $percent booked';
+  }
+
+  @override
+  String get heatEmpty => 'Empty ';
+
+  @override
+  String get heatFull => ' Full';
+
+  @override
+  String get noStaffYet => 'No staff yet.';
+
+  @override
+  String barberStats(int count, Object percent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bookings · $percent of their hours booked',
+      one: '1 booking · $percent of their hours booked',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statCustomers => 'customers';
+
+  @override
+  String get statNew => 'new';
+
+  @override
+  String get statReturning => 'returning';
+
+  @override
+  String get statCameBack => 'came back*';
+
+  @override
+  String get cameBackFootnote =>
+      '* Of customers who visited 6–12 weeks ago, the share who have been back since.';
+
+  @override
+  String get regularsLosing => 'Regulars you\'re losing';
+
+  @override
+  String get regularsLosingSub =>
+      'Usually back every few weeks — now well overdue. Worth a message.';
+
+  @override
+  String visitsUsually(int visits, int days) {
+    return '$visits visits · usually every $days days';
+  }
+
+  @override
+  String daysAgo(int count) {
+    return '$count days ago';
+  }
+
+  @override
+  String get noCompletedBookings90 =>
+      'No completed bookings in the last 90 days.';
+
+  @override
+  String serviceStats(int count, String percent, String arrow, int previous) {
+    return '$count bookings · $percent of all · $arrow from $previous';
+  }
+
+  @override
+  String pricesChange(String change) {
+    return 'Prices $change';
+  }
+
+  @override
+  String bookingsChange(String change) {
+    return 'Number of bookings $change';
+  }
+
+  @override
+  String monthActual(String month, String amount) {
+    return '$month actual: $amount';
+  }
+
+  @override
+  String wouldBe(String amount) {
+    return 'Would be $amount';
+  }
+
+  @override
+  String amountAMonth(String amount) {
+    return '$amount a month';
+  }
 }

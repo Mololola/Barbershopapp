@@ -137,7 +137,7 @@ void main() {
 
     expect(find.text('Premium insights'), findsOneWidget);
     expect(find.text('Month-end forecast'), findsOneWidget);
-    expect(find.textContaining('break even on 19'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'break even on \w+ 19')), findsOneWidget);
     expect(find.text("Sell '2 cuts for the price of 1.5' this month"), findsOneWidget);
     expect(find.text('+£24/mo'), findsOneWidget);
     expect(find.text('Profit, last 12 months'), findsOneWidget);
