@@ -37,12 +37,17 @@ _PAGE_TEMPLATE = """<!doctype html>
   <div class="card">
     <h1 id="title"></h1>
     <p id="body"></p>
-    <a class="button" id="open-app" href="#" hidden>Open the app</a>
-    <a class="button" id="open-web" href="#" hidden>Open the website</a>
+    <a class="button" id="open-app" href="#" hidden></a>
+    <a class="button" id="open-web" href="#" hidden></a>
   </div>
   <script>
-    var copy = __COPY__;
+    // In the phone's language: these pages open from emailed links, outside the app.
+    var lang = (navigator.language || '').toLowerCase().indexOf('es') === 0 ? 'es' : 'en';
+    var copy = __COPY__[lang];
     var website = __WEBSITE__;
+    document.documentElement.lang = lang;
+    document.getElementById('open-app').textContent = copy.openApp;
+    document.getElementById('open-web').textContent = copy.openWebsite;
     var params = new URLSearchParams(window.location.search + '&' + window.location.hash.slice(1));
     var isPhone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var state = params.get('error') ? copy.error : isPhone ? copy.phone : copy.desktop;
@@ -70,40 +75,85 @@ def _page(copy: dict) -> str:
     return _PAGE_TEMPLATE.replace("__COPY__", json.dumps(copy)).replace("__WEBSITE__", json.dumps(website))
 
 
+_BUTTONS = {
+    "en": {"openApp": "Open the app", "openWebsite": "Open the website"},
+    "es": {"openApp": "Abrir la app", "openWebsite": "Abrir la web"},
+}
+
 _CONFIRMED_PAGE = _page(
     {
-        "phone": {
-            "title": "Email confirmed",
-            "body": "Opening the app… If it doesn't open, tap the button below.",
+        "en": {
+            **_BUTTONS["en"],
+            "phone": {
+                "title": "Email confirmed",
+                "body": "Opening the app… If it doesn't open, tap the button below.",
+            },
+            "desktop": {
+                "title": "Email confirmed",
+                "body": "Your account is ready. Go back to the app on your phone and sign in — "
+                "or, if you run a shop, sign in on the website.",
+                "website": True,
+            },
+            "error": {
+                "title": "This link has expired",
+                "body": "It may already have been used. Try signing in on the app — if your email still "
+                "isn't confirmed, you can request a new link from the sign-in screen.",
+            },
         },
-        "desktop": {
-            "title": "Email confirmed",
-            "body": "Your account is ready. Go back to the app on your phone and sign in — "
-            "or, if you run a shop, sign in on the website.",
-            "website": True,
-        },
-        "error": {
-            "title": "This link has expired",
-            "body": "It may already have been used. Try signing in on the app — if your email still "
-            "isn't confirmed, you can request a new link from the sign-in screen.",
+        "es": {
+            **_BUTTONS["es"],
+            "phone": {
+                "title": "Correo confirmado",
+                "body": "Abriendo la app… Si no se abre, toca el botón de abajo.",
+            },
+            "desktop": {
+                "title": "Correo confirmado",
+                "body": "Tu cuenta está lista. Vuelve a la app en tu móvil e inicia sesión, "
+                "o, si tienes una barbería, inicia sesión en la web.",
+                "website": True,
+            },
+            "error": {
+                "title": "Este enlace ha caducado",
+                "body": "Puede que ya se haya usado. Prueba a iniciar sesión en la app: si tu correo aún no "
+                "está confirmado, puedes pedir un enlace nuevo desde la pantalla de inicio de sesión.",
+            },
         },
     }
 )
 
 _RESET_PAGE = _page(
     {
-        "phone": {
-            "title": "Reset your password",
-            "body": "Opening the app so you can choose a new password… If it doesn't open, tap the button below.",
+        "en": {
+            **_BUTTONS["en"],
+            "phone": {
+                "title": "Reset your password",
+                "body": "Opening the app so you can choose a new password… If it doesn't open, tap the button below.",
+            },
+            "desktop": {
+                "title": "Open this link on your phone",
+                "body": "Password resets finish inside the app. Open this email on the phone where you "
+                "requested the reset and tap the link there.",
+            },
+            "error": {
+                "title": "This link has expired",
+                "body": "Request a new password reset from the app's sign-in screen.",
+            },
         },
-        "desktop": {
-            "title": "Open this link on your phone",
-            "body": "Password resets finish inside the app. Open this email on the phone where you "
-            "requested the reset and tap the link there.",
-        },
-        "error": {
-            "title": "This link has expired",
-            "body": "Request a new password reset from the app's sign-in screen.",
+        "es": {
+            **_BUTTONS["es"],
+            "phone": {
+                "title": "Restablece tu contraseña",
+                "body": "Abriendo la app para que elijas una contraseña nueva… Si no se abre, toca el botón de abajo.",
+            },
+            "desktop": {
+                "title": "Abre este enlace en tu móvil",
+                "body": "La contraseña se cambia dentro de la app. Abre este correo en el móvil desde el que "
+                "la pediste y toca el enlace allí.",
+            },
+            "error": {
+                "title": "Este enlace ha caducado",
+                "body": "Pide un nuevo cambio de contraseña desde la pantalla de inicio de sesión de la app.",
+            },
         },
     }
 )

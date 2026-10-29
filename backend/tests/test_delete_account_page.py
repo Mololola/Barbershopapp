@@ -10,3 +10,10 @@ def test_delete_account_page_is_public_and_explains_both_routes():
     assert "text/html" in response.headers["content-type"]
     assert "Delete account" in response.text
     assert "mailto:" in response.text
+
+
+def test_delete_account_page_follows_the_browser_language():
+    response = TestClient(app).get("/delete-account", headers={"Accept-Language": "es-ES,es;q=0.9"})
+
+    assert "Eliminar cuenta" in response.text
+    assert 'lang="es"' in response.text
