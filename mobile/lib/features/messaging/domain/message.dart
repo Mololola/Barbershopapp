@@ -25,4 +25,13 @@ class Message {
       readAt: row['read_at'] != null ? DateTime.parse(row['read_at'] as String) : null,
     );
   }
+
+  Map<String, dynamic> toRow() => {
+        'id': id,
+        'conversation_id': conversationId,
+        'sender_id': senderId,
+        'body': body,
+        'created_at': createdAt.toIso8601String(),
+        'read_at': readAt?.toIso8601String(),
+      };
 }

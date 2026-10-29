@@ -18,6 +18,7 @@ import 'core/router.dart';
 import 'core/secure_local_storage.dart';
 import 'core/system_bars.dart';
 import 'core/theme.dart';
+import 'features/messaging/application/messaging_controller.dart';
 
 Future<void> main() async {
   runZonedGuarded(() async {
@@ -70,6 +71,8 @@ class BarbershopApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Kept alive so anything written offline goes out as soon as it can.
+    ref.listen(messageOutboxProvider, (_, _) {});
     return MaterialApp.router(
       title: 'Fadra Cut',
       theme: AppTheme.light,

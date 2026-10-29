@@ -65,6 +65,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(conversationMessagesProvider(widget.conversationId));
+    final waiting = (ref.watch(messageOutboxProvider).value ?? const <Message>[])
+        .where((m) => m.conversationId == widget.conversationId)
+        .toList();
     final myId = ref.watch(currentProfileProvider).value?.id;
     final actionState = ref.watch(messagingActionControllerProvider);
     final conversation = ref.watch(conversationByIdProvider(widget.conversationId));
@@ -91,7 +94,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             child: messages.when(
               loading: () => const LoadingView(),
               error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
-              data: (list) {
+              data: (sent) {
+                final list = [...sent, ...waiting];
                 if (list.isEmpty) {
                   return Center(child: Text(context.l10n.noMessagesYet));
                 }
@@ -107,6 +111,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     next: index < list.length - 1 ? list[index + 1] : null,
                     isMine: list[index].senderId == myId,
                     showRead: index == lastMine,
+                    waiting: index >= sent.length,
                   ),
                 );
               },
@@ -224,6 +229,7 @@ class _MessageItem extends StatelessWidget {
     required this.next,
     required this.isMine,
     required this.showRead,
+    this.waiting = false,
   });
 
   static const _runGap = Duration(minutes: 5);
@@ -235,6 +241,9 @@ class _MessageItem extends StatelessWidget {
 
   /// True on your latest message: it says "Read" once they've seen it.
   final bool showRead;
+
+  /// Written offline and not sent yet.
+  final bool waiting;
 
   static bool _sameRun(Message earlier, Message later) =>
       earlier.senderId == later.senderId &&
@@ -306,7 +315,9 @@ class _MessageItem extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
             child: Text(
-              '${TimeOfDay.fromDateTime(message.createdAt.toLocal()).format(context)}$read',
+              waiting
+                  ? context.l10n.sending
+                  : '${TimeOfDay.fromDateTime(message.createdAt.toLocal()).format(context)}$read',
               style: textTheme.labelSmall?.copyWith(color: AppColors.steel),
             ),
           ),

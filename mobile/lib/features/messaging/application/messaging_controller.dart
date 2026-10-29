@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/error_reporting.dart';
 import '../../../core/offline_cache.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
@@ -75,6 +76,51 @@ final conversationMessagesProvider =
   return controller.stream;
 });
 
+/// Messages written with no connection, kept on the phone in order and sent
+/// each time this rebuilds: on start, on signing in, and when the connection
+/// comes back. Kept alive from main.dart.
+class MessageOutbox extends AsyncNotifier<List<Message>> {
+  static const _key = 'outbox:messages';
+
+  @override
+  Future<List<Message>> build() async {
+    ref.watch(authStateChangesProvider);
+    ref.watch(reconnectsProvider);
+    final cache = ref.read(offlineCacheProvider);
+    final waiting = [for (final row in await cache.readList(_key)) Message.fromRow(row)];
+    final left = <Message>[];
+    for (final message in waiting) {
+      if (left.isNotEmpty) {
+        left.add(message);
+        continue;
+      }
+      try {
+        await ref.read(messagingRepositoryProvider).sendMessage(message.conversationId, message.senderId, message.body);
+      } catch (error, stack) {
+        if (isOfflineError(error)) {
+          left.add(message);
+        } else {
+          // Refused by the server (e.g. the conversation is gone): retrying won't help.
+          reportError(error, stack, context: 'MessageOutbox');
+        }
+      }
+    }
+    if (left.length != waiting.length) {
+      await cache.writeList(_key, [for (final message in left) message.toRow()]);
+      ref.invalidate(conversationsProvider);
+    }
+    return left;
+  }
+
+  Future<void> add(Message message) async {
+    final waiting = [...await future, message];
+    await ref.read(offlineCacheProvider).writeList(_key, [for (final m in waiting) m.toRow()]);
+    state = AsyncData(waiting);
+  }
+}
+
+final messageOutboxProvider = AsyncNotifierProvider<MessageOutbox, List<Message>>(MessageOutbox.new);
+
 final messagingActionControllerProvider =
     AsyncNotifierProvider<MessagingActionController, void>(MessagingActionController.new);
 
@@ -93,12 +139,28 @@ class MessagingActionController extends AsyncNotifier<void> {
         .startOrGetConversation(profile.id, otherProfileId, type: type);
   }
 
+  /// With no connection the message waits in [messageOutboxProvider] and
+  /// goes out once the connection is back.
   Future<void> sendMessage(String conversationId, String body) async {
     final profile = await ref.read(currentProfileProvider.future);
     if (profile == null) throw StateError('Not signed in.');
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(messagingRepositoryProvider).sendMessage(conversationId, profile.id, body);
+      try {
+        await ref.read(messagingRepositoryProvider).sendMessage(conversationId, profile.id, body);
+      } catch (error) {
+        if (!isOfflineError(error)) rethrow;
+        ref.read(connectionProvider.notifier).reportOffline();
+        await ref.read(messageOutboxProvider.notifier).add(
+              Message(
+                id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+                conversationId: conversationId,
+                senderId: profile.id,
+                body: body,
+                createdAt: DateTime.now().toUtc(),
+              ),
+            );
+      }
     });
   }
 
