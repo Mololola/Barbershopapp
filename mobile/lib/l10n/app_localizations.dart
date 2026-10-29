@@ -619,6 +619,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **' and '**
   String get listAnd;
+
+  /// No description provided for @changePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get changePhoto;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @policyUpdateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve updated our Terms and Privacy Policy'**
+  String get policyUpdateTitle;
+
+  /// No description provided for @policyUpdateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In effect from {date}. Rewards not yet paid out are given up if you delete your account (you\'re offered a cash-out first), and records of rewards already paid to you are kept for 6 years for tax purposes. By continuing to use the app you accept the updated versions.'**
+  String policyUpdateBody(DateTime date);
+
+  /// No description provided for @termsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms'**
+  String get termsShort;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @forBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'for Business'**
+  String get forBusiness;
+
+  /// No description provided for @webPanelBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings and staff schedules at a glance'**
+  String get webPanelBookings;
+
+  /// No description provided for @webPanelFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs, break-even and forecasts on a big screen'**
+  String get webPanelFinance;
+
+  /// No description provided for @webPanelShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shop page, posts and messages'**
+  String get webPanelShop;
+
+  /// No description provided for @webPanelHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Run your shop\nfrom any screen.'**
+  String get webPanelHeadline;
+
+  /// No description provided for @webPanelSubhead.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in the app, with room to see it.'**
+  String get webPanelSubhead;
+
+  /// No description provided for @webPanelFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers book on the Fadra Cut app.'**
+  String get webPanelFooter;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings'**
+  String get navBookings;
+
+  /// No description provided for @navStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get navStaff;
+
+  /// No description provided for @navFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get navFinance;
+
+  /// No description provided for @navFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed'**
+  String get navFeed;
+
+  /// No description provided for @navMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get navMessages;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfile;
+
+  /// No description provided for @navSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get navSubscription;
+
+  /// No description provided for @navBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get navBrowse;
+
+  /// No description provided for @navDesigns.
+  ///
+  /// In en, this message translates to:
+  /// **'Designs'**
+  String get navDesigns;
+
+  /// No description provided for @navRewards.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewards'**
+  String get navRewards;
+
+  /// No description provided for @navRankings.
+  ///
+  /// In en, this message translates to:
+  /// **'Rankings'**
+  String get navRankings;
+
+  /// No description provided for @barbershopSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Barbershop'**
+  String get barbershopSubtitle;
 }
 
 class _AppLocalizationsDelegate

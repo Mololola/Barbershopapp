@@ -283,4 +283,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listAnd => ' and ';
+
+  @override
+  String get changePhoto => 'Change photo';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get policyUpdateTitle => 'We\'ve updated our Terms and Privacy Policy';
+
+  @override
+  String policyUpdateBody(DateTime date) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.yMMMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    return 'In effect from $dateString. Rewards not yet paid out are given up if you delete your account (you\'re offered a cash-out first), and records of rewards already paid to you are kept for 6 years for tax purposes. By continuing to use the app you accept the updated versions.';
+  }
+
+  @override
+  String get termsShort => 'Terms';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get forBusiness => 'for Business';
+
+  @override
+  String get webPanelBookings => 'Bookings and staff schedules at a glance';
+
+  @override
+  String get webPanelFinance =>
+      'Costs, break-even and forecasts on a big screen';
+
+  @override
+  String get webPanelShop => 'Your shop page, posts and messages';
+
+  @override
+  String get webPanelHeadline => 'Run your shop\nfrom any screen.';
+
+  @override
+  String get webPanelSubhead => 'Everything in the app, with room to see it.';
+
+  @override
+  String get webPanelFooter => 'Customers book on the Fadra Cut app.';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navBookings => 'Bookings';
+
+  @override
+  String get navStaff => 'Staff';
+
+  @override
+  String get navFinance => 'Finance';
+
+  @override
+  String get navFeed => 'Feed';
+
+  @override
+  String get navMessages => 'Messages';
+
+  @override
+  String get navProfile => 'Profile';
+
+  @override
+  String get navSubscription => 'Subscription';
+
+  @override
+  String get navBrowse => 'Browse';
+
+  @override
+  String get navDesigns => 'Designs';
+
+  @override
+  String get navRewards => 'Rewards';
+
+  @override
+  String get navRankings => 'Rankings';
+
+  @override
+  String get barbershopSubtitle => 'Barbershop';
 }

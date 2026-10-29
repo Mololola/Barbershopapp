@@ -188,7 +188,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get yourShopGroup => 'Tu barbería';
 
   @override
-  String get shopPage => 'Página de la barbería';
+  String get shopPage => 'Perfil de la barbería';
 
   @override
   String get shopPageSubtitle => 'Logo, foto de portada y color de marca';
@@ -285,4 +285,91 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get listAnd => ' y ';
+
+  @override
+  String get changePhoto => 'Cambiar foto';
+
+  @override
+  String get save => 'Guardar';
+
+  @override
+  String get policyUpdateTitle =>
+      'Hemos actualizado los Términos y la Política de privacidad';
+
+  @override
+  String policyUpdateBody(DateTime date) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.yMMMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    return 'En vigor desde el $dateString. Si eliminas tu cuenta, renuncias a las recompensas que aún no se te hayan pagado (antes te ofrecemos cobrarlas), y los registros de las recompensas ya pagadas se conservan 6 años por motivos fiscales. Si sigues usando la app, aceptas las versiones actualizadas.';
+  }
+
+  @override
+  String get termsShort => 'Términos';
+
+  @override
+  String get ok => 'Aceptar';
+
+  @override
+  String get forBusiness => 'para negocios';
+
+  @override
+  String get webPanelBookings => 'Reservas y horarios del equipo de un vistazo';
+
+  @override
+  String get webPanelFinance =>
+      'Costes, punto de equilibrio y previsiones en pantalla grande';
+
+  @override
+  String get webPanelShop =>
+      'El perfil de tu barbería, publicaciones y mensajes';
+
+  @override
+  String get webPanelHeadline =>
+      'Gestiona tu barbería\ndesde cualquier pantalla.';
+
+  @override
+  String get webPanelSubhead => 'Todo lo de la app, con espacio para verlo.';
+
+  @override
+  String get webPanelFooter => 'Los clientes reservan en la app de Fadra Cut.';
+
+  @override
+  String get navHome => 'Inicio';
+
+  @override
+  String get navBookings => 'Reservas';
+
+  @override
+  String get navStaff => 'Equipo';
+
+  @override
+  String get navFinance => 'Finanzas';
+
+  @override
+  String get navFeed => 'Feed';
+
+  @override
+  String get navMessages => 'Mensajes';
+
+  @override
+  String get navProfile => 'Perfil';
+
+  @override
+  String get navSubscription => 'Suscripción';
+
+  @override
+  String get navBrowse => 'Explorar';
+
+  @override
+  String get navDesigns => 'Diseños';
+
+  @override
+  String get navRewards => 'Recompensas';
+
+  @override
+  String get navRankings => 'Rankings';
+
+  @override
+  String get barbershopSubtitle => 'Barbería';
 }

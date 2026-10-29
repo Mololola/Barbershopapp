@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/picked_media.dart';
 import '../application/auth_controller.dart';
 
@@ -42,7 +43,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final editState = ref.watch(profileEditControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile photo')),
+      appBar: AppBar(title: Text(context.l10n.profilePhoto)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: ListView(
@@ -63,7 +64,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: TextButton.icon(
                 onPressed: _pickImage,
                 icon: const Icon(Icons.image_outlined),
-                label: const Text('Change photo'),
+                label: Text(context.l10n.changePhoto),
               ),
             ),
             const SizedBox(height: 16),
@@ -79,7 +80,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               onPressed: (_pickedImage != null && !editState.isLoading) ? _save : null,
               child: editState.isLoading
                   ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Save'),
+                  : Text(context.l10n.save),
             ),
           ],
         ),
