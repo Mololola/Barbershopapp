@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
@@ -19,7 +20,7 @@ import '../domain/finance_overview.dart';
 import '../domain/business_subscription.dart';
 
 final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
-  return BusinessRepository(ref.watch(supabaseClientProvider));
+  return BusinessRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 final billingApiClientProvider = Provider<BillingApiClient>((ref) {

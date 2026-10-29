@@ -4,13 +4,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/api_client.dart';
 import '../../../core/env.dart';
+import '../../../core/offline_cache.dart';
 import '../../../core/supabase_providers.dart';
 import '../data/account_api_client.dart';
 import '../data/profile_repository.dart';
 import '../domain/profile.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
-  return ProfileRepository(ref.watch(supabaseClientProvider));
+  return ProfileRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 final accountApiClientProvider = Provider<AccountApiClient>((ref) {
@@ -109,6 +110,7 @@ class AuthController extends AsyncNotifier<void> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await ref.read(supabaseClientProvider).auth.signOut();
+      await OfflineCache.clear();
       ref.invalidate(currentProfileProvider);
     });
   }
@@ -178,6 +180,7 @@ class AuthController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       await ref.read(accountApiClientProvider).deleteAccount();
       await ref.read(supabaseClientProvider).auth.signOut();
+      await OfflineCache.clear();
       ref.invalidate(currentProfileProvider);
     });
   }

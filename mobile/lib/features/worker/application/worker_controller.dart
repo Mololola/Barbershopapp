@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/business.dart';
@@ -11,7 +12,7 @@ import '../domain/worker_leave_request.dart';
 import '../domain/worker_profile.dart';
 
 final workerRepositoryProvider = Provider<WorkerRepository>((ref) {
-  return WorkerRepository(ref.watch(supabaseClientProvider));
+  return WorkerRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 final currentWorkerProfileProvider = FutureProvider<WorkerProfile?>((ref) async {

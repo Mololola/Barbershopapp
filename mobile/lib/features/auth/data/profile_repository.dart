@@ -1,6 +1,7 @@
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/picked_media.dart';
 import '../domain/profile.dart';
 
@@ -14,11 +15,12 @@ class UsernameTakenException implements Exception {
 }
 
 class ProfileRepository {
-  ProfileRepository(this._client);
+  ProfileRepository(this._client, this._cache);
 
   static const _uniqueViolation = '23505';
 
   final SupabaseClient _client;
+  final OfflineCache _cache;
 
   Future<void> insertProfile({
     required String id,
@@ -46,7 +48,7 @@ class ProfileRepository {
   }
 
   Future<Profile?> fetchOwnProfile(String userId) async {
-    final row = await _client.from('profiles').select('*, is_minor:profile_is_minor').eq('id', userId).maybeSingle();
+    final row = await _cache.row('profile:$userId', () => _client.from('profiles').select('*, is_minor:profile_is_minor').eq('id', userId).maybeSingle());
     if (row == null) return null;
     return Profile.fromRow(row);
   }

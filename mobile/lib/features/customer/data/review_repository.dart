@@ -1,19 +1,21 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../domain/review.dart';
 
 /// Reviews are simple CRUD with no money/concurrency invariant, so — unlike
 /// bookings — this writes directly to Supabase under RLS rather than
 /// through FastAPI (see docs/architecture.md's client/backend split).
 class ReviewRepository {
-  ReviewRepository(this._client);
+  ReviewRepository(this._client, this._cache);
 
   final SupabaseClient _client;
+  final OfflineCache _cache;
 
   /// Every review this customer has written, by booking id — what My
   /// bookings needs for all its rows in one query.
   Future<Map<String, Review>> fetchReviewsByCustomer(String customerId) async {
-    final rows = await _client.from('reviews').select().eq('customer_id', customerId);
+    final rows = await _cache.rows('my-reviews:$customerId', () => _client.from('reviews').select().eq('customer_id', customerId));
     return {for (final row in rows) row['booking_id'] as String: Review.fromRow(row)};
   }
 

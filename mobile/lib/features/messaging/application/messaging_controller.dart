@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/messaging_repository.dart';
@@ -10,7 +11,7 @@ import '../domain/conversation.dart';
 import '../domain/message.dart';
 
 final messagingRepositoryProvider = Provider<MessagingRepository>((ref) {
-  return MessagingRepository(ref.watch(supabaseClientProvider));
+  return MessagingRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 /// autoDispose — an inbox is stale the moment the other side of any

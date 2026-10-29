@@ -1,15 +1,17 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/api_client.dart';
+import '../../../core/offline_cache.dart';
 import '../domain/payout_details.dart';
 import '../domain/payout_request.dart';
 import '../domain/reward_ledger_entry.dart';
 
 class RewardsRepository {
-  RewardsRepository(this._client, this._api);
+  RewardsRepository(this._client, this._api, this._cache);
 
   final SupabaseClient _client;
   final ApiClient _api;
+  final OfflineCache _cache;
 
   // reward_ledger, payout_details and payout_requests are read here
   // directly but only ever written by FastAPI (bypassing RLS): it credits
@@ -18,7 +20,10 @@ class RewardsRepository {
 
   /// Earned per currency, e.g. {'GBP': 400, 'EUR': 1000} — never converted.
   Future<Map<String, int>> fetchBalances(String customerId) async {
-    final rows = await _client.from('reward_ledger').select('amount_cents, currency').eq('customer_id', customerId);
+    final rows = await _cache.rows(
+      'balances:$customerId',
+      () => _client.from('reward_ledger').select('amount_cents, currency').eq('customer_id', customerId),
+    );
     final balances = <String, int>{};
     for (final row in rows) {
       final currency = row['currency'] as String;
@@ -28,20 +33,18 @@ class RewardsRepository {
   }
 
   Future<List<RewardLedgerEntry>> fetchHistory(String customerId) async {
-    final rows = await _client
-        .from('reward_ledger')
-        .select()
-        .eq('customer_id', customerId)
-        .order('created_at', ascending: false);
+    final rows = await _cache.rows(
+      'reward-history:$customerId',
+      () => _client.from('reward_ledger').select().eq('customer_id', customerId).order('created_at', ascending: false),
+    );
     return rows.map(RewardLedgerEntry.fromRow).toList();
   }
 
   Future<List<PayoutRequest>> fetchMyPayoutRequests(String profileId) async {
-    final rows = await _client
-        .from('payout_requests')
-        .select()
-        .eq('profile_id', profileId)
-        .order('requested_at', ascending: false);
+    final rows = await _cache.rows(
+      'payout-requests:$profileId',
+      () => _client.from('payout_requests').select().eq('profile_id', profileId).order('requested_at', ascending: false),
+    );
     return rows.map(PayoutRequest.fromRow).toList();
   }
 

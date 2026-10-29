@@ -3967,6 +3967,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That link has expired — ask for a new one.'**
   String get authLinkExpired;
+
+  /// No description provided for @offlineShowingSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection — showing what was last saved.'**
+  String get offlineShowingSaved;
+
+  /// No description provided for @sending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get sending;
+
+  /// No description provided for @savedWillSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved — it will be sent when you\'re back online.'**
+  String get savedWillSend;
 }
 
 class _AppLocalizationsDelegate

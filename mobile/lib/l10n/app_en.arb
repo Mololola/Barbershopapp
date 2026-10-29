@@ -1397,5 +1397,8 @@
   "authWeakPassword": "That password is too weak — use at least 6 characters.",
   "authSamePassword": "Choose a password different from your current one.",
   "authRateLimited": "Too many attempts — wait a minute and try again.",
-  "authLinkExpired": "That link has expired — ask for a new one."
+  "authLinkExpired": "That link has expired — ask for a new one.",
+  "offlineShowingSaved": "No connection — showing what was last saved.",
+  "sending": "Sending…",
+  "savedWillSend": "Saved — it will be sent when you're back online."
 }

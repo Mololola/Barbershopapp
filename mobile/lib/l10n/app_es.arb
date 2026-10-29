@@ -644,5 +644,8 @@
   "authWeakPassword": "Esa contraseña es demasiado débil: usa al menos 6 caracteres.",
   "authSamePassword": "Elige una contraseña distinta de la actual.",
   "authRateLimited": "Demasiados intentos: espera un minuto y vuelve a intentarlo.",
-  "authLinkExpired": "Ese enlace ha caducado: pide uno nuevo."
+  "authLinkExpired": "Ese enlace ha caducado: pide uno nuevo.",
+  "offlineShowingSaved": "Sin conexión: mostrando lo último guardado.",
+  "sending": "Enviando…",
+  "savedWillSend": "Guardado: se enviará cuando vuelvas a tener conexión."
 }

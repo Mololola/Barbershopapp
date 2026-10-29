@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_leave_request.dart';
 import '../../worker/domain/worker_profile.dart';
@@ -34,12 +35,13 @@ class StaffChangeBlockedException implements Exception {
 const _staffGuardCodes = {'BB001', 'BB002'};
 
 class BusinessRepository {
-  BusinessRepository(this._client);
+  BusinessRepository(this._client, this._cache);
 
   static const _foreignKeyViolation = '23503';
   static const _uniqueViolation = '23505';
 
   final SupabaseClient _client;
+  final OfflineCache _cache;
 
   Future<void> _guardStaffChange(Future<void> Function() change) async {
     try {
@@ -51,29 +53,29 @@ class BusinessRepository {
   }
 
   Future<BusinessSubscription?> fetchSubscription(String businessId) async {
-    final row = await _client
+    final row = await _cache.row('subscription:$businessId', () => _client
         .from('business_subscriptions')
         .select()
         .eq('business_id', businessId)
-        .maybeSingle();
+        .maybeSingle());
     if (row == null) return null;
     return BusinessSubscription.fromRow(row);
   }
 
   Future<FinancePremiumSubscription?> fetchFinancePremiumSubscription(String businessId) async {
-    final row = await _client
+    final row = await _cache.row('finance-premium:$businessId', () => _client
         .from('business_finance_access')
         .select('cancel_at, monthly_amount_cents')
         .eq('business_id', businessId)
         .not('stripe_subscription_id', 'is', null)
         .inFilter('subscription_status', ['active', 'past_due'])
-        .maybeSingle();
+        .maybeSingle());
     if (row == null) return null;
     return FinancePremiumSubscription.fromRow(row);
   }
 
   Future<Business?> fetchOwnBusiness(String ownerId) async {
-    final row = await _client.from('businesses').select().eq('owner_id', ownerId).maybeSingle();
+    final row = await _cache.row('own-business:$ownerId', () => _client.from('businesses').select().eq('owner_id', ownerId).maybeSingle());
     if (row == null) return null;
     return Business.fromRow(row);
   }
@@ -124,7 +126,7 @@ class BusinessRepository {
   }
 
   Future<List<BusinessLocation>> fetchLocations(String businessId) async {
-    final rows = await _client.from('locations').select().eq('business_id', businessId);
+    final rows = await _cache.rows('locations:$businessId', () => _client.from('locations').select().eq('business_id', businessId));
     return rows.map(BusinessLocation.fromRow).toList();
   }
 
@@ -160,11 +162,11 @@ class BusinessRepository {
   }
 
   Future<List<OpeningHours>> fetchWorkerSchedule(String workerId) async {
-    final rows = await _client
+    final rows = await _cache.rows('worker-schedule:$workerId', () => _client
         .from('worker_schedules')
         .select()
         .eq('worker_id', workerId)
-        .order('day_of_week');
+        .order('day_of_week'));
     return rows.map(OpeningHours.fromRow).toList();
   }
 
@@ -179,21 +181,21 @@ class BusinessRepository {
   }
 
   Future<List<OpeningHours>> fetchOpeningHours(String businessId) async {
-    final rows = await _client
+    final rows = await _cache.rows('opening-hours:$businessId', () => _client
         .from('opening_hours')
         .select()
         .eq('business_id', businessId)
-        .order('day_of_week');
+        .order('day_of_week'));
     return rows.map(OpeningHours.fromRow).toList();
   }
 
   Future<List<Service>> fetchServices(String businessId) async {
-    final rows = await _client
+    final rows = await _cache.rows('services:$businessId', () => _client
         .from('services')
         .select()
         .eq('business_id', businessId)
         .eq('is_active', true)
-        .order('created_at');
+        .order('created_at'));
     return rows.map(Service.fromRow).toList();
   }
 
@@ -221,11 +223,11 @@ class BusinessRepository {
   }
 
   Future<List<CostItem>> fetchCostItems(String businessId) async {
-    final rows = await _client
+    final rows = await _cache.rows('cost-items:$businessId', () => _client
         .from('business_cost_items')
         .select()
         .eq('business_id', businessId)
-        .order('created_at');
+        .order('created_at'));
     return rows.map(CostItem.fromRow).toList();
   }
 
@@ -253,12 +255,12 @@ class BusinessRepository {
   /// Current staff only — removed workers and ones who've left keep their
   /// (inactive) row for history, but aren't staff anymore.
   Future<List<Worker>> fetchWorkers(String businessId) async {
-    final rows = await _client
+    final rows = await _cache.rows('workers:$businessId', () => _client
         .from('workers')
         .select()
         .eq('business_id', businessId)
         .eq('is_active', true)
-        .order('created_at');
+        .order('created_at'));
     return rows.map(Worker.fromRow).toList();
   }
 
@@ -399,23 +401,23 @@ class BusinessRepository {
   }
 
   Future<List<WorkerInvitation>> fetchSentInvitations(String businessId) async {
-    final rows = await _client
+    final rows = await _cache.rows('sent-invitations:$businessId', () => _client
         .from('worker_invitations')
         .select(
           '*, profiles(username, worker_profiles(legal_first_name, legal_last_name, legal_second_last_name))',
         )
         .eq('business_id', businessId)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false));
     return rows.map(WorkerInvitation.fromRow).toList();
   }
 
   Future<List<WorkerLeaveRequest>> fetchPendingLeaveRequests(String businessId) async {
-    final rows = await _client
+    final rows = await _cache.rows('leave-requests:$businessId', () => _client
         .from('worker_leave_requests')
         .select()
         .eq('business_id', businessId)
         .eq('status', 'pending')
-        .order('requested_at');
+        .order('requested_at'));
     return rows.map(WorkerLeaveRequest.fromRow).toList();
   }
 

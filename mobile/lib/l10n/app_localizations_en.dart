@@ -2359,4 +2359,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authLinkExpired => 'That link has expired — ask for a new one.';
+
+  @override
+  String get offlineShowingSaved =>
+      'No connection — showing what was last saved.';
+
+  @override
+  String get sending => 'Sending…';
+
+  @override
+  String get savedWillSend =>
+      'Saved — it will be sent when you\'re back online.';
 }

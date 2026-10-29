@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
@@ -10,7 +11,7 @@ import '../domain/payout_request.dart';
 import '../domain/reward_ledger_entry.dart';
 
 final rewardsRepositoryProvider = Provider<RewardsRepository>((ref) {
-  return RewardsRepository(ref.watch(supabaseClientProvider), ref.watch(apiClientProvider));
+  return RewardsRepository(ref.watch(supabaseClientProvider), ref.watch(apiClientProvider), ref.watch(offlineCacheProvider));
 });
 
 final rewardBalanceProvider = FutureProvider<Map<String, int>>((ref) async {

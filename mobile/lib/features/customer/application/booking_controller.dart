@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
@@ -12,7 +13,7 @@ final bookingApiClientProvider = Provider<BookingApiClient>((ref) {
 });
 
 final bookingsRepositoryProvider = Provider<BookingsRepository>((ref) {
-  return BookingsRepository(ref.watch(supabaseClientProvider));
+  return BookingsRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 typedef AvailabilityQuery = ({String businessId, String serviceId, DateTime date});

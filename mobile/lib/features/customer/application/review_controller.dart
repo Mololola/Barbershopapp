@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../rewards/application/rewards_controller.dart';
@@ -10,7 +11,7 @@ import '../domain/review.dart';
 import 'booking_controller.dart' show bookingApiClientProvider, bookingsRepositoryProvider;
 
 final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
-  return ReviewRepository(ref.watch(supabaseClientProvider));
+  return ReviewRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 /// My reviews by booking id — one query for the whole My bookings list

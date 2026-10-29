@@ -13,6 +13,7 @@ import 'core/env.dart';
 import 'core/error_reporting.dart';
 import 'core/l10n.dart';
 import 'core/launch_animation.dart';
+import 'core/offline_banner.dart';
 import 'core/router.dart';
 import 'core/secure_local_storage.dart';
 import 'core/system_bars.dart';
@@ -77,7 +78,7 @@ class BarbershopApp extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: ref.watch(routerProvider),
       builder: (context, child) =>
-          LaunchAnimation(child: SystemBarsSafeArea(child: AdaptiveChrome(child: child!))),
+          LaunchAnimation(child: SystemBarsSafeArea(child: OfflineBanner(child: AdaptiveChrome(child: child!)))),
     );
   }
 }

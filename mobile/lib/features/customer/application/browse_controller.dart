@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/supabase_providers.dart';
 import '../../business/domain/business.dart';
 import '../data/browse_repository.dart';
@@ -7,7 +8,7 @@ import '../domain/public_business.dart';
 import '../domain/shop_review.dart';
 
 final browseRepositoryProvider = Provider<BrowseRepository>((ref) {
-  return BrowseRepository(ref.watch(supabaseClientProvider));
+  return BrowseRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 final businessesProvider = FutureProvider<List<PublicBusiness>>((ref) {

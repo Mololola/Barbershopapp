@@ -2381,4 +2381,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authLinkExpired => 'Ese enlace ha caducado: pide uno nuevo.';
+
+  @override
+  String get offlineShowingSaved =>
+      'Sin conexión: mostrando lo último guardado.';
+
+  @override
+  String get sending => 'Enviando…';
+
+  @override
+  String get savedWillSend =>
+      'Guardado: se enviará cuando vuelvas a tener conexión.';
 }
