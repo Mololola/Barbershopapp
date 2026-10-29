@@ -247,3 +247,15 @@ def test_quiet_window_offer_only_when_it_pays_for_itself():
     assert quiet.monthly_gain_cents > 0
     assert "25% off" in quiet.detail
     assert found == sorted(found, key=lambda s: s.monthly_gain_cents, reverse=True)
+
+
+def test_suggestions_in_spanish_keep_the_same_figures():
+    now = at(30, 12)
+    once = [booking(now - datetime.timedelta(days=d), customer=f"c{d}") for d in range(1, 13)]
+    data = shop(bookings=once)
+    english = fa.suggestions(data, now, [], fa.customer_stats(data, now), [], "£")
+    spanish = fa.suggestions(data, now, [], fa.customer_stats(data, now), [], "£", spanish=True)
+    bundle = next(s for s in spanish if s.kind == "second_visit_bundle")
+    assert "2 cortes por el precio de 1,5" in bundle.title
+    assert "Supone" in bundle.assumptions
+    assert [s.monthly_gain_cents for s in spanish] == [s.monthly_gain_cents for s in english]

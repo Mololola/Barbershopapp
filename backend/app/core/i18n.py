@@ -47,9 +47,13 @@ _SPANISH_PATTERNS: list[tuple[re.Pattern[str], Callable[[re.Match[str]], str]]] 
 ]
 
 
+def is_spanish(accept_language: str | None) -> bool:
+    return (accept_language or "").strip().lower().startswith("es")
+
+
 def translate(message: str, accept_language: str | None) -> str:
     """[message] in the request's language, when it's Spanish and we have it."""
-    if not (accept_language or "").strip().lower().startswith("es"):
+    if not is_spanish(accept_language):
         return message
     if message in _SPANISH:
         return _SPANISH[message]
