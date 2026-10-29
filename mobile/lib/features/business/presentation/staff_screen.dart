@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
@@ -27,7 +29,7 @@ class StaffScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add staff member'),
+        title: Text(context.l10n.addStaffMember),
         content: Form(
           key: formKey,
           child: Column(
@@ -36,25 +38,24 @@ class StaffScreen extends ConsumerWidget {
             children: [
               TextFormField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
+                decoration: InputDecoration(labelText: context.l10n.name),
+                validator: (value) => (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
               ),
               const SizedBox(height: 8),
-              const Text(
-                "For staff without an app account. Someone with an account? Use \"Invite by name\" "
-                'instead so their profile, schedule, and history stay linked to them.',
-                style: TextStyle(fontSize: 12, color: AppColors.steel),
+              Text(
+                context.l10n.addStaffHint,
+                style: const TextStyle(fontSize: 12, color: AppColors.steel),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
           FilledButton(
             onPressed: () {
               if (formKey.currentState!.validate()) Navigator.pop(context, true);
             },
-            child: const Text('Add'),
+            child: Text(context.l10n.add),
           ),
         ],
       ),
@@ -75,25 +76,25 @@ class StaffScreen extends ConsumerWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Invite by name'),
+          title: Text(context.l10n.inviteByName),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: firstNameController,
-                decoration: const InputDecoration(labelText: 'Legal first name'),
+                decoration: InputDecoration(labelText: context.l10n.legalFirstName),
                 autofocus: true,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: lastNameController,
-                decoration: const InputDecoration(labelText: 'Legal last name'),
+                decoration: InputDecoration(labelText: context.l10n.legalLastName),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: secondLastNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Legal second last name (optional, disambiguates same-name matches)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.legalSecondLastName,
                 ),
               ),
               if (errorText != null)
@@ -104,7 +105,7 @@ class StaffScreen extends ConsumerWidget {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.cancel)),
             FilledButton(
               onPressed: isSubmitting
                   ? null
@@ -123,15 +124,14 @@ class StaffScreen extends ConsumerWidget {
                       if (matches.isEmpty) {
                         setDialogState(() {
                           isSubmitting = false;
-                          errorText = 'No worker looking for work with that name.';
+                          errorText = context.l10n.noWorkerWithName;
                         });
                         return;
                       }
                       if (matches.length > 1) {
                         setDialogState(() {
                           isSubmitting = false;
-                          errorText =
-                              'Multiple workers match that name — add a second last name to narrow it down.';
+                          errorText = context.l10n.multipleWorkersMatch;
                         });
                         return;
                       }
@@ -154,7 +154,7 @@ class StaffScreen extends ConsumerWidget {
                       width: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Send invite'),
+                  : Text(context.l10n.sendInvite),
             ),
           ],
         ),
@@ -168,16 +168,16 @@ class StaffScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Staff'),
+          title: Text(context.l10n.navStaff),
           actions: [
             TextButton(
               onPressed: () => _showInviteByNameDialog(context, ref),
               // White on the phone's dark app bar; the desktop header is light.
-              child: Text('Invite by name', style: TextStyle(color: isWideLayout(context) ? null : Colors.white)),
+              child: Text(context.l10n.inviteByName, style: TextStyle(color: isWideLayout(context) ? null : Colors.white)),
             ),
           ],
-          bottom: const TabBar(
-            tabs: [Tab(text: 'My Workforce'), Tab(text: 'Available Workers')],
+          bottom: TabBar(
+            tabs: [Tab(text: context.l10n.myWorkforce), Tab(text: context.l10n.availableWorkers)],
           ),
         ),
         bottomNavigationBar: setupFooter,
@@ -210,12 +210,12 @@ class _MyWorkforceTab extends ConsumerWidget {
       children: [
         workers.when(
           loading: () => const LoadingView(),
-          error: (error, _) => Text('Error: $error'),
+          error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
           data: (list) {
             if (list.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('No staff yet — add your first team member.'),
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(context.l10n.noStaffAddFirst),
               );
             }
             return Column(
@@ -232,14 +232,14 @@ class _MyWorkforceTab extends ConsumerWidget {
         const Divider(),
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Text('Sent invitations', style: Theme.of(context).textTheme.titleMedium),
+          child: Text(context.l10n.sentInvitations, style: Theme.of(context).textTheme.titleMedium),
         ),
         sentInvitations.when(
           loading: () => const LoadingView(),
-          error: (error, _) => Text('Error: $error'),
+          error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
           data: (list) {
             if (list.isEmpty) {
-              return const Padding(padding: EdgeInsets.all(16), child: Text('No invitations sent yet.'));
+              return Padding(padding: const EdgeInsets.all(16), child: Text(context.l10n.noInvitationsSent));
             }
             // The full history can pile up across repeated invite/accept/
             // leave cycles with the same person — what a business actually
@@ -257,8 +257,8 @@ class _MyWorkforceTab extends ConsumerWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: ListTile(
                       leading: Icon(invitation.status.icon, color: invitation.status.color),
-                      title: Text(invitation.workerLegalFullName ?? invitation.workerUsername ?? 'Unknown'),
-                      subtitle: Text(_formatDate(invitation.createdAt.toLocal())),
+                      title: Text(invitation.workerLegalFullName ?? invitation.workerUsername ?? context.l10n.unknown),
+                      subtitle: Text(DateFormat.yMMMd(context.l10n.localeName).format(invitation.createdAt.toLocal())),
                       trailing: Chip(
                         label: Text(invitation.status.label),
                         backgroundColor: invitation.status.color.withValues(alpha: 0.15),
@@ -276,13 +276,6 @@ class _MyWorkforceTab extends ConsumerWidget {
   }
 }
 
-String _formatDate(DateTime d) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', //
-  ];
-  return '${months[d.month - 1]} ${d.day}, ${d.year}';
-}
-
 class _WorkforceTile extends ConsumerWidget {
   const _WorkforceTile({required this.worker, this.leaveRequest});
 
@@ -293,11 +286,11 @@ class _WorkforceTile extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Remove ${worker.name} from your staff?'),
-        content: const Text("Customers won't be able to book with them. Their past bookings and history are kept."),
+        title: Text(context.l10n.removeFromStaffTitle(worker.name)),
+        content: Text(context.l10n.removeFromStaffBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.l10n.remove)),
         ],
       ),
     );
@@ -329,11 +322,11 @@ class _WorkforceTile extends ConsumerWidget {
           // in the UI, which reads as a sync bug even though they're two
           // unrelated rows.
           subtitle: worker.profileId == null
-              ? const Text('No app account', style: TextStyle(color: AppColors.steel, fontSize: 12))
+              ? Text(context.l10n.noAppAccount, style: const TextStyle(color: AppColors.steel, fontSize: 12))
               : null,
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline),
-            tooltip: 'Remove from staff',
+            tooltip: context.l10n.removeFromStaff,
             onPressed: () => _confirmRemove(context, ref),
           ),
           onTap: worker.id == null
@@ -353,10 +346,10 @@ class _WorkforceTile extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.info_outline, color: AppColors.rust, size: 18),
-                    SizedBox(width: 8),
-                    Expanded(child: Text('Has asked to leave.')),
+                  children: [
+                    const Icon(Icons.info_outline, color: AppColors.rust, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(context.l10n.hasAskedToLeave)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -366,7 +359,7 @@ class _WorkforceTile extends ConsumerWidget {
                       onPressed: actionState.isLoading
                           ? null
                           : () => ref.read(leaveRequestControllerProvider.notifier).reject(leaveRequest!),
-                      child: const Text('Reject'),
+                      child: Text(context.l10n.reject),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
@@ -374,7 +367,7 @@ class _WorkforceTile extends ConsumerWidget {
                       onPressed: actionState.isLoading
                           ? null
                           : () => _acknowledgeLeave(context, ref),
-                      child: const Text('Acknowledge'),
+                      child: Text(context.l10n.acknowledge),
                     ),
                   ],
                 ),
@@ -451,7 +444,7 @@ class _AvailableWorkersTabState extends ConsumerState<_AvailableWorkersTab> {
           child: TextField(
             controller: _queryController,
             onChanged: _onQueryChanged,
-            decoration: const InputDecoration(hintText: 'Search by name', prefixIcon: Icon(Icons.search)),
+            decoration: InputDecoration(hintText: context.l10n.searchByName, prefixIcon: const Icon(Icons.search)),
           ),
         ),
         Padding(
@@ -460,7 +453,7 @@ class _AvailableWorkersTabState extends ConsumerState<_AvailableWorkersTab> {
             spacing: 8,
             children: [
               FilterChip(
-                label: const Text('4+ ★ rating'),
+                label: Text(context.l10n.filterRating),
                 selected: _minRating,
                 onSelected: (value) {
                   setState(() => _minRating = value);
@@ -468,7 +461,7 @@ class _AvailableWorkersTabState extends ConsumerState<_AvailableWorkersTab> {
                 },
               ),
               FilterChip(
-                label: const Text('2+ shops'),
+                label: Text(context.l10n.filterShops),
                 selected: _minShops,
                 onSelected: (value) {
                   setState(() => _minShops = value);
@@ -476,7 +469,7 @@ class _AvailableWorkersTabState extends ConsumerState<_AvailableWorkersTab> {
                 },
               ),
               FilterChip(
-                label: const Text('3+ yrs experience'),
+                label: Text(context.l10n.filterExperience),
                 selected: _minExperience,
                 onSelected: (value) {
                   setState(() => _minExperience = value);
@@ -489,10 +482,10 @@ class _AvailableWorkersTabState extends ConsumerState<_AvailableWorkersTab> {
         Expanded(
           child: candidates.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Center(child: Text('Error: $error')),
+            error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
             data: (list) {
               if (list.isEmpty) {
-                return const Center(child: Text('No one matches right now.'));
+                return Center(child: Text(context.l10n.noOneMatches));
               }
               return ListView.builder(
                 controller: _scrollController,
@@ -515,8 +508,8 @@ class _AvailableWorkersTabState extends ConsumerState<_AvailableWorkersTab> {
                         if (candidate.averageRating != null)
                           '★ ${candidate.averageRating!.toStringAsFixed(1)}',
                         if (candidate.shopsWorkedCount != null)
-                          '${candidate.shopsWorkedCount} shop${candidate.shopsWorkedCount == 1 ? '' : 's'}',
-                        if (candidate.yearsExperience != null) '${candidate.yearsExperience} yrs exp',
+                          context.l10n.shopsCount(candidate.shopsWorkedCount!),
+                        if (candidate.yearsExperience != null) context.l10n.yearsExpShort(candidate.yearsExperience!),
                       ].join(' · '),
                     ),
                     trailing: const Icon(Icons.chevron_right),

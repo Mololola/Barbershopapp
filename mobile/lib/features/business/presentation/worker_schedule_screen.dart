@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
@@ -28,7 +29,7 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
     if (hours == null) return;
     if (!hours.every((day) => day.hasValidRange)) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Fix the highlighted days before saving.')));
+          .showSnackBar(SnackBar(content: Text(context.l10n.fixHighlightedDays)));
       return;
     }
     await ref.read(workerScheduleControllerProvider.notifier).save(widget.workerId, hours);
@@ -40,12 +41,12 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
     final saveState = ref.watch(workerScheduleControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.workerName}\'s schedule')),
+      appBar: AppBar(title: Text(context.l10n.workerSchedule(widget.workerName))),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: schedule.when(
           loading: () => const LoadingView(),
-          error: (error, _) => Center(child: Text('Error: $error')),
+          error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
           data: (existing) {
             _seedIfNeeded(existing);
             final hours = _hours!;
@@ -53,13 +54,13 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
             return ListView(
               children: [
                 Text(
-                  'Days left off use the shop\'s own opening hours instead.',
+                  context.l10n.daysOffUseShopHours,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
                 OpeningHoursEditor(
                   hours: hours,
-                  closedLabel: 'Off',
+                  closedLabel: context.l10n.off,
                   onChanged: (i, day) => setState(() => hours[i] = day),
                 ),
                 const SizedBox(height: 24),
@@ -75,7 +76,7 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
                   onPressed: saveState.isLoading ? null : _save,
                   child: saveState.isLoading
                       ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Save'),
+                      : Text(context.l10n.save),
                 ),
               ],
             );

@@ -2233,6 +2233,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{amount} a month'**
   String amountAMonth(String amount);
+
+  /// No description provided for @addStaffMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Add staff member'**
+  String get addStaffMember;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
+  /// No description provided for @addStaffHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For staff without an app account. Someone with an account? Use \"Invite by name\" instead so their profile, schedule, and history stay linked to them.'**
+  String get addStaffHint;
+
+  /// No description provided for @inviteByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite by name'**
+  String get inviteByName;
+
+  /// No description provided for @legalFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal first name'**
+  String get legalFirstName;
+
+  /// No description provided for @legalLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal last name'**
+  String get legalLastName;
+
+  /// No description provided for @legalSecondLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal second last name (optional, disambiguates same-name matches)'**
+  String get legalSecondLastName;
+
+  /// No description provided for @noWorkerWithName.
+  ///
+  /// In en, this message translates to:
+  /// **'No worker looking for work with that name.'**
+  String get noWorkerWithName;
+
+  /// No description provided for @multipleWorkersMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple workers match that name — add a second last name to narrow it down.'**
+  String get multipleWorkersMatch;
+
+  /// No description provided for @sendInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Send invite'**
+  String get sendInvite;
+
+  /// No description provided for @myWorkforce.
+  ///
+  /// In en, this message translates to:
+  /// **'My Workforce'**
+  String get myWorkforce;
+
+  /// No description provided for @availableWorkers.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Workers'**
+  String get availableWorkers;
+
+  /// No description provided for @noStaffAddFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff yet — add your first team member.'**
+  String get noStaffAddFirst;
+
+  /// No description provided for @sentInvitations.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent invitations'**
+  String get sentInvitations;
+
+  /// No description provided for @noInvitationsSent.
+  ///
+  /// In en, this message translates to:
+  /// **'No invitations sent yet.'**
+  String get noInvitationsSent;
+
+  /// No description provided for @unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get unknown;
+
+  /// No description provided for @removeFromStaffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} from your staff?'**
+  String removeFromStaffTitle(String name);
+
+  /// No description provided for @removeFromStaffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers won\'t be able to book with them. Their past bookings and history are kept.'**
+  String get removeFromStaffBody;
+
+  /// No description provided for @remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// No description provided for @noAppAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'No app account'**
+  String get noAppAccount;
+
+  /// No description provided for @removeFromStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from staff'**
+  String get removeFromStaff;
+
+  /// No description provided for @hasAskedToLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Has asked to leave.'**
+  String get hasAskedToLeave;
+
+  /// No description provided for @reject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get reject;
+
+  /// No description provided for @acknowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge'**
+  String get acknowledge;
+
+  /// No description provided for @searchByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name'**
+  String get searchByName;
+
+  /// No description provided for @filterRating.
+  ///
+  /// In en, this message translates to:
+  /// **'4+ ★ rating'**
+  String get filterRating;
+
+  /// No description provided for @filterShops.
+  ///
+  /// In en, this message translates to:
+  /// **'2+ shops'**
+  String get filterShops;
+
+  /// No description provided for @filterExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'3+ yrs experience'**
+  String get filterExperience;
+
+  /// No description provided for @noOneMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No one matches right now.'**
+  String get noOneMatches;
+
+  /// No description provided for @shopsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 shop} other{{count} shops}}'**
+  String shopsCount(int count);
+
+  /// No description provided for @yearsExpShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} yrs exp'**
+  String yearsExpShort(int count);
+
+  /// No description provided for @yearsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} yrs'**
+  String yearsShort(int count);
+
+  /// No description provided for @invitationSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent to {name}.'**
+  String invitationSentTo(String name);
+
+  /// No description provided for @city.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get city;
+
+  /// No description provided for @bio.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio'**
+  String get bio;
+
+  /// No description provided for @portfolio.
+  ///
+  /// In en, this message translates to:
+  /// **'Portfolio'**
+  String get portfolio;
+
+  /// No description provided for @noPinnedWork.
+  ///
+  /// In en, this message translates to:
+  /// **'No pinned work yet.'**
+  String get noPinnedWork;
+
+  /// No description provided for @alreadyOnStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Already on your staff'**
+  String get alreadyOnStaff;
+
+  /// No description provided for @invitationAwaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent — awaiting response'**
+  String get invitationAwaiting;
+
+  /// No description provided for @message.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get message;
+
+  /// No description provided for @fixHighlightedDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the highlighted days before saving.'**
+  String get fixHighlightedDays;
+
+  /// No description provided for @workerSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s schedule'**
+  String workerSchedule(String name);
+
+  /// No description provided for @daysOffUseShopHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Days left off use the shop\'s own opening hours instead.'**
+  String get daysOffUseShopHours;
+
+  /// No description provided for @off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get off;
 }
 
 class _AppLocalizationsDelegate

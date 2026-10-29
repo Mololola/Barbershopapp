@@ -1297,4 +1297,159 @@ class AppLocalizationsEn extends AppLocalizations {
   String amountAMonth(String amount) {
     return '$amount a month';
   }
+
+  @override
+  String get addStaffMember => 'Add staff member';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get addStaffHint =>
+      'For staff without an app account. Someone with an account? Use \"Invite by name\" instead so their profile, schedule, and history stay linked to them.';
+
+  @override
+  String get inviteByName => 'Invite by name';
+
+  @override
+  String get legalFirstName => 'Legal first name';
+
+  @override
+  String get legalLastName => 'Legal last name';
+
+  @override
+  String get legalSecondLastName =>
+      'Legal second last name (optional, disambiguates same-name matches)';
+
+  @override
+  String get noWorkerWithName => 'No worker looking for work with that name.';
+
+  @override
+  String get multipleWorkersMatch =>
+      'Multiple workers match that name — add a second last name to narrow it down.';
+
+  @override
+  String get sendInvite => 'Send invite';
+
+  @override
+  String get myWorkforce => 'My Workforce';
+
+  @override
+  String get availableWorkers => 'Available Workers';
+
+  @override
+  String get noStaffAddFirst => 'No staff yet — add your first team member.';
+
+  @override
+  String get sentInvitations => 'Sent invitations';
+
+  @override
+  String get noInvitationsSent => 'No invitations sent yet.';
+
+  @override
+  String get unknown => 'Unknown';
+
+  @override
+  String removeFromStaffTitle(String name) {
+    return 'Remove $name from your staff?';
+  }
+
+  @override
+  String get removeFromStaffBody =>
+      'Customers won\'t be able to book with them. Their past bookings and history are kept.';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get noAppAccount => 'No app account';
+
+  @override
+  String get removeFromStaff => 'Remove from staff';
+
+  @override
+  String get hasAskedToLeave => 'Has asked to leave.';
+
+  @override
+  String get reject => 'Reject';
+
+  @override
+  String get acknowledge => 'Acknowledge';
+
+  @override
+  String get searchByName => 'Search by name';
+
+  @override
+  String get filterRating => '4+ ★ rating';
+
+  @override
+  String get filterShops => '2+ shops';
+
+  @override
+  String get filterExperience => '3+ yrs experience';
+
+  @override
+  String get noOneMatches => 'No one matches right now.';
+
+  @override
+  String shopsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count shops',
+      one: '1 shop',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String yearsExpShort(int count) {
+    return '$count yrs exp';
+  }
+
+  @override
+  String yearsShort(int count) {
+    return '$count yrs';
+  }
+
+  @override
+  String invitationSentTo(String name) {
+    return 'Invitation sent to $name.';
+  }
+
+  @override
+  String get city => 'City';
+
+  @override
+  String get bio => 'Bio';
+
+  @override
+  String get portfolio => 'Portfolio';
+
+  @override
+  String get noPinnedWork => 'No pinned work yet.';
+
+  @override
+  String get alreadyOnStaff => 'Already on your staff';
+
+  @override
+  String get invitationAwaiting => 'Invitation sent — awaiting response';
+
+  @override
+  String get message => 'Message';
+
+  @override
+  String get fixHighlightedDays => 'Fix the highlighted days before saving.';
+
+  @override
+  String workerSchedule(String name) {
+    return '$name\'s schedule';
+  }
+
+  @override
+  String get daysOffUseShopHours =>
+      'Days left off use the shop\'s own opening hours instead.';
+
+  @override
+  String get off => 'Off';
 }

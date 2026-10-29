@@ -833,5 +833,91 @@
         "type": "String"
       }
     }
-  }
+  },
+  "addStaffMember": "Add staff member",
+  "name": "Name",
+  "addStaffHint": "For staff without an app account. Someone with an account? Use \"Invite by name\" instead so their profile, schedule, and history stay linked to them.",
+  "inviteByName": "Invite by name",
+  "legalFirstName": "Legal first name",
+  "legalLastName": "Legal last name",
+  "legalSecondLastName": "Legal second last name (optional, disambiguates same-name matches)",
+  "noWorkerWithName": "No worker looking for work with that name.",
+  "multipleWorkersMatch": "Multiple workers match that name — add a second last name to narrow it down.",
+  "sendInvite": "Send invite",
+  "myWorkforce": "My Workforce",
+  "availableWorkers": "Available Workers",
+  "noStaffAddFirst": "No staff yet — add your first team member.",
+  "sentInvitations": "Sent invitations",
+  "noInvitationsSent": "No invitations sent yet.",
+  "unknown": "Unknown",
+  "removeFromStaffTitle": "Remove {name} from your staff?",
+  "@removeFromStaffTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFromStaffBody": "Customers won't be able to book with them. Their past bookings and history are kept.",
+  "remove": "Remove",
+  "noAppAccount": "No app account",
+  "removeFromStaff": "Remove from staff",
+  "hasAskedToLeave": "Has asked to leave.",
+  "reject": "Reject",
+  "acknowledge": "Acknowledge",
+  "searchByName": "Search by name",
+  "filterRating": "4+ ★ rating",
+  "filterShops": "2+ shops",
+  "filterExperience": "3+ yrs experience",
+  "noOneMatches": "No one matches right now.",
+  "shopsCount": "{count, plural, =1{1 shop} other{{count} shops}}",
+  "@shopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yearsExpShort": "{count} yrs exp",
+  "@yearsExpShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yearsShort": "{count} yrs",
+  "@yearsShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invitationSentTo": "Invitation sent to {name}.",
+  "@invitationSentTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "city": "City",
+  "bio": "Bio",
+  "portfolio": "Portfolio",
+  "noPinnedWork": "No pinned work yet.",
+  "alreadyOnStaff": "Already on your staff",
+  "invitationAwaiting": "Invitation sent — awaiting response",
+  "message": "Message",
+  "fixHighlightedDays": "Fix the highlighted days before saving.",
+  "workerSchedule": "{name}'s schedule",
+  "@workerSchedule": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "daysOffUseShopHours": "Days left off use the shop's own opening hours instead.",
+  "off": "Off"
 }

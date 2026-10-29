@@ -1308,4 +1308,161 @@ class AppLocalizationsEs extends AppLocalizations {
   String amountAMonth(String amount) {
     return '$amount al mes';
   }
+
+  @override
+  String get addStaffMember => 'Añadir miembro del equipo';
+
+  @override
+  String get name => 'Nombre';
+
+  @override
+  String get addStaffHint =>
+      'Para quien no tiene cuenta en la app. ¿Tiene cuenta? Usa «Invitar por nombre» para que su perfil, horario e historial queden vinculados a esa persona.';
+
+  @override
+  String get inviteByName => 'Invitar por nombre';
+
+  @override
+  String get legalFirstName => 'Nombre legal';
+
+  @override
+  String get legalLastName => 'Primer apellido';
+
+  @override
+  String get legalSecondLastName =>
+      'Segundo apellido (opcional, para distinguir a personas con el mismo nombre)';
+
+  @override
+  String get noWorkerWithName =>
+      'No hay ningún barbero buscando trabajo con ese nombre.';
+
+  @override
+  String get multipleWorkersMatch =>
+      'Varios barberos coinciden con ese nombre: añade el segundo apellido para afinar.';
+
+  @override
+  String get sendInvite => 'Enviar invitación';
+
+  @override
+  String get myWorkforce => 'Mi equipo';
+
+  @override
+  String get availableWorkers => 'Barberos disponibles';
+
+  @override
+  String get noStaffAddFirst => 'Aún no hay equipo: añade a tu primer miembro.';
+
+  @override
+  String get sentInvitations => 'Invitaciones enviadas';
+
+  @override
+  String get noInvitationsSent => 'Aún no has enviado invitaciones.';
+
+  @override
+  String get unknown => 'Desconocido';
+
+  @override
+  String removeFromStaffTitle(String name) {
+    return '¿Quitar a $name de tu equipo?';
+  }
+
+  @override
+  String get removeFromStaffBody =>
+      'Los clientes ya no podrán reservar con esta persona. Sus reservas pasadas y su historial se conservan.';
+
+  @override
+  String get remove => 'Quitar';
+
+  @override
+  String get noAppAccount => 'Sin cuenta en la app';
+
+  @override
+  String get removeFromStaff => 'Quitar del equipo';
+
+  @override
+  String get hasAskedToLeave => 'Ha pedido irse.';
+
+  @override
+  String get reject => 'Rechazar';
+
+  @override
+  String get acknowledge => 'Aceptar';
+
+  @override
+  String get searchByName => 'Buscar por nombre';
+
+  @override
+  String get filterRating => '4+ ★ de valoración';
+
+  @override
+  String get filterShops => '2+ barberías';
+
+  @override
+  String get filterExperience => '3+ años de experiencia';
+
+  @override
+  String get noOneMatches => 'Ahora mismo no hay nadie que coincida.';
+
+  @override
+  String shopsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count barberías',
+      one: '1 barbería',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String yearsExpShort(int count) {
+    return '$count años de exp.';
+  }
+
+  @override
+  String yearsShort(int count) {
+    return '$count años';
+  }
+
+  @override
+  String invitationSentTo(String name) {
+    return 'Invitación enviada a $name.';
+  }
+
+  @override
+  String get city => 'Ciudad';
+
+  @override
+  String get bio => 'Biografía';
+
+  @override
+  String get portfolio => 'Portfolio';
+
+  @override
+  String get noPinnedWork => 'Aún no hay trabajos destacados.';
+
+  @override
+  String get alreadyOnStaff => 'Ya está en tu equipo';
+
+  @override
+  String get invitationAwaiting => 'Invitación enviada: esperando respuesta';
+
+  @override
+  String get message => 'Mensaje';
+
+  @override
+  String get fixHighlightedDays =>
+      'Corrige los días marcados antes de guardar.';
+
+  @override
+  String workerSchedule(String name) {
+    return 'Horario de $name';
+  }
+
+  @override
+  String get daysOffUseShopHours =>
+      'Los días que dejes sin marcar usan el horario de la barbería.';
+
+  @override
+  String get off => 'Libre';
 }
