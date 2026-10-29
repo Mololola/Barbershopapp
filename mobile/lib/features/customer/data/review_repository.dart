@@ -21,19 +21,7 @@ class ReviewRepository {
 
   Future<void> submitReview(Review review) async {
     try {
-      await _client.from('reviews').insert({
-        'booking_id': review.bookingId,
-        'business_id': review.businessId,
-        'worker_id': review.workerId,
-        'customer_id': review.customerId,
-        'shop_rating': review.shopRating,
-        'shop_comment': review.shopComment,
-        'worker_rating': review.workerRating,
-        'worker_comment': review.workerComment,
-        'haircut_rating': review.haircutRating,
-        'haircut_comment': review.haircutComment,
-        'haircut_type': review.haircutType,
-      });
+      await _client.from('reviews').insert(review.toRow());
     } on PostgrestException catch (e) {
       // 23505 on booking_id means this booking was already reviewed — the
       // end state the caller wants (a review row exists) already holds, so

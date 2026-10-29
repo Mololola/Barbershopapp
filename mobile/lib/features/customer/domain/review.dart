@@ -71,7 +71,7 @@ class Review {
 
   factory Review.fromRow(Map<String, dynamic> row) {
     return Review(
-      id: row['id'] as String,
+      id: row['id'] as String?,
       bookingId: row['booking_id'] as String,
       businessId: row['business_id'] as String,
       workerId: row['worker_id'] as String,
@@ -85,4 +85,19 @@ class Review {
       haircutType: row['haircut_type'] as String?,
     );
   }
+
+  /// The columns written for a new review.
+  Map<String, dynamic> toRow() => {
+        'booking_id': bookingId,
+        'business_id': businessId,
+        'worker_id': workerId,
+        'customer_id': customerId,
+        'shop_rating': shopRating,
+        'shop_comment': shopComment,
+        'worker_rating': workerRating,
+        'worker_comment': workerComment,
+        'haircut_rating': haircutRating,
+        'haircut_comment': haircutComment,
+        'haircut_type': haircutType,
+      };
 }

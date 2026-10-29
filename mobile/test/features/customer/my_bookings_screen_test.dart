@@ -12,6 +12,12 @@ import 'package:mobile/features/customer/domain/review.dart';
 import 'package:mobile/features/customer/presentation/my_bookings_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
+/// Nothing written offline.
+class _NoOutbox extends ReviewOutbox {
+  @override
+  Future<List<Review>> build() async => [];
+}
+
 void main() {
   const me = Profile(id: 'me-1', role: AccountRole.customer, username: 'me', referralCode: 'MYCODE01');
   final bookings = [
@@ -37,6 +43,7 @@ void main() {
         currentProfileProvider.overrideWith((ref) async => me),
         bookingsRepositoryProvider.overrideWithValue(bookingsRepository),
         reviewRepositoryProvider.overrideWithValue(reviewRepository),
+        reviewOutboxProvider.overrideWith(_NoOutbox.new),
         bookingsAtRiskProvider.overrideWith((ref) async => {}),
       ],
       child: const MaterialApp(home: MyBookingsScreen()),
@@ -69,6 +76,7 @@ void main() {
         currentProfileProvider.overrideWith((ref) async => me),
         bookingsRepositoryProvider.overrideWithValue(_CountingBookings([upcoming])),
         reviewRepositoryProvider.overrideWithValue(_CountingReviews({})),
+        reviewOutboxProvider.overrideWith(_NoOutbox.new),
         bookingsAtRiskProvider.overrideWith((ref) async => {'up-1': cancelledAt}),
       ],
       child: const MaterialApp(home: MyBookingsScreen()),

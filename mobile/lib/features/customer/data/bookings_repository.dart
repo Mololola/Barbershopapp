@@ -42,7 +42,8 @@ class BookingsRepository {
   /// nullable object (`null` or a map), not a list — casting it as a List
   /// throws, which silently degraded this to "never gates" (see the bug
   /// this fixed: the resulting AsyncError's `.value` just reads as null).
-  Future<Booking?> fetchOldestUnreviewedCompletedBooking(String customerId) async {
+  /// [except]: bookings already reviewed offline, waiting to be sent.
+  Future<Booking?> fetchOldestUnreviewedCompletedBooking(String customerId, {Set<String> except = const {}}) async {
     final rows = await _cache.rows('unreviewed:$customerId', () => _client
         .from('bookings')
         .select('*, reviews(id)')
@@ -50,7 +51,7 @@ class BookingsRepository {
         .eq('status', 'completed')
         .order('start_time'));
     for (final row in rows) {
-      if (row['reviews'] == null) return Booking.fromSupabaseRow(row);
+      if (row['reviews'] == null && !except.contains(row['id'])) return Booking.fromSupabaseRow(row);
     }
     return null;
   }
