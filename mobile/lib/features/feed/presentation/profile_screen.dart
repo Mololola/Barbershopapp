@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/app_network_image.dart';
 import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
@@ -110,7 +111,9 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               ...posts.when(
-                loading: () => [const SliverToBoxAdapter(child: LoadingView())],
+                loading: () => [
+                  const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(16), child: SkeletonLines())),
+                ],
                 error: (error, _) => [SliverToBoxAdapter(child: Center(child: Text(describeError(context.l10n, error))))],
                 data: (list) => [
                   if (list.isEmpty)

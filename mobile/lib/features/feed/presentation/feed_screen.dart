@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/feed_controller.dart';
@@ -40,7 +41,7 @@ class FeedScreen extends ConsumerWidget {
             )
           : null,
       body: feed.when(
-        loading: () => LoadingView(caption: context.l10n.fetchingFreshCuts),
+        loading: () => const SkeletonPosts(),
         error: (_, _) => Center(
           child: StatusMessage(
             icon: Icons.wifi_off_rounded,

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/status_message.dart';
 import '../../../core/theme.dart';
 import '../../business/domain/brand.dart';
@@ -73,7 +73,7 @@ class ConversationsScreen extends ConsumerWidget {
           ),
         ),
         body: conversations.when(
-          loading: () => LoadingView(caption: context.l10n.loadingConversations),
+          loading: () => const SkeletonList(leading: SkeletonLeading.avatar),
           error: (_, _) => Center(
             child: StatusMessage(
               icon: Icons.wifi_off_rounded,

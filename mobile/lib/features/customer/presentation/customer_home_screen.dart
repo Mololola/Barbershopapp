@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
 import '../../../core/responsive.dart';
 import '../../../core/quick_action_tile.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../messaging/presentation/messages_button.dart';
@@ -58,10 +58,7 @@ class CustomerHomeScreen extends ConsumerWidget {
           Text(context.l10n.whatsNext, style: TextStyle(color: AppColors.steel)),
           const SizedBox(height: 20),
           bookings.when(
-            loading: () => const SizedBox(
-              height: 132,
-              child: LoadingView(),
-            ),
+            loading: () => const _NextAppointmentSkeleton(),
             error: (error, _) => Text(describeError(context.l10n, error)),
             data: (list) {
               final upcoming = list
@@ -283,6 +280,39 @@ class _JobInviteBanner extends StatelessWidget {
               const Icon(Icons.chevron_right, color: AppColors.brass),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The next-appointment card's shape while bookings load.
+class _NextAppointmentSkeleton extends StatelessWidget {
+  const _NextAppointmentSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final bar = AppColors.chalk.withValues(alpha: 0.14);
+    return SkeletonPulse(
+      child: Container(
+        height: 132,
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+        decoration: BoxDecoration(
+          color: AppColors.charcoal,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.brass.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SkeletonBox(width: 70, height: 10, color: bar),
+            const SizedBox(height: 14),
+            SkeletonBox(width: 170, height: 20, color: bar),
+            const SizedBox(height: 8),
+            SkeletonBox(width: 80, height: 14, color: bar),
+            const Spacer(),
+            SkeletonBox(width: 130, height: 12, color: bar),
+          ],
         ),
       ),
     );

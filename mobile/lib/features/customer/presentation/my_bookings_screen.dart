@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../application/booking_controller.dart';
 import '../application/review_controller.dart';
 import '../domain/booking.dart';
@@ -18,7 +18,7 @@ class MyBookingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.myBookings)),
       body: bookings.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (list) {
           if (list.isEmpty) {

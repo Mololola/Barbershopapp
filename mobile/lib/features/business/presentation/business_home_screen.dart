@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 
 import '../../../core/app_network_image.dart';
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
 import '../../../core/responsive.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../messaging/presentation/messages_button.dart';
 import '../application/business_controller.dart';
@@ -51,7 +51,7 @@ class BusinessHomeScreen extends ConsumerWidget {
         ],
       ),
       body: business.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(count: 4),
         error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (business) {
           if (business == null) {
@@ -90,7 +90,7 @@ class BusinessHomeScreen extends ConsumerWidget {
           final hoursSection = _Section(
             header: _SectionHeader(title: context.l10n.thisWeek, onManage: () => context.push('/business/edit')),
             child: hours.when(
-              loading: () => const LoadingView(),
+              loading: () => const SkeletonLines(),
               error: (error, _) => Text(describeError(context.l10n, error)),
               data: (list) => _HoursCard(hours: list),
             ),
@@ -98,7 +98,7 @@ class BusinessHomeScreen extends ConsumerWidget {
           final servicesSection = _Section(
             header: _SectionHeader(title: context.l10n.services, onManage: () => context.push('/business/services')),
             child: services.when(
-              loading: () => const LoadingView(),
+              loading: () => const SkeletonLines(),
               error: (error, _) => Text(describeError(context.l10n, error)),
               data: (list) {
                 if (list.isEmpty) {
@@ -125,7 +125,7 @@ class BusinessHomeScreen extends ConsumerWidget {
           final staffSection = _Section(
             header: _SectionHeader(title: context.l10n.navStaff, onManage: () => context.go('/business/staff')),
             child: workers.when(
-              loading: () => const LoadingView(),
+              loading: () => const SkeletonLines(),
               error: (error, _) => Text(describeError(context.l10n, error)),
               data: (list) {
                 if (list.isEmpty) {

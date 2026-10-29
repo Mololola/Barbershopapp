@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/responsive.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../worker/domain/worker_invitation.dart';
 import '../../worker/domain/worker_leave_request.dart';
@@ -209,7 +210,7 @@ class _MyWorkforceTab extends ConsumerWidget {
     return ListView(
       children: [
         workers.when(
-          loading: () => const LoadingView(),
+          loading: () => const SkeletonLines(),
           error: (error, _) => Text(describeError(context.l10n, error)),
           data: (list) {
             if (list.isEmpty) {
@@ -235,7 +236,7 @@ class _MyWorkforceTab extends ConsumerWidget {
           child: Text(context.l10n.sentInvitations, style: Theme.of(context).textTheme.titleMedium),
         ),
         sentInvitations.when(
-          loading: () => const LoadingView(),
+          loading: () => const SkeletonLines(),
           error: (error, _) => Text(describeError(context.l10n, error)),
           data: (list) {
             if (list.isEmpty) {
@@ -483,7 +484,7 @@ class _AvailableWorkersTabState extends ConsumerState<_AvailableWorkersTab> {
         ),
         Expanded(
           child: candidates.when(
-            loading: () => const LoadingView(),
+            loading: () => const SkeletonList(leading: SkeletonLeading.avatar),
             error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
             data: (list) {
               if (list.isEmpty) {

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/app_network_image.dart';
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../application/browse_controller.dart';
 import '../domain/public_business.dart';
@@ -57,7 +57,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
           ),
           Expanded(
             child: businesses.when(
-              loading: () => const LoadingView(),
+              loading: () => const SkeletonList(leading: SkeletonLeading.square),
               error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
               data: (list) {
                 final filtered = _query.isEmpty

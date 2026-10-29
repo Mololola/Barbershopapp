@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/business.dart';
 import '../application/worker_controller.dart';
@@ -221,7 +221,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           currentJobAsync.when(
-            loading: () => const LoadingView(),
+            loading: () => const SkeletonLines(count: 2),
             error: (error, _) => Text(describeError(context.l10n, error)),
             data: (job) {
               if (job == null) {
@@ -251,7 +251,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           invitationsAsync.when(
-            loading: () => const LoadingView(),
+            loading: () => const SkeletonLines(count: 2),
             error: (error, _) => Text(describeError(context.l10n, error)),
             data: (invitations) {
               if (invitations.isEmpty) {

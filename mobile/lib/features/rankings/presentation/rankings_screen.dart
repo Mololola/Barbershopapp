@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/brand.dart';
@@ -232,7 +232,7 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
           const SizedBox(height: 8),
           Expanded(
             child: _rows().when(
-              loading: () => LoadingView(caption: context.l10n.tallyingBoard),
+              loading: () => const SkeletonList(leading: SkeletonLeading.avatar),
               error: (_, _) => Center(
                 child: StatusMessage(
                   icon: Icons.wifi_off_rounded,

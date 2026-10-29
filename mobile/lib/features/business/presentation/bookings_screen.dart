@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
 import '../../../core/responsive.dart';
+import '../../../core/skeleton.dart';
 import '../../customer/application/booking_controller.dart';
 import '../../customer/domain/booking.dart';
 import '../application/business_controller.dart';
@@ -32,7 +32,7 @@ class BookingsScreen extends ConsumerWidget {
         ],
       ),
       body: bookings.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (list) {
           if (list.isEmpty) {

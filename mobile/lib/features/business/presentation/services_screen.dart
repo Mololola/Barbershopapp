@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 import '../domain/finance_overview.dart';
@@ -221,7 +221,7 @@ class ServicesScreen extends ConsumerWidget {
               label: Text(isEmpty ? context.l10n.addYourBasicCut : context.l10n.addService),
             ),
       body: services.when(
-        loading: () => const LoadingView(),
+        loading: () => const SkeletonList(),
         error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (list) {
           if (list.isEmpty) {

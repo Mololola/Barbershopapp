@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/brand.dart';
@@ -31,7 +31,13 @@ class ShopPage extends ConsumerWidget {
 
     return Scaffold(
       body: business.when(
-        loading: () => const LoadingView(),
+        loading: () => ListView(
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [
+            SkeletonPulse(child: SkeletonBox(height: 200, radius: 0)),
+            Padding(padding: EdgeInsets.all(20), child: SkeletonLines(count: 4)),
+          ],
+        ),
         error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (shop) {
           if (shop == null) {
@@ -384,7 +390,7 @@ class _Services extends ConsumerWidget {
     final services = ref.watch(businessServicesProvider(shop.id));
     final symbol = currencySymbol(shop.currency);
     return services.when(
-      loading: () => const LoadingView(),
+      loading: () => const SkeletonLines(count: 2),
       error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
         if (list.isEmpty) return Text(context.l10n.noServicesYet);
@@ -435,7 +441,7 @@ class _Barbers extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workers = ref.watch(businessWorkersProvider(businessId));
     return workers.when(
-      loading: () => const LoadingView(),
+      loading: () => const SkeletonLines(count: 2),
       error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
         if (list.isEmpty) return Text(context.l10n.noBarbersYet);
@@ -474,7 +480,7 @@ class _Reviews extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reviews = ref.watch(businessReviewsProvider(businessId));
     return reviews.when(
-      loading: () => const LoadingView(),
+      loading: () => const SkeletonLines(count: 2),
       error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
         if (list.isEmpty) return Text(context.l10n.noReviewsYet);
@@ -533,7 +539,7 @@ class _Posts extends ConsumerWidget {
     final posts = ref.watch(postsByAuthorProvider(ownerId));
     final myId = ref.watch(currentProfileProvider).value?.id;
     return posts.when(
-      loading: () => const LoadingView(),
+      loading: () => const SkeletonLines(count: 2),
       error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
         if (list.isEmpty) return Text(context.l10n.noPostsYet);

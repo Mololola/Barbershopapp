@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/brand.dart';
@@ -64,7 +64,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         children: [
           Expanded(
             child: comments.when(
-              loading: () => LoadingView(caption: context.l10n.loadingComments),
+              loading: () => const SkeletonList(count: 4, leading: SkeletonLeading.avatar),
               error: (_, _) => Center(
                 child: StatusMessage(
                   icon: Icons.wifi_off_rounded,

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/l10n.dart';
-import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/business.dart';
 import '../../business/domain/finance_overview.dart';
@@ -226,7 +226,7 @@ class RewardHistoryScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           Text(context.l10n.reviews, style: Theme.of(context).textTheme.titleMedium),
           history.when(
-            loading: () => const LoadingView(),
+            loading: () => const SkeletonLines(),
             error: (error, _) => Text(describeError(context.l10n, error)),
             data: (entries) {
               final reviewRewards = entries.where((e) => !e.isReferral);
