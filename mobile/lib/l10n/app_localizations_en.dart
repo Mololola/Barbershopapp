@@ -1529,4 +1529,189 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markAsDone => 'Mark as done';
+
+  @override
+  String get fadraForBusiness => 'Fadra Cut for Business';
+
+  @override
+  String get noBusinessFound => 'No business found.';
+
+  @override
+  String serviceCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'services',
+      one: 'service',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String staffCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'staff',
+      one: 'staff member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get openNowBadge => 'OPEN NOW';
+
+  @override
+  String get closedNowBadge => 'CLOSED NOW';
+
+  @override
+  String inMinutes(int count) {
+    return 'in $count min';
+  }
+
+  @override
+  String inHours(int count) {
+    return 'in $count h';
+  }
+
+  @override
+  String get formerStaff => 'Former staff';
+
+  @override
+  String bookingsTodayLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'bookings today',
+      one: 'booking today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get nextBooking => 'Next booking';
+
+  @override
+  String get nothingBookedYet => 'Nothing booked yet';
+
+  @override
+  String get financeTileSubtitle => 'Costs, break-even and how to get there';
+
+  @override
+  String get step2of3 => 'Step 2 of 3';
+
+  @override
+  String get step3of3 => 'Step 3 of 3';
+
+  @override
+  String get step1of3 => 'Step 1 of 3';
+
+  @override
+  String get setupServicesHint =>
+      'Add your basic cut — your standard haircut — with its price and duration. Once setup is complete you can add the rest of your services.';
+
+  @override
+  String get setupStaffHint =>
+      'Add everyone customers can book with — including yourself if you cut hair. Tap + for staff without an app account.';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String checkDayHours(String day) {
+    return 'Check $day\'s opening hours.';
+  }
+
+  @override
+  String get setUpYourBusiness => 'Set up your business';
+
+  @override
+  String get setupDetailsHint =>
+      'Your business details. Next you\'ll add your services and staff — customers can find and book you once both are in.';
+
+  @override
+  String get businessPhone => 'Business phone';
+
+  @override
+  String get businessPhoneHelper =>
+      'For our records only — never shown to customers';
+
+  @override
+  String get enterValidPhone => 'Enter a valid phone number';
+
+  @override
+  String get referralCodeOptional => 'Referral code (optional)';
+
+  @override
+  String get currency => 'Currency';
+
+  @override
+  String get saveAndContinue => 'Save and continue';
+
+  @override
+  String get fixHighlightedHours =>
+      'Fix the highlighted opening hours before saving.';
+
+  @override
+  String get businessDetailsSaved => 'Business details saved.';
+
+  @override
+  String get shopHeaderPreviewHint =>
+      'This is how your page\'s header looks to customers.';
+
+  @override
+  String get logo => 'Logo';
+
+  @override
+  String get coverPhoto => 'Cover photo';
+
+  @override
+  String get coverSizeHint =>
+      'Best cover size: 1600 × 640. No logo? Your initials are shown. No cover? Your brand colour is used.';
+
+  @override
+  String get brandColour => 'Brand colour';
+
+  @override
+  String get brandColourHint => 'Used for your header, buttons and highlights.';
+
+  @override
+  String get start => 'Start';
+
+  @override
+  String get end => 'End';
+
+  @override
+  String get breakLabel => 'Break';
+
+  @override
+  String get removeBreak => 'Remove break';
+
+  @override
+  String get addBreak => 'Add break';
+
+  @override
+  String get hoursRangeError =>
+      'Closing must be after opening, with any break inside those hours.';
+
+  @override
+  String get addAnotherLocation => 'Add another location';
+
+  @override
+  String get country => 'Country';
+
+  @override
+  String get countryUnitedKingdom => 'United Kingdom';
+
+  @override
+  String get countrySpain => 'Spain';
+
+  @override
+  String get streetAddress => 'Street address';
+
+  @override
+  String get postcode => 'Postcode';
+
+  @override
+  String get enterValidPostcode => 'Enter a valid postcode';
 }

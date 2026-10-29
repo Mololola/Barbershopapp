@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/app_network_image.dart';
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
@@ -29,12 +31,12 @@ class BusinessHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(wide ? 'Home' : 'Fadra Cut for Business'),
+        title: Text(wide ? context.l10n.navHome : context.l10n.fadraForBusiness),
         actions: [
           if (wide)
             // Pull-to-refresh needs a touch screen.
             IconButton(
-              tooltip: 'Refresh',
+              tooltip: context.l10n.refresh,
               icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(businessBookingsProvider),
             )
@@ -42,7 +44,7 @@ class BusinessHomeScreen extends ConsumerWidget {
             const MessagesButton(),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
-              tooltip: 'Settings',
+              tooltip: context.l10n.settingsTitle,
               onPressed: () => context.push('/account-settings'),
             ),
           ],
@@ -50,10 +52,10 @@ class BusinessHomeScreen extends ConsumerWidget {
       ),
       body: business.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
         data: (business) {
           if (business == null) {
-            return const Center(child: Text('No business found.'));
+            return Center(child: Text(context.l10n.noBusinessFound));
           }
           final today = bookings.hasValue
               ? _TodayCard(
@@ -73,14 +75,14 @@ class BusinessHomeScreen extends ConsumerWidget {
               Expanded(
                 child: _StatChip(
                   value: services.value?.length,
-                  label: services.value?.length == 1 ? 'service' : 'services',
+                  label: context.l10n.serviceCountLabel(services.value?.length ?? 0),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _StatChip(
                   value: workers.value?.length,
-                  label: workers.value?.length == 1 ? 'staff member' : 'staff',
+                  label: context.l10n.staffCountLabel(workers.value?.length ?? 0),
                 ),
               ),
             ],
@@ -89,7 +91,7 @@ class BusinessHomeScreen extends ConsumerWidget {
             header: _SectionHeader(title: 'This week', onManage: () => context.push('/business/edit')),
             child: hours.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Text('Error: $error'),
+              error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
               data: (list) => _HoursCard(hours: list),
             ),
           );
@@ -97,10 +99,10 @@ class BusinessHomeScreen extends ConsumerWidget {
             header: _SectionHeader(title: 'Services', onManage: () => context.push('/business/services')),
             child: services.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Text('Error: $error'),
+              error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
               data: (list) {
                 if (list.isEmpty) {
-                  return const Text('No services listed yet.', style: TextStyle(color: AppColors.steel));
+                  return Text(context.l10n.noServicesYet, style: const TextStyle(color: AppColors.steel));
                 }
                 return Card(
                   child: Column(
@@ -124,10 +126,10 @@ class BusinessHomeScreen extends ConsumerWidget {
             header: _SectionHeader(title: 'Staff', onManage: () => context.go('/business/staff')),
             child: workers.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Text('Error: $error'),
+              error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
               data: (list) {
                 if (list.isEmpty) {
-                  return const Text('No staff yet.', style: TextStyle(color: AppColors.steel));
+                  return Text(context.l10n.noStaffYet, style: const TextStyle(color: AppColors.steel));
                 }
                 return Card(
                   child: Column(
@@ -267,7 +269,7 @@ class _ShopPlaque extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        openNow ? 'OPEN NOW' : 'CLOSED NOW',
+                        openNow ? context.l10n.openNowBadge : context.l10n.closedNowBadge,
                         style: const TextStyle(color: AppColors.onBrass, fontWeight: FontWeight.w700, fontSize: 11),
                       ),
                     ),
@@ -292,21 +294,18 @@ class _ShopPlaque extends StatelessWidget {
   }
 }
 
-const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/// "in 25 min" / "in 3 h" today, "Tomorrow", otherwise "Thu 2 Oct".
-String _whenLabel(DateTime start, DateTime now) {
+/// "in 25 min" / "in 3 h" today, "Tomorrow", otherwise "Thu, Oct 2".
+String _whenLabel(BuildContext context, DateTime start, DateTime now) {
   final local = start.toLocal();
   final today = DateTime(now.year, now.month, now.day);
   final day = DateTime(local.year, local.month, local.day);
   final daysAway = day.difference(today).inDays;
   if (daysAway == 0) {
     final minutes = local.difference(now).inMinutes;
-    return minutes < 60 ? 'in $minutes min' : 'in ${minutes ~/ 60} h';
+    return minutes < 60 ? context.l10n.inMinutes(minutes) : context.l10n.inHours(minutes ~/ 60);
   }
-  if (daysAway == 1) return 'Tomorrow';
-  return '${_weekdayShort[local.weekday - 1]} ${local.day} ${_monthShort[local.month - 1]}';
+  if (daysAway == 1) return context.l10n.tomorrow;
+  return DateFormat.MMMEd(context.l10n.localeName).format(local);
 }
 
 class _TodayCard extends StatelessWidget {
@@ -318,7 +317,7 @@ class _TodayCard extends StatelessWidget {
 
   // A booking can outlive its barber's time on the staff list (history is
   // kept), so a missing name isn't an error.
-  String _worker(String id) => workerNames[id] ?? 'Former staff';
+  String _worker(BuildContext context, String id) => workerNames[id] ?? context.l10n.formerStaff;
 
   @override
   Widget build(BuildContext context) {
@@ -347,19 +346,19 @@ class _TodayCard extends StatelessWidget {
                   style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.brass),
                 ),
                 const SizedBox(width: 8),
-                Text(summary.bookingsToday == 1 ? 'booking today' : 'bookings today', style: textTheme.titleMedium),
+                Text(context.l10n.bookingsTodayLabel(summary.bookingsToday), style: textTheme.titleMedium),
               ],
             ),
             if (summary.perWorker.isNotEmpty)
               Text(
-                summary.perWorker.map((e) => '${_worker(e.key)} ${e.value}').join(' · '),
+                summary.perWorker.map((e) => '${_worker(context, e.key)} ${e.value}').join(' · '),
                 style: const TextStyle(color: AppColors.steel),
               ),
             const Divider(height: 24),
-            Text('Next booking', style: textTheme.labelMedium?.copyWith(color: AppColors.steel)),
+            Text(context.l10n.nextBooking, style: textTheme.labelMedium?.copyWith(color: AppColors.steel)),
             const SizedBox(height: 2),
             if (next == null)
-              const Text('Nothing booked yet')
+              Text(context.l10n.nothingBookedYet)
             else ...[
               // Wrap, not Row: "10:15 PM" + "Thu 2 Oct" overflows a phone at
               // larger text sizes.
@@ -371,12 +370,12 @@ class _TodayCard extends StatelessWidget {
                     TimeOfDay.fromDateTime(next.startTime.toLocal()).format(context),
                     style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  Text(_whenLabel(next.startTime, now), style: const TextStyle(color: AppColors.steel)),
+                  Text(_whenLabel(context, next.startTime, now), style: const TextStyle(color: AppColors.steel)),
                 ],
               ),
               Text(
-                'with ${_worker(next.workerId)}'
-                '${serviceNames[next.serviceId] == null ? '' : ' · ${serviceNames[next.serviceId]}'}',
+                context.l10n.withBarber(_worker(context, next.workerId)) +
+                    (serviceNames[next.serviceId] == null ? '' : ' · ${serviceNames[next.serviceId]}'),
               ),
             ],
           ],
@@ -403,20 +402,20 @@ class _FinanceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.divider),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(Icons.payments_outlined, color: AppColors.brass),
-            SizedBox(width: 12),
+            const Icon(Icons.payments_outlined, color: AppColors.brass),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Finance', style: TextStyle(fontWeight: FontWeight.w700)),
-                  Text('Costs, break-even and how to get there', style: TextStyle(color: AppColors.steel)),
+                  Text(context.l10n.navFinance, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(context.l10n.financeTileSubtitle, style: const TextStyle(color: AppColors.steel)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: AppColors.steel),
+            const Icon(Icons.chevron_right, color: AppColors.steel),
           ],
         ),
       ),
@@ -467,7 +466,7 @@ class _SectionHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: Theme.of(context).textTheme.titleMedium),
-          TextButton(onPressed: onManage, child: const Text('Manage')),
+          TextButton(onPressed: onManage, child: Text(context.l10n.manage)),
         ],
       ),
     );
@@ -510,7 +509,7 @@ class _HoursCard extends StatelessWidget {
                     SizedBox(
                       width: 100,
                       child: Text(
-                        OpeningHours.dayNames[h.dayOfWeek],
+                        context.weekdayName(h.dayOfWeek),
                         style: TextStyle(
                           fontWeight: h.dayOfWeek == today ? FontWeight.w700 : FontWeight.w400,
                           color: h.dayOfWeek == today ? AppColors.brass : null,

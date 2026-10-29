@@ -2635,6 +2635,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark as done'**
   String get markAsDone;
+
+  /// No description provided for @fadraForBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Fadra Cut for Business'**
+  String get fadraForBusiness;
+
+  /// No description provided for @noBusinessFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No business found.'**
+  String get noBusinessFound;
+
+  /// No description provided for @serviceCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{service} other{services}}'**
+  String serviceCountLabel(int count);
+
+  /// No description provided for @staffCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{staff member} other{staff}}'**
+  String staffCountLabel(int count);
+
+  /// No description provided for @openNowBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'OPEN NOW'**
+  String get openNowBadge;
+
+  /// No description provided for @closedNowBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'CLOSED NOW'**
+  String get closedNowBadge;
+
+  /// No description provided for @inMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'in {count} min'**
+  String inMinutes(int count);
+
+  /// No description provided for @inHours.
+  ///
+  /// In en, this message translates to:
+  /// **'in {count} h'**
+  String inHours(int count);
+
+  /// No description provided for @formerStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Former staff'**
+  String get formerStaff;
+
+  /// No description provided for @bookingsTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{booking today} other{bookings today}}'**
+  String bookingsTodayLabel(int count);
+
+  /// No description provided for @nextBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Next booking'**
+  String get nextBooking;
+
+  /// No description provided for @nothingBookedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing booked yet'**
+  String get nothingBookedYet;
+
+  /// No description provided for @financeTileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs, break-even and how to get there'**
+  String get financeTileSubtitle;
+
+  /// No description provided for @step2of3.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 2 of 3'**
+  String get step2of3;
+
+  /// No description provided for @step3of3.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 3 of 3'**
+  String get step3of3;
+
+  /// No description provided for @step1of3.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 1 of 3'**
+  String get step1of3;
+
+  /// No description provided for @setupServicesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your basic cut — your standard haircut — with its price and duration. Once setup is complete you can add the rest of your services.'**
+  String get setupServicesHint;
+
+  /// No description provided for @setupStaffHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add everyone customers can book with — including yourself if you cut hair. Tap + for staff without an app account.'**
+  String get setupStaffHint;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @checkDayHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Check {day}\'s opening hours.'**
+  String checkDayHours(String day);
+
+  /// No description provided for @setUpYourBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your business'**
+  String get setUpYourBusiness;
+
+  /// No description provided for @setupDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your business details. Next you\'ll add your services and staff — customers can find and book you once both are in.'**
+  String get setupDetailsHint;
+
+  /// No description provided for @businessPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Business phone'**
+  String get businessPhone;
+
+  /// No description provided for @businessPhoneHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'For our records only — never shown to customers'**
+  String get businessPhoneHelper;
+
+  /// No description provided for @enterValidPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number'**
+  String get enterValidPhone;
+
+  /// No description provided for @referralCodeOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral code (optional)'**
+  String get referralCodeOptional;
+
+  /// No description provided for @currency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get currency;
+
+  /// No description provided for @saveAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Save and continue'**
+  String get saveAndContinue;
+
+  /// No description provided for @fixHighlightedHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the highlighted opening hours before saving.'**
+  String get fixHighlightedHours;
+
+  /// No description provided for @businessDetailsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Business details saved.'**
+  String get businessDetailsSaved;
+
+  /// No description provided for @shopHeaderPreviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is how your page\'s header looks to customers.'**
+  String get shopHeaderPreviewHint;
+
+  /// No description provided for @logo.
+  ///
+  /// In en, this message translates to:
+  /// **'Logo'**
+  String get logo;
+
+  /// No description provided for @coverPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover photo'**
+  String get coverPhoto;
+
+  /// No description provided for @coverSizeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Best cover size: 1600 × 640. No logo? Your initials are shown. No cover? Your brand colour is used.'**
+  String get coverSizeHint;
+
+  /// No description provided for @brandColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand colour'**
+  String get brandColour;
+
+  /// No description provided for @brandColourHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for your header, buttons and highlights.'**
+  String get brandColourHint;
+
+  /// No description provided for @start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get start;
+
+  /// No description provided for @end.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get end;
+
+  /// No description provided for @breakLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Break'**
+  String get breakLabel;
+
+  /// No description provided for @removeBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove break'**
+  String get removeBreak;
+
+  /// No description provided for @addBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Add break'**
+  String get addBreak;
+
+  /// No description provided for @hoursRangeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing must be after opening, with any break inside those hours.'**
+  String get hoursRangeError;
+
+  /// No description provided for @addAnotherLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another location'**
+  String get addAnotherLocation;
+
+  /// No description provided for @country.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get country;
+
+  /// No description provided for @countryUnitedKingdom.
+  ///
+  /// In en, this message translates to:
+  /// **'United Kingdom'**
+  String get countryUnitedKingdom;
+
+  /// No description provided for @countrySpain.
+  ///
+  /// In en, this message translates to:
+  /// **'Spain'**
+  String get countrySpain;
+
+  /// No description provided for @streetAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Street address'**
+  String get streetAddress;
+
+  /// No description provided for @postcode.
+  ///
+  /// In en, this message translates to:
+  /// **'Postcode'**
+  String get postcode;
+
+  /// No description provided for @enterValidPostcode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid postcode'**
+  String get enterValidPostcode;
 }
 
 class _AppLocalizationsDelegate

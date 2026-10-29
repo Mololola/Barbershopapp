@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
@@ -46,11 +47,9 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
     if (step == _Step.services) {
       return ServicesScreen(
         setupFooter: _SetupFooter(
-          stepLabel: 'Step 2 of 3',
-          hint:
-              'Add your basic cut — your standard haircut — with its price and duration. Once setup is '
-              'complete you can add the rest of your services.',
-          continueLabel: 'Continue',
+          stepLabel: context.l10n.step2of3,
+          hint: context.l10n.setupServicesHint,
+          continueLabel: context.l10n.continueButton,
           onContinue: services.value!.isEmpty ? null : () => setState(() => _step = _Step.staff),
         ),
       );
@@ -58,13 +57,11 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
 
     return StaffScreen(
       setupFooter: _SetupFooter(
-        stepLabel: 'Step 3 of 3',
-        hint:
-            'Add everyone customers can book with — including yourself if you cut hair. Tap + for '
-            'staff without an app account.',
+        stepLabel: context.l10n.step3of3,
+        hint: context.l10n.setupStaffHint,
         error: setupState.hasError ? setupState.error.toString() : null,
         onBack: () => setState(() => _step = _Step.services),
-        continueLabel: 'Finish',
+        continueLabel: context.l10n.finishButton,
         onContinue: setupState.isLoading || !workers.value!.any((worker) => worker.isActive)
             ? null
             : () => ref.read(businessSetupControllerProvider.notifier).completeSetup(),
@@ -109,7 +106,7 @@ class _SetupFooter extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                if (onBack != null) TextButton(onPressed: onBack, child: const Text('Back')),
+                if (onBack != null) TextButton(onPressed: onBack, child: Text(context.l10n.back)),
                 const Spacer(),
                 FilledButton(onPressed: onContinue, child: Text(continueLabel)),
               ],
@@ -154,7 +151,7 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
     if (invalidDay != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Check ${OpeningHours.dayNames[invalidDay.dayOfWeek]}\'s opening hours.'),
+          content: Text(context.l10n.checkDayHours(context.weekdayName(invalidDay.dayOfWeek))),
         ),
       );
       return;
@@ -177,7 +174,7 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
     final setupState = ref.watch(businessSetupControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Set up your business')),
+      appBar: AppBar(title: Text(context.l10n.setUpYourBusiness)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -188,38 +185,37 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Step 1 of 3', style: Theme.of(context).textTheme.labelLarge),
+                Text(context.l10n.step1of3, style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 4),
                 Text(
-                  'Your business details. Next you\'ll add your services and staff — customers can find and '
-                  'book you once both are in.',
+                  context.l10n.setupDetailsHint,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Business name'),
+                  decoration: InputDecoration(labelText: context.l10n.businessNameLabel),
                   textCapitalization: TextCapitalization.words,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Business phone',
-                    helperText: 'For our records only — never shown to customers',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.businessPhone,
+                    helperText: context.l10n.businessPhoneHelper,
                   ),
                   keyboardType: TextInputType.phone,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Required';
-                    if (!_phonePattern.hasMatch(value.trim())) return 'Enter a valid phone number';
+                    if (value == null || value.trim().isEmpty) return context.l10n.requiredField;
+                    if (!_phonePattern.hasMatch(value.trim())) return context.l10n.enterValidPhone;
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _referralCodeController,
-                  decoration: const InputDecoration(labelText: 'Referral code (optional)'),
+                  decoration: InputDecoration(labelText: context.l10n.referralCodeOptional),
                 ),
                 const SizedBox(height: 24),
                 LocationFormSection(
@@ -229,7 +225,7 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _currency,
-                  decoration: const InputDecoration(labelText: 'Currency'),
+                  decoration: InputDecoration(labelText: context.l10n.currency),
                   items: [
                     for (final code in supportedCurrencies)
                       DropdownMenuItem(value: code, child: Text('$code (${currencySymbol(code)})')),
@@ -237,7 +233,7 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
                   onChanged: (value) => setState(() => _currency = value!),
                 ),
                 const SizedBox(height: 24),
-                Text('Opening hours', style: Theme.of(context).textTheme.titleMedium),
+                Text(context.l10n.openingHours, style: Theme.of(context).textTheme.titleMedium),
                 OpeningHoursEditor(hours: _hours, onChanged: (i, day) => setState(() => _hours[i] = day)),
                 const SizedBox(height: 24),
                 if (setupState.hasError)
@@ -252,7 +248,7 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
                   onPressed: setupState.isLoading ? null : _submit,
                   child: setupState.isLoading
                       ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Save and continue'),
+                      : Text(context.l10n.saveAndContinue),
                 ),
               ],
             ),

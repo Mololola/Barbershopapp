@@ -1542,4 +1542,191 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get markAsDone => 'Marcar como hecha';
+
+  @override
+  String get fadraForBusiness => 'Fadra Cut para negocios';
+
+  @override
+  String get noBusinessFound => 'No se ha encontrado ningún negocio.';
+
+  @override
+  String serviceCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'servicios',
+      one: 'servicio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String staffCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'en el equipo',
+      one: 'miembro del equipo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get openNowBadge => 'ABIERTO';
+
+  @override
+  String get closedNowBadge => 'CERRADO';
+
+  @override
+  String inMinutes(int count) {
+    return 'en $count min';
+  }
+
+  @override
+  String inHours(int count) {
+    return 'en $count h';
+  }
+
+  @override
+  String get formerStaff => 'Antiguo miembro del equipo';
+
+  @override
+  String bookingsTodayLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'reservas hoy',
+      one: 'reserva hoy',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get nextBooking => 'Próxima reserva';
+
+  @override
+  String get nothingBookedYet => 'Aún no hay nada reservado';
+
+  @override
+  String get financeTileSubtitle =>
+      'Costes, punto de equilibrio y cómo llegar a él';
+
+  @override
+  String get step2of3 => 'Paso 2 de 3';
+
+  @override
+  String get step3of3 => 'Paso 3 de 3';
+
+  @override
+  String get step1of3 => 'Paso 1 de 3';
+
+  @override
+  String get setupServicesHint =>
+      'Añade tu corte básico (tu corte de pelo estándar) con su precio y duración. Cuando termines la configuración podrás añadir el resto de servicios.';
+
+  @override
+  String get setupStaffHint =>
+      'Añade a todas las personas con las que los clientes pueden reservar, incluido tú si cortas el pelo. Toca + para quien no tenga cuenta en la app.';
+
+  @override
+  String get back => 'Atrás';
+
+  @override
+  String checkDayHours(String day) {
+    return 'Revisa el horario del $day.';
+  }
+
+  @override
+  String get setUpYourBusiness => 'Configura tu negocio';
+
+  @override
+  String get setupDetailsHint =>
+      'Los datos de tu negocio. Después añadirás tus servicios y tu equipo: los clientes podrán encontrarte y reservar cuando estén los dos.';
+
+  @override
+  String get businessPhone => 'Teléfono del negocio';
+
+  @override
+  String get businessPhoneHelper =>
+      'Solo para nuestros registros: nunca se muestra a los clientes';
+
+  @override
+  String get enterValidPhone => 'Introduce un teléfono válido';
+
+  @override
+  String get referralCodeOptional => 'Código de recomendación (opcional)';
+
+  @override
+  String get currency => 'Moneda';
+
+  @override
+  String get saveAndContinue => 'Guardar y continuar';
+
+  @override
+  String get fixHighlightedHours =>
+      'Corrige el horario marcado antes de guardar.';
+
+  @override
+  String get businessDetailsSaved => 'Datos del negocio guardados.';
+
+  @override
+  String get shopHeaderPreviewHint =>
+      'Así ven los clientes la cabecera de tu perfil.';
+
+  @override
+  String get logo => 'Logo';
+
+  @override
+  String get coverPhoto => 'Foto de portada';
+
+  @override
+  String get coverSizeHint =>
+      'Tamaño ideal de portada: 1600 × 640. ¿Sin logo? Se muestran tus iniciales. ¿Sin portada? Se usa tu color de marca.';
+
+  @override
+  String get brandColour => 'Color de marca';
+
+  @override
+  String get brandColourHint =>
+      'Se usa en la cabecera, los botones y los destacados.';
+
+  @override
+  String get start => 'Inicio';
+
+  @override
+  String get end => 'Fin';
+
+  @override
+  String get breakLabel => 'Descanso';
+
+  @override
+  String get removeBreak => 'Quitar descanso';
+
+  @override
+  String get addBreak => 'Añadir descanso';
+
+  @override
+  String get hoursRangeError =>
+      'El cierre debe ser después de la apertura, con el descanso dentro de ese horario.';
+
+  @override
+  String get addAnotherLocation => 'Añadir otro local';
+
+  @override
+  String get country => 'País';
+
+  @override
+  String get countryUnitedKingdom => 'Reino Unido';
+
+  @override
+  String get countrySpain => 'España';
+
+  @override
+  String get streetAddress => 'Dirección';
+
+  @override
+  String get postcode => 'Código postal';
+
+  @override
+  String get enterValidPostcode => 'Introduce un código postal válido';
 }

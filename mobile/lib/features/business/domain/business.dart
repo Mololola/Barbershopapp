@@ -191,8 +191,6 @@ class OpeningHours {
     return '$open – ${breakStart!.format(context)}, ${breakEnd!.format(context)} – $close';
   }
 
-  static const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
   OpeningHours copyWith({bool? isClosed, TimeOfDay? openTime, TimeOfDay? closeTime}) {
     return OpeningHours(
       dayOfWeek: dayOfWeek,

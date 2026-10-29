@@ -959,5 +959,96 @@
   "serviceOptions": "Service options",
   "edit": "Edit",
   "makeBasicCut": "Make basic cut",
-  "markAsDone": "Mark as done"
+  "markAsDone": "Mark as done",
+  "fadraForBusiness": "Fadra Cut for Business",
+  "noBusinessFound": "No business found.",
+  "serviceCountLabel": "{count, plural, =1{service} other{services}}",
+  "@serviceCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "staffCountLabel": "{count, plural, =1{staff member} other{staff}}",
+  "@staffCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openNowBadge": "OPEN NOW",
+  "closedNowBadge": "CLOSED NOW",
+  "inMinutes": "in {count} min",
+  "@inMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inHours": "in {count} h",
+  "@inHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formerStaff": "Former staff",
+  "bookingsTodayLabel": "{count, plural, =1{booking today} other{bookings today}}",
+  "@bookingsTodayLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextBooking": "Next booking",
+  "nothingBookedYet": "Nothing booked yet",
+  "financeTileSubtitle": "Costs, break-even and how to get there",
+  "step2of3": "Step 2 of 3",
+  "step3of3": "Step 3 of 3",
+  "step1of3": "Step 1 of 3",
+  "setupServicesHint": "Add your basic cut — your standard haircut — with its price and duration. Once setup is complete you can add the rest of your services.",
+  "setupStaffHint": "Add everyone customers can book with — including yourself if you cut hair. Tap + for staff without an app account.",
+  "back": "Back",
+  "checkDayHours": "Check {day}'s opening hours.",
+  "@checkDayHours": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "setUpYourBusiness": "Set up your business",
+  "setupDetailsHint": "Your business details. Next you'll add your services and staff — customers can find and book you once both are in.",
+  "businessPhone": "Business phone",
+  "businessPhoneHelper": "For our records only — never shown to customers",
+  "enterValidPhone": "Enter a valid phone number",
+  "referralCodeOptional": "Referral code (optional)",
+  "currency": "Currency",
+  "saveAndContinue": "Save and continue",
+  "fixHighlightedHours": "Fix the highlighted opening hours before saving.",
+  "businessDetailsSaved": "Business details saved.",
+  "shopHeaderPreviewHint": "This is how your page's header looks to customers.",
+  "logo": "Logo",
+  "coverPhoto": "Cover photo",
+  "coverSizeHint": "Best cover size: 1600 × 640. No logo? Your initials are shown. No cover? Your brand colour is used.",
+  "brandColour": "Brand colour",
+  "brandColourHint": "Used for your header, buttons and highlights.",
+  "start": "Start",
+  "end": "End",
+  "breakLabel": "Break",
+  "removeBreak": "Remove break",
+  "addBreak": "Add break",
+  "hoursRangeError": "Closing must be after opening, with any break inside those hours.",
+  "addAnotherLocation": "Add another location",
+  "country": "Country",
+  "countryUnitedKingdom": "United Kingdom",
+  "countrySpain": "Spain",
+  "streetAddress": "Street address",
+  "postcode": "Postcode",
+  "enterValidPostcode": "Enter a valid postcode"
 }
