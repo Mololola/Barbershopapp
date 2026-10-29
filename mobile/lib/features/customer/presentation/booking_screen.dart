@@ -157,7 +157,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               children: [
                 if (bookingState.hasError) ...[
                   Text(
-                    bookingState.error.toString(),
+                    describeError(context.l10n, bookingState.error),
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                   ),
                   const SizedBox(height: 8),

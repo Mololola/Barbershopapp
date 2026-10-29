@@ -59,7 +59,7 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
       setupFooter: _SetupFooter(
         stepLabel: context.l10n.step3of3,
         hint: context.l10n.setupStaffHint,
-        error: setupState.hasError ? setupState.error.toString() : null,
+        error: setupState.hasError ? describeError(context.l10n, setupState.error) : null,
         onBack: () => setState(() => _step = _Step.services),
         continueLabel: context.l10n.finishButton,
         onContinue: setupState.isLoading || !workers.value!.any((worker) => worker.isActive)
@@ -240,7 +240,7 @@ class _DetailsStepState extends ConsumerState<_DetailsStep> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
-                      setupState.error.toString(),
+                      describeError(context.l10n, setupState.error),
                       style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   ),

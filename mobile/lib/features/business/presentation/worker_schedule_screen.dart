@@ -46,7 +46,7 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
         padding: const EdgeInsets.all(24),
         child: schedule.when(
           loading: () => const LoadingView(),
-          error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+          error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
           data: (existing) {
             _seedIfNeeded(existing);
             final hours = _hours!;
@@ -68,7 +68,7 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
-                      saveState.error.toString(),
+                      describeError(context.l10n, saveState.error),
                       style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   ),

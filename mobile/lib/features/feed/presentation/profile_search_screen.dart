@@ -72,7 +72,7 @@ class _ProfileSearchScreenState extends ConsumerState<ProfileSearchScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (_error != null) Text(context.l10n.errorWithDetail('$_error')),
+            if (_error != null) Text(describeError(context.l10n, _error)),
             if (_isSearching) const LoadingView(),
             if (results != null)
               Expanded(

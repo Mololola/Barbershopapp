@@ -776,12 +776,6 @@ abstract class AppLocalizations {
   /// **'Barbershop'**
   String get barbershopSubtitle;
 
-  /// No description provided for @errorWithDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String errorWithDetail(String error);
-
   /// No description provided for @greeting.
   ///
   /// In en, this message translates to:
@@ -3889,6 +3883,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Messages ({count})'**
   String messagesWithCount(int count);
+
+  /// No description provided for @somethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong — try again.'**
+  String get somethingWentWrong;
+
+  /// No description provided for @emailAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists — sign in, or use \"Continue with Google\" if that\'s how you signed up.'**
+  String get emailAlreadyRegistered;
+
+  /// No description provided for @usernameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'That username is already taken.'**
+  String get usernameTaken;
+
+  /// No description provided for @referralCodeNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'That referral code doesn\'t exist.'**
+  String get referralCodeNotFound;
+
+  /// No description provided for @alreadyInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a pending invitation out to this worker.'**
+  String get alreadyInvited;
+
+  /// No description provided for @alreadyOnYourStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'re already on your staff.'**
+  String get alreadyOnYourStaff;
+
+  /// No description provided for @staffHasUpcomingBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'This barber has upcoming bookings — cancel or complete them first.'**
+  String get staffHasUpcomingBookings;
+
+  /// No description provided for @alreadyStaffElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re already working at another shop — leave that role before accepting a new one.'**
+  String get alreadyStaffElsewhere;
+
+  /// No description provided for @authInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong email or password.'**
+  String get authInvalidCredentials;
+
+  /// No description provided for @authEmailNotConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your email first — check your inbox for the link.'**
+  String get authEmailNotConfirmed;
+
+  /// No description provided for @authWeakPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'That password is too weak — use at least 6 characters.'**
+  String get authWeakPassword;
+
+  /// No description provided for @authSamePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a password different from your current one.'**
+  String get authSamePassword;
+
+  /// No description provided for @authRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts — wait a minute and try again.'**
+  String get authRateLimited;
+
+  /// No description provided for @authLinkExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'That link has expired — ask for a new one.'**
+  String get authLinkExpired;
 }
 
 class _AppLocalizationsDelegate

@@ -28,7 +28,7 @@ class SubscriptionScreen extends ConsumerWidget {
     if (!context.mounted) return;
     final state = ref.read(billingActionControllerProvider);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(state.hasError ? state.error.toString() : doneMessage)),
+      SnackBar(content: Text(state.hasError ? describeError(context.l10n, state.error) : doneMessage)),
     );
   }
 
@@ -144,11 +144,12 @@ class SubscriptionScreen extends ConsumerWidget {
 
   Future<void> _openPortal(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       final url = await ref.read(billingActionControllerProvider.notifier).openPortal();
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+      messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, error))));
     }
   }
 
@@ -259,7 +260,7 @@ class SubscriptionScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(context.l10n.navSubscription)),
       body: subscription.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (sub) => ListView(
           padding: const EdgeInsets.all(16),
           children: [

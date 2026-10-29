@@ -169,11 +169,12 @@ class _TrialBanner extends ConsumerWidget {
         trailing: !canPayInThisApp ? null : TextButton(
           onPressed: () async {
             final messenger = ScaffoldMessenger.of(context);
+            final l10n = context.l10n;
             try {
               final url = await ref.read(billingActionControllerProvider.notifier).startFinanceCheckout();
               await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
             } catch (error) {
-              messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+              messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, error))));
             }
           },
           child: Text(context.l10n.subscribe),

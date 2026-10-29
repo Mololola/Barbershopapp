@@ -138,7 +138,7 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
-                      saveState.error.toString(),
+                      describeError(context.l10n, saveState.error),
                       style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   ),

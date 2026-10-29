@@ -98,13 +98,14 @@ class ServicesScreen extends ConsumerWidget {
   /// subscription what their monthly payment becomes. True to go ahead.
   Future<bool> _confirmPriceChange(BuildContext context, WidgetRef ref, int basicCutPriceCents) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final business = await ref.read(currentBusinessProvider.future);
     if (business == null) return false;
     final ({int? currentCents, int newCents}) quote;
     try {
       quote = await ref.read(billingApiClientProvider).quoteSubscriptionPrice(business.id, basicCutPriceCents);
     } catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+      messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, error))));
       return false;
     }
     final currentCents = quote.currentCents;
@@ -221,7 +222,7 @@ class ServicesScreen extends ConsumerWidget {
             ),
       body: services.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (list) {
           if (list.isEmpty) {
             return Center(

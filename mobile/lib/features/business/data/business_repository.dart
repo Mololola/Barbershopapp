@@ -21,8 +21,10 @@ class AlreadyInvitedException implements Exception {
 /// a worker with upcoming bookings can't be taken off the staff, and
 /// someone already on it can't be invited again.
 class StaffChangeBlockedException implements Exception {
-  const StaffChangeBlockedException(this.message);
+  const StaffChangeBlockedException(this.code, this.message);
 
+  /// BB001 (has upcoming bookings) or BB002 (already on the staff).
+  final String code;
   final String message;
 
   @override
@@ -43,7 +45,7 @@ class BusinessRepository {
     try {
       await change();
     } on PostgrestException catch (e) {
-      if (_staffGuardCodes.contains(e.code)) throw StaffChangeBlockedException(e.message);
+      if (_staffGuardCodes.contains(e.code)) throw StaffChangeBlockedException(e.code!, e.message);
       rethrow;
     }
   }

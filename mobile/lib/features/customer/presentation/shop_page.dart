@@ -31,7 +31,7 @@ class ShopPage extends ConsumerWidget {
     return Scaffold(
       body: business.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (shop) {
           if (shop == null) {
             return Scaffold(
@@ -384,7 +384,7 @@ class _Services extends ConsumerWidget {
     final symbol = currencySymbol(shop.currency);
     return services.when(
       loading: () => const LoadingView(),
-      error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+      error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
         if (list.isEmpty) return Text(context.l10n.noServicesYet);
         return Column(
@@ -435,7 +435,7 @@ class _Barbers extends ConsumerWidget {
     final workers = ref.watch(businessWorkersProvider(businessId));
     return workers.when(
       loading: () => const LoadingView(),
-      error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+      error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
         if (list.isEmpty) return Text(context.l10n.noBarbersYet);
         return Wrap(
@@ -474,7 +474,7 @@ class _Reviews extends ConsumerWidget {
     final reviews = ref.watch(businessReviewsProvider(businessId));
     return reviews.when(
       loading: () => const LoadingView(),
-      error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+      error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
         if (list.isEmpty) return Text(context.l10n.noReviewsYet);
         return Column(children: [for (final review in list) _ReviewTile(review: review)]);
@@ -533,7 +533,7 @@ class _Posts extends ConsumerWidget {
     final myId = ref.watch(currentProfileProvider).value?.id;
     return posts.when(
       loading: () => const LoadingView(),
-      error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+      error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
         if (list.isEmpty) return Text(context.l10n.noPostsYet);
         return Column(children: [for (final post in list) PostCard(post: post, isMine: post.authorId == myId)]);

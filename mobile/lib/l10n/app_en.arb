@@ -128,7 +128,6 @@
   "navRewards": "Rewards",
   "navRankings": "Rankings",
   "barbershopSubtitle": "Barbershop",
-  "errorWithDetail": "Error: {error}",
   "greeting": "Hey, {name}",
   "greetingNoName": "Hey there",
   "whatsNext": "Here's what's next.",
@@ -146,13 +145,6 @@
   "browseBarbershops": "Browse barbershops",
   "closureWithinADay": "This booking will be cancelled within a day unless the shop renews its subscription.",
   "closureBy": "This shop hasn't renewed its subscription. If it doesn't by {date}, this booking will be cancelled.",
-  "@errorWithDetail": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "@greeting": {
     "placeholders": {
       "name": {
@@ -1391,5 +1383,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "somethingWentWrong": "Something went wrong — try again.",
+  "emailAlreadyRegistered": "An account with this email already exists — sign in, or use \"Continue with Google\" if that's how you signed up.",
+  "usernameTaken": "That username is already taken.",
+  "referralCodeNotFound": "That referral code doesn't exist.",
+  "alreadyInvited": "You already have a pending invitation out to this worker.",
+  "alreadyOnYourStaff": "They're already on your staff.",
+  "staffHasUpcomingBookings": "This barber has upcoming bookings — cancel or complete them first.",
+  "alreadyStaffElsewhere": "You're already working at another shop — leave that role before accepting a new one.",
+  "authInvalidCredentials": "Wrong email or password.",
+  "authEmailNotConfirmed": "Confirm your email first — check your inbox for the link.",
+  "authWeakPassword": "That password is too weak — use at least 6 characters.",
+  "authSamePassword": "Choose a password different from your current one.",
+  "authRateLimited": "Too many attempts — wait a minute and try again.",
+  "authLinkExpired": "That link has expired — ask for a new one."
 }

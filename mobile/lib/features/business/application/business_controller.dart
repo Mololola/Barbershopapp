@@ -464,7 +464,7 @@ class WorkerController extends AsyncNotifier<void> {
       // Friendly early answer; the DB trigger enforces it regardless.
       final staff = await ref.read(workersProvider.future);
       if (staff.any((worker) => worker.profileId == workerProfileId)) {
-        throw const StaffChangeBlockedException("They're already on your staff.");
+        throw const StaffChangeBlockedException('BB002', "They're already on your staff.");
       }
       await ref.read(businessRepositoryProvider).createInvitation(
             businessId: business.id,

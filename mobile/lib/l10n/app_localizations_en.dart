@@ -369,11 +369,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get barbershopSubtitle => 'Barbershop';
 
   @override
-  String errorWithDetail(String error) {
-    return 'Error: $error';
-  }
-
-  @override
   String greeting(String name) {
     return 'Hey, $name';
   }
@@ -2314,4 +2309,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String messagesWithCount(int count) {
     return 'Messages ($count)';
   }
+
+  @override
+  String get somethingWentWrong => 'Something went wrong — try again.';
+
+  @override
+  String get emailAlreadyRegistered =>
+      'An account with this email already exists — sign in, or use \"Continue with Google\" if that\'s how you signed up.';
+
+  @override
+  String get usernameTaken => 'That username is already taken.';
+
+  @override
+  String get referralCodeNotFound => 'That referral code doesn\'t exist.';
+
+  @override
+  String get alreadyInvited =>
+      'You already have a pending invitation out to this worker.';
+
+  @override
+  String get alreadyOnYourStaff => 'They\'re already on your staff.';
+
+  @override
+  String get staffHasUpcomingBookings =>
+      'This barber has upcoming bookings — cancel or complete them first.';
+
+  @override
+  String get alreadyStaffElsewhere =>
+      'You\'re already working at another shop — leave that role before accepting a new one.';
+
+  @override
+  String get authInvalidCredentials => 'Wrong email or password.';
+
+  @override
+  String get authEmailNotConfirmed =>
+      'Confirm your email first — check your inbox for the link.';
+
+  @override
+  String get authWeakPassword =>
+      'That password is too weak — use at least 6 characters.';
+
+  @override
+  String get authSamePassword =>
+      'Choose a password different from your current one.';
+
+  @override
+  String get authRateLimited =>
+      'Too many attempts — wait a minute and try again.';
+
+  @override
+  String get authLinkExpired => 'That link has expired — ask for a new one.';
 }

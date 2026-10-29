@@ -142,7 +142,7 @@ class StaffScreen extends ConsumerWidget {
                       if (result.hasError) {
                         setDialogState(() {
                           isSubmitting = false;
-                          errorText = result.error.toString();
+                          errorText = describeError(context.l10n, result.error);
                         });
                         return;
                       }
@@ -210,7 +210,7 @@ class _MyWorkforceTab extends ConsumerWidget {
       children: [
         workers.when(
           loading: () => const LoadingView(),
-          error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+          error: (error, _) => Text(describeError(context.l10n, error)),
           data: (list) {
             if (list.isEmpty) {
               return Padding(
@@ -236,7 +236,7 @@ class _MyWorkforceTab extends ConsumerWidget {
         ),
         sentInvitations.when(
           loading: () => const LoadingView(),
-          error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+          error: (error, _) => Text(describeError(context.l10n, error)),
           data: (list) {
             if (list.isEmpty) {
               return Padding(padding: const EdgeInsets.all(16), child: Text(context.l10n.noInvitationsSent));
@@ -297,16 +297,18 @@ class _WorkforceTile extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
     // Captured now: on success this tile leaves the list and unmounts.
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     await ref.read(workerControllerProvider.notifier).removeWorker(worker.id!);
     final result = ref.read(workerControllerProvider);
-    if (result.hasError) messenger.showSnackBar(SnackBar(content: Text(result.error.toString())));
+    if (result.hasError) messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, result.error))));
   }
 
   Future<void> _acknowledgeLeave(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     await ref.read(leaveRequestControllerProvider.notifier).acknowledge(leaveRequest!);
     final result = ref.read(leaveRequestControllerProvider);
-    if (result.hasError) messenger.showSnackBar(SnackBar(content: Text(result.error.toString())));
+    if (result.hasError) messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, result.error))));
   }
 
   @override
@@ -482,7 +484,7 @@ class _AvailableWorkersTabState extends ConsumerState<_AvailableWorkersTab> {
         Expanded(
           child: candidates.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+            error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
             data: (list) {
               if (list.isEmpty) {
                 return Center(child: Text(context.l10n.noOneMatches));

@@ -69,7 +69,7 @@ class RewardHistoryScreen extends ConsumerWidget {
         .read(payoutControllerProvider.notifier)
         .savePayoutDetails(accountHolder: holder.text.trim(), iban: iban.text);
     if (!context.mounted) return false;
-    _show(context, error ?? context.l10n.bankAccountSaved);
+    _show(context, error == null ? context.l10n.bankAccountSaved : describeError(context.l10n, error));
     return error == null;
   }
 
@@ -132,7 +132,7 @@ class RewardHistoryScreen extends ConsumerWidget {
     final error =
         await ref.read(payoutControllerProvider.notifier).requestPayout(amountCents: amountCents, currency: currency);
     if (!context.mounted) return;
-    _show(context, error ?? context.l10n.withdrawalRequested);
+    _show(context, error == null ? context.l10n.withdrawalRequested : describeError(context.l10n, error));
   }
 
   @override
@@ -154,7 +154,7 @@ class RewardHistoryScreen extends ConsumerWidget {
           // money already requested is listed under Withdrawals below.
           availableBalance.when(
             loading: () => const CircularProgressIndicator(),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (balances) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -176,7 +176,7 @@ class RewardHistoryScreen extends ConsumerWidget {
           ),
           payoutDetails.when(
             loading: () => const SizedBox.shrink(),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (details) => ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.account_balance_outlined),
@@ -191,7 +191,7 @@ class RewardHistoryScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           myPayoutRequests.when(
             loading: () => const SizedBox.shrink(),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (requests) {
               if (requests.isEmpty) return const SizedBox.shrink();
               return Column(
@@ -212,7 +212,7 @@ class RewardHistoryScreen extends ConsumerWidget {
           Text(context.l10n.referrals, style: Theme.of(context).textTheme.titleMedium),
           referrals.when(
             loading: () => const CircularProgressIndicator(),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (entries) {
               final matches = entries.where((e) => e.customerId == myProfile?.id);
               final count = matches.isEmpty ? 0 : matches.first.value;
@@ -227,7 +227,7 @@ class RewardHistoryScreen extends ConsumerWidget {
           Text(context.l10n.reviews, style: Theme.of(context).textTheme.titleMedium),
           history.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (entries) {
               final reviewRewards = entries.where((e) => !e.isReferral);
               if (reviewRewards.isEmpty) {

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 
 export '../l10n/app_localizations.dart';
+export 'error_messages.dart';
 
 extension L10n on BuildContext {
   /// The app's text in the phone's language. Falls back to English where no

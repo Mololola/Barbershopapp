@@ -52,7 +52,7 @@ class BusinessHomeScreen extends ConsumerWidget {
       ),
       body: business.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (business) {
           if (business == null) {
             return Center(child: Text(context.l10n.noBusinessFound));
@@ -91,7 +91,7 @@ class BusinessHomeScreen extends ConsumerWidget {
             header: _SectionHeader(title: context.l10n.thisWeek, onManage: () => context.push('/business/edit')),
             child: hours.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+              error: (error, _) => Text(describeError(context.l10n, error)),
               data: (list) => _HoursCard(hours: list),
             ),
           );
@@ -99,7 +99,7 @@ class BusinessHomeScreen extends ConsumerWidget {
             header: _SectionHeader(title: context.l10n.services, onManage: () => context.push('/business/services')),
             child: services.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+              error: (error, _) => Text(describeError(context.l10n, error)),
               data: (list) {
                 if (list.isEmpty) {
                   return Text(context.l10n.noServicesYet, style: const TextStyle(color: AppColors.steel));
@@ -126,7 +126,7 @@ class BusinessHomeScreen extends ConsumerWidget {
             header: _SectionHeader(title: context.l10n.navStaff, onManage: () => context.go('/business/staff')),
             child: workers.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+              error: (error, _) => Text(describeError(context.l10n, error)),
               data: (list) {
                 if (list.isEmpty) {
                   return Text(context.l10n.noStaffYet, style: const TextStyle(color: AppColors.steel));

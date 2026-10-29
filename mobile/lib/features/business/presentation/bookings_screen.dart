@@ -33,7 +33,7 @@ class BookingsScreen extends ConsumerWidget {
       ),
       body: bookings.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (list) {
           if (list.isEmpty) {
             return Center(child: Text(context.l10n.noBookingsYet));

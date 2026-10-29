@@ -61,7 +61,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
       body: profile.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (value) {
           if (value == null) {
             return Center(child: Text(context.l10n.profileNotFound));
@@ -110,7 +110,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
               ...posts.when(
                 loading: () => [const SliverToBoxAdapter(child: LoadingView())],
-                error: (error, _) => [SliverToBoxAdapter(child: Center(child: Text(context.l10n.errorWithDetail('$error'))))],
+                error: (error, _) => [SliverToBoxAdapter(child: Center(child: Text(describeError(context.l10n, error))))],
                 data: (list) => [
                   if (list.isEmpty)
                     SliverToBoxAdapter(child: _NoPosts(isMine: isMine))

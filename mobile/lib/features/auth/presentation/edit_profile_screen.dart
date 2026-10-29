@@ -72,7 +72,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
-                  editState.error.toString(),
+                  describeError(context.l10n, editState.error),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),

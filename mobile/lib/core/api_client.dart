@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'app_language.dart';
 import 'env.dart';
 import 'supabase_providers.dart';
 
@@ -20,9 +21,12 @@ class ApiException implements Exception {
 /// Thin wrapper around the FastAPI backend — see docs/architecture.md for
 /// why booking creation goes through here instead of direct Supabase calls.
 class ApiClient {
-  ApiClient(this._supabase);
+  ApiClient(this._supabase, {required String Function() language}) : _language = language;
 
   final SupabaseClient _supabase;
+
+  /// Sent as Accept-Language, so the backend's messages come back in it.
+  final String Function() _language;
 
   Uri _uri(String path, [Map<String, String>? query]) {
     return Uri.parse('${Env.fastApiBaseUrl}$path').replace(queryParameters: query);
@@ -32,6 +36,7 @@ class ApiClient {
     final token = _supabase.auth.currentSession?.accessToken;
     return {
       'Content-Type': 'application/json',
+      'Accept-Language': _language(),
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
@@ -74,5 +79,8 @@ class ApiClient {
 }
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient(ref.watch(supabaseClientProvider));
+  return ApiClient(
+    ref.watch(supabaseClientProvider),
+    language: () => appLanguageCode(ref.read(appLanguageProvider)),
+  );
 });

@@ -90,7 +90,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           Expanded(
             child: messages.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+              error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
               data: (list) {
                 if (list.isEmpty) {
                   return Center(child: Text(context.l10n.noMessagesYet));

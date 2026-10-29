@@ -19,7 +19,7 @@ class MyBookingsScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(context.l10n.myBookings)),
       body: bookings.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (list) {
           if (list.isEmpty) {
             return Center(child: Text(context.l10n.noBookingsYet));
@@ -84,7 +84,7 @@ class _BookingTile extends ConsumerWidget {
           width: 16,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
-        error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+        error: (error, _) => Text(describeError(context.l10n, error)),
         data: (reviews) {
           if (reviews[booking.id] != null) {
             return Text(context.l10n.reviewed);

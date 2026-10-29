@@ -64,7 +64,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
-                      authState.error.toString(),
+                      describeError(context.l10n, authState.error),
                       style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   ),

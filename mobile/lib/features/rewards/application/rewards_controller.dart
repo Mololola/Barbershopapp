@@ -73,14 +73,14 @@ class PayoutController extends AsyncNotifier<void> {
 
   /// Returns null on success, otherwise the message to show (the backend's
   /// own wording for a bad IBAN or an over-balance request).
-  Future<String?> savePayoutDetails({required String accountHolder, required String iban}) {
+  Future<Object?> savePayoutDetails({required String accountHolder, required String iban}) {
     return _run(() async {
       await ref.read(rewardsRepositoryProvider).savePayoutDetails(accountHolder: accountHolder, iban: iban);
       ref.invalidate(payoutDetailsProvider);
     });
   }
 
-  Future<String?> requestPayout({required int amountCents, required String currency}) {
+  Future<Object?> requestPayout({required int amountCents, required String currency}) {
     return _run(() async {
       await ref.read(rewardsRepositoryProvider).requestPayout(amountCents: amountCents, currency: currency);
       ref.invalidate(myPayoutRequestsProvider);
@@ -88,11 +88,10 @@ class PayoutController extends AsyncNotifier<void> {
     });
   }
 
-  Future<String?> _run(Future<void> Function() action) async {
+  /// The error, if any, for the screen to describe.
+  Future<Object?> _run(Future<void> Function() action) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(action);
-    final error = state.error;
-    if (error == null) return null;
-    return error is ApiException && error.statusCode == 400 ? error.message : 'Something went wrong — try again.';
+    return state.error;
   }
 }

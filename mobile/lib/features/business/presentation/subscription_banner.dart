@@ -24,7 +24,7 @@ class SubscriptionBanner extends ConsumerWidget {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.errorWithDetail('$error'))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(context.l10n, error))));
       }
     }
   }

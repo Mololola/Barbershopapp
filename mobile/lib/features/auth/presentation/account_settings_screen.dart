@@ -27,7 +27,7 @@ class AccountSettingsScreen extends ConsumerWidget {
       unpaid = await ref.read(accountApiClientProvider).fetchUnpaidRewards();
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(context.l10n, error))));
       }
       return false;
     }
@@ -77,7 +77,7 @@ class AccountSettingsScreen extends ConsumerWidget {
 
     final state = ref.read(authControllerProvider);
     if (state.hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(context.l10n, state.error))));
     }
   }
 

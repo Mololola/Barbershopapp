@@ -204,7 +204,7 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
           const SizedBox(height: 16),
           if (saveState.hasError)
             Text(
-              saveState.error.toString(),
+              describeError(context.l10n, saveState.error),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           FilledButton(
@@ -217,12 +217,12 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
           Text(context.l10n.currentJob, style: Theme.of(context).textTheme.titleMedium),
           if (jobState.hasError)
             Text(
-              jobState.error.toString(),
+              describeError(context.l10n, jobState.error),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           currentJobAsync.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (job) {
               if (job == null) {
                 return Text(context.l10n.notCurrentlyWorking);
@@ -247,12 +247,12 @@ class _WorkerProfileScreenState extends ConsumerState<WorkerProfileScreen> {
           Text(context.l10n.invitations, style: Theme.of(context).textTheme.titleMedium),
           if (invitationState.hasError)
             Text(
-              invitationState.error.toString(),
+              describeError(context.l10n, invitationState.error),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           invitationsAsync.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (invitations) {
               if (invitations.isEmpty) {
                 return Text(context.l10n.noPendingInvitations);

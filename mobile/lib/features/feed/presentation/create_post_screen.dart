@@ -140,7 +140,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
-                  actionState.error.toString(),
+                  describeError(context.l10n, actionState.error),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),

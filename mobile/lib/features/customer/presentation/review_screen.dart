@@ -133,7 +133,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
-                  reviewState.error.toString(),
+                  describeError(context.l10n, reviewState.error),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),

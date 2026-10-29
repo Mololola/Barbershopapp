@@ -424,11 +424,12 @@ class _UpgradeCard extends ConsumerWidget {
 
   Future<void> _subscribe(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       final url = await ref.read(billingActionControllerProvider.notifier).startFinanceCheckout();
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+      messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, error))));
     }
   }
 
@@ -502,7 +503,7 @@ class _UpgradeCard extends ConsumerWidget {
               style: textTheme.bodySmall?.copyWith(color: AppColors.chalk),
             ),
             if (actionState.hasError)
-              Text(actionState.error.toString(), style: const TextStyle(color: Colors.redAccent)),
+              Text(describeError(context.l10n, actionState.error), style: const TextStyle(color: Colors.redAccent)),
           ],
         ),
       ),

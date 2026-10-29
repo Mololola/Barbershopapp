@@ -58,7 +58,7 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
           Expanded(
             child: businesses.when(
               loading: () => const LoadingView(),
-              error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+              error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
               data: (list) {
                 final filtered = _query.isEmpty
                     ? list

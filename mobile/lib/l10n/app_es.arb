@@ -113,7 +113,6 @@
   "navRewards": "Recompensas",
   "navRankings": "Rankings",
   "barbershopSubtitle": "Barbería",
-  "errorWithDetail": "Error: {error}",
   "greeting": "Hola, {name}",
   "greetingNoName": "Hola",
   "whatsNext": "Esto es lo próximo.",
@@ -631,5 +630,19 @@
   "noWorkMessagesHint": "Cuando una barbería y un barbero hablan de trabajo, aparece aquí.",
   "sayHello": "Saluda 👋",
   "messagesUnreadTooltip": "Mensajes, {count} sin leer",
-  "messagesWithCount": "Mensajes ({count})"
+  "messagesWithCount": "Mensajes ({count})",
+  "somethingWentWrong": "Algo ha fallado. Inténtalo de nuevo.",
+  "emailAlreadyRegistered": "Ya existe una cuenta con este correo: inicia sesión, o usa «Continuar con Google» si te registraste así.",
+  "usernameTaken": "Ese nombre de usuario ya está cogido.",
+  "referralCodeNotFound": "Ese código de recomendación no existe.",
+  "alreadyInvited": "Ya tienes una invitación pendiente para este barbero.",
+  "alreadyOnYourStaff": "Ya está en tu equipo.",
+  "staffHasUpcomingBookings": "Este barbero tiene reservas pendientes: cancélalas o complétalas antes.",
+  "alreadyStaffElsewhere": "Ya trabajas en otra barbería: deja ese puesto antes de aceptar uno nuevo.",
+  "authInvalidCredentials": "Correo o contraseña incorrectos.",
+  "authEmailNotConfirmed": "Confirma antes tu correo: busca el enlace en tu bandeja de entrada.",
+  "authWeakPassword": "Esa contraseña es demasiado débil: usa al menos 6 caracteres.",
+  "authSamePassword": "Elige una contraseña distinta de la actual.",
+  "authRateLimited": "Demasiados intentos: espera un minuto y vuelve a intentarlo.",
+  "authLinkExpired": "Ese enlace ha caducado: pide uno nuevo."
 }

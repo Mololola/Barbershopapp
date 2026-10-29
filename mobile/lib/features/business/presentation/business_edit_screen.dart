@@ -65,7 +65,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
         padding: const EdgeInsets.all(24),
         child: locations.when(
           loading: () => const LoadingView(),
-          error: (error, _) => Center(child: Text(context.l10n.errorWithDetail('$error'))),
+          error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
           data: (existingLocations) {
             if (!storedHours.hasValue) return const LoadingView();
             _seedLocationsIfNeeded(existingLocations);
@@ -90,7 +90,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Text(
-                          editState.error.toString(),
+                          describeError(context.l10n, editState.error),
                           style: TextStyle(color: Theme.of(context).colorScheme.error),
                         ),
                       ),

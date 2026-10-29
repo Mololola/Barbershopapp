@@ -62,7 +62,7 @@ class CustomerHomeScreen extends ConsumerWidget {
               height: 132,
               child: LoadingView(),
             ),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (list) {
               final upcoming = list
                   .where((b) => b.status == BookingStatus.confirmed && b.startTime.isAfter(DateTime.now()))

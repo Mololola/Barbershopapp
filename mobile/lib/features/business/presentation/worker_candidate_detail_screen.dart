@@ -74,7 +74,7 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           pinnedPosts.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Text(context.l10n.errorWithDetail('$error')),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (posts) {
               if (posts.isEmpty) {
                 return Text(context.l10n.noPinnedWork, style: const TextStyle(color: AppColors.steel));
@@ -105,7 +105,7 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
-                actionState.error.toString(),
+                describeError(context.l10n, actionState.error),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
