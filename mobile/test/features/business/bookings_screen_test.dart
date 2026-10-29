@@ -15,6 +15,7 @@ void main() {
         startTime: start,
         endTime: start.add(const Duration(minutes: 30)),
         status: BookingStatus.confirmed,
+        customerName: 'jordan',
       );
 
   testWidgets('only a booking that has started can be marked done', (tester) async {
@@ -32,5 +33,6 @@ void main() {
 
     expect(find.text('Confirmed'), findsNWidgets(2));
     expect(find.text('Mark as done'), findsOneWidget);
+    expect(find.text('jordan'), findsNWidgets(2));
   });
 }

@@ -649,5 +649,10 @@
   "sending": "Enviando…",
   "savedWillSend": "Guardado: se enviará cuando vuelvas a tener conexión.",
   "bookingNeedsConnection": "Necesitas conexión para reservar",
-  "videoUnavailable": "Vídeo no disponible: toca para reintentar"
+  "videoUnavailable": "Vídeo no disponible: toca para reintentar",
+  "upcomingTab": "Próximas",
+  "pastTab": "Pasadas",
+  "noUpcomingBookings": "No tienes reservas próximas.",
+  "noPastBookings": "Aún no hay reservas pasadas.",
+  "minutesShort": "{count} min"
 }

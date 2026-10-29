@@ -2376,4 +2376,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoUnavailable => 'Video unavailable — tap to try again';
+
+  @override
+  String get upcomingTab => 'Upcoming';
+
+  @override
+  String get pastTab => 'Past';
+
+  @override
+  String get noUpcomingBookings => 'No upcoming bookings.';
+
+  @override
+  String get noPastBookings => 'No past bookings yet.';
+
+  @override
+  String minutesShort(int count) {
+    return '$count min';
+  }
 }

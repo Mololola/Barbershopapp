@@ -60,3 +60,4 @@ Each step is one small commit with tests, English and Spanish text, and the phon
 ## Progress
 
 - Step 1 done: "Mark as done" only appears once a booking has started, and the backend refuses it before then.
+- Step 2 done: one booking card for both sides (shop or customer, service, barber, times, length, price, status in words). My bookings and the business Bookings both have Upcoming and Past tabs; the business list opens on today.

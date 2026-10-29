@@ -1402,5 +1402,17 @@
   "sending": "Sending…",
   "savedWillSend": "Saved — it will be sent when you're back online.",
   "bookingNeedsConnection": "You need a connection to book",
-  "videoUnavailable": "Video unavailable — tap to try again"
+  "videoUnavailable": "Video unavailable — tap to try again",
+  "upcomingTab": "Upcoming",
+  "pastTab": "Past",
+  "noUpcomingBookings": "No upcoming bookings.",
+  "noPastBookings": "No past bookings yet.",
+  "minutesShort": "{count} min",
+  "@minutesShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

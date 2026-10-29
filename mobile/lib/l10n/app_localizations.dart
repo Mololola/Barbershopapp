@@ -3997,6 +3997,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video unavailable — tap to try again'**
   String get videoUnavailable;
+
+  /// No description provided for @upcomingTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get upcomingTab;
+
+  /// No description provided for @pastTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get pastTab;
+
+  /// No description provided for @noUpcomingBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming bookings.'**
+  String get noUpcomingBookings;
+
+  /// No description provided for @noPastBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'No past bookings yet.'**
+  String get noPastBookings;
+
+  /// No description provided for @minutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String minutesShort(int count);
 }
 
 class _AppLocalizationsDelegate

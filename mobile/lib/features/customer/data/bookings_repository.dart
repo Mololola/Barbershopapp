@@ -15,7 +15,7 @@ class BookingsRepository {
   Future<List<Booking>> fetchMyBookings(String customerId) async {
     final rows = await _cache.rows('my-bookings:$customerId', () => _client
         .from('bookings')
-        .select()
+        .select('*, services(name), workers(name)')
         .eq('customer_id', customerId)
         .order('start_time', ascending: false));
     return rows.map(Booking.fromSupabaseRow).toList();
@@ -24,7 +24,7 @@ class BookingsRepository {
   Future<List<Booking>> fetchBusinessBookings(String businessId) async {
     final rows = await _cache.rows('business-bookings:$businessId', () => _client
         .from('bookings')
-        .select()
+        .select('*, services(name), workers(name), profiles(username)')
         .eq('business_id', businessId)
         .order('start_time'));
     return rows.map(Booking.fromSupabaseRow).toList();

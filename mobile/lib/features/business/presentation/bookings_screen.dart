@@ -7,6 +7,7 @@ import '../../../core/responsive.dart';
 import '../../../core/skeleton.dart';
 import '../../customer/application/booking_controller.dart';
 import '../../customer/domain/booking.dart';
+import '../../customer/presentation/booking_card.dart';
 import '../application/business_controller.dart';
 
 
@@ -16,73 +17,99 @@ class BookingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(businessBookingsProvider);
-    final actionState = ref.watch(bookingActionControllerProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.navBookings),
-        actions: [
-          // A desktop page stays open for hours; this fetches bookings made since.
-          if (isWideLayout(context))
-            IconButton(
-              tooltip: context.l10n.refresh,
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.invalidate(businessBookingsProvider),
-            ),
-        ],
-      ),
-      body: bookings.when(
-        loading: () => const SkeletonList(),
-        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
-        data: (list) {
-          if (list.isEmpty) {
-            return Center(child: Text(context.l10n.noBookingsYet));
-          }
-
-          final groups = _groupByDate(list);
-          return ListView(
-            children: [
-              for (final entry in groups.entries) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Text(
-                    _formatDateHeader(context, entry.key),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                for (final booking in entry.value)
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: ListTile(
-                      title: Text(TimeOfDay.fromDateTime(booking.startTime.toLocal()).format(context)),
-                      subtitle: Text(_statusLabel(context, booking.status)),
-                      // Marking done asks the customer for a review, so not before the cut starts.
-                      trailing: booking.status == BookingStatus.confirmed && booking.startTime.isBefore(DateTime.now())
-                          ? TextButton(
-                              onPressed: actionState.isLoading
-                                  ? null
-                                  : () async {
-                                      await ref
-                                          .read(bookingActionControllerProvider.notifier)
-                                          .completeBooking(booking.id);
-                                      ref.invalidate(businessBookingsProvider);
-                                    },
-                              child: Text(context.l10n.markAsDone),
-                            )
-                          : null,
-                    ),
-                  ),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.navBookings),
+          actions: [
+            // A desktop page stays open for hours; this fetches bookings made since.
+            if (isWideLayout(context))
+              IconButton(
+                tooltip: context.l10n.refresh,
+                icon: const Icon(Icons.refresh),
+                onPressed: () => ref.invalidate(businessBookingsProvider),
+              ),
+          ],
+          bottom: TabBar(tabs: [Tab(text: context.l10n.upcomingTab), Tab(text: context.l10n.pastTab)]),
+        ),
+        body: bookings.when(
+          loading: () => const SkeletonList(),
+          error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
+          data: (list) {
+            // Upcoming starts with all of today, so a cut that has just
+            // happened is still there to mark done.
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            final upcoming = list.where((b) => !b.startTime.toLocal().isBefore(today)).toList();
+            final past = list.where((b) => b.startTime.toLocal().isBefore(today)).toList().reversed.toList();
+            return TabBarView(
+              children: [
+                _DayGroupedList(bookings: upcoming, today: today, emptyText: context.l10n.noUpcomingBookings),
+                _DayGroupedList(bookings: past, today: today, emptyText: context.l10n.noPastBookings),
               ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
+}
 
-  /// Keyed by date-only (local), in the same order the input list arrives
-  /// (already sorted by `start_time` — see `businessBookingsProvider`), so
-  /// this only needs to group consecutive-by-date, not re-sort.
+class _DayGroupedList extends ConsumerWidget {
+  const _DayGroupedList({required this.bookings, required this.today, required this.emptyText});
+
+  /// Already in display order.
+  final List<Booking> bookings;
+  final DateTime today;
+  final String emptyText;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (bookings.isEmpty) return Center(child: Text(emptyText));
+    final actionState = ref.watch(bookingActionControllerProvider);
+    final currency = ref.watch(currentBusinessProvider).value?.currency;
+    final groups = _groupByDate(bookings);
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 8),
+      children: [
+        for (final entry in groups.entries) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(
+              entry.key == today
+                  ? '${context.l10n.today} · ${_formatDateHeader(context, entry.key)}'
+                  : _formatDateHeader(context, entry.key),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          for (final booking in entry.value)
+            BookingCard(
+              booking: booking,
+              showDate: false,
+              title: booking.customerName,
+              currency: currency,
+              // Marking done asks the customer for a review, so not before the cut starts.
+              action: booking.status == BookingStatus.confirmed && booking.startTime.isBefore(DateTime.now())
+                  ? TextButton(
+                      onPressed: actionState.isLoading
+                          ? null
+                          : () async {
+                              await ref.read(bookingActionControllerProvider.notifier).completeBooking(booking.id);
+                              ref.invalidate(businessBookingsProvider);
+                            },
+                      child: Text(context.l10n.markAsDone),
+                    )
+                  : null,
+            ),
+        ],
+      ],
+    );
+  }
+
+  /// Keyed by date-only (local), in the order the list arrives (sorted by
+  /// `start_time`, reversed for Past), so this only groups, never re-sorts.
   Map<DateTime, List<Booking>> _groupByDate(List<Booking> bookings) {
     final groups = <DateTime, List<Booking>>{};
     for (final booking in bookings) {
@@ -98,10 +125,4 @@ class BookingsScreen extends ConsumerWidget {
     final header = DateFormat.yMMMMEEEEd(context.l10n.localeName).format(date);
     return header[0].toUpperCase() + header.substring(1);
   }
-
-  String _statusLabel(BuildContext context, BookingStatus status) => switch (status) {
-        BookingStatus.confirmed => context.l10n.bookingConfirmed,
-        BookingStatus.cancelled => context.l10n.bookingCancelled,
-        BookingStatus.completed => context.l10n.bookingCompleted,
-      };
 }

@@ -23,6 +23,8 @@ class Booking {
     this.businessName,
     this.serviceName,
     this.workerName,
+    this.customerName,
+    this.priceCents,
   });
 
   final String id;
@@ -34,11 +36,15 @@ class Booking {
   final DateTime endTime;
   final BookingStatus status;
 
-  /// Populated client-side by joining against already-fetched business/
-  /// service/worker lists — the backend response itself only has ids.
+  /// The backend response only has ids; the booking lists embed the service,
+  /// barber and customer names in the same Supabase query.
   final String? businessName;
   final String? serviceName;
   final String? workerName;
+  final String? customerName;
+
+  /// What the customer was quoted when booking, in the shop's currency.
+  final int? priceCents;
 
   Booking copyWith({String? businessName, String? serviceName, String? workerName}) {
     return Booking(
@@ -79,6 +85,10 @@ class Booking {
       startTime: DateTime.parse(row['start_time'] as String),
       endTime: DateTime.parse(row['end_time'] as String),
       status: BookingStatusX.fromWireValue(row['status'] as String),
+      serviceName: (row['services'] as Map<String, dynamic>?)?['name'] as String?,
+      workerName: (row['workers'] as Map<String, dynamic>?)?['name'] as String?,
+      customerName: (row['profiles'] as Map<String, dynamic>?)?['username'] as String?,
+      priceCents: row['price_cents'] as int?,
     );
   }
 }

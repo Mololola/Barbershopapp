@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/l10n.dart';
 import '../../../core/skeleton.dart';
 import '../application/booking_controller.dart';
+import '../application/browse_controller.dart';
 import '../application/review_controller.dart';
 import '../domain/booking.dart';
+import 'booking_card.dart';
 
 class MyBookingsScreen extends ConsumerWidget {
   const MyBookingsScreen({super.key});
@@ -15,20 +17,47 @@ class MyBookingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(myBookingsProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.myBookings)),
-      body: bookings.when(
-        loading: () => const SkeletonList(),
-        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
-        data: (list) {
-          if (list.isEmpty) {
-            return Center(child: Text(context.l10n.noBookingsYet));
-          }
-          return ListView(
-            children: [for (final booking in list) _BookingTile(booking: booking)],
-          );
-        },
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.myBookings),
+          bottom: TabBar(tabs: [Tab(text: context.l10n.upcomingTab), Tab(text: context.l10n.pastTab)]),
+        ),
+        body: bookings.when(
+          loading: () => const SkeletonList(),
+          error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
+          data: (list) {
+            final now = DateTime.now();
+            bool isUpcoming(Booking b) => b.status == BookingStatus.confirmed && b.startTime.isAfter(now);
+            // The list arrives newest first; upcoming reads soonest first.
+            final upcoming = list.where(isUpcoming).toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
+            final past = list.where((b) => !isUpcoming(b)).toList();
+            return TabBarView(
+              children: [
+                _BookingList(bookings: upcoming, emptyText: context.l10n.noUpcomingBookings),
+                _BookingList(bookings: past, emptyText: context.l10n.noPastBookings),
+              ],
+            );
+          },
+        ),
       ),
+    );
+  }
+}
+
+class _BookingList extends StatelessWidget {
+  const _BookingList({required this.bookings, required this.emptyText});
+
+  final List<Booking> bookings;
+  final String emptyText;
+
+  @override
+  Widget build(BuildContext context) {
+    if (bookings.isEmpty) return Center(child: Text(emptyText));
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [for (final booking in bookings) _BookingTile(booking: booking)],
     );
   }
 }
@@ -43,26 +72,20 @@ class _BookingTile extends ConsumerWidget {
     final actionState = ref.watch(bookingActionControllerProvider);
     final atRisk = ref.watch(bookingsAtRiskProvider).value ?? const {};
     final cancelledAt = booking.status == BookingStatus.confirmed ? atRisk[booking.id] : null;
+    final business = ref.watch(businessProvider(booking.businessId)).value;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        title: Text(_formatDateTime(context, booking.startTime.toLocal())),
-        subtitle: cancelledAt == null
-            ? Text(_statusLabel(context, booking.status))
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_statusLabel(context, booking.status)),
-                  const SizedBox(height: 4),
-                  Text(
-                    shopClosureNotice(context.l10n, cancelledAt, DateTime.now()),
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                  ),
-                ],
-              ),
-        trailing: _buildTrailing(context, ref, actionState),
-      ),
+    return BookingCard(
+      booking: booking,
+      showDate: true,
+      title: business?.name,
+      currency: business?.currency,
+      notice: cancelledAt == null
+          ? null
+          : Text(
+              shopClosureNotice(context.l10n, cancelledAt, DateTime.now()),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+      action: _buildTrailing(context, ref, actionState),
     );
   }
 
@@ -98,16 +121,5 @@ class _BookingTile extends ConsumerWidget {
     }
 
     return null;
-  }
-
-  String _statusLabel(BuildContext context, BookingStatus status) => switch (status) {
-        BookingStatus.confirmed => context.l10n.bookingConfirmed,
-        BookingStatus.cancelled => context.l10n.bookingCancelled,
-        BookingStatus.completed => context.l10n.bookingCompleted,
-      };
-
-  String _formatDateTime(BuildContext context, DateTime dt) {
-    final date = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-    return '$date ${TimeOfDay.fromDateTime(dt).format(context)}';
   }
 }
