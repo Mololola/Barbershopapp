@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'l10n.dart';
+
 import '../features/admin/presentation/admin_screen.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/domain/profile.dart';
@@ -134,22 +136,24 @@ class _RouterRefreshNotifier extends ChangeNotifier {
 /// so work can resume by turning this back on.
 const designerEnabled = false;
 
-const _customerDestinations = [
-  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-  NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Browse'),
-  NavigationDestination(icon: Icon(Icons.photo_outlined), selectedIcon: Icon(Icons.photo), label: 'Feed'),
-  if (designerEnabled)
-    NavigationDestination(icon: Icon(Icons.content_cut_outlined), selectedIcon: Icon(Icons.content_cut), label: 'Designs'),
-  NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
-];
+List<NavigationDestination> _customerDestinations(AppLocalizations l10n) => [
+      NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home), label: l10n.navHome),
+      NavigationDestination(
+          icon: const Icon(Icons.storefront_outlined), selectedIcon: const Icon(Icons.storefront), label: l10n.navBrowse),
+      NavigationDestination(icon: const Icon(Icons.photo_outlined), selectedIcon: const Icon(Icons.photo), label: l10n.navFeed),
+      if (designerEnabled)
+        NavigationDestination(
+            icon: const Icon(Icons.content_cut_outlined), selectedIcon: const Icon(Icons.content_cut), label: l10n.navDesigns),
+      NavigationDestination(icon: const Icon(Icons.person_outline), selectedIcon: const Icon(Icons.person), label: l10n.navProfile),
+    ];
 
-const _businessDestinations = [
-  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-  NavigationDestination(icon: Icon(Icons.event_outlined), selectedIcon: Icon(Icons.event), label: 'Bookings'),
-  NavigationDestination(icon: Icon(Icons.photo_outlined), selectedIcon: Icon(Icons.photo), label: 'Feed'),
-  NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Staff'),
-  NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
-];
+List<NavigationDestination> _businessDestinations(AppLocalizations l10n) => [
+      NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home), label: l10n.navHome),
+      NavigationDestination(icon: const Icon(Icons.event_outlined), selectedIcon: const Icon(Icons.event), label: l10n.navBookings),
+      NavigationDestination(icon: const Icon(Icons.photo_outlined), selectedIcon: const Icon(Icons.photo), label: l10n.navFeed),
+      NavigationDestination(icon: const Icon(Icons.groups_outlined), selectedIcon: const Icon(Icons.groups), label: l10n.navStaff),
+      NavigationDestination(icon: const Icon(Icons.person_outline), selectedIcon: const Icon(Icons.person), label: l10n.navProfile),
+    ];
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _RouterRefreshNotifier();
@@ -200,7 +204,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
-            AppShell(navigationShell: navigationShell, destinations: _customerDestinations),
+            AppShell(navigationShell: navigationShell, destinations: _customerDestinations(context.l10n)),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/customer', builder: (context, state) => const CustomerHomeScreen()),
@@ -256,7 +260,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
-            AppShell(navigationShell: navigationShell, destinations: _businessDestinations),
+            AppShell(navigationShell: navigationShell, destinations: _businessDestinations(context.l10n)),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/business', builder: (context, state) => const BusinessHomeScreen()),

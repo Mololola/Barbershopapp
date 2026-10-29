@@ -106,7 +106,7 @@ void main() {
     expect(find.text('janedoe'), findsOneWidget);
     expect(find.text('View profile'), findsOneWidget);
     expect(find.text('Conversation'), findsNothing);
-    expect(find.text('1 Aug'), findsOneWidget);
+    expect(find.text('Aug 1'), findsOneWidget);
     expect(find.textContaining('Read'), findsOneWidget);
   });
 }
