@@ -2030,4 +2030,211 @@ class AppLocalizationsEn extends AppLocalizations {
   String nameYou(String name) {
     return '$name (you)';
   }
+
+  @override
+  String videoTooLong(int seconds) {
+    return 'Videos must be 1 minute or shorter (this one is ${seconds}s).';
+  }
+
+  @override
+  String get postingUnavailable => 'Posting isn\'t available on this account.';
+
+  @override
+  String get whatsGoingOn => 'What\'s going on?';
+
+  @override
+  String get addAPhoto => 'Add a photo';
+
+  @override
+  String get addAVideo => 'Add a video';
+
+  @override
+  String get changeVideo => 'Change video';
+
+  @override
+  String get post => 'Post';
+
+  @override
+  String get freshCuts => 'Fresh Cuts';
+
+  @override
+  String get leaderboards => 'Leaderboards';
+
+  @override
+  String get fetchingFreshCuts => 'Fetching fresh cuts…';
+
+  @override
+  String get couldntLoadFeed => 'Couldn\'t load the feed';
+
+  @override
+  String get wallIsEmpty => 'The wall is empty';
+
+  @override
+  String get beFirstToShow => 'Be the first to show off a cut.';
+
+  @override
+  String get shareAPost => 'Share a post';
+
+  @override
+  String get couldntLoadMorePosts => 'Couldn\'t load more posts. Try again';
+
+  @override
+  String get allCaughtUp => 'You\'re all caught up';
+
+  @override
+  String get everyPostSoFar => 'That\'s every post so far.';
+
+  @override
+  String get couldNotUpdateLike => 'Could not update like.';
+
+  @override
+  String get couldNotUpdatePortfolio => 'Could not update portfolio.';
+
+  @override
+  String get deletePostTitle => 'Delete this post?';
+
+  @override
+  String get deletePostBody =>
+      'It will be removed from the feed for everyone. This can\'t be undone.';
+
+  @override
+  String get inPortfolio => 'In portfolio';
+
+  @override
+  String get postOptions => 'Post options';
+
+  @override
+  String get removeFromPortfolio => 'Remove from portfolio';
+
+  @override
+  String get addToPortfolio => 'Add to portfolio';
+
+  @override
+  String get unlike => 'Unlike';
+
+  @override
+  String get like => 'Like';
+
+  @override
+  String get comments => 'Comments';
+
+  @override
+  String likeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count likes',
+      one: '1 like',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String viewComments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'View all $count comments',
+      one: 'View 1 comment',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get timeNow => 'now';
+
+  @override
+  String timeMinutes(int count) {
+    return '${count}m';
+  }
+
+  @override
+  String timeHours(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String timeDays(int count) {
+    return '${count}d';
+  }
+
+  @override
+  String get loadingComments => 'Loading comments…';
+
+  @override
+  String get couldntLoadComments => 'Couldn\'t load comments';
+
+  @override
+  String get noCommentsYet => 'No comments yet';
+
+  @override
+  String get startConversation => 'Start the conversation.';
+
+  @override
+  String get commentsShowHere => 'Comments will show up here.';
+
+  @override
+  String get writeAComment => 'Write a comment';
+
+  @override
+  String get deleteCommentTitle => 'Delete this comment?';
+
+  @override
+  String get cantBeUndone => 'This can\'t be undone.';
+
+  @override
+  String get reply => 'Reply';
+
+  @override
+  String replyingTo(String name) {
+    return 'Replying to $name';
+  }
+
+  @override
+  String get cancelReply => 'Cancel reply';
+
+  @override
+  String get writeAReply => 'Write a reply…';
+
+  @override
+  String get addAComment => 'Add a comment…';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get findPeople => 'Find people';
+
+  @override
+  String get profileNotFound => 'Profile not found.';
+
+  @override
+  String get editProfile => 'Edit profile';
+
+  @override
+  String get postsUpper => 'POSTS';
+
+  @override
+  String get badgeBarber => 'Barber';
+
+  @override
+  String get likes => 'Likes';
+
+  @override
+  String postSemantics(int likes, int comments) {
+    return 'Post, $likes likes, $comments comments';
+  }
+
+  @override
+  String get noPostsYetTitle => 'No posts yet';
+
+  @override
+  String get showOffLatestCut =>
+      'Show off your latest cut. Your posts appear here and in the feed.';
+
+  @override
+  String get shareFirstPost => 'Share your first post';
+
+  @override
+  String get noUsersFound => 'No users found.';
 }

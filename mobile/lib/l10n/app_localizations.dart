@@ -3403,6 +3403,360 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} (you)'**
   String nameYou(String name);
+
+  /// No description provided for @videoTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos must be 1 minute or shorter (this one is {seconds}s).'**
+  String videoTooLong(int seconds);
+
+  /// No description provided for @postingUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting isn\'t available on this account.'**
+  String get postingUnavailable;
+
+  /// No description provided for @whatsGoingOn.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s going on?'**
+  String get whatsGoingOn;
+
+  /// No description provided for @addAPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo'**
+  String get addAPhoto;
+
+  /// No description provided for @addAVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a video'**
+  String get addAVideo;
+
+  /// No description provided for @changeVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Change video'**
+  String get changeVideo;
+
+  /// No description provided for @post.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get post;
+
+  /// No description provided for @freshCuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh Cuts'**
+  String get freshCuts;
+
+  /// No description provided for @leaderboards.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboards'**
+  String get leaderboards;
+
+  /// No description provided for @fetchingFreshCuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching fresh cuts…'**
+  String get fetchingFreshCuts;
+
+  /// No description provided for @couldntLoadFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the feed'**
+  String get couldntLoadFeed;
+
+  /// No description provided for @wallIsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The wall is empty'**
+  String get wallIsEmpty;
+
+  /// No description provided for @beFirstToShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to show off a cut.'**
+  String get beFirstToShow;
+
+  /// No description provided for @shareAPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a post'**
+  String get shareAPost;
+
+  /// No description provided for @couldntLoadMorePosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load more posts. Try again'**
+  String get couldntLoadMorePosts;
+
+  /// No description provided for @allCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up'**
+  String get allCaughtUp;
+
+  /// No description provided for @everyPostSoFar.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s every post so far.'**
+  String get everyPostSoFar;
+
+  /// No description provided for @couldNotUpdateLike.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update like.'**
+  String get couldNotUpdateLike;
+
+  /// No description provided for @couldNotUpdatePortfolio.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update portfolio.'**
+  String get couldNotUpdatePortfolio;
+
+  /// No description provided for @deletePostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this post?'**
+  String get deletePostTitle;
+
+  /// No description provided for @deletePostBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will be removed from the feed for everyone. This can\'t be undone.'**
+  String get deletePostBody;
+
+  /// No description provided for @inPortfolio.
+  ///
+  /// In en, this message translates to:
+  /// **'In portfolio'**
+  String get inPortfolio;
+
+  /// No description provided for @postOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Post options'**
+  String get postOptions;
+
+  /// No description provided for @removeFromPortfolio.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from portfolio'**
+  String get removeFromPortfolio;
+
+  /// No description provided for @addToPortfolio.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to portfolio'**
+  String get addToPortfolio;
+
+  /// No description provided for @unlike.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlike'**
+  String get unlike;
+
+  /// No description provided for @like.
+  ///
+  /// In en, this message translates to:
+  /// **'Like'**
+  String get like;
+
+  /// No description provided for @comments.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get comments;
+
+  /// No description provided for @likeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 like} other{{count} likes}}'**
+  String likeCount(int count);
+
+  /// No description provided for @viewComments.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{View 1 comment} other{View all {count} comments}}'**
+  String viewComments(int count);
+
+  /// No description provided for @timeNow.
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get timeNow;
+
+  /// No description provided for @timeMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m'**
+  String timeMinutes(int count);
+
+  /// No description provided for @timeHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h'**
+  String timeHours(int count);
+
+  /// No description provided for @timeDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d'**
+  String timeDays(int count);
+
+  /// No description provided for @loadingComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading comments…'**
+  String get loadingComments;
+
+  /// No description provided for @couldntLoadComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load comments'**
+  String get couldntLoadComments;
+
+  /// No description provided for @noCommentsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet'**
+  String get noCommentsYet;
+
+  /// No description provided for @startConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the conversation.'**
+  String get startConversation;
+
+  /// No description provided for @commentsShowHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments will show up here.'**
+  String get commentsShowHere;
+
+  /// No description provided for @writeAComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a comment'**
+  String get writeAComment;
+
+  /// No description provided for @deleteCommentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this comment?'**
+  String get deleteCommentTitle;
+
+  /// No description provided for @cantBeUndone.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone.'**
+  String get cantBeUndone;
+
+  /// No description provided for @reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get reply;
+
+  /// No description provided for @replyingTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Replying to {name}'**
+  String replyingTo(String name);
+
+  /// No description provided for @cancelReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel reply'**
+  String get cancelReply;
+
+  /// No description provided for @writeAReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a reply…'**
+  String get writeAReply;
+
+  /// No description provided for @addAComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment…'**
+  String get addAComment;
+
+  /// No description provided for @send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get send;
+
+  /// No description provided for @findPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Find people'**
+  String get findPeople;
+
+  /// No description provided for @profileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile not found.'**
+  String get profileNotFound;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfile;
+
+  /// No description provided for @postsUpper.
+  ///
+  /// In en, this message translates to:
+  /// **'POSTS'**
+  String get postsUpper;
+
+  /// No description provided for @badgeBarber.
+  ///
+  /// In en, this message translates to:
+  /// **'Barber'**
+  String get badgeBarber;
+
+  /// No description provided for @likes.
+  ///
+  /// In en, this message translates to:
+  /// **'Likes'**
+  String get likes;
+
+  /// No description provided for @postSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Post, {likes} likes, {comments} comments'**
+  String postSemantics(int likes, int comments);
+
+  /// No description provided for @noPostsYetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet'**
+  String get noPostsYetTitle;
+
+  /// No description provided for @showOffLatestCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Show off your latest cut. Your posts appear here and in the feed.'**
+  String get showOffLatestCut;
+
+  /// No description provided for @shareFirstPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your first post'**
+  String get shareFirstPost;
+
+  /// No description provided for @noUsersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found.'**
+  String get noUsersFound;
 }
 
 class _AppLocalizationsDelegate

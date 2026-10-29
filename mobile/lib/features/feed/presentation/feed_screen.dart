@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
@@ -19,13 +20,13 @@ class FeedScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fresh Cuts'),
+        title: Text(context.l10n.freshCuts),
         centerTitle: false,
         titleSpacing: 20,
         actions: [
           IconButton(
             icon: const Icon(Icons.emoji_events_outlined),
-            tooltip: 'Leaderboards',
+            tooltip: context.l10n.leaderboards,
             onPressed: () => context.push('/rankings'),
           ),
         ],
@@ -35,17 +36,17 @@ class FeedScreen extends ConsumerWidget {
               heroTag: null,
               onPressed: () => context.push('/posts/new'),
               icon: const Icon(Icons.add_a_photo_outlined),
-              label: const Text('Post'),
+              label: Text(context.l10n.post),
             )
           : null,
       body: feed.when(
-        loading: () => const LoadingView(caption: 'Fetching fresh cuts…'),
+        loading: () => LoadingView(caption: context.l10n.fetchingFreshCuts),
         error: (_, _) => Center(
           child: StatusMessage(
             icon: Icons.wifi_off_rounded,
-            title: 'Couldn\'t load the feed',
-            message: 'Check your connection and try again.',
-            actionLabel: 'Try again',
+            title: context.l10n.couldntLoadFeed,
+            message: context.l10n.checkConnection,
+            actionLabel: context.l10n.tryAgain,
             onAction: () => ref.invalidate(feedProvider),
             isError: true,
           ),
@@ -64,9 +65,9 @@ class FeedScreen extends ConsumerWidget {
                         child: Center(
                           child: StatusMessage(
                             icon: Icons.photo_camera_outlined,
-                            title: 'The wall is empty',
-                            message: 'Be the first to show off a cut.',
-                            actionLabel: canPost ? 'Share a post' : null,
+                            title: context.l10n.wallIsEmpty,
+                            message: context.l10n.beFirstToShow,
+                            actionLabel: canPost ? context.l10n.shareAPost : null,
                             onAction: canPost ? () => context.push('/posts/new') : null,
                           ),
                         ),
@@ -133,7 +134,7 @@ class _FeedFooter extends StatelessWidget {
             ? TextButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Couldn\'t load more posts. Try again'),
+                label: Text(context.l10n.couldntLoadMorePosts),
               )
             : state.hasMore
                 ? const BarberPoleLoader(size: 24)
@@ -141,8 +142,8 @@ class _FeedFooter extends StatelessWidget {
                     children: [
                       Icon(Icons.check_circle_outline, color: theme.colorScheme.primary),
                       const SizedBox(height: 8),
-                      Text('You\'re all caught up', style: theme.textTheme.titleMedium),
-                      Text('That\'s every post so far.', style: theme.textTheme.bodySmall?.copyWith(color: secondary)),
+                      Text(context.l10n.allCaughtUp, style: theme.textTheme.titleMedium),
+                      Text(context.l10n.everyPostSoFar, style: theme.textTheme.bodySmall?.copyWith(color: secondary)),
                     ],
                   ),
       ),

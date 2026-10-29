@@ -2050,4 +2050,214 @@ class AppLocalizationsEs extends AppLocalizations {
   String nameYou(String name) {
     return '$name (tú)';
   }
+
+  @override
+  String videoTooLong(int seconds) {
+    return 'Los vídeos deben durar 1 minuto o menos (este dura $seconds s).';
+  }
+
+  @override
+  String get postingUnavailable =>
+      'Las publicaciones no están disponibles en esta cuenta.';
+
+  @override
+  String get whatsGoingOn => '¿Qué cuentas?';
+
+  @override
+  String get addAPhoto => 'Añadir una foto';
+
+  @override
+  String get addAVideo => 'Añadir un vídeo';
+
+  @override
+  String get changeVideo => 'Cambiar vídeo';
+
+  @override
+  String get post => 'Publicar';
+
+  @override
+  String get freshCuts => 'Últimos cortes';
+
+  @override
+  String get leaderboards => 'Rankings';
+
+  @override
+  String get fetchingFreshCuts => 'Cargando los últimos cortes…';
+
+  @override
+  String get couldntLoadFeed => 'No se ha podido cargar el feed';
+
+  @override
+  String get wallIsEmpty => 'Aún no hay nada';
+
+  @override
+  String get beFirstToShow => 'Sé el primero en enseñar un corte.';
+
+  @override
+  String get shareAPost => 'Publicar algo';
+
+  @override
+  String get couldntLoadMorePosts =>
+      'No se han podido cargar más publicaciones. Reintentar';
+
+  @override
+  String get allCaughtUp => 'Estás al día';
+
+  @override
+  String get everyPostSoFar => 'Esas son todas las publicaciones por ahora.';
+
+  @override
+  String get couldNotUpdateLike => 'No se ha podido actualizar el me gusta.';
+
+  @override
+  String get couldNotUpdatePortfolio =>
+      'No se ha podido actualizar el portfolio.';
+
+  @override
+  String get deletePostTitle => '¿Eliminar esta publicación?';
+
+  @override
+  String get deletePostBody =>
+      'Desaparecerá del feed para todos. No se puede deshacer.';
+
+  @override
+  String get inPortfolio => 'En el portfolio';
+
+  @override
+  String get postOptions => 'Opciones de la publicación';
+
+  @override
+  String get removeFromPortfolio => 'Quitar del portfolio';
+
+  @override
+  String get addToPortfolio => 'Añadir al portfolio';
+
+  @override
+  String get unlike => 'Ya no me gusta';
+
+  @override
+  String get like => 'Me gusta';
+
+  @override
+  String get comments => 'Comentarios';
+
+  @override
+  String likeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count me gusta',
+      one: '1 me gusta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String viewComments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ver los $count comentarios',
+      one: 'Ver 1 comentario',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get timeNow => 'ahora';
+
+  @override
+  String timeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String timeHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String timeDays(int count) {
+    return '$count d';
+  }
+
+  @override
+  String get loadingComments => 'Cargando comentarios…';
+
+  @override
+  String get couldntLoadComments => 'No se han podido cargar los comentarios';
+
+  @override
+  String get noCommentsYet => 'Aún no hay comentarios';
+
+  @override
+  String get startConversation => 'Empieza la conversación.';
+
+  @override
+  String get commentsShowHere => 'Los comentarios aparecerán aquí.';
+
+  @override
+  String get writeAComment => 'Escribir un comentario';
+
+  @override
+  String get deleteCommentTitle => '¿Eliminar este comentario?';
+
+  @override
+  String get cantBeUndone => 'No se puede deshacer.';
+
+  @override
+  String get reply => 'Responder';
+
+  @override
+  String replyingTo(String name) {
+    return 'Respondiendo a $name';
+  }
+
+  @override
+  String get cancelReply => 'Cancelar respuesta';
+
+  @override
+  String get writeAReply => 'Escribe una respuesta…';
+
+  @override
+  String get addAComment => 'Añade un comentario…';
+
+  @override
+  String get send => 'Enviar';
+
+  @override
+  String get findPeople => 'Buscar personas';
+
+  @override
+  String get profileNotFound => 'Perfil no encontrado.';
+
+  @override
+  String get editProfile => 'Editar perfil';
+
+  @override
+  String get postsUpper => 'PUBLICACIONES';
+
+  @override
+  String get badgeBarber => 'Barbero';
+
+  @override
+  String get likes => 'Me gusta';
+
+  @override
+  String postSemantics(int likes, int comments) {
+    return 'Publicación, $likes me gusta, $comments comentarios';
+  }
+
+  @override
+  String get noPostsYetTitle => 'Aún no hay publicaciones';
+
+  @override
+  String get showOffLatestCut =>
+      'Enseña tu último corte. Tus publicaciones aparecen aquí y en el feed.';
+
+  @override
+  String get shareFirstPost => 'Comparte tu primera publicación';
+
+  @override
+  String get noUsersFound => 'No se han encontrado usuarios.';
 }

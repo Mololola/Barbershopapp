@@ -3,9 +3,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/app_network_image.dart';
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/brand.dart';
@@ -62,7 +64,7 @@ class _PostCardState extends ConsumerState<PostCard> {
       if (!success) _post = before;
     });
     if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not update like.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.couldNotUpdateLike)));
     }
   }
 
@@ -75,7 +77,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (!mounted) return;
     if (!success) {
       setState(() => _post = before);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not update portfolio.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.couldNotUpdatePortfolio)));
     }
   }
 
@@ -93,14 +95,14 @@ class _PostCardState extends ConsumerState<PostCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete this post?'),
-        content: const Text('It will be removed from the feed for everyone. This can\'t be undone.'),
+        title: Text(context.l10n.deletePostTitle),
+        content: Text(context.l10n.deletePostBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -155,10 +157,10 @@ class _PostCardState extends ConsumerState<PostCard> {
                               style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                             ),
                           ),
-                          Text(' · ${timeAgo(post.createdAt)}', style: theme.textTheme.bodySmall?.copyWith(color: secondary)),
+                          Text(' · ${timeAgo(context.l10n, post.createdAt)}', style: theme.textTheme.bodySmall?.copyWith(color: secondary)),
                           if (widget.isMine && post.isPinned) ...[
                             const SizedBox(width: 8),
-                            Icon(Icons.push_pin, size: 14, color: scheme.primary, semanticLabel: 'In portfolio'),
+                            Icon(Icons.push_pin, size: 14, color: scheme.primary, semanticLabel: context.l10n.inPortfolio),
                           ],
                         ],
                       ),
@@ -168,7 +170,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                 if (widget.isMine)
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_horiz),
-                    tooltip: 'Post options',
+                    tooltip: context.l10n.postOptions,
                     enabled: !actionState.isLoading,
                     onSelected: (action) => action == 'pin' ? _togglePin() : _confirmDelete(),
                     itemBuilder: (_) => [
@@ -177,7 +179,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(post.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-                          title: Text(post.isPinned ? 'Remove from portfolio' : 'Add to portfolio'),
+                          title: Text(post.isPinned ? context.l10n.removeFromPortfolio : context.l10n.addToPortfolio),
                         ),
                       ),
                       PopupMenuItem(
@@ -185,7 +187,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(Icons.delete_outline, color: scheme.error),
-                          title: Text('Delete', style: TextStyle(color: scheme.error)),
+                          title: Text(context.l10n.delete, style: TextStyle(color: scheme.error)),
                         ),
                       ),
                     ],
@@ -238,12 +240,12 @@ class _PostCardState extends ConsumerState<PostCard> {
                     color: post.likedByMe ? scheme.secondary : null,
                   ),
                 ),
-                tooltip: post.likedByMe ? 'Unlike' : 'Like',
+                tooltip: post.likedByMe ? context.l10n.unlike : context.l10n.like,
                 onPressed: isMinor ? null : _toggleLike,
               ),
               IconButton(
                 icon: const Icon(Icons.mode_comment_outlined),
-                tooltip: 'Comments',
+                tooltip: context.l10n.comments,
                 onPressed: () => context.push('/posts/${post.id}'),
               ),
             ],
@@ -255,7 +257,7 @@ class _PostCardState extends ConsumerState<PostCard> {
               children: [
                 if (post.likeCount > 0)
                   Text(
-                    post.likeCount == 1 ? '1 like' : '${post.likeCount} likes',
+                    context.l10n.likeCount(post.likeCount),
                     style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 if (hasBody && post.mediaUrl != null) ...[
@@ -282,7 +284,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Text(
-                        post.commentCount == 1 ? 'View 1 comment' : 'View all ${post.commentCount} comments',
+                        context.l10n.viewComments(post.commentCount),
                         style: theme.textTheme.bodyMedium?.copyWith(color: secondary),
                       ),
                     ),
@@ -300,18 +302,16 @@ class _PostCardState extends ConsumerState<PostCard> {
 /// uploaded and a post never takes over the screen.
 const _mediaAspectRatio = 1.0;
 
-const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /// Compact age of a post or comment: "now", "5m", "3h", "2d", then the date.
-String timeAgo(DateTime at) {
+String timeAgo(AppLocalizations l10n, DateTime at) {
   final elapsed = DateTime.now().difference(at);
-  if (elapsed.inMinutes < 1) return 'now';
-  if (elapsed.inHours < 1) return '${elapsed.inMinutes}m';
-  if (elapsed.inDays < 1) return '${elapsed.inHours}h';
-  if (elapsed.inDays < 7) return '${elapsed.inDays}d';
+  if (elapsed.inMinutes < 1) return l10n.timeNow;
+  if (elapsed.inHours < 1) return l10n.timeMinutes(elapsed.inMinutes);
+  if (elapsed.inDays < 1) return l10n.timeHours(elapsed.inHours);
+  if (elapsed.inDays < 7) return l10n.timeDays(elapsed.inDays);
   final local = at.toLocal();
-  final year = local.year == DateTime.now().year ? '' : ' ${local.year}';
-  return '${local.day} ${_monthShort[local.month - 1]}$year';
+  final format = local.year == DateTime.now().year ? DateFormat.MMMd(l10n.localeName) : DateFormat.yMMMd(l10n.localeName);
+  return format.format(local);
 }
 
 /// Tap-to-play, not autoplay — a scrolling feed can have many of these

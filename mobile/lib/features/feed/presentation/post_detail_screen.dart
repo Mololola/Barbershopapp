@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
@@ -57,18 +58,18 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final canComment = myProfile?.isMinor != true;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Comments')),
+      appBar: AppBar(title: Text(context.l10n.comments)),
       body: Column(
         children: [
           Expanded(
             child: comments.when(
-              loading: () => const LoadingView(caption: 'Loading comments…'),
+              loading: () => LoadingView(caption: context.l10n.loadingComments),
               error: (_, _) => Center(
                 child: StatusMessage(
                   icon: Icons.wifi_off_rounded,
-                  title: 'Couldn\'t load comments',
-                  message: 'Check your connection and try again.',
-                  actionLabel: 'Try again',
+                  title: context.l10n.couldntLoadComments,
+                  message: context.l10n.checkConnection,
+                  actionLabel: context.l10n.tryAgain,
                   onAction: () => ref.invalidate(commentsProvider(widget.postId)),
                   isError: true,
                 ),
@@ -78,9 +79,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   return Center(
                     child: StatusMessage(
                       icon: Icons.chat_bubble_outline,
-                      title: 'No comments yet',
-                      message: canComment ? 'Start the conversation.' : 'Comments will show up here.',
-                      actionLabel: canComment ? 'Write a comment' : null,
+                      title: context.l10n.noCommentsYet,
+                      message: canComment ? context.l10n.startConversation : context.l10n.commentsShowHere,
+                      actionLabel: canComment ? context.l10n.writeAComment : null,
                       onAction: canComment ? _commentFocus.requestFocus : null,
                     ),
                   );
@@ -195,7 +196,7 @@ class _CommentTileState extends ConsumerState<_CommentTile> {
       if (!success) _comment = before;
     });
     if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not update like.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.couldNotUpdateLike)));
     }
   }
 
@@ -203,14 +204,14 @@ class _CommentTileState extends ConsumerState<_CommentTile> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete this comment?'),
-        content: const Text('This can\'t be undone.'),
+        title: Text(context.l10n.deleteCommentTitle),
+        content: Text(context.l10n.cantBeUndone),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -277,16 +278,16 @@ class _CommentTileState extends ConsumerState<_CommentTile> {
                   padding: const EdgeInsets.fromLTRB(12, 4, 0, 0),
                   child: Row(
                     children: [
-                      Text(timeAgo(comment.createdAt), style: theme.textTheme.labelMedium?.copyWith(color: secondary)),
+                      Text(timeAgo(context.l10n, comment.createdAt), style: theme.textTheme.labelMedium?.copyWith(color: secondary)),
                       if (widget.onReply != null) ...[
                         const SizedBox(width: 16),
-                        InkWell(onTap: widget.onReply, child: Text('Reply', style: actionStyle)),
+                        InkWell(onTap: widget.onReply, child: Text(context.l10n.reply, style: actionStyle)),
                       ],
                       if (isMine) ...[
                         const SizedBox(width: 16),
                         InkWell(
                           onTap: actionState.isLoading ? null : _confirmDelete,
-                          child: Text('Delete', style: actionStyle),
+                          child: Text(context.l10n.delete, style: actionStyle),
                         ),
                       ],
                     ],
@@ -302,7 +303,7 @@ class _CommentTileState extends ConsumerState<_CommentTile> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   iconSize: 18,
-                  tooltip: comment.likedByMe ? 'Unlike' : 'Like',
+                  tooltip: comment.likedByMe ? context.l10n.unlike : context.l10n.like,
                   icon: Icon(comment.likedByMe ? Icons.favorite : Icons.favorite_border),
                   color: comment.likedByMe ? scheme.secondary : secondary,
                   onPressed: _toggleLike,
@@ -360,10 +361,10 @@ class _Composer extends ConsumerWidget {
                   children: [
                     Icon(Icons.reply, size: 16, color: scheme.primary),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Replying to $replyingTo', style: theme.textTheme.labelMedium)),
+                    Expanded(child: Text(context.l10n.replyingTo(replyingTo!), style: theme.textTheme.labelMedium)),
                     IconButton(
                       icon: const Icon(Icons.close, size: 18),
-                      tooltip: 'Cancel reply',
+                      tooltip: context.l10n.cancelReply,
                       onPressed: onCancelReply,
                     ),
                   ],
@@ -383,7 +384,7 @@ class _Composer extends ConsumerWidget {
                       maxLines: 4,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
-                        hintText: replyingTo != null ? 'Write a reply…' : 'Add a comment…',
+                        hintText: replyingTo != null ? context.l10n.writeAReply : context.l10n.addAComment,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
@@ -394,7 +395,7 @@ class _Composer extends ConsumerWidget {
                     builder: (context, _) {
                       final ready = controller.text.trim().isNotEmpty && !sending;
                       return IconButton(
-                        tooltip: 'Send',
+                        tooltip: context.l10n.send,
                         onPressed: ready ? onSend : null,
                         icon: Icon(Icons.send_rounded, color: ready ? scheme.primary : null),
                       );

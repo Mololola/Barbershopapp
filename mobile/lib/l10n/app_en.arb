@@ -1223,5 +1223,123 @@
         "type": "String"
       }
     }
-  }
+  },
+  "videoTooLong": "Videos must be 1 minute or shorter (this one is {seconds}s).",
+  "@videoTooLong": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "postingUnavailable": "Posting isn't available on this account.",
+  "whatsGoingOn": "What's going on?",
+  "addAPhoto": "Add a photo",
+  "addAVideo": "Add a video",
+  "changeVideo": "Change video",
+  "post": "Post",
+  "freshCuts": "Fresh Cuts",
+  "leaderboards": "Leaderboards",
+  "fetchingFreshCuts": "Fetching fresh cuts…",
+  "couldntLoadFeed": "Couldn't load the feed",
+  "wallIsEmpty": "The wall is empty",
+  "beFirstToShow": "Be the first to show off a cut.",
+  "shareAPost": "Share a post",
+  "couldntLoadMorePosts": "Couldn't load more posts. Try again",
+  "allCaughtUp": "You're all caught up",
+  "everyPostSoFar": "That's every post so far.",
+  "couldNotUpdateLike": "Could not update like.",
+  "couldNotUpdatePortfolio": "Could not update portfolio.",
+  "deletePostTitle": "Delete this post?",
+  "deletePostBody": "It will be removed from the feed for everyone. This can't be undone.",
+  "inPortfolio": "In portfolio",
+  "postOptions": "Post options",
+  "removeFromPortfolio": "Remove from portfolio",
+  "addToPortfolio": "Add to portfolio",
+  "unlike": "Unlike",
+  "like": "Like",
+  "comments": "Comments",
+  "likeCount": "{count, plural, =1{1 like} other{{count} likes}}",
+  "@likeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewComments": "{count, plural, =1{View 1 comment} other{View all {count} comments}}",
+  "@viewComments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeNow": "now",
+  "timeMinutes": "{count}m",
+  "@timeMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHours": "{count}h",
+  "@timeHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDays": "{count}d",
+  "@timeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "loadingComments": "Loading comments…",
+  "couldntLoadComments": "Couldn't load comments",
+  "noCommentsYet": "No comments yet",
+  "startConversation": "Start the conversation.",
+  "commentsShowHere": "Comments will show up here.",
+  "writeAComment": "Write a comment",
+  "deleteCommentTitle": "Delete this comment?",
+  "cantBeUndone": "This can't be undone.",
+  "reply": "Reply",
+  "replyingTo": "Replying to {name}",
+  "@replyingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelReply": "Cancel reply",
+  "writeAReply": "Write a reply…",
+  "addAComment": "Add a comment…",
+  "send": "Send",
+  "findPeople": "Find people",
+  "profileNotFound": "Profile not found.",
+  "editProfile": "Edit profile",
+  "postsUpper": "POSTS",
+  "badgeBarber": "Barber",
+  "likes": "Likes",
+  "postSemantics": "Post, {likes} likes, {comments} comments",
+  "@postSemantics": {
+    "placeholders": {
+      "likes": {
+        "type": "int"
+      },
+      "comments": {
+        "type": "int"
+      }
+    }
+  },
+  "noPostsYetTitle": "No posts yet",
+  "showOffLatestCut": "Show off your latest cut. Your posts appear here and in the feed.",
+  "shareFirstPost": "Share your first post",
+  "noUsersFound": "No users found."
 }
