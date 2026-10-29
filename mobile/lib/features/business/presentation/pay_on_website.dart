@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n.dart';
+
 /// Shops pay on the business website only: Apple and Google require their
 /// own in-app payments for a subscription bought in a phone app. The apps
 /// show the plan and can cancel it, but nothing in them starts a payment.
@@ -15,7 +17,7 @@ class PayOnWebsiteNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        'Payments are handled on the Fadra Cut business website.',
+        context.l10n.payOnWebsite,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
       );
 }

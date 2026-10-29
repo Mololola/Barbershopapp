@@ -699,4 +699,207 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noPostsYet => 'Aún no hay publicaciones.';
+
+  @override
+  String get cancelSubTitle => '¿Cancelar tu suscripción?';
+
+  @override
+  String cancelSubBodyTrial(String date) {
+    return 'Tu prueba gratuita sigue hasta el $date y no se te volverá a cobrar. Después, tu barbería quedará oculta para los clientes hasta que te suscribas de nuevo.';
+  }
+
+  @override
+  String get cancelSubBodyPaid =>
+      'Mantienes el acceso completo hasta el final del mes que has pagado y no se te volverá a cobrar. Después, tu barbería quedará oculta para los clientes hasta que te suscribas de nuevo.';
+
+  @override
+  String get cancelSubscription => 'Cancelar suscripción';
+
+  @override
+  String get keepIt => 'Mantenerla';
+
+  @override
+  String get subscriptionCancelled => 'Suscripción cancelada';
+
+  @override
+  String planWithPrice(String price) {
+    return 'tu suscripción ($price / mes)';
+  }
+
+  @override
+  String get planNoPrice => 'tu suscripción';
+
+  @override
+  String get resubTitle => '¿Volver a suscribirte?';
+
+  @override
+  String resubBodyTrial(String date, String plan) {
+    return 'Tu prueba gratuita continúa hasta el $date. Después, se cobrará $plan en la tarjeta que ya añadiste.';
+  }
+
+  @override
+  String resubBodyPaid(String plan) {
+    return 'Seguiremos cobrando $plan en la tarjeta que ya añadiste. Hoy no se cobra nada extra.';
+  }
+
+  @override
+  String get subscribe => 'Suscribirse';
+
+  @override
+  String get notNow => 'Ahora no';
+
+  @override
+  String get subscribedAgain => 'Vuelves a estar suscrito';
+
+  @override
+  String get cancelFinanceTitle => '¿Cancelar Finance Premium?';
+
+  @override
+  String get cancelFinanceBody =>
+      'Mantienes los análisis Premium hasta el final del mes que has pagado y no se te volverá a cobrar. El resumen financiero gratuito se queda.';
+
+  @override
+  String get cancelPremium => 'Cancelar Premium';
+
+  @override
+  String get financeCancelled => 'Finance Premium cancelado';
+
+  @override
+  String get resubFinanceTitle => '¿Volver a suscribirte a Finance Premium?';
+
+  @override
+  String resubFinanceBody(String what) {
+    return 'Seguiremos cobrando $what en la tarjeta que ya añadiste. Hoy no se cobra nada extra.';
+  }
+
+  @override
+  String get itPronoun => 'la suscripción';
+
+  @override
+  String perMonth(String price) {
+    return '$price / mes';
+  }
+
+  @override
+  String get financeSubscribedAgain =>
+      'Vuelves a estar suscrito a Finance Premium';
+
+  @override
+  String get subscribeAgain => 'Volver a suscribirse';
+
+  @override
+  String get freeAccess =>
+      'Tu barbería tiene acceso gratuito: no hay nada que pagar.';
+
+  @override
+  String get shopSubscription => 'Suscripción de la barbería';
+
+  @override
+  String get badgeCancelled => 'Cancelada';
+
+  @override
+  String get badgeFreeTrial => 'Prueba gratuita';
+
+  @override
+  String get badgeActive => 'Activa';
+
+  @override
+  String endsOn(String date) {
+    return 'Termina el $date';
+  }
+
+  @override
+  String get shopCancelledMessage =>
+      'Tu barbería seguirá visible para los clientes hasta entonces y no se te volverá a cobrar. Después quedará oculta hasta que te suscribas de nuevo, y sus datos se conservan 60 días.';
+
+  @override
+  String freeTrialUntil(String date) {
+    return 'Prueba gratuita hasta el $date';
+  }
+
+  @override
+  String get trialMessage =>
+      'No se cobra nada antes. Después se renueva cada mes: cancela cuando quieras antes de que termine la prueba y no pagarás nada.';
+
+  @override
+  String get renewsMonthly => 'Se renueva cada mes';
+
+  @override
+  String get shopActiveMessage =>
+      'Cancela cuando quieras: mantienes el acceso hasta el final del mes que has pagado.';
+
+  @override
+  String shopLoyaltyNote(String symbol) {
+    return 'Cada 2 meses que sigas, cuesta ${symbol}5 menos, nunca por debajo de ${symbol}100 y con un descuento total máximo de ${symbol}100.';
+  }
+
+  @override
+  String get financeCancelledMessage =>
+      'Los análisis Premium siguen activos hasta entonces y no se te volverá a cobrar. Después se queda el resumen financiero gratuito.';
+
+  @override
+  String financeActiveMessage(String symbol) {
+    return 'Cancela cuando quieras: mantienes los análisis Premium hasta el final del mes que has pagado. Cada 2 meses que sigas, cuesta ${symbol}1 menos, hasta ${symbol}5 de descuento.';
+  }
+
+  @override
+  String get paymentMethodInvoices => 'Método de pago y facturas';
+
+  @override
+  String subCancelledBanner(String date) {
+    return 'Suscripción cancelada: mantienes el acceso completo hasta el $date y no se te cobrará.';
+  }
+
+  @override
+  String trialBanner(String date) {
+    return 'Prueba gratuita hasta el $date. Cancela cuando quieras antes y no se te cobrará.';
+  }
+
+  @override
+  String get manage => 'Gestionar';
+
+  @override
+  String visibleForDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Los clientes aún pueden encontrar tu barbería durante $count días.',
+      one: 'Los clientes aún pueden encontrar tu barbería durante 1 día.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shopHidden => 'Tu barbería está oculta para los clientes.';
+
+  @override
+  String deletionNotice(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Quedan $count días para que tu barbería y todos sus datos se eliminen para siempre.',
+      one:
+          'Queda 1 día para que tu barbería y todos sus datos se eliminen para siempre.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get paymentFailed => 'Pago fallido';
+
+  @override
+  String get subscriptionEnded => 'Suscripción finalizada';
+
+  @override
+  String get updatePayment => 'Actualizar pago';
+
+  @override
+  String get hiddenUntilSubscribe =>
+      'Tu barbería está oculta para los clientes hasta que te suscribas.';
+
+  @override
+  String get payOnWebsite =>
+      'Los pagos se gestionan en la web para negocios de Fadra Cut.';
 }

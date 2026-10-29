@@ -6,6 +6,7 @@ import 'package:mobile/features/business/data/billing_api_client.dart';
 import 'package:mobile/features/business/domain/business.dart';
 import 'package:mobile/features/business/domain/business_subscription.dart';
 import 'package:mobile/features/business/presentation/subscription_screen.dart';
+import 'package:mobile/l10n/app_localizations.dart';
 
 class _FakeBillingApi implements BillingApiClient {
   final calls = <String>[];
@@ -22,6 +23,8 @@ class _FakeBillingApi implements BillingApiClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+final en = lookupAppLocalizations(const Locale('en'));
 
 void main() {
   final trialEnd = DateTime.now().toUtc().add(const Duration(days: 10));
@@ -58,7 +61,7 @@ void main() {
     await tester.pumpWidget(buildTestable(() => current, api));
     await tester.pumpAndSettle();
 
-    final date = formatSubscriptionDate(trialEnd);
+    final date = formatSubscriptionDate(en, trialEnd);
     expect(find.text('£150 / month'), findsOneWidget);
     expect(find.text('Free trial'), findsOneWidget);
     expect(find.text('Free trial until $date'), findsOneWidget);
@@ -132,7 +135,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.calls, ['cancel premium']);
-    expect(find.text('Ends ${formatSubscriptionDate(premiumEnd)}'), findsOneWidget);
+    expect(find.text('Ends ${formatSubscriptionDate(en, premiumEnd)}'), findsOneWidget);
     // The shop's own subscription is untouched.
     expect(find.text('Free trial'), findsOneWidget);
   });

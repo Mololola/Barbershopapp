@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/l10n.dart';
 import '../application/business_controller.dart';
 import '../domain/business_subscription.dart';
 import 'pay_on_website.dart';
@@ -23,18 +24,12 @@ class SubscriptionBanner extends ConsumerWidget {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.errorWithDetail('$error'))));
       }
     }
   }
 
-  static String _deletionNotice(DateTime deletionAt, DateTime now) =>
-      '${_days(deletionAt.difference(now))} left before your shop and all its data are permanently deleted.';
-
-  static String _days(Duration duration) {
-    final days = duration.isNegative ? 0 : (duration.inHours / 24).ceil();
-    return '$days day${days == 1 ? '' : 's'}';
-  }
+  static int _days(Duration duration) => duration.isNegative ? 0 : (duration.inHours / 24).ceil();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,13 +50,9 @@ class SubscriptionBanner extends ConsumerWidget {
         if (sub != null && sub.status == SubscriptionStatus.active) {
           final String message;
           if (sub.cancelAt != null) {
-            message =
-                'Subscription cancelled — you keep full access until '
-                '${formatSubscriptionDate(sub.cancelAt!)} and won\'t be charged.';
+            message = context.l10n.subCancelledBanner(formatSubscriptionDate(context.l10n, sub.cancelAt!));
           } else if (sub.isInTrial) {
-            message =
-                'Free trial until ${formatSubscriptionDate(sub.trialEndsAt!)}. '
-                'Cancel any time before then and you won\'t be charged.';
+            message = context.l10n.trialBanner(formatSubscriptionDate(context.l10n, sub.trialEndsAt!));
           } else {
             return const SizedBox.shrink();
           }
@@ -72,7 +63,7 @@ class SubscriptionBanner extends ConsumerWidget {
               title: Text(message),
               trailing: TextButton(
                 onPressed: () => context.push('/business/subscription'),
-                child: const Text('Manage'),
+                child: Text(context.l10n.manage),
               ),
             ),
           );
@@ -85,8 +76,8 @@ class SubscriptionBanner extends ConsumerWidget {
             (sub.status == SubscriptionStatus.suspended || sub.status == SubscriptionStatus.canceled)) {
           final paymentFailed = sub.status == SubscriptionStatus.suspended;
           final visibility = now.isBefore(hiddenAt)
-              ? 'Customers can still find your shop for ${_days(hiddenAt.difference(now))}.'
-              : 'Your shop is hidden from customers.';
+              ? context.l10n.visibleForDays(_days(hiddenAt.difference(now)))
+              : context.l10n.shopHidden;
           return Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 16),
@@ -99,11 +90,11 @@ class SubscriptionBanner extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  paymentFailed ? 'Payment failed' : 'Subscription ended',
+                  paymentFailed ? context.l10n.paymentFailed : context.l10n.subscriptionEnded,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text('$visibility ${_deletionNotice(sub.suspendedAt!.add(BusinessSubscription.dataRetention), now)}'),
+                Text('$visibility ${context.l10n.deletionNotice(_days(sub.suspendedAt!.add(BusinessSubscription.dataRetention).difference(now)))}'),
                 const SizedBox(height: 12),
                 // A failed payment is fixed in the billing portal; a canceled
                 // subscription is gone in Stripe and needs a new checkout.
@@ -115,7 +106,7 @@ class SubscriptionBanner extends ConsumerWidget {
                           ? () => ref.read(billingActionControllerProvider.notifier).openPortal()
                           : () => ref.read(billingActionControllerProvider.notifier).startCheckout(),
                     ),
-                    child: Text(paymentFailed ? 'Update payment' : 'Subscribe'),
+                    child: Text(paymentFailed ? context.l10n.updatePayment : context.l10n.subscribe),
                   )
                 else
                   const PayOnWebsiteNote(),
@@ -136,17 +127,17 @@ class SubscriptionBanner extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Your shop is hidden from customers until you subscribe.'),
+              Text(context.l10n.hiddenUntilSubscribe),
               if (createdAt != null) ...[
                 const SizedBox(height: 4),
-                Text(_deletionNotice(createdAt.add(BusinessSubscription.dataRetention), now)),
+                Text(context.l10n.deletionNotice(_days(createdAt.add(BusinessSubscription.dataRetention).difference(now)))),
               ],
               const SizedBox(height: 12),
               if (canPayInThisApp)
                 FilledButton(
                   onPressed: () =>
                       _launch(context, () => ref.read(billingActionControllerProvider.notifier).startCheckout()),
-                  child: const Text('Subscribe'),
+                  child: Text(context.l10n.subscribe),
                 )
               else
                 const PayOnWebsiteNote(),

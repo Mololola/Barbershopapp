@@ -690,4 +690,206 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noPostsYet => 'No posts yet.';
+
+  @override
+  String get cancelSubTitle => 'Cancel your subscription?';
+
+  @override
+  String cancelSubBodyTrial(String date) {
+    return 'Your free trial still runs until $date and won\'t be charged again. After that your shop is hidden from customers until you subscribe again.';
+  }
+
+  @override
+  String get cancelSubBodyPaid =>
+      'You keep full access until the end of the month you\'ve paid for and won\'t be charged again. After that your shop is hidden from customers until you subscribe again.';
+
+  @override
+  String get cancelSubscription => 'Cancel subscription';
+
+  @override
+  String get keepIt => 'Keep it';
+
+  @override
+  String get subscriptionCancelled => 'Subscription cancelled';
+
+  @override
+  String planWithPrice(String price) {
+    return 'your subscription ($price / month)';
+  }
+
+  @override
+  String get planNoPrice => 'your subscription';
+
+  @override
+  String get resubTitle => 'Subscribe again?';
+
+  @override
+  String resubBodyTrial(String date, String plan) {
+    return 'Your free trial continues until $date. After that, $plan is charged to the card you already added.';
+  }
+
+  @override
+  String resubBodyPaid(String plan) {
+    return 'We\'ll keep charging $plan to the card you already added. Nothing extra is charged today.';
+  }
+
+  @override
+  String get subscribe => 'Subscribe';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get subscribedAgain => 'You\'re subscribed again';
+
+  @override
+  String get cancelFinanceTitle => 'Cancel Finance Premium?';
+
+  @override
+  String get cancelFinanceBody =>
+      'You keep Premium insights until the end of the month you\'ve paid for and won\'t be charged again. The free finance summary stays.';
+
+  @override
+  String get cancelPremium => 'Cancel Premium';
+
+  @override
+  String get financeCancelled => 'Finance Premium cancelled';
+
+  @override
+  String get resubFinanceTitle => 'Subscribe to Finance Premium again?';
+
+  @override
+  String resubFinanceBody(String what) {
+    return 'We\'ll keep charging $what to the card you already added. Nothing extra is charged today.';
+  }
+
+  @override
+  String get itPronoun => 'it';
+
+  @override
+  String perMonth(String price) {
+    return '$price / month';
+  }
+
+  @override
+  String get financeSubscribedAgain =>
+      'You\'re subscribed to Finance Premium again';
+
+  @override
+  String get subscribeAgain => 'Subscribe again';
+
+  @override
+  String get freeAccess =>
+      'Your shop has free access — there\'s nothing to pay.';
+
+  @override
+  String get shopSubscription => 'Shop subscription';
+
+  @override
+  String get badgeCancelled => 'Cancelled';
+
+  @override
+  String get badgeFreeTrial => 'Free trial';
+
+  @override
+  String get badgeActive => 'Active';
+
+  @override
+  String endsOn(String date) {
+    return 'Ends $date';
+  }
+
+  @override
+  String get shopCancelledMessage =>
+      'Your shop stays visible to customers until then and you won\'t be charged again. After that it\'s hidden until you subscribe again, and its data is kept for 60 days.';
+
+  @override
+  String freeTrialUntil(String date) {
+    return 'Free trial until $date';
+  }
+
+  @override
+  String get trialMessage =>
+      'Nothing is charged before then. After that it renews every month — cancel any time before the trial ends and you pay nothing.';
+
+  @override
+  String get renewsMonthly => 'Renews every month';
+
+  @override
+  String get shopActiveMessage =>
+      'Cancel any time — you keep access until the end of the month you\'ve paid for.';
+
+  @override
+  String shopLoyaltyNote(String symbol) {
+    return 'Every 2 months you stay, it costs ${symbol}5 less, never below ${symbol}100 and at most ${symbol}100 off in all.';
+  }
+
+  @override
+  String get financeCancelledMessage =>
+      'Premium insights stay on until then and you won\'t be charged again. The free finance summary stays after that.';
+
+  @override
+  String financeActiveMessage(String symbol) {
+    return 'Cancel any time — you keep Premium insights until the end of the month you\'ve paid for. Every 2 months you stay, it costs ${symbol}1 less, up to ${symbol}5 off.';
+  }
+
+  @override
+  String get paymentMethodInvoices => 'Payment method & invoices';
+
+  @override
+  String subCancelledBanner(String date) {
+    return 'Subscription cancelled — you keep full access until $date and won\'t be charged.';
+  }
+
+  @override
+  String trialBanner(String date) {
+    return 'Free trial until $date. Cancel any time before then and you won\'t be charged.';
+  }
+
+  @override
+  String get manage => 'Manage';
+
+  @override
+  String visibleForDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Customers can still find your shop for $count days.',
+      one: 'Customers can still find your shop for 1 day.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shopHidden => 'Your shop is hidden from customers.';
+
+  @override
+  String deletionNotice(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count days left before your shop and all its data are permanently deleted.',
+      one:
+          '1 day left before your shop and all its data are permanently deleted.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get paymentFailed => 'Payment failed';
+
+  @override
+  String get subscriptionEnded => 'Subscription ended';
+
+  @override
+  String get updatePayment => 'Update payment';
+
+  @override
+  String get hiddenUntilSubscribe =>
+      'Your shop is hidden from customers until you subscribe.';
+
+  @override
+  String get payOnWebsite =>
+      'Payments are handled on the Fadra Cut business website.';
 }

@@ -314,5 +314,156 @@
   "noServicesYet": "No services listed yet.",
   "noBarbersYet": "No barbers listed yet.",
   "noReviewsYet": "No reviews yet.",
-  "noPostsYet": "No posts yet."
+  "noPostsYet": "No posts yet.",
+  "cancelSubTitle": "Cancel your subscription?",
+  "cancelSubBodyTrial": "Your free trial still runs until {date} and won't be charged again. After that your shop is hidden from customers until you subscribe again.",
+  "@cancelSubBodyTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelSubBodyPaid": "You keep full access until the end of the month you've paid for and won't be charged again. After that your shop is hidden from customers until you subscribe again.",
+  "cancelSubscription": "Cancel subscription",
+  "keepIt": "Keep it",
+  "subscriptionCancelled": "Subscription cancelled",
+  "planWithPrice": "your subscription ({price} / month)",
+  "@planWithPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "planNoPrice": "your subscription",
+  "resubTitle": "Subscribe again?",
+  "resubBodyTrial": "Your free trial continues until {date}. After that, {plan} is charged to the card you already added.",
+  "@resubBodyTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "resubBodyPaid": "We'll keep charging {plan} to the card you already added. Nothing extra is charged today.",
+  "@resubBodyPaid": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "subscribe": "Subscribe",
+  "notNow": "Not now",
+  "subscribedAgain": "You're subscribed again",
+  "cancelFinanceTitle": "Cancel Finance Premium?",
+  "cancelFinanceBody": "You keep Premium insights until the end of the month you've paid for and won't be charged again. The free finance summary stays.",
+  "cancelPremium": "Cancel Premium",
+  "financeCancelled": "Finance Premium cancelled",
+  "resubFinanceTitle": "Subscribe to Finance Premium again?",
+  "resubFinanceBody": "We'll keep charging {what} to the card you already added. Nothing extra is charged today.",
+  "@resubFinanceBody": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "itPronoun": "it",
+  "perMonth": "{price} / month",
+  "@perMonth": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "financeSubscribedAgain": "You're subscribed to Finance Premium again",
+  "subscribeAgain": "Subscribe again",
+  "freeAccess": "Your shop has free access — there's nothing to pay.",
+  "shopSubscription": "Shop subscription",
+  "badgeCancelled": "Cancelled",
+  "badgeFreeTrial": "Free trial",
+  "badgeActive": "Active",
+  "endsOn": "Ends {date}",
+  "@endsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shopCancelledMessage": "Your shop stays visible to customers until then and you won't be charged again. After that it's hidden until you subscribe again, and its data is kept for 60 days.",
+  "freeTrialUntil": "Free trial until {date}",
+  "@freeTrialUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "trialMessage": "Nothing is charged before then. After that it renews every month — cancel any time before the trial ends and you pay nothing.",
+  "renewsMonthly": "Renews every month",
+  "shopActiveMessage": "Cancel any time — you keep access until the end of the month you've paid for.",
+  "shopLoyaltyNote": "Every 2 months you stay, it costs {symbol}5 less, never below {symbol}100 and at most {symbol}100 off in all.",
+  "@shopLoyaltyNote": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "financeCancelledMessage": "Premium insights stay on until then and you won't be charged again. The free finance summary stays after that.",
+  "financeActiveMessage": "Cancel any time — you keep Premium insights until the end of the month you've paid for. Every 2 months you stay, it costs {symbol}1 less, up to {symbol}5 off.",
+  "@financeActiveMessage": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentMethodInvoices": "Payment method & invoices",
+  "subCancelledBanner": "Subscription cancelled — you keep full access until {date} and won't be charged.",
+  "@subCancelledBanner": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "trialBanner": "Free trial until {date}. Cancel any time before then and you won't be charged.",
+  "@trialBanner": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "manage": "Manage",
+  "visibleForDays": "{count, plural, =1{Customers can still find your shop for 1 day.} other{Customers can still find your shop for {count} days.}}",
+  "@visibleForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopHidden": "Your shop is hidden from customers.",
+  "deletionNotice": "{count, plural, =1{1 day left before your shop and all its data are permanently deleted.} other{{count} days left before your shop and all its data are permanently deleted.}}",
+  "@deletionNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "paymentFailed": "Payment failed",
+  "subscriptionEnded": "Subscription ended",
+  "updatePayment": "Update payment",
+  "hiddenUntilSubscribe": "Your shop is hidden from customers until you subscribe.",
+  "payOnWebsite": "Payments are handled on the Fadra Cut business website."
 }

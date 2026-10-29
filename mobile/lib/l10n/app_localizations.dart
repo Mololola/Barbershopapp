@@ -1345,6 +1345,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No posts yet.'**
   String get noPostsYet;
+
+  /// No description provided for @cancelSubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel your subscription?'**
+  String get cancelSubTitle;
+
+  /// No description provided for @cancelSubBodyTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Your free trial still runs until {date} and won\'t be charged again. After that your shop is hidden from customers until you subscribe again.'**
+  String cancelSubBodyTrial(String date);
+
+  /// No description provided for @cancelSubBodyPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'You keep full access until the end of the month you\'ve paid for and won\'t be charged again. After that your shop is hidden from customers until you subscribe again.'**
+  String get cancelSubBodyPaid;
+
+  /// No description provided for @cancelSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel subscription'**
+  String get cancelSubscription;
+
+  /// No description provided for @keepIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it'**
+  String get keepIt;
+
+  /// No description provided for @subscriptionCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription cancelled'**
+  String get subscriptionCancelled;
+
+  /// No description provided for @planWithPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'your subscription ({price} / month)'**
+  String planWithPrice(String price);
+
+  /// No description provided for @planNoPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'your subscription'**
+  String get planNoPrice;
+
+  /// No description provided for @resubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe again?'**
+  String get resubTitle;
+
+  /// No description provided for @resubBodyTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Your free trial continues until {date}. After that, {plan} is charged to the card you already added.'**
+  String resubBodyTrial(String date, String plan);
+
+  /// No description provided for @resubBodyPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll keep charging {plan} to the card you already added. Nothing extra is charged today.'**
+  String resubBodyPaid(String plan);
+
+  /// No description provided for @subscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe'**
+  String get subscribe;
+
+  /// No description provided for @notNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// No description provided for @subscribedAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re subscribed again'**
+  String get subscribedAgain;
+
+  /// No description provided for @cancelFinanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Finance Premium?'**
+  String get cancelFinanceTitle;
+
+  /// No description provided for @cancelFinanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You keep Premium insights until the end of the month you\'ve paid for and won\'t be charged again. The free finance summary stays.'**
+  String get cancelFinanceBody;
+
+  /// No description provided for @cancelPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Premium'**
+  String get cancelPremium;
+
+  /// No description provided for @financeCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance Premium cancelled'**
+  String get financeCancelled;
+
+  /// No description provided for @resubFinanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe to Finance Premium again?'**
+  String get resubFinanceTitle;
+
+  /// No description provided for @resubFinanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll keep charging {what} to the card you already added. Nothing extra is charged today.'**
+  String resubFinanceBody(String what);
+
+  /// No description provided for @itPronoun.
+  ///
+  /// In en, this message translates to:
+  /// **'it'**
+  String get itPronoun;
+
+  /// No description provided for @perMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} / month'**
+  String perMonth(String price);
+
+  /// No description provided for @financeSubscribedAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re subscribed to Finance Premium again'**
+  String get financeSubscribedAgain;
+
+  /// No description provided for @subscribeAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe again'**
+  String get subscribeAgain;
+
+  /// No description provided for @freeAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shop has free access — there\'s nothing to pay.'**
+  String get freeAccess;
+
+  /// No description provided for @shopSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop subscription'**
+  String get shopSubscription;
+
+  /// No description provided for @badgeCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get badgeCancelled;
+
+  /// No description provided for @badgeFreeTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Free trial'**
+  String get badgeFreeTrial;
+
+  /// No description provided for @badgeActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get badgeActive;
+
+  /// No description provided for @endsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {date}'**
+  String endsOn(String date);
+
+  /// No description provided for @shopCancelledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shop stays visible to customers until then and you won\'t be charged again. After that it\'s hidden until you subscribe again, and its data is kept for 60 days.'**
+  String get shopCancelledMessage;
+
+  /// No description provided for @freeTrialUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Free trial until {date}'**
+  String freeTrialUntil(String date);
+
+  /// No description provided for @trialMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is charged before then. After that it renews every month — cancel any time before the trial ends and you pay nothing.'**
+  String get trialMessage;
+
+  /// No description provided for @renewsMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Renews every month'**
+  String get renewsMonthly;
+
+  /// No description provided for @shopActiveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel any time — you keep access until the end of the month you\'ve paid for.'**
+  String get shopActiveMessage;
+
+  /// No description provided for @shopLoyaltyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Every 2 months you stay, it costs {symbol}5 less, never below {symbol}100 and at most {symbol}100 off in all.'**
+  String shopLoyaltyNote(String symbol);
+
+  /// No description provided for @financeCancelledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium insights stay on until then and you won\'t be charged again. The free finance summary stays after that.'**
+  String get financeCancelledMessage;
+
+  /// No description provided for @financeActiveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel any time — you keep Premium insights until the end of the month you\'ve paid for. Every 2 months you stay, it costs {symbol}1 less, up to {symbol}5 off.'**
+  String financeActiveMessage(String symbol);
+
+  /// No description provided for @paymentMethodInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method & invoices'**
+  String get paymentMethodInvoices;
+
+  /// No description provided for @subCancelledBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription cancelled — you keep full access until {date} and won\'t be charged.'**
+  String subCancelledBanner(String date);
+
+  /// No description provided for @trialBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Free trial until {date}. Cancel any time before then and you won\'t be charged.'**
+  String trialBanner(String date);
+
+  /// No description provided for @manage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get manage;
+
+  /// No description provided for @visibleForDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Customers can still find your shop for 1 day.} other{Customers can still find your shop for {count} days.}}'**
+  String visibleForDays(int count);
+
+  /// No description provided for @shopHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shop is hidden from customers.'**
+  String get shopHidden;
+
+  /// No description provided for @deletionNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day left before your shop and all its data are permanently deleted.} other{{count} days left before your shop and all its data are permanently deleted.}}'**
+  String deletionNotice(int count);
+
+  /// No description provided for @paymentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment failed'**
+  String get paymentFailed;
+
+  /// No description provided for @subscriptionEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription ended'**
+  String get subscriptionEnded;
+
+  /// No description provided for @updatePayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Update payment'**
+  String get updatePayment;
+
+  /// No description provided for @hiddenUntilSubscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shop is hidden from customers until you subscribe.'**
+  String get hiddenUntilSubscribe;
+
+  /// No description provided for @payOnWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments are handled on the Fadra Cut business website.'**
+  String get payOnWebsite;
 }
 
 class _AppLocalizationsDelegate

@@ -7,6 +7,9 @@ import 'package:mobile/features/business/domain/business_subscription.dart';
 import 'package:mobile/features/business/presentation/pay_on_website.dart';
 import 'package:mobile/features/business/presentation/subscription_banner.dart';
 import 'package:mobile/features/business/presentation/subscription_screen.dart';
+import 'package:mobile/l10n/app_localizations.dart';
+
+final en = lookupAppLocalizations(const Locale('en'));
 
 void main() {
   // These tests cover the business website, where shops pay.
@@ -58,7 +61,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Free trial until ${formatSubscriptionDate(trialEnd)}. '
+      find.text('Free trial until ${formatSubscriptionDate(en, trialEnd)}. '
           'Cancel any time before then and you won\'t be charged.'),
       findsOneWidget,
     );
