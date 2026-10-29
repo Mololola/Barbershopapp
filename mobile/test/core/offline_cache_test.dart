@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/offline_cache.dart';
@@ -16,60 +16,70 @@ void main() {
   }
 
   Future<List<Map<String, dynamic>>> offline() => Future.error(http.ClientException('no connection'));
+  Future<List<Map<String, dynamic>>> rowsOf(String id) async => [
+        {'id': id},
+      ];
 
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await OfflineCache.clear();
+  });
 
-  test('serves the last saved copy when offline, and reports being offline', () async {
+  test('a screen opens with its saved copy, refreshed in the background; later loads go to the server', () async {
     final container = containerFor('u1');
-    final cache = container.read(offlineCacheProvider);
+    await container.read(offlineCacheProvider).rows('bookings', () => rowsOf('b1'));
 
-    final fresh = await cache.rows('bookings', () async => [
-          {'id': 'b1'},
-        ]);
-    expect(fresh.single['id'], 'b1');
-    expect(container.read(connectionProvider).online, isTrue);
+    // Opening it again: the saved copy at once, while the server has news.
+    final shown = await container.read(offlineCacheProvider).rows('bookings', () => rowsOf('b2'));
+    expect(shown.single['id'], 'b1');
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    expect(container.read(savedDataChangedProvider), 1);
 
-    final saved = await cache.rows('bookings', offline);
-    expect(saved.single['id'], 'b1');
+    // After that, e.g. once an action changed something: always the server.
+    final later = await container.read(offlineCacheProvider).rows('bookings', () => rowsOf('b3'));
+    expect(later.single['id'], 'b3');
+  });
+
+  test('offline, the saved copy is shown and the app notices it is offline', () async {
+    final container = containerFor('u1');
+    await container.read(offlineCacheProvider).rows('bookings', () => rowsOf('b1'));
+
+    expect((await container.read(offlineCacheProvider).rows('bookings', offline)).single['id'], 'b1');
+    await pumpEventQueue();
     expect(container.read(connectionProvider).online, isFalse);
+
+    var fetched = false;
+    final again = await container.read(offlineCacheProvider).rows('bookings', () {
+      fetched = true;
+      return rowsOf('b2');
+    });
+    expect(fetched, isFalse);
+    expect(again.single['id'], 'b1');
   });
 
   test("with nothing saved, or another account's data, the error comes through", () async {
-    await containerFor('u1').read(offlineCacheProvider).rows('bookings', () async => [
-          {'id': 'b1'},
-        ]);
+    await containerFor('u1').read(offlineCacheProvider).rows('bookings', () => rowsOf('b1'));
 
     final other = containerFor('u2').read(offlineCacheProvider);
     await expectLater(other.rows('bookings', offline), throwsA(isA<http.ClientException>()));
   });
 
-  test('a request with no answer gives up after the time limit; once offline, the saved copy is instant', () {
+  test('a request with no answer gives up after the time limit', () {
     fakeAsync((async) {
       final container = containerFor('u1');
-      List<Map<String, dynamic>>? shown;
-      container.read(offlineCacheProvider).rows('bookings', () async => [
-            {'id': 'b1'},
-          ]);
-      async.flushMicrotasks();
-
-      container.read(offlineCacheProvider).rows('bookings', () => Completer<List<Map<String, dynamic>>>().future).then(
-            (rows) => shown = rows,
-          );
+      Object? failure;
+      container
+          .read(offlineCacheProvider)
+          .rows('bookings', () => Completer<List<Map<String, dynamic>>>().future)
+          .catchError((Object error) {
+        failure = error;
+        return <Map<String, dynamic>>[];
+      });
       async.elapse(OfflineCache.timeout - const Duration(seconds: 1));
-      expect(shown, isNull);
+      expect(failure, isNull);
       async.elapse(const Duration(seconds: 1));
-      expect(shown!.single['id'], 'b1');
+      expect(failure, isA<TimeoutException>());
       expect(container.read(connectionProvider).online, isFalse);
-
-      var fetched = false;
-      shown = null;
-      container.read(offlineCacheProvider).rows('bookings', () async {
-        fetched = true;
-        return [];
-      }).then((rows) => shown = rows);
-      async.flushMicrotasks();
-      expect(fetched, isFalse);
-      expect(shown!.single['id'], 'b1');
       container.dispose();
     });
   });
@@ -85,11 +95,9 @@ void main() {
 
   test('coming back online counts a reconnect; signing out wipes saved data', () async {
     final container = containerFor('u1');
-    final cache = container.read(offlineCacheProvider);
-    await cache.rows('bookings', () async => [
-          {'id': 'b1'},
-        ]);
-    await cache.rows('bookings', offline);
+    await container.read(offlineCacheProvider).rows('bookings', () => rowsOf('b1'));
+    await container.read(offlineCacheProvider).rows('bookings', offline);
+    await pumpEventQueue();
 
     // What the periodic connection check does once it gets an answer.
     container.read(connectionProvider.notifier).reportOnline();

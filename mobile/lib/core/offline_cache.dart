@@ -67,8 +67,33 @@ final connectionProvider = NotifierProvider<ConnectionNotifier, ConnectionStatus
 
 final reconnectsProvider = Provider<int>((ref) => ref.watch(connectionProvider.select((c) => c.reconnects)));
 
-/// Keeps the last good copy of what a screen loaded, per signed-in user, and
-/// serves it when there's no connection.
+/// Counts changes found by background refreshes, a short moment after the
+/// last one so a burst of them on opening the app reloads screens once.
+class SavedDataChangedNotifier extends Notifier<int> {
+  Timer? _settle;
+
+  @override
+  int build() {
+    ref.onDispose(() => _settle?.cancel());
+    return 0;
+  }
+
+  void changed() {
+    _settle?.cancel();
+    _settle = Timer(const Duration(milliseconds: 300), () => state++);
+  }
+}
+
+final savedDataChangedProvider = NotifierProvider<SavedDataChangedNotifier, int>(SavedDataChangedNotifier.new);
+
+/// Saved copies already shown since the app started. Each is shown first
+/// only once; later loads (pull to refresh, after an action) go to the
+/// server, so they never show out-of-date data.
+final _shownFirst = <String>{};
+
+/// Keeps the last good copy of what a screen loaded, per signed-in user. The
+/// first time a screen opens it shows that copy at once and refreshes it in
+/// the background; with no connection it keeps showing it.
 class OfflineCache {
   OfflineCache(this._ref);
 
@@ -89,23 +114,45 @@ class OfflineCache {
 
   Future<Object?> _read(String key, Future<Object?> Function() fetch) async {
     final storeKey = _storeKey(key);
-    // Already known to be offline: show the saved copy straight away. The
-    // connection check brings the screen back to fresh data when it returns.
-    if (!_ref.read(connectionProvider).online && storeKey != null) {
-      final saved = (await SharedPreferences.getInstance()).getString(storeKey);
-      if (saved != null) return jsonDecode(saved);
+    // Read now: the cache can be rebuilt while a request is in flight.
+    final connection = _ref.read(connectionProvider.notifier);
+    final online = _ref.read(connectionProvider).online;
+    final saved = storeKey == null ? null : (await SharedPreferences.getInstance()).getString(storeKey);
+    if (saved != null && !online) return jsonDecode(saved);
+    if (saved != null && _shownFirst.add(storeKey!)) {
+      unawaited(_refreshInBackground(storeKey, fetch, saved, connection));
+      return jsonDecode(saved);
     }
     try {
       final fresh = await fetch().timeout(timeout);
-      _ref.read(connectionProvider.notifier).reportOnline();
+      connection.reportOnline();
       if (storeKey != null) await (await SharedPreferences.getInstance()).setString(storeKey, jsonEncode(fresh));
       return fresh;
     } catch (error) {
       if (!isOfflineError(error)) rethrow;
-      _ref.read(connectionProvider.notifier).reportOffline();
-      final saved = storeKey == null ? null : (await SharedPreferences.getInstance()).getString(storeKey);
+      connection.reportOffline();
       if (saved == null) rethrow;
       return jsonDecode(saved);
+    }
+  }
+
+  /// Fetches what was just shown from the saved copy; if it changed, saves it
+  /// and has the screens reload.
+  Future<void> _refreshInBackground(
+    String storeKey,
+    Future<Object?> Function() fetch,
+    String saved,
+    ConnectionNotifier connection,
+  ) async {
+    final changed = _ref.read(savedDataChangedProvider.notifier);
+    try {
+      final fresh = jsonEncode(await fetch().timeout(timeout));
+      connection.reportOnline();
+      if (fresh == saved) return;
+      await (await SharedPreferences.getInstance()).setString(storeKey, fresh);
+      changed.changed();
+    } catch (error) {
+      if (isOfflineError(error)) connection.reportOffline();
     }
   }
 
@@ -132,6 +179,7 @@ class OfflineCache {
 
   /// Wipes everything saved for offline use, for every account.
   static Future<void> clear() async {
+    _shownFirst.clear();
     final prefs = await SharedPreferences.getInstance();
     for (final key in prefs.getKeys().where((key) => key.startsWith(_prefix)).toList()) {
       await prefs.remove(key);
@@ -139,9 +187,11 @@ class OfflineCache {
   }
 }
 
-/// Rebuilt each time the connection comes back, and with it every repository
-/// and the screens reading through them, which then load fresh data.
+/// Rebuilt when the connection comes back or a background refresh found
+/// changes, and with it every repository and the screens reading through
+/// them, which then load fresh data.
 final offlineCacheProvider = Provider<OfflineCache>((ref) {
   ref.watch(reconnectsProvider);
+  ref.watch(savedDataChangedProvider);
   return OfflineCache(ref);
 });
