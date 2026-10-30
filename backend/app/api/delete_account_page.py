@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
+from app.core.config import settings
 from app.core.i18n import is_spanish
 from app.core.rate_limit import limiter
 
@@ -99,7 +100,7 @@ _PAGE = """<!doctype html>
     <p>{immediate}</p>
 
     <h2>{without_app}</h2>
-    <p>{email_before} <a href="mailto:luis.guillot.lozano@gmail.com?subject={email_subject}">luis.guillot.lozano@gmail.com</a>
+    <p>{email_before} <a href="mailto:{support_email}?subject={email_subject}">{support_email}</a>
        {email_after}</p>
 
     <h2>{deleted}</h2>
@@ -121,7 +122,7 @@ _PAGE = """<!doctype html>
 </html>
 """
 
-_PAGES = {lang: _PAGE.format(lang=lang, **text) for lang, text in _TEXT.items()}
+_PAGES = {lang: _PAGE.format(lang=lang, support_email=settings.support_email, **text) for lang, text in _TEXT.items()}
 
 
 @router.get("/delete-account", response_class=HTMLResponse)
