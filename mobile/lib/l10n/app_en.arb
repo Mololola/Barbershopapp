@@ -1429,7 +1429,6 @@
       }
     }
   },
-  "keepBooking": "Keep it",
   "yesCancel": "Yes, cancel",
   "bookingCancelledToast": "Booking cancelled.",
   "aboutGroup": "About",
@@ -1481,5 +1480,15 @@
       }
     }
   },
-  "bioOptional": "Bio (optional)"
+  "bioOptional": "Bio (optional)",
+  "lookingForWorkSub": "Shops can find you and invite you to join their staff. Switch off to hide your profile.",
+  "declineInvitationTitle": "Decline {shop}'s invitation?",
+  "@declineInvitationTitle": {
+    "placeholders": {
+      "shop": {
+        "type": "String"
+      }
+    }
+  },
+  "declineInvitationBody": "They'd need to invite you again if you change your mind."
 }

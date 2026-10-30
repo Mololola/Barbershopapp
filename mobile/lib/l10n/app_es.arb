@@ -656,7 +656,6 @@
   "cancelBooking": "Cancelar reserva",
   "cancelBookingTitle": "¿Cancelar esta reserva?",
   "cancelBookingBody": "Se cancelará tu cita de las {time} en {shop} el {date}, y esa hora quedará libre para que otra persona la reserve.",
-  "keepBooking": "Mantenerla",
   "yesCancel": "Sí, cancelar",
   "bookingCancelledToast": "Reserva cancelada.",
   "aboutGroup": "Información",
@@ -680,5 +679,8 @@
   "photoRemoved": "Foto eliminada.",
   "displayNameOptional": "Nombre (opcional)",
   "shownAboveUsername": "Se muestra encima de @{username}",
-  "bioOptional": "Biografía (opcional)"
+  "bioOptional": "Biografía (opcional)",
+  "lookingForWorkSub": "Las barberías pueden encontrarte e invitarte a su equipo. Desactívalo para ocultar tu perfil.",
+  "declineInvitationTitle": "¿Rechazar la invitación de {shop}?",
+  "declineInvitationBody": "Si cambias de opinión, tendrían que invitarte de nuevo."
 }

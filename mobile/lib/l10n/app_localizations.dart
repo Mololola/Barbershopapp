@@ -4034,12 +4034,6 @@ abstract class AppLocalizations {
   /// **'Your {time} appointment at {shop} on {date} will be cancelled, and the time will be free for someone else to book.'**
   String cancelBookingBody(String time, String shop, String date);
 
-  /// No description provided for @keepBooking.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep it'**
-  String get keepBooking;
-
   /// No description provided for @yesCancel.
   ///
   /// In en, this message translates to:
@@ -4183,6 +4177,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bio (optional)'**
   String get bioOptional;
+
+  /// No description provided for @lookingForWorkSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Shops can find you and invite you to join their staff. Switch off to hide your profile.'**
+  String get lookingForWorkSub;
+
+  /// No description provided for @declineInvitationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline {shop}\'s invitation?'**
+  String declineInvitationTitle(String shop);
+
+  /// No description provided for @declineInvitationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'d need to invite you again if you change your mind.'**
+  String get declineInvitationBody;
 }
 
 class _AppLocalizationsDelegate

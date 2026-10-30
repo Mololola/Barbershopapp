@@ -116,7 +116,7 @@ class _BookingTile extends ConsumerWidget {
           DateFormat.MMMMEEEEd(l10n.localeName).format(start),
         )),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.keepBooking)),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.keepIt)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             onPressed: () => Navigator.pop(context, true),

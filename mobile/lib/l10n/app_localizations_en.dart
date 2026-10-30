@@ -2401,9 +2401,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get keepBooking => 'Keep it';
-
-  @override
   String get yesCancel => 'Yes, cancel';
 
   @override
@@ -2484,4 +2481,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bioOptional => 'Bio (optional)';
+
+  @override
+  String get lookingForWorkSub =>
+      'Shops can find you and invite you to join their staff. Switch off to hide your profile.';
+
+  @override
+  String declineInvitationTitle(String shop) {
+    return 'Decline $shop\'s invitation?';
+  }
+
+  @override
+  String get declineInvitationBody =>
+      'They\'d need to invite you again if you change your mind.';
 }
