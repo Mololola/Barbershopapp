@@ -16,17 +16,37 @@ router = APIRouter()
 # it comes to the front on whatever screen was open (a custom-scheme link
 # would reset it to the home route instead).
 _COPY = {
-    "success": {
-        "title": "Payment complete",
-        "body": "Thank you! It can take a few seconds to show up in the app.",
+    "en": {
+        "backToApp": "Back to the app",
+        "closeTab": "You can close this tab and go back to the app.",
+        "success": {
+            "title": "Payment complete",
+            "body": "Thank you! It can take a few seconds to show up in the app.",
+        },
+        "cancelled": {
+            "title": "Checkout cancelled",
+            "body": "Nothing was charged. You can try again from the app whenever you're ready.",
+        },
+        "portal": {
+            "title": "All done",
+            "body": "Any changes you made to your billing are saved.",
+        },
     },
-    "cancelled": {
-        "title": "Checkout cancelled",
-        "body": "Nothing was charged. You can try again from the app whenever you're ready.",
-    },
-    "portal": {
-        "title": "All done",
-        "body": "Any changes you made to your billing are saved.",
+    "es": {
+        "backToApp": "Volver a la app",
+        "closeTab": "Puedes cerrar esta pestaña y volver a la app.",
+        "success": {
+            "title": "Pago completado",
+            "body": "¡Gracias! Puede tardar unos segundos en aparecer en la app.",
+        },
+        "cancelled": {
+            "title": "Pago cancelado",
+            "body": "No se ha cobrado nada. Puedes volver a intentarlo desde la app cuando quieras.",
+        },
+        "portal": {
+            "title": "Listo",
+            "body": "Los cambios que hayas hecho en tu facturación están guardados.",
+        },
     },
 }
 
@@ -35,7 +55,7 @@ _PAGE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Barbershop app</title>
+<title>Fadra Cut</title>
 <style>
   body { font-family: -apple-system, Roboto, Arial, sans-serif; background: #EDEAE3; color: #221D1A;
          display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px;
@@ -57,11 +77,15 @@ _PAGE = """<!doctype html>
     <h1 id="title"></h1>
     <p id="body"></p>
     <a class="button" id="open-app" hidden
-       href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.barbershopapp.mobile;end">Back to the app</a>
-    <p class="hint" id="hint" hidden>You can close this tab and go back to the app.</p>
+       href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.mololola.fadracut;end"></a>
+    <p class="hint" id="hint" hidden></p>
   </div>
   <script>
-    var copy = __COPY__;
+    var lang = (navigator.language || '').toLowerCase().indexOf('es') === 0 ? 'es' : 'en';
+    var copy = __COPY__[lang];
+    document.documentElement.lang = lang;
+    document.getElementById('open-app').textContent = copy.backToApp;
+    document.getElementById('hint').textContent = copy.closeTab;
     var outcome = new URLSearchParams(window.location.search).get('outcome');
     var state = copy[outcome] || copy.portal;
     document.getElementById('mark').textContent = outcome === 'cancelled' ? '\\u2715' : '\\u2713';

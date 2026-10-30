@@ -1,4 +1,4 @@
-package com.barbershopapp.mobile
+package com.mololola.fadracut
 
 import io.flutter.embedding.android.FlutterActivity
 

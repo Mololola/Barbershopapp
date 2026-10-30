@@ -1,7 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
@@ -49,7 +51,7 @@ class _ProfileSearchScreenState extends ConsumerState<ProfileSearchScreen> {
     final results = _results;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Find people')),
+      appBar: AppBar(title: Text(context.l10n.findPeople)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -60,7 +62,7 @@ class _ProfileSearchScreenState extends ConsumerState<ProfileSearchScreen> {
                 Expanded(
                   child: TextField(
                     controller: _queryController,
-                    decoration: const InputDecoration(labelText: 'Username'),
+                    decoration: InputDecoration(labelText: context.l10n.usernameLabel),
                     onSubmitted: (_) => _search(),
                   ),
                 ),
@@ -71,19 +73,19 @@ class _ProfileSearchScreenState extends ConsumerState<ProfileSearchScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            if (_error != null) Text('Error: $_error'),
+            if (_error != null) Text(describeError(context.l10n, _error)),
             if (_isSearching) const LoadingView(),
             if (results != null)
               Expanded(
                 child: results.isEmpty
-                    ? const Text('No users found.')
+                    ? Text(context.l10n.noUsersFound)
                     : ListView(
                         children: [
                           for (final profile in results)
                             ListTile(
                               leading: CircleAvatar(
                                 backgroundImage:
-                                    profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
+                                    profile.avatarUrl != null ? CachedNetworkImageProvider(profile.avatarUrl!) : null,
                                 child: profile.avatarUrl == null ? const Icon(Icons.person) : null,
                               ),
                               title: Text(profile.username),

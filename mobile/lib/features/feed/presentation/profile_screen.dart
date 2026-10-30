@@ -1,9 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/app_network_image.dart';
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/profile.dart';
@@ -47,23 +50,23 @@ class ProfileScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            tooltip: 'Find people',
+            tooltip: context.l10n.findPeople,
             onPressed: () => context.push('/profile/search'),
           ),
           if (isMine)
             IconButton(
               icon: const Icon(Icons.settings_outlined),
-              tooltip: 'Settings',
+              tooltip: context.l10n.settingsTitle,
               onPressed: () => context.push('/account-settings'),
             ),
         ],
       ),
       body: profile.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (value) {
           if (value == null) {
-            return const Center(child: Text('Profile not found.'));
+            return Center(child: Text(context.l10n.profileNotFound));
           }
           // No DMs to or from a minor account — see the guardian-consent design.
           final canMessage = !isMine && myProfile?.isMinor != true && value.isMinor != true;
@@ -81,13 +84,13 @@ class ProfileScreen extends ConsumerWidget {
                             side: BorderSide(color: AppColors.chalk.withValues(alpha: 0.3)),
                           ),
                           icon: const Icon(Icons.edit_outlined, size: 18),
-                          label: const Text('Edit profile'),
+                          label: Text(context.l10n.editProfile),
                           onPressed: () => context.push('/profile/edit'),
                         )
                       : canMessage
                           ? FilledButton.icon(
                               icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                              label: const Text('Message'),
+                              label: Text(context.l10n.message),
                               onPressed: () async {
                                 final conversationId = await ref
                                     .read(messagingActionControllerProvider.notifier)
@@ -102,14 +105,16 @@ class ProfileScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                 sliver: SliverToBoxAdapter(
                   child: Text(
-                    'POSTS',
+                    context.l10n.postsUpper,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.steel, letterSpacing: 1.2),
                   ),
                 ),
               ),
               ...posts.when(
-                loading: () => [const SliverToBoxAdapter(child: LoadingView())],
-                error: (error, _) => [SliverToBoxAdapter(child: Center(child: Text('Error: $error')))],
+                loading: () => [
+                  const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(16), child: SkeletonLines())),
+                ],
+                error: (error, _) => [SliverToBoxAdapter(child: Center(child: Text(describeError(context.l10n, error))))],
                 data: (list) => [
                   if (list.isEmpty)
                     SliverToBoxAdapter(child: _NoPosts(isMine: isMine))
@@ -167,18 +172,29 @@ class _Header extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile.username,
+                      profile.displayName ?? profile.username,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.headlineMedium?.copyWith(color: AppColors.chalk),
                     ),
+                    if (profile.displayName != null)
+                      Text(
+                        '@${profile.username}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: AppColors.chalk.withValues(alpha: 0.7)),
+                      ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        if (isBarber) const _Badge(label: 'Barber', icon: Icons.content_cut, filled: true),
-                        _Badge(label: profile.role == AccountRole.business ? 'Business' : 'Customer'),
+                        if (isBarber) _Badge(label: context.l10n.badgeBarber, icon: Icons.content_cut, filled: true),
+                        _Badge(
+                          label: profile.role == AccountRole.business
+                              ? context.l10n.roleBusiness
+                              : context.l10n.roleCustomer,
+                        ),
                       ],
                     ),
                   ],
@@ -186,14 +202,18 @@ class _Header extends ConsumerWidget {
               ),
             ],
           ),
+          if (profile.bio != null) ...[
+            const SizedBox(height: 12),
+            Text(profile.bio!, style: const TextStyle(color: AppColors.chalk)),
+          ],
           const SizedBox(height: 16),
           Divider(height: 1, color: AppColors.chalk.withValues(alpha: 0.12)),
           const SizedBox(height: 16),
           Row(
             children: [
-              _Stat(label: 'Posts', value: list?.length),
-              _Stat(label: 'Likes', value: list?.fold<int>(0, (sum, p) => sum + p.likeCount)),
-              _Stat(label: 'Comments', value: list?.fold<int>(0, (sum, p) => sum + p.commentCount)),
+              _Stat(label: context.l10n.posts, value: list?.length),
+              _Stat(label: context.l10n.likes, value: list?.fold<int>(0, (sum, p) => sum + p.likeCount)),
+              _Stat(label: context.l10n.comments, value: list?.fold<int>(0, (sum, p) => sum + p.commentCount)),
             ],
           ),
           if (action != null) ...[const SizedBox(height: 16), action!],
@@ -221,7 +241,7 @@ class _RingedAvatar extends StatelessWidget {
           radius: 36,
           backgroundColor: AppColors.brass.withValues(alpha: 0.2),
           foregroundColor: AppColors.brass,
-          backgroundImage: url != null ? NetworkImage(url) : null,
+          backgroundImage: url != null ? CachedNetworkImageProvider(url) : null,
           child: url == null
               ? Text(initialsOf(profile.username), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700))
               : null,
@@ -306,7 +326,7 @@ class _PostTile extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Post, ${post.likeCount} likes, ${post.commentCount} comments',
+      label: context.l10n.postSemantics(post.likeCount, post.commentCount),
       child: GestureDetector(
         onTap: () => context.push('/posts/${post.id}'),
         child: Stack(
@@ -380,18 +400,18 @@ class _NoPosts extends StatelessWidget {
             child: const Icon(Icons.photo_outlined, color: AppColors.brass),
           ),
           const SizedBox(height: 12),
-          Text('No posts yet', style: textTheme.titleMedium),
+          Text(context.l10n.noPostsYetTitle, style: textTheme.titleMedium),
           if (isMine) ...[
             const SizedBox(height: 4),
             Text(
-              'Show off your latest cut. Your posts appear here and in the feed.',
+              context.l10n.showOffLatestCut,
               textAlign: TextAlign.center,
               style: textTheme.bodyMedium?.copyWith(color: AppColors.steel),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Share your first post'),
+              label: Text(context.l10n.shareFirstPost),
               onPressed: () => context.push('/posts/new'),
             ),
           ],

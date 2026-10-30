@@ -1,3 +1,5 @@
+import '../../../l10n/app_localizations.dart';
+
 enum BookingStatus { confirmed, cancelled, completed }
 
 extension BookingStatusX on BookingStatus {
@@ -21,6 +23,8 @@ class Booking {
     this.businessName,
     this.serviceName,
     this.workerName,
+    this.customerName,
+    this.priceCents,
   });
 
   final String id;
@@ -32,11 +36,15 @@ class Booking {
   final DateTime endTime;
   final BookingStatus status;
 
-  /// Populated client-side by joining against already-fetched business/
-  /// service/worker lists — the backend response itself only has ids.
+  /// The backend response only has ids; the booking lists embed the service,
+  /// barber and customer names in the same Supabase query.
   final String? businessName;
   final String? serviceName;
   final String? workerName;
+  final String? customerName;
+
+  /// What the customer was quoted when booking, in the shop's currency.
+  final int? priceCents;
 
   Booking copyWith({String? businessName, String? serviceName, String? workerName}) {
     return Booking(
@@ -77,6 +85,10 @@ class Booking {
       startTime: DateTime.parse(row['start_time'] as String),
       endTime: DateTime.parse(row['end_time'] as String),
       status: BookingStatusX.fromWireValue(row['status'] as String),
+      serviceName: (row['services'] as Map<String, dynamic>?)?['name'] as String?,
+      workerName: (row['workers'] as Map<String, dynamic>?)?['name'] as String?,
+      customerName: (row['profiles'] as Map<String, dynamic>?)?['username'] as String?,
+      priceCents: row['price_cents'] as int?,
     );
   }
 }
@@ -107,16 +119,10 @@ class AvailableSlot {
   int get hashCode => Object.hash(workerId, startTime);
 }
 
-const _monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /// What a customer is told about a booking that will be cancelled if its
 /// shop doesn't renew: shown from 30 days before, and reworded for the
 /// last day.
-String shopClosureNotice(DateTime cancelledAt, DateTime now) {
-  if (cancelledAt.difference(now) <= const Duration(days: 1)) {
-    return 'This booking will be cancelled within a day unless the shop renews its subscription.';
-  }
-  final local = cancelledAt.toLocal();
-  return 'This shop hasn\'t renewed its subscription. If it doesn\'t by ${local.day} '
-      '${_monthNames[local.month - 1]}, this booking will be cancelled.';
+String shopClosureNotice(AppLocalizations l10n, DateTime cancelledAt, DateTime now) {
+  if (cancelledAt.difference(now) <= const Duration(days: 1)) return l10n.closureWithinADay;
+  return l10n.closureBy(cancelledAt.toLocal());
 }

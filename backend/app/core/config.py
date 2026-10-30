@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # Bearer token the scheduled-jobs workflow sends (see app/api/jobs.py);
     # empty disables the job endpoints.
     jobs_secret: str = ""
+    # Where people write to us: shown on public pages such as /delete-account.
+    # Change it here (or in .env) when the domain's own address exists.
+    support_email: str = "mololola.enterprises@gmail.com"
     sentry_dsn: str = ""
 
     # Deliberately small — Supabase's free/small-tier max_connections is 60

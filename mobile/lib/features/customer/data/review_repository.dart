@@ -1,37 +1,27 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../domain/review.dart';
 
 /// Reviews are simple CRUD with no money/concurrency invariant, so — unlike
 /// bookings — this writes directly to Supabase under RLS rather than
 /// through FastAPI (see docs/architecture.md's client/backend split).
 class ReviewRepository {
-  ReviewRepository(this._client);
+  ReviewRepository(this._client, this._cache);
 
   final SupabaseClient _client;
+  final OfflineCache _cache;
 
   /// Every review this customer has written, by booking id — what My
   /// bookings needs for all its rows in one query.
   Future<Map<String, Review>> fetchReviewsByCustomer(String customerId) async {
-    final rows = await _client.from('reviews').select().eq('customer_id', customerId);
+    final rows = await _cache.rows('my-reviews:$customerId', () => _client.from('reviews').select().eq('customer_id', customerId));
     return {for (final row in rows) row['booking_id'] as String: Review.fromRow(row)};
   }
 
   Future<void> submitReview(Review review) async {
     try {
-      await _client.from('reviews').insert({
-        'booking_id': review.bookingId,
-        'business_id': review.businessId,
-        'worker_id': review.workerId,
-        'customer_id': review.customerId,
-        'shop_rating': review.shopRating,
-        'shop_comment': review.shopComment,
-        'worker_rating': review.workerRating,
-        'worker_comment': review.workerComment,
-        'haircut_rating': review.haircutRating,
-        'haircut_comment': review.haircutComment,
-        'haircut_type': review.haircutType,
-      });
+      await _client.from('reviews').insert(review.toRow());
     } on PostgrestException catch (e) {
       // 23505 on booking_id means this booking was already reviewed — the
       // end state the caller wants (a review row exists) already holds, so

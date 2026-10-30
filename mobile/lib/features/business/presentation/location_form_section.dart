@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n.dart';
+
 import '../domain/business.dart';
 
 class LocationFields {
@@ -28,7 +30,11 @@ class LocationFields {
   }
 }
 
-String? _required(String? value) => (value == null || value.trim().isEmpty) ? 'Required' : null;
+String _countryName(BuildContext context, String code) => switch (code) {
+      'GB' => context.l10n.countryUnitedKingdom,
+      'ES' => context.l10n.countrySpain,
+      _ => supportedCountries[code]!,
+    };
 
 /// The editable list of a business's locations. Must sit inside a [Form] —
 /// validation runs through the enclosing form. The caller owns [locations]
@@ -45,7 +51,7 @@ class LocationFormSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Locations', style: Theme.of(context).textTheme.titleMedium),
+        Text(context.l10n.locations, style: Theme.of(context).textTheme.titleMedium),
         for (var i = 0; i < locations.length; i++)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -74,7 +80,7 @@ class LocationFormSection extends StatelessWidget {
               onChanged();
             },
             icon: const Icon(Icons.add),
-            label: const Text('Add another location'),
+            label: Text(context.l10n.addAnotherLocation),
           ),
         ),
       ],
@@ -94,10 +100,10 @@ class _LocationForm extends StatelessWidget {
       children: [
         DropdownButtonFormField<String>(
           value: fields.country,
-          decoration: const InputDecoration(labelText: 'Country'),
+          decoration: InputDecoration(labelText: context.l10n.country),
           items: [
             for (final entry in supportedCountries.entries)
-              DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+              DropdownMenuItem(value: entry.key, child: Text(_countryName(context, entry.key))),
           ],
           onChanged: (value) {
             fields.country = value!;
@@ -107,25 +113,25 @@ class _LocationForm extends StatelessWidget {
         const SizedBox(height: 16),
         TextFormField(
           controller: fields.addressLine,
-          decoration: const InputDecoration(labelText: 'Street address'),
+          decoration: InputDecoration(labelText: context.l10n.streetAddress),
           textCapitalization: TextCapitalization.words,
-          validator: _required,
+          validator: (value) => (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
         ),
         const SizedBox(height: 16),
         TextFormField(
           controller: fields.city,
-          decoration: const InputDecoration(labelText: 'City'),
+          decoration: InputDecoration(labelText: context.l10n.city),
           textCapitalization: TextCapitalization.words,
-          validator: _required,
+          validator: (value) => (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
         ),
         const SizedBox(height: 16),
         TextFormField(
           controller: fields.postcode,
-          decoration: const InputDecoration(labelText: 'Postcode'),
+          decoration: InputDecoration(labelText: context.l10n.postcode),
           textCapitalization: TextCapitalization.characters,
           validator: (value) {
-            if (value == null || value.trim().isEmpty) return 'Required';
-            if (!isValidPostcode(value, fields.country)) return 'Enter a valid postcode';
+            if (value == null || value.trim().isEmpty) return context.l10n.requiredField;
+            if (!isValidPostcode(value, fields.country)) return context.l10n.enterValidPostcode;
             return null;
           },
         ),

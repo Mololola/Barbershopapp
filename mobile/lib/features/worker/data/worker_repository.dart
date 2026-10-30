@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../business/domain/business.dart';
 import '../domain/worker_invitation.dart';
 import '../domain/worker_leave_request.dart';
@@ -12,15 +13,18 @@ class AlreadyStaffElsewhereException implements Exception {
 }
 
 class WorkerRepository {
-  WorkerRepository(this._client);
+  WorkerRepository(this._client, this._cache);
 
   static const _uniqueViolation = '23505';
 
   final SupabaseClient _client;
+  final OfflineCache _cache;
 
   Future<WorkerProfile?> fetchOwnWorkerProfile(String profileId) async {
-    final row =
-        await _client.from('worker_profiles').select().eq('profile_id', profileId).maybeSingle();
+    final row = await _cache.row(
+      'worker-profile:$profileId',
+      () => _client.from('worker_profiles').select().eq('profile_id', profileId).maybeSingle(),
+    );
     if (row == null) return null;
     return WorkerProfile.fromRow(row);
   }
@@ -38,12 +42,12 @@ class WorkerRepository {
   }
 
   Future<List<WorkerInvitation>> fetchReceivedInvitations(String workerProfileId) async {
-    final rows = await _client
+    final rows = await _cache.rows('received-invitations:$workerProfileId', () => _client
         .from('worker_invitations')
         .select()
         .eq('worker_profile_id', workerProfileId)
         .eq('status', 'pending')
-        .order('created_at');
+        .order('created_at'));
     return rows.map(WorkerInvitation.fromRow).toList();
   }
 
@@ -81,12 +85,12 @@ class WorkerRepository {
   }
 
   Future<Worker?> fetchCurrentJob(String profileId) async {
-    final row = await _client
+    final row = await _cache.row('current-job:$profileId', () => _client
         .from('workers')
         .select()
         .eq('profile_id', profileId)
         .eq('is_active', true)
-        .maybeSingle();
+        .maybeSingle());
     if (row == null) return null;
     return Worker.fromRow(row);
   }
@@ -121,11 +125,11 @@ class WorkerRepository {
   }
 
   Future<List<WorkerLeaveRequest>> fetchOwnLeaveRequests(String workerProfileId) async {
-    final rows = await _client
+    final rows = await _cache.rows('own-leave-requests:$workerProfileId', () => _client
         .from('worker_leave_requests')
         .select()
         .eq('worker_profile_id', workerProfileId)
-        .order('requested_at', ascending: false);
+        .order('requested_at', ascending: false));
     return rows.map(WorkerLeaveRequest.fromRow).toList();
   }
 }

@@ -1,8 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/loading.dart';
+import '../../../core/l10n.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/status_message.dart';
 import '../../../core/theme.dart';
 import '../../business/domain/brand.dart';
@@ -33,13 +36,13 @@ class ConversationsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Messages',
-                    style: TextStyle(fontFamily: AppFonts.script, fontSize: 40, height: 1, color: AppColors.chalk),
+                  Text(
+                    context.l10n.navMessages,
+                    style: const TextStyle(fontFamily: AppFonts.script, fontSize: 40, height: 1, color: AppColors.chalk),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    conversations.hasValue ? (unread == 0 ? 'All caught up' : '$unread unread') : ' ',
+                    conversations.hasValue ? (unread == 0 ? context.l10n.allCaughtUpShort : context.l10n.unreadCount(unread)) : ' ',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.brass),
                   ),
                   const SizedBox(height: 16),
@@ -59,8 +62,8 @@ class ConversationsScreen extends ConsumerWidget {
                       unselectedLabelColor: AppColors.chalk.withValues(alpha: 0.7),
                       labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                       tabs: [
-                        _InboxTab(label: 'Personal', unread: _unread(personal)),
-                        _InboxTab(label: 'Business', unread: _unread(business)),
+                        _InboxTab(label: context.l10n.inboxPersonal, unread: _unread(personal)),
+                        _InboxTab(label: context.l10n.inboxBusiness, unread: _unread(business)),
                       ],
                     ),
                   ),
@@ -70,13 +73,13 @@ class ConversationsScreen extends ConsumerWidget {
           ),
         ),
         body: conversations.when(
-          loading: () => const LoadingView(caption: 'Loading conversations…'),
+          loading: () => const SkeletonList(leading: SkeletonLeading.avatar),
           error: (_, _) => Center(
             child: StatusMessage(
               icon: Icons.wifi_off_rounded,
-              title: 'Couldn\'t load messages',
-              message: 'Check your connection and try again.',
-              actionLabel: 'Try again',
+              title: context.l10n.couldntLoadMessages,
+              message: context.l10n.checkConnection,
+              actionLabel: context.l10n.tryAgain,
               onAction: () => ref.invalidate(conversationsProvider),
               isError: true,
             ),
@@ -87,18 +90,18 @@ class ConversationsScreen extends ConsumerWidget {
                 conversations: personal,
                 empty: StatusMessage(
                   icon: Icons.chat_bubble_outline,
-                  title: 'No conversations yet',
-                  message: 'Find a barber or a friend and say hello from their profile.',
-                  actionLabel: 'Find people',
+                  title: context.l10n.noConversationsYet,
+                  message: context.l10n.noConversationsHint,
+                  actionLabel: context.l10n.findPeople,
                   onAction: () => context.push('/profile/search'),
                 ),
               ),
               _ConversationList(
                 conversations: business,
-                empty: const StatusMessage(
+                empty: StatusMessage(
                   icon: Icons.work_outline,
-                  title: 'No work messages',
-                  message: 'When a shop and a barber talk about work, it shows up here.',
+                  title: context.l10n.noWorkMessages,
+                  message: context.l10n.noWorkMessagesHint,
                 ),
               ),
             ],
@@ -217,7 +220,7 @@ class _ConversationRow extends StatelessWidget {
                   radius: 24,
                   backgroundColor: scheme.primary.withValues(alpha: 0.12),
                   foregroundColor: scheme.primary,
-                  backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  backgroundImage: avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
                   child: avatarUrl == null ? Text(initialsOf(conversation.otherUsername)) : null,
                 ),
               ),
@@ -248,7 +251,7 @@ class _ConversationRow extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            conversation.lastMessageBody ?? 'Say hello 👋',
+                            conversation.lastMessageBody ?? context.l10n.sayHello,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
@@ -274,16 +277,13 @@ class _ConversationRow extends StatelessWidget {
   }
 }
 
-const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /// Today shows the time, this week the weekday, older the date.
 String _whenLabel(BuildContext context, DateTime at) {
   final local = at.toLocal();
   final today = DateUtils.dateOnly(DateTime.now());
   final days = (today.difference(DateUtils.dateOnly(local)).inHours / 24).round();
   if (days <= 0) return TimeOfDay.fromDateTime(local).format(context);
-  if (days == 1) return 'Yesterday';
-  if (days < 7) return _weekdayShort[local.weekday - 1];
-  return '${local.day} ${_monthShort[local.month - 1]}';
+  if (days == 1) return context.l10n.yesterday;
+  if (days < 7) return DateFormat.E(context.l10n.localeName).format(local);
+  return DateFormat.MMMd(context.l10n.localeName).format(local);
 }

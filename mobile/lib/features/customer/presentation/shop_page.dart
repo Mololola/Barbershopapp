@@ -1,8 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/loading.dart';
+import '../../../core/l10n.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../business/domain/brand.dart';
@@ -29,8 +31,14 @@ class ShopPage extends ConsumerWidget {
 
     return Scaffold(
       body: business.when(
-        loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        loading: () => ListView(
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [
+            SkeletonPulse(child: SkeletonBox(height: 200, radius: 0)),
+            Padding(padding: EdgeInsets.all(20), child: SkeletonLines(count: 4)),
+          ],
+        ),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (shop) {
           if (shop == null) {
             return Scaffold(
@@ -40,8 +48,8 @@ class ShopPage extends ConsumerWidget {
                   padding: const EdgeInsets.all(24),
                   child: Text(
                     isOwner
-                        ? 'Your shop page is hidden from customers until your subscription is active.'
-                        : 'This shop isn\'t available right now.',
+                        ? context.l10n.shopHiddenOwner
+                        : context.l10n.shopUnavailable,
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -69,7 +77,7 @@ class ShopPage extends ConsumerWidget {
                       if (isOwner)
                         IconButton(
                           icon: const Icon(Icons.edit_outlined),
-                          tooltip: 'Edit shop page',
+                          tooltip: context.l10n.editShopPage,
                           onPressed: () => context.push('/business/shop/edit'),
                         ),
                     ],
@@ -117,8 +125,8 @@ class ShopHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brand = brandColorOverride ?? brandColorOf(businessId: shop.id, storedHex: shop.brandColor);
-    final cover = coverImage ?? (shop.coverUrl != null ? NetworkImage(shop.coverUrl!) : null);
-    final logo = logoImage ?? (shop.logoUrl != null ? NetworkImage(shop.logoUrl!) : null);
+    final cover = coverImage ?? (shop.coverUrl != null ? CachedNetworkImageProvider(shop.coverUrl!) : null);
+    final logo = logoImage ?? (shop.logoUrl != null ? CachedNetworkImageProvider(shop.logoUrl!) : null);
     return LayoutBuilder(
       builder: (context, constraints) => SizedBox(
         height: heightFor(constraints.maxWidth),
@@ -219,14 +227,14 @@ class _ShopBody extends ConsumerWidget {
                 ],
               )
             else
-              const Text('New on the app', style: TextStyle(color: AppColors.steel)),
+              Text(context.l10n.newOnTheApp, style: const TextStyle(color: AppColors.steel)),
             if (hours != null) _OpenNow(hours: hours),
           ],
         ),
         if (locations.isNotEmpty) ...[
           const SizedBox(height: 4),
           Text(
-            locations.first.displayAddress + (locations.length > 1 ? ' · +${locations.length - 1} more' : ''),
+            locations.first.displayAddress + (locations.length > 1 ? ' · ${context.l10n.moreLocations(locations.length - 1)}' : ''),
             style: const TextStyle(color: AppColors.steel),
           ),
         ],
@@ -238,7 +246,7 @@ class _ShopBody extends ConsumerWidget {
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(backgroundColor: brand, foregroundColor: Colors.white),
                   icon: const Icon(Icons.add_a_photo_outlined),
-                  label: const Text('New post'),
+                  label: Text(context.l10n.newPost),
                   onPressed: () => context.push('/posts/new'),
                 ),
               ),
@@ -246,7 +254,7 @@ class _ShopBody extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.brush_outlined),
-                  label: const Text('Edit page'),
+                  label: Text(context.l10n.editPage),
                   onPressed: () => context.push('/business/shop/edit'),
                 ),
               ),
@@ -256,18 +264,18 @@ class _ShopBody extends ConsumerWidget {
         else if (myProfile != null && myProfile.isMinor != true)
           OutlinedButton.icon(
             icon: const Icon(Icons.chat_bubble_outline),
-            label: const Text('Message the shop'),
+            label: Text(context.l10n.messageTheShop),
             onPressed: () async {
               final conversationId =
                   await ref.read(messagingActionControllerProvider.notifier).startOrGetConversation(shop.ownerId);
               if (context.mounted) context.push('/messages/$conversationId');
             },
           ),
-        _Section(title: 'Services', child: _Services(shop: shop, isOwner: isOwner, brand: brand)),
-        _Section(title: 'Barbers', child: _Barbers(businessId: shop.id, brand: brand)),
+        _Section(title: context.l10n.services, child: _Services(shop: shop, isOwner: isOwner, brand: brand)),
+        _Section(title: context.l10n.barbers, child: _Barbers(businessId: shop.id, brand: brand)),
         if (hours != null)
           _Section(
-            title: 'Opening hours',
+            title: context.l10n.openingHours,
             child: Column(
               children: [
                 for (final day in hours)
@@ -275,7 +283,7 @@ class _ShopBody extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Row(
                       children: [
-                        Expanded(child: Text(OpeningHours.dayNames[day.dayOfWeek])),
+                        Expanded(child: Text(context.weekdayName(day.dayOfWeek))),
                         Text(day.format(context)),
                       ],
                     ),
@@ -285,14 +293,14 @@ class _ShopBody extends ConsumerWidget {
           ),
         if (locations.length > 1)
           _Section(
-            title: 'Locations',
+            title: context.l10n.locations,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [for (final l in locations) Text(l.displayAddress)],
             ),
           ),
-        _Section(title: 'Posts', child: _Posts(ownerId: shop.ownerId)),
-        _Section(title: 'Reviews', child: _Reviews(businessId: shop.id)),
+        _Section(title: context.l10n.posts, child: _Posts(ownerId: shop.ownerId)),
+        _Section(title: context.l10n.reviews, child: _Reviews(businessId: shop.id)),
       ],
     );
   }
@@ -338,7 +346,7 @@ class _OpenNow extends StatelessWidget {
     String label;
     var open = false;
     if (today == null || today.isClosed || today.openTime == null || today.closeTime == null) {
-      label = 'Closed today';
+      label = context.l10n.closedToday;
     } else {
       final periods = [
         if (today.hasBreak) ...[
@@ -351,11 +359,11 @@ class _OpenNow extends StatelessWidget {
       final upcoming = periods.where((p) => nowMinutes < minutes(p.$1)).firstOrNull;
       if (current != null) {
         open = true;
-        label = 'Open now · until ${current.$2.format(context)}';
+        label = context.l10n.openNowUntil(current.$2.format(context));
       } else if (upcoming != null) {
-        label = 'Opens ${upcoming.$1.format(context)}';
+        label = context.l10n.opensAt(upcoming.$1.format(context));
       } else {
-        label = 'Closed now';
+        label = context.l10n.closedNow;
       }
     }
     final color = open ? const Color(0xFF2E7D4F) : AppColors.steel;
@@ -382,10 +390,10 @@ class _Services extends ConsumerWidget {
     final services = ref.watch(businessServicesProvider(shop.id));
     final symbol = currencySymbol(shop.currency);
     return services.when(
-      loading: () => const LoadingView(),
-      error: (error, _) => Text('Error: $error'),
+      loading: () => const SkeletonLines(count: 2),
+      error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
-        if (list.isEmpty) return const Text('No services listed yet.');
+        if (list.isEmpty) return Text(context.l10n.noServicesYet);
         return Column(
           children: [
             for (final service in list)
@@ -409,7 +417,7 @@ class _Services extends ConsumerWidget {
                           style: FilledButton.styleFrom(backgroundColor: brand, foregroundColor: Colors.white),
                           onPressed: () =>
                               context.push('/customer/businesses/${shop.id}/book?serviceId=${service.id}'),
-                          child: const Text('Book'),
+                          child: Text(context.l10n.book),
                         ),
                       ],
                     ],
@@ -433,10 +441,10 @@ class _Barbers extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workers = ref.watch(businessWorkersProvider(businessId));
     return workers.when(
-      loading: () => const LoadingView(),
-      error: (error, _) => Text('Error: $error'),
+      loading: () => const SkeletonLines(count: 2),
+      error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
-        if (list.isEmpty) return const Text('No barbers listed yet.');
+        if (list.isEmpty) return Text(context.l10n.noBarbersYet);
         return Wrap(
           spacing: 16,
           runSpacing: 12,
@@ -472,10 +480,10 @@ class _Reviews extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reviews = ref.watch(businessReviewsProvider(businessId));
     return reviews.when(
-      loading: () => const LoadingView(),
-      error: (error, _) => Text('Error: $error'),
+      loading: () => const SkeletonLines(count: 2),
+      error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
-        if (list.isEmpty) return const Text('No reviews yet.');
+        if (list.isEmpty) return Text(context.l10n.noReviewsYet);
         return Column(children: [for (final review in list) _ReviewTile(review: review)]);
       },
     );
@@ -531,10 +539,10 @@ class _Posts extends ConsumerWidget {
     final posts = ref.watch(postsByAuthorProvider(ownerId));
     final myId = ref.watch(currentProfileProvider).value?.id;
     return posts.when(
-      loading: () => const LoadingView(),
-      error: (error, _) => Text('Error: $error'),
+      loading: () => const SkeletonLines(count: 2),
+      error: (error, _) => Text(describeError(context.l10n, error)),
       data: (list) {
-        if (list.isEmpty) return const Text('No posts yet.');
+        if (list.isEmpty) return Text(context.l10n.noPostsYet);
         return Column(children: [for (final post in list) PostCard(post: post, isMine: post.authorId == myId)]);
       },
     );

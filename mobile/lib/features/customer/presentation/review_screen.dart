@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n.dart';
 import '../application/booking_controller.dart';
 import '../application/review_controller.dart';
 import '../domain/review.dart';
@@ -58,14 +59,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Skip this rating?'),
-        content: const Text(
-          "Ratings can earn you rewards later on — if you skip this one, you won't get "
-          'anything for it. Skip anyway?',
-        ),
+        title: Text(context.l10n.skipRatingTitle),
+        content: Text(context.l10n.skipRatingBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Skip anyway')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(context.l10n.skipAnyway)),
         ],
       ),
     );
@@ -135,7 +133,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
-                  reviewState.error.toString(),
+                  describeError(context.l10n, reviewState.error),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
@@ -143,7 +141,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               children: [
                 TextButton(
                   onPressed: reviewState.isLoading ? null : _omit,
-                  child: const Text('Omit'),
+                  child: Text(context.l10n.omit),
                 ),
                 const Spacer(),
                 FilledButton(
@@ -154,7 +152,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                           width: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(_step == _Step.haircut ? 'Submit review' : 'Next'),
+                      : Text(_step == _Step.haircut ? context.l10n.submitReview : context.l10n.next),
                 ),
               ],
             ),
@@ -164,16 +162,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
-  String get _appBarTitle {
-    switch (_step) {
-      case _Step.shop:
-        return 'Rate the shop';
-      case _Step.worker:
-        return 'Rate the barber';
-      case _Step.haircut:
-        return 'Rate the haircut';
-    }
-  }
+  String get _appBarTitle => switch (_step) {
+        _Step.shop => context.l10n.rateTheShop,
+        _Step.worker => context.l10n.rateTheBarber,
+        _Step.haircut => context.l10n.rateTheHaircut,
+      };
 
   Widget _buildStepContent() {
     switch (_step) {
@@ -201,9 +194,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _haircutType,
-              decoration: const InputDecoration(labelText: 'Haircut type'),
+              decoration: InputDecoration(labelText: context.l10n.haircutTypeLabel),
               items: [
-                for (final type in haircutTypes) DropdownMenuItem(value: type, child: Text(type)),
+                for (final type in haircutTypes) DropdownMenuItem(value: type, child: Text(haircutTypeLabel(context.l10n, type))),
               ],
               onChanged: (value) => setState(() => _haircutType = value),
             ),
@@ -244,7 +237,7 @@ class _RatingStep extends StatelessWidget {
         ),
         TextField(
           controller: commentController,
-          decoration: const InputDecoration(labelText: 'Comment (optional)'),
+          decoration: InputDecoration(labelText: context.l10n.commentOptional),
           maxLines: 2,
         ),
       ],

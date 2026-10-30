@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/responsive.dart';
 import '../../../core/theme.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 import '../domain/finance_overview.dart';
 import 'finance_screen.dart';
+import 'pay_on_website.dart';
 
-const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+String _weekdayShort(BuildContext context, int day) =>
+    DateFormat.E(context.l10n.localeName).format(DateTime(2024, 1, 1 + day));
 
 String _percent(double? share) => share == null ? '—' : '${(share * 100).round()}%';
 
@@ -33,35 +37,36 @@ class PremiumSection extends StatelessWidget {
       children: [
         const Icon(Icons.workspace_premium, color: AppColors.brass),
         const SizedBox(width: 6),
-        Expanded(child: Text('Premium insights', style: Theme.of(context).textTheme.titleLarge)),
+        Expanded(child: Text(context.l10n.premiumInsights, style: Theme.of(context).textTheme.titleLarge)),
       ],
     );
+    final l10n = context.l10n;
     final suggestions = [
-      const _Heading('What to do next', 'Moves worked out from your own bookings, best first.'),
+      _Heading(l10n.whatToDoNext, l10n.whatToDoNextSub),
       if (premium.suggestions.isEmpty)
-        const _Empty('Suggestions appear once you have about 10 completed bookings in the last 90 days.')
+        _Empty(l10n.suggestionsAppear)
       else
         for (final s in premium.suggestions) _SuggestionCard(suggestion: s, currency: currency),
     ];
     final profit = [
-      const _Heading('Profit, last 12 months', 'Tap a bar for the month\'s figures.'),
+      _Heading(l10n.profit12Months, l10n.tapABar),
       _ProfitChart(months: premium.history, currency: currency),
     ];
     final busy = [
       _Heading(
-        'When your chairs are busy',
-        'Share of chair time booked, last 8 weeks · overall ${_percent(premium.utilisation)}',
+        l10n.chairsBusy,
+        l10n.chairsBusySub(_percent(premium.utilisation)),
       ),
       _Heatmap(cells: premium.heatmap),
     ];
-    final barbers = [const _Heading('Barbers', 'Last 30 days'), _BarbersCard(barbers: premium.barbers, currency: currency)];
-    final customers = [const _Heading('Customers', 'Last 30 days'), _CustomersCard(customers: premium.customers)];
+    final barbers = [_Heading(l10n.barbers, l10n.last30Days), _BarbersCard(barbers: premium.barbers, currency: currency)];
+    final customers = [_Heading(l10n.customersHeading, l10n.last30Days), _CustomersCard(customers: premium.customers)];
     final services = [
-      const _Heading('Services', 'Last 90 days, vs the 90 before'),
+      _Heading(l10n.services, l10n.servicesSub),
       _ServicesCard(services: premium.services, currency: currency),
     ];
     final whatIf = [
-      _Heading('What if…', 'Try a change on ${monthLabel(baseline.month)}\'s figures before making it.'),
+      _Heading(l10n.whatIf, l10n.whatIfSub(monthLabel(l10n, baseline.month))),
       _WhatIfCard(baseline: baseline, currency: currency),
     ];
 
@@ -98,11 +103,11 @@ class PremiumSection extends StatelessWidget {
         if (overview.premiumState.onTrial) _TrialBanner(state: overview.premiumState, currency: currency),
         pair(
           [
-            const _Heading('This month', 'Where you\'re heading at this pace'),
+            _Heading(l10n.thisMonth, l10n.thisMonthSub),
             if (premium.forecast != null)
               _ForecastCard(forecast: premium.forecast!, currency: currency, margin: EdgeInsets.zero)
             else
-              const _Empty('A forecast appears once the month is under way.'),
+              _Empty(l10n.forecastAppears),
           ],
           suggestions,
         ),
@@ -157,19 +162,22 @@ class _TrialBanner extends ConsumerWidget {
       color: AppColors.brass.withValues(alpha: 0.12),
       child: ListTile(
         leading: const Icon(Icons.hourglass_bottom, color: AppColors.brass),
-        title: Text('Free trial · $daysLeft day${daysLeft == 1 ? '' : 's'} left'),
-        subtitle: Text('Keep Premium for ${currencySymbol(currency)}9.99/month'),
-        trailing: TextButton(
+        title: Text(context.l10n.freeTrialDaysLeft(daysLeft)),
+        subtitle: canPayInThisApp
+            ? Text(context.l10n.keepPremiumFor('${currencySymbol(currency)}9.99'))
+            : const PayOnWebsiteNote(),
+        trailing: !canPayInThisApp ? null : TextButton(
           onPressed: () async {
             final messenger = ScaffoldMessenger.of(context);
+            final l10n = context.l10n;
             try {
               final url = await ref.read(billingActionControllerProvider.notifier).startFinanceCheckout();
               await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
             } catch (error) {
-              messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+              messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, error))));
             }
           },
-          child: const Text('Subscribe'),
+          child: Text(context.l10n.subscribe),
         ),
       ),
     );
@@ -189,10 +197,10 @@ class _ForecastCard extends StatelessWidget {
     final positive = forecast.projectedNetCents >= 0;
     final day = forecast.breakEvenDay;
     final breakEven = forecast.alreadyBrokenEven
-        ? 'You\'ve already covered this month\'s costs.'
+        ? context.l10n.alreadyCoveredCosts
         : day != null
-            ? 'At this pace you\'ll break even on ${day.day} ${monthLabel(day, short: true)}.'
-            : 'At this pace you won\'t cover this month\'s costs — see the suggestions below.';
+            ? context.l10n.breakEvenOn(day)
+            : context.l10n.wontCoverCosts;
     return Card(
       margin: margin,
       child: Padding(
@@ -200,7 +208,7 @@ class _ForecastCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Month-end forecast', style: textTheme.labelLarge?.copyWith(color: AppColors.steel)),
+            Text(context.l10n.monthEndForecast, style: textTheme.labelLarge?.copyWith(color: AppColors.steel)),
             Text(
               formatMoney(forecast.projectedNetCents, currency),
               style: textTheme.headlineMedium?.copyWith(
@@ -208,14 +216,15 @@ class _ForecastCard extends StatelessWidget {
                 color: positive ? financeGain : AppColors.rust,
               ),
             ),
-            Text('Projected ${positive ? 'profit' : 'loss'} on '
-                '${formatMoney(forecast.projectedRevenueCents, currency)} revenue'),
+            Text(positive
+                ? context.l10n.projectedProfitOn(formatMoney(forecast.projectedRevenueCents, currency))
+                : context.l10n.projectedLossOn(formatMoney(forecast.projectedRevenueCents, currency))),
             const SizedBox(height: 8),
             Text(breakEven, style: const TextStyle(fontWeight: FontWeight.w600)),
             if (forecast.confirmedUpcomingCents > 0)
-              Text('${formatMoney(forecast.confirmedUpcomingCents, currency)} already booked for the rest of the month.',
+              Text(context.l10n.alreadyBookedRest(formatMoney(forecast.confirmedUpcomingCents, currency)),
                   style: textTheme.bodySmall),
-            Text('Based on your pace so far this month and bookings already in the diary.', style: textTheme.bodySmall),
+            Text(context.l10n.basedOnPace, style: textTheme.bodySmall),
           ],
         ),
       ),
@@ -251,7 +260,7 @@ class _SuggestionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '+${formatMoney(suggestion.monthlyGainCents, currency)}/mo',
+                    context.l10n.gainPerMonthShort(formatMoney(suggestion.monthlyGainCents, currency)),
                     style: const TextStyle(color: financeGain, fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -260,7 +269,7 @@ class _SuggestionCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(suggestion.detail),
             const SizedBox(height: 6),
-            Text('Estimate: ${suggestion.assumptions}', style: textTheme.bodySmall?.copyWith(color: AppColors.steel)),
+            Text(context.l10n.estimate(suggestion.assumptions), style: textTheme.bodySmall?.copyWith(color: AppColors.steel)),
           ],
         ),
       ),
@@ -295,10 +304,10 @@ class _ProfitChart extends StatelessWidget {
                   Expanded(
                     child: Tooltip(
                       triggerMode: TooltipTriggerMode.tap,
-                      message: '${monthLabel(month.month)}\n'
-                          'Revenue ${formatMoney(month.revenueCents, currency)}\n'
-                          'Costs ${formatMoney(month.costsCents, currency)}\n'
-                          '${month.netCents >= 0 ? 'Profit' : 'Loss'} ${formatMoney(month.netCents, currency)}',
+                      message: '${monthLabel(context.l10n, month.month)}\n'
+                          '${context.l10n.revenueLine(formatMoney(month.revenueCents, currency))}\n'
+                          '${context.l10n.costsLine(formatMoney(month.costsCents, currency))}\n'
+                          '${month.netCents >= 0 ? context.l10n.profitLine(formatMoney(month.netCents, currency)) : context.l10n.lossLine(formatMoney(month.netCents, currency))}',
                       child: Column(
                         children: [
                           SizedBox(
@@ -322,7 +331,9 @@ class _ProfitChart extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            roomy ? monthLabel(month.month, short: true) : monthLabel(month.month, short: true)[0],
+                            roomy
+                                ? monthLabel(context.l10n, month.month, short: true)
+                                : monthLabel(context.l10n, month.month, short: true)[0],
                             style: Theme.of(context).textTheme.labelSmall,
                           ),
                         ],
@@ -360,7 +371,7 @@ class _Heatmap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (cells.isEmpty) return const _Empty('Set your opening hours and staff to see this.');
+    if (cells.isEmpty) return _Empty(context.l10n.setHoursToSee);
     final byKey = {for (final c in cells) (c.weekday, c.hour): c};
     final days = {for (final c in cells) c.weekday}.toList()..sort();
     final firstHour = cells.map((c) => c.hour).reduce((a, b) => a < b ? a : b);
@@ -384,7 +395,7 @@ class _Heatmap extends StatelessWidget {
             for (final day in days)
               Row(
                 children: [
-                  SizedBox(width: 34, child: Text(_weekdayShort[day], style: small)),
+                  SizedBox(width: 34, child: Text(_weekdayShort(context, day), style: small)),
                   for (final h in hours)
                     Expanded(
                       child: Builder(builder: (context) {
@@ -393,8 +404,8 @@ class _Heatmap extends StatelessWidget {
                         return Tooltip(
                           triggerMode: TooltipTriggerMode.tap,
                           message: value == null
-                              ? '${_weekdayShort[day]} $h:00 · closed'
-                              : '${_weekdayShort[day]} $h:00 · ${_percent(value)} booked',
+                              ? context.l10n.heatClosed(_weekdayShort(context, day), h)
+                              : context.l10n.heatBooked(_weekdayShort(context, day), h, _percent(value)),
                           child: Container(
                             height: 22,
                             margin: const EdgeInsets.all(1),
@@ -415,7 +426,7 @@ class _Heatmap extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text('Empty ', style: small),
+                Text(context.l10n.heatEmpty, style: small),
                 for (final v in [0.0, 0.25, 0.5, 0.75, 1.0])
                   Container(
                     width: 14,
@@ -423,7 +434,7 @@ class _Heatmap extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 1),
                     color: AppColors.brass.withValues(alpha: 0.08 + 0.92 * v),
                   ),
-                Text(' Full', style: small),
+                Text(context.l10n.heatFull, style: small),
               ],
             ),
           ],
@@ -441,7 +452,7 @@ class _BarbersCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (barbers.isEmpty) return const _Empty('No staff yet.');
+    if (barbers.isEmpty) return _Empty(context.l10n.noStaffYet);
     return Card(
       margin: EdgeInsets.zero,
       child: Column(
@@ -459,7 +470,7 @@ class _BarbersCard extends StatelessWidget {
                       Text(formatMoney(b.revenueCents, currency)),
                     ],
                   ),
-                  Text('${b.bookings} booking${b.bookings == 1 ? '' : 's'} · ${_percent(b.utilisation)} of their hours booked',
+                  Text(context.l10n.barberStats(b.bookings, _percent(b.utilisation)),
                       style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 4),
                   ClipRRect(
@@ -505,26 +516,26 @@ class _CustomersCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                stat('${customers.customersLast30Days}', 'customers'),
-                stat('${customers.newLast30Days}', 'new'),
-                stat('${customers.returningLast30Days}', 'returning'),
-                stat(_percent(customers.returnRate), 'came back*'),
+                stat('${customers.customersLast30Days}', context.l10n.statCustomers),
+                stat('${customers.newLast30Days}', context.l10n.statNew),
+                stat('${customers.returningLast30Days}', context.l10n.statReturning),
+                stat(_percent(customers.returnRate), context.l10n.statCameBack),
               ],
             ),
             const SizedBox(height: 6),
-            Text('* Of customers who visited 6–12 weeks ago, the share who have been back since.',
+            Text(context.l10n.cameBackFootnote,
                 style: textTheme.bodySmall),
             if (customers.atRisk.isNotEmpty) ...[
               const Divider(height: 24),
-              Text('Regulars you\'re losing', style: textTheme.titleSmall),
-              Text('Usually back every few weeks — now well overdue. Worth a message.', style: textTheme.bodySmall),
+              Text(context.l10n.regularsLosing, style: textTheme.titleSmall),
+              Text(context.l10n.regularsLosingSub, style: textTheme.bodySmall),
               for (final c in customers.atRisk)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                   title: Text('@${c.username}'),
-                  subtitle: Text('${c.visits} visits · usually every ${c.usualGapDays} days'),
-                  trailing: Text('${c.daysSince} days ago', style: const TextStyle(color: AppColors.rust)),
+                  subtitle: Text(context.l10n.visitsUsually(c.visits, c.usualGapDays)),
+                  trailing: Text(context.l10n.daysAgo(c.daysSince), style: const TextStyle(color: AppColors.rust)),
                 ),
             ],
           ],
@@ -542,7 +553,7 @@ class _ServicesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (services.isEmpty) return const _Empty('No completed bookings in the last 90 days.');
+    if (services.isEmpty) return _Empty(context.l10n.noCompletedBookings90);
     return Card(
       margin: EdgeInsets.zero,
       child: Column(
@@ -550,8 +561,8 @@ class _ServicesCard extends StatelessWidget {
           for (final s in services)
             ListTile(
               title: Text(s.name),
-              subtitle: Text('${s.bookings} bookings · ${_percent(s.share)} of all · '
-                  '${s.bookings >= s.previousBookings ? '▲' : '▼'} from ${s.previousBookings}'),
+              subtitle: Text(context.l10n.serviceStats(
+                  s.bookings, _percent(s.share), s.bookings >= s.previousBookings ? '▲' : '▼', s.previousBookings)),
               trailing: Text(formatMoney(s.revenueCents, currency), style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
         ],
@@ -593,9 +604,9 @@ class _WhatIfCardState extends State<_WhatIfCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Prices ${pct(_price)}'),
+            Text(context.l10n.pricesChange(pct(_price))),
             Slider(value: _price, min: -0.2, max: 0.3, divisions: 10, label: pct(_price), onChanged: (v) => setState(() => _price = v)),
-            Text('Number of bookings ${pct(_bookings)}'),
+            Text(context.l10n.bookingsChange(pct(_bookings))),
             Slider(
               value: _bookings,
               min: -0.3,
@@ -606,15 +617,15 @@ class _WhatIfCardState extends State<_WhatIfCard> {
             ),
             Row(
               children: [
-                Expanded(child: Text('${monthLabel(b.month, short: true)} actual: ${formatMoney(b.netCents, widget.currency)}')),
+                Expanded(child: Text(context.l10n.monthActual(monthLabel(context.l10n, b.month, short: true), formatMoney(b.netCents, widget.currency)))),
                 Text(
-                  'Would be ${formatMoney(projected, widget.currency)}',
+                  context.l10n.wouldBe(formatMoney(projected, widget.currency)),
                   style: TextStyle(fontWeight: FontWeight.w700, color: projected >= 0 ? financeGain : AppColors.rust),
                 ),
               ],
             ),
             Text(
-              '${change >= 0 ? '+' : ''}${formatMoney(change, widget.currency)} a month',
+              context.l10n.amountAMonth('${change >= 0 ? '+' : ''}${formatMoney(change, widget.currency)}'),
               textAlign: TextAlign.end,
               style: Theme.of(context).textTheme.bodySmall,
             ),

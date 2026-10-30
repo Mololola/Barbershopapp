@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../domain/worker_invitation.dart';
 
 extension InvitationStatusStyle on InvitationStatus {
-  String get label => switch (this) {
-        InvitationStatus.pending => 'Pending',
-        InvitationStatus.accepted => 'Accepted',
-        InvitationStatus.declined => 'Declined',
+  String label(AppLocalizations l10n) => switch (this) {
+        InvitationStatus.pending => l10n.invitationPending,
+        InvitationStatus.accepted => l10n.invitationAccepted,
+        InvitationStatus.declined => l10n.invitationDeclined,
       };
 
   IconData get icon => switch (this) {

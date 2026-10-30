@@ -1,6 +1,7 @@
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/picked_media.dart';
 import '../domain/profile.dart';
 
@@ -14,11 +15,12 @@ class UsernameTakenException implements Exception {
 }
 
 class ProfileRepository {
-  ProfileRepository(this._client);
+  ProfileRepository(this._client, this._cache);
 
   static const _uniqueViolation = '23505';
 
   final SupabaseClient _client;
+  final OfflineCache _cache;
 
   Future<void> insertProfile({
     required String id,
@@ -46,7 +48,7 @@ class ProfileRepository {
   }
 
   Future<Profile?> fetchOwnProfile(String userId) async {
-    final row = await _client.from('profiles').select('*, is_minor:profile_is_minor').eq('id', userId).maybeSingle();
+    final row = await _cache.row('profile:$userId', () => _client.from('profiles').select('*, is_minor:profile_is_minor').eq('id', userId).maybeSingle());
     if (row == null) return null;
     return Profile.fromRow(row);
   }
@@ -76,7 +78,7 @@ class ProfileRepository {
     final path = '$uid/$fileName${extensionOf(image)}';
     await _client.storage.from('avatars').uploadBinary(
           path,
-          await image.readAsBytes(),
+          await uploadBytes(image),
           fileOptions: const FileOptions(upsert: true),
         );
     // Cache-bust: the path (and therefore URL) is identical across edits
@@ -87,5 +89,20 @@ class ProfileRepository {
 
   Future<void> updateAvatarUrl(String profileId, String avatarUrl) async {
     await _client.from('profiles').update({'avatar_url': avatarUrl}).eq('id', profileId);
+  }
+
+  /// Avatars are public by URL, so the file is deleted too, not only the
+  /// link to it. The path is whatever follows the bucket name in the URL.
+  Future<void> removeAvatar(String profileId, String avatarUrl) async {
+    await _client.from('profiles').update({'avatar_url': null}).eq('id', profileId);
+    final segments = Uri.parse(avatarUrl).pathSegments;
+    final bucket = segments.indexOf('avatars');
+    if (bucket != -1) await _client.storage.from('avatars').remove([segments.skip(bucket + 1).join('/')]);
+  }
+
+  /// Blank means "not set", stored as null (the columns reject '').
+  Future<void> updateDetails(String profileId, {required String displayName, required String bio}) async {
+    String? orNull(String value) => value.trim().isEmpty ? null : value.trim();
+    await _client.from('profiles').update({'display_name': orNull(displayName), 'bio': orNull(bio)}).eq('id', profileId);
   }
 }

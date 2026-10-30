@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/l10n.dart';
 import '../application/auth_controller.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -47,7 +48,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _resendConfirmation() async {
     await ref.read(authControllerProvider.notifier).resendConfirmationEmail(_emailController.text.trim());
     if (!mounted) return;
-    final message = ref.read(authControllerProvider).hasError ? 'Couldn\'t resend — try again shortly.' : 'Confirmation email sent.';
+    final message = ref.read(authControllerProvider).hasError ? context.l10n.resendConfirmationFailed : context.l10n.confirmationEmailSent;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
@@ -56,7 +57,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign in')),
+      appBar: AppBar(title: Text(context.l10n.signInTitle)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -65,26 +66,26 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: InputDecoration(labelText: context.l10n.emailLabel),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Required';
-                  if (!value.contains('@')) return 'Enter a valid email';
+                  if (value == null || value.trim().isEmpty) return context.l10n.requiredField;
+                  if (!value.contains('@')) return context.l10n.invalidEmail;
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: InputDecoration(labelText: context.l10n.passwordLabel),
                 obscureText: true,
-                validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
+                validator: (value) => (value == null || value.isEmpty) ? context.l10n.requiredField : null,
               ),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => context.push('/forgot-password'),
-                  child: const Text('Forgot password?'),
+                  child: Text(context.l10n.forgotPasswordLink),
                 ),
               ),
               const SizedBox(height: 8),
@@ -97,7 +98,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
-                    authState.error.toString(),
+                    describeError(context.l10n, authState.error),
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
@@ -106,29 +107,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: OutlinedButton(
                     onPressed: authState.isLoading ? null : _resendConfirmation,
-                    child: const Text('Resend confirmation email'),
+                    child: Text(context.l10n.resendConfirmationEmail),
                   ),
                 ),
               FilledButton(
                 onPressed: authState.isLoading ? null : _submit,
                 child: authState.isLoading
                     ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Sign in'),
+                    : Text(context.l10n.signInTitle),
               ),
               TextButton(
                 onPressed: () => context.go('/sign-up'),
-                child: const Text("Don't have an account? Sign up"),
+                child: Text(context.l10n.noAccountSignUp),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('or')), Expanded(child: Divider())]),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Row(children: [const Expanded(child: Divider()), Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(context.l10n.orDivider)), const Expanded(child: Divider())]),
               ),
               OutlinedButton.icon(
                 onPressed: authState.isLoading
                     ? null
                     : () => ref.read(authControllerProvider.notifier).signInWithOAuth(OAuthProvider.google),
                 icon: const Icon(Icons.g_mobiledata),
-                label: const Text('Continue with Google'),
+                label: Text(context.l10n.continueWithGoogle),
               ),
             ],
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n.dart';
 import '../application/auth_controller.dart';
 
 /// What a customer account sees on the website, which is for shops:
@@ -12,21 +13,20 @@ class GetTheAppScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Use the app'), automaticallyImplyLeading: false),
+      appBar: AppBar(title: Text(context.l10n.useTheAppTitle), automaticallyImplyLeading: false),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('This website is for barbershops.', style: textTheme.titleLarge),
+          Text(context.l10n.websiteIsForShops, style: textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
-            'Booking, your rewards and the feed are in the Fadra Cut app — sign in there on your phone '
-            'with this same account.',
+            context.l10n.useTheAppBody,
             style: textTheme.bodyLarge,
           ),
           const SizedBox(height: 24),
           OutlinedButton(
             onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-            child: const Text('Sign out'),
+            child: Text(context.l10n.signOut),
           ),
         ],
       ),

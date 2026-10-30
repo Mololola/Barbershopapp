@@ -1,35 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-import '../../../core/loading.dart';
+import '../../../core/l10n.dart';
 import '../../../core/responsive.dart';
+import '../../../core/skeleton.dart';
 import '../../customer/application/booking_controller.dart';
 import '../../customer/domain/booking.dart';
+import '../../customer/presentation/booking_card.dart';
 import '../application/business_controller.dart';
 
-const _weekdayNames = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
-const _monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 
 class BookingsScreen extends ConsumerWidget {
   const BookingsScreen({super.key});
@@ -37,72 +18,131 @@ class BookingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(businessBookingsProvider);
-    final actionState = ref.watch(bookingActionControllerProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bookings'),
-        actions: [
-          // A desktop page stays open for hours; this fetches bookings made since.
-          if (isWideLayout(context))
-            IconButton(
-              tooltip: 'Refresh',
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.invalidate(businessBookingsProvider),
-            ),
-        ],
-      ),
-      body: bookings.when(
-        loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
-        data: (list) {
-          if (list.isEmpty) {
-            return const Center(child: Text('No bookings yet.'));
-          }
-
-          final groups = _groupByDate(list);
-          return ListView(
-            children: [
-              for (final entry in groups.entries) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Text(
-                    _formatDateHeader(entry.key),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.navBookings),
+          actions: [
+            // A desktop page stays open for hours; this fetches bookings made since.
+            if (isWideLayout(context))
+              IconButton(
+                tooltip: context.l10n.refresh,
+                icon: const Icon(Icons.refresh),
+                onPressed: () => ref.invalidate(businessBookingsProvider),
+              ),
+          ],
+          bottom: TabBar(tabs: [Tab(text: context.l10n.upcomingTab), Tab(text: context.l10n.pastTab)]),
+        ),
+        body: bookings.when(
+          loading: () => const SkeletonList(),
+          error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
+          data: (list) {
+            // Upcoming starts with all of today, so a cut that has just
+            // happened is still there to mark done.
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            final upcoming = list.where((b) => !b.startTime.toLocal().isBefore(today)).toList();
+            final past = list.where((b) => b.startTime.toLocal().isBefore(today)).toList().reversed.toList();
+            return TabBarView(
+              children: [
+                _DayGroupedList(
+                  bookings: upcoming,
+                  today: today,
+                  empty: BookingsEmptyState(
+                    text: context.l10n.noUpcomingBookings,
+                    hint: context.l10n.noUpcomingBookingsShopHint,
+                    actionLabel: context.l10n.editShopPage,
+                    onAction: () => context.push('/business/shop/edit'),
                   ),
                 ),
-                for (final booking in entry.value)
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: ListTile(
-                      title: Text(_formatTime(booking.startTime.toLocal())),
-                      subtitle: Text(_statusLabel(booking.status)),
-                      trailing: booking.status == BookingStatus.confirmed
-                          ? TextButton(
-                              onPressed: actionState.isLoading
-                                  ? null
-                                  : () async {
-                                      await ref
-                                          .read(bookingActionControllerProvider.notifier)
-                                          .completeBooking(booking.id);
-                                      ref.invalidate(businessBookingsProvider);
-                                    },
-                              child: const Text('Mark as done'),
-                            )
-                          : null,
-                    ),
-                  ),
+                _DayGroupedList(
+                  bookings: past,
+                  today: today,
+                  empty: BookingsEmptyState(text: context.l10n.noPastBookings),
+                ),
               ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
+}
 
-  /// Keyed by date-only (local), in the same order the input list arrives
-  /// (already sorted by `start_time` — see `businessBookingsProvider`), so
-  /// this only needs to group consecutive-by-date, not re-sort.
+class _DayGroupedList extends ConsumerWidget {
+  const _DayGroupedList({required this.bookings, required this.today, required this.empty});
+
+  /// Already in display order.
+  final List<Booking> bookings;
+  final DateTime today;
+  final Widget empty;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      // New bookings arrive from customers at any time; pull to catch up.
+      onRefresh: () => ref.refresh(businessBookingsProvider.future),
+      child: bookings.isEmpty ? empty : _list(context, ref),
+    );
+  }
+
+  Widget _list(BuildContext context, WidgetRef ref) {
+    final actionState = ref.watch(bookingActionControllerProvider);
+    final currency = ref.watch(currentBusinessProvider).value?.currency;
+    final groups = _groupByDate(bookings);
+    // On the website a day's bookings sit side by side, so a busy day fits
+    // on screen at the desk.
+    final wide = isWideLayout(context);
+    final cardMargin = wide ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16, vertical: 4);
+    Widget card(Booking booking) => BookingCard(
+          booking: booking,
+          showDate: false,
+          title: booking.customerName,
+          currency: currency,
+          margin: cardMargin,
+          // Marking done asks the customer for a review, so not before the cut starts.
+          action: booking.status == BookingStatus.confirmed && booking.startTime.isBefore(DateTime.now())
+              ? TextButton(
+                  onPressed: actionState.isLoading
+                      ? null
+                      : () async {
+                          await ref.read(bookingActionControllerProvider.notifier).completeBooking(booking.id);
+                          ref.invalidate(businessBookingsProvider);
+                        },
+                  child: Text(context.l10n.markAsDone),
+                )
+              : null,
+        );
+    final sidePadding = wide ? 24.0 : 16.0;
+    return ListView(
+      padding: EdgeInsets.only(bottom: wide ? 24 : 8),
+      children: [
+        for (final entry in groups.entries) ...[
+          Padding(
+            padding: EdgeInsets.fromLTRB(sidePadding, 16, sidePadding, wide ? 8 : 4),
+            child: Text(
+              entry.key == today
+                  ? '${context.l10n.today} · ${_formatDateHeader(context, entry.key)}'
+                  : _formatDateHeader(context, entry.key),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (wide)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sidePadding),
+              child: TileGrid(children: [for (final booking in entry.value) card(booking)]),
+            )
+          else
+            for (final booking in entry.value) card(booking),
+        ],
+      ],
+    );
+  }
+
+  /// Keyed by date-only (local), in the order the list arrives (sorted by
+  /// `start_time`, reversed for Past), so this only groups, never re-sorts.
   Map<DateTime, List<Booking>> _groupByDate(List<Booking> bookings) {
     final groups = <DateTime, List<Booking>>{};
     for (final booking in bookings) {
@@ -113,28 +153,9 @@ class BookingsScreen extends ConsumerWidget {
     return groups;
   }
 
-  String _formatDateHeader(DateTime date) {
-    final weekday = _weekdayNames[date.weekday - 1];
-    final month = _monthNames[date.month - 1];
-    return '$weekday, ${date.day} $month ${date.year}';
-  }
-
-  String _statusLabel(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.confirmed:
-        return 'Confirmed';
-      case BookingStatus.cancelled:
-        return 'Cancelled';
-      case BookingStatus.completed:
-        return 'Completed';
-    }
-  }
-
-  String _formatTime(DateTime dt) {
-    final time = TimeOfDay.fromDateTime(dt);
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$hour:$minute $period';
+  /// "Monday, October 5, 2026" / "Lunes, 5 de octubre de 2026".
+  String _formatDateHeader(BuildContext context, DateTime date) {
+    final header = DateFormat.yMMMMEEEEd(context.l10n.localeName).format(date);
+    return header[0].toUpperCase() + header.substring(1);
   }
 }

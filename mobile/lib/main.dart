@@ -8,13 +8,18 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/adaptive_chrome.dart';
+import 'core/app_language.dart';
 import 'core/env.dart';
 import 'core/error_reporting.dart';
+import 'core/l10n.dart';
 import 'core/launch_animation.dart';
+import 'core/offline_banner.dart';
 import 'core/router.dart';
 import 'core/secure_local_storage.dart';
 import 'core/system_bars.dart';
 import 'core/theme.dart';
+import 'features/customer/application/review_controller.dart';
+import 'features/messaging/application/messaging_controller.dart';
 
 Future<void> main() async {
   runZonedGuarded(() async {
@@ -67,12 +72,18 @@ class BarbershopApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Kept alive so anything written offline goes out as soon as it can.
+    ref.listen(messageOutboxProvider, (_, _) {});
+    ref.listen(reviewOutboxProvider, (_, _) {});
     return MaterialApp.router(
       title: 'Fadra Cut',
       theme: AppTheme.light,
+      locale: ref.watch(appLanguageProvider),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: ref.watch(routerProvider),
       builder: (context, child) =>
-          LaunchAnimation(child: SystemBarsSafeArea(child: AdaptiveChrome(child: child!))),
+          LaunchAnimation(child: SystemBarsSafeArea(child: OfflineBanner(child: AdaptiveChrome(child: child!)))),
     );
   }
 }

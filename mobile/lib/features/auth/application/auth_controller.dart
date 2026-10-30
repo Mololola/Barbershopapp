@@ -4,13 +4,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/api_client.dart';
 import '../../../core/env.dart';
+import '../../../core/offline_cache.dart';
 import '../../../core/supabase_providers.dart';
 import '../data/account_api_client.dart';
 import '../data/profile_repository.dart';
 import '../domain/profile.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
-  return ProfileRepository(ref.watch(supabaseClientProvider));
+  return ProfileRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 final accountApiClientProvider = Provider<AccountApiClient>((ref) {
@@ -109,6 +110,7 @@ class AuthController extends AsyncNotifier<void> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await ref.read(supabaseClientProvider).auth.signOut();
+      await OfflineCache.clear();
       ref.invalidate(currentProfileProvider);
     });
   }
@@ -178,6 +180,7 @@ class AuthController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       await ref.read(accountApiClientProvider).deleteAccount();
       await ref.read(supabaseClientProvider).auth.signOut();
+      await OfflineCache.clear();
       ref.invalidate(currentProfileProvider);
     });
   }
@@ -197,11 +200,42 @@ class ProfileEditController extends AsyncNotifier<void> {
       final profile = await ref.read(currentProfileProvider.future);
       if (profile == null) throw StateError('No signed-in profile.');
       await ref.read(profileRepositoryProvider).updateAvatar(profileId: profile.id, image: image);
-      ref.invalidate(currentProfileProvider);
-      ref.invalidate(profileByIdProvider(profile.id));
-      await ref.read(currentProfileProvider.future);
+      await _reload(profile.id);
       success = true;
     });
     return success;
+  }
+
+  Future<bool> removeAvatar() async {
+    state = const AsyncLoading();
+    var success = false;
+    state = await AsyncValue.guard(() async {
+      final profile = await ref.read(currentProfileProvider.future);
+      if (profile == null) throw StateError('No signed-in profile.');
+      final avatarUrl = profile.avatarUrl;
+      if (avatarUrl != null) await ref.read(profileRepositoryProvider).removeAvatar(profile.id, avatarUrl);
+      await _reload(profile.id);
+      success = true;
+    });
+    return success;
+  }
+
+  Future<bool> saveDetails({required String displayName, required String bio}) async {
+    state = const AsyncLoading();
+    var success = false;
+    state = await AsyncValue.guard(() async {
+      final profile = await ref.read(currentProfileProvider.future);
+      if (profile == null) throw StateError('No signed-in profile.');
+      await ref.read(profileRepositoryProvider).updateDetails(profile.id, displayName: displayName, bio: bio);
+      await _reload(profile.id);
+      success = true;
+    });
+    return success;
+  }
+
+  Future<void> _reload(String profileId) async {
+    ref.invalidate(currentProfileProvider);
+    ref.invalidate(profileByIdProvider(profileId));
+    await ref.read(currentProfileProvider.future);
   }
 }

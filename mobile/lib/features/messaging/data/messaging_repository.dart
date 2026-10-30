@@ -1,12 +1,14 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../domain/conversation.dart';
 import '../domain/message.dart';
 
 class MessagingRepository {
-  MessagingRepository(this._client);
+  MessagingRepository(this._client, this._cache);
 
   final SupabaseClient _client;
+  final OfflineCache _cache;
 
   /// Sorting the pair before upsert (matched by the migration's `check
   /// (participant_a_id < participant_b_id)` + unique constraint) means this
@@ -36,7 +38,7 @@ class MessagingRepository {
   /// the unread count counted on the server — never the whole message
   /// history.
   Future<List<Conversation>> fetchConversations(String myId) async {
-    final rows = await _client
+    final rows = await _cache.rows('conversations', () => _client
         .from('conversations')
         .select(
           'id, participant_a_id, participant_b_id, type, '
@@ -48,7 +50,7 @@ class MessagingRepository {
         .isFilter('unread.read_at', null)
         .neq('unread.sender_id', myId)
         .order('created_at', ascending: false, referencedTable: 'last_message')
-        .limit(1, referencedTable: 'last_message');
+        .limit(1, referencedTable: 'last_message'));
 
     final conversations = rows.map((row) {
       final id = row['id'] as String;
@@ -82,11 +84,11 @@ class MessagingRepository {
   }
 
   Future<List<Message>> fetchMessages(String conversationId) async {
-    final rows = await _client
+    final rows = await _cache.rows('messages:$conversationId', () => _client
         .from('messages')
         .select()
         .eq('conversation_id', conversationId)
-        .order('created_at', ascending: true);
+        .order('created_at', ascending: true));
     return rows.map(Message.fromRow).toList();
   }
 

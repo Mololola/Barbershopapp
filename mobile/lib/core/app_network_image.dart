@@ -1,10 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
 /// A network image that fades in once loaded instead of popping in on
 /// whatever frame the bytes happen to land, and shows a plain broken-image
-/// state instead of a raw exception if the fetch fails.
+/// state instead of a raw exception if the fetch fails. Kept on the phone
+/// once loaded, so it still shows offline.
 class AppNetworkImage extends StatelessWidget {
   const AppNetworkImage(this.url, {super.key, this.fit = BoxFit.cover});
 
@@ -13,8 +15,8 @@ class AppNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      url,
+    return Image(
+      image: CachedNetworkImageProvider(url),
       fit: fit,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;

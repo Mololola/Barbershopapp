@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/picked_media.dart';
 import '../../customer/domain/public_business.dart';
@@ -53,7 +54,7 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
     final hasChanges = _logo != null || _cover != null || _brandColor != null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit shop page')),
+      appBar: AppBar(title: Text(context.l10n.editShopPage)),
       body: ListView(
         children: [
           ShopHeader(
@@ -75,14 +76,14 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('This is how your page\'s header looks to customers.', style: textTheme.bodySmall),
+                Text(context.l10n.shopHeaderPreviewHint, style: textTheme.bodySmall),
                 const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.storefront_outlined),
-                        label: const Text('Logo'),
+                        label: Text(context.l10n.logo),
                         onPressed: () async {
                           final file = await _pickLogo();
                           if (file != null) setState(() => _logo = file);
@@ -93,7 +94,7 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
                     Expanded(
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.panorama_outlined),
-                        label: const Text('Cover photo'),
+                        label: Text(context.l10n.coverPhoto),
                         onPressed: () async {
                           final file = await _pickCover();
                           if (file != null) setState(() => _cover = file);
@@ -104,12 +105,12 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Best cover size: 1600 × 640. No logo? Your initials are shown. No cover? Your brand colour is used.',
+                  context.l10n.coverSizeHint,
                   style: textTheme.bodySmall,
                 ),
                 const SizedBox(height: 24),
-                Text('Brand colour', style: textTheme.titleMedium),
-                Text('Used for your header, buttons and highlights.', style: textTheme.bodySmall),
+                Text(context.l10n.brandColour, style: textTheme.titleMedium),
+                Text(context.l10n.brandColourHint, style: textTheme.bodySmall),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 12,
@@ -137,7 +138,7 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
-                      saveState.error.toString(),
+                      describeError(context.l10n, saveState.error),
                       style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   ),
@@ -145,7 +146,7 @@ class _EditShopPageScreenState extends ConsumerState<EditShopPageScreen> {
                   onPressed: hasChanges && !saveState.isLoading ? _save : null,
                   child: saveState.isLoading
                       ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Save'),
+                      : Text(context.l10n.save),
                 ),
               ],
             ),

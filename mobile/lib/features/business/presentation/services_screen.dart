@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/loading.dart';
+import '../../../core/l10n.dart';
+import '../../../core/skeleton.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 import '../domain/finance_overview.dart';
@@ -45,28 +46,28 @@ class ServicesScreen extends ConsumerWidget {
               ],
               TextFormField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
+                decoration: InputDecoration(labelText: context.l10n.name),
+                validator: (value) => (value == null || value.trim().isEmpty) ? context.l10n.requiredField : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: priceController,
-                decoration: const InputDecoration(labelText: 'Price'),
+                decoration: InputDecoration(labelText: context.l10n.price),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Required';
-                  if (double.tryParse(value) == null) return 'Enter a number';
+                  if (value == null || value.trim().isEmpty) return context.l10n.requiredField;
+                  if (double.tryParse(value) == null) return context.l10n.enterANumber;
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: durationController,
-                decoration: const InputDecoration(labelText: 'Duration (minutes)'),
+                decoration: InputDecoration(labelText: context.l10n.durationMinutes),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Required';
-                  if (int.tryParse(value) == null) return 'Enter a whole number';
+                  if (value == null || value.trim().isEmpty) return context.l10n.requiredField;
+                  if (int.tryParse(value) == null) return context.l10n.enterAWholeNumber;
                   return null;
                 },
               ),
@@ -74,12 +75,12 @@ class ServicesScreen extends ConsumerWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
           FilledButton(
             onPressed: () {
               if (formKey.currentState!.validate()) Navigator.pop(context, true);
             },
-            child: Text(existing == null ? 'Add' : 'Save'),
+            child: Text(existing == null ? context.l10n.add : context.l10n.save),
           ),
         ],
       ),
@@ -97,13 +98,14 @@ class ServicesScreen extends ConsumerWidget {
   /// subscription what their monthly payment becomes. True to go ahead.
   Future<bool> _confirmPriceChange(BuildContext context, WidgetRef ref, int basicCutPriceCents) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final business = await ref.read(currentBusinessProvider.future);
     if (business == null) return false;
     final ({int? currentCents, int newCents}) quote;
     try {
       quote = await ref.read(billingApiClientProvider).quoteSubscriptionPrice(business.id, basicCutPriceCents);
     } catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+      messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, error))));
       return false;
     }
     final currentCents = quote.currentCents;
@@ -112,15 +114,14 @@ class ServicesScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Your monthly subscription changes'),
-        content: Text(
-          'From your next payment it goes from ${formatMoney(currentCents, business.currency)} to '
-          '${formatMoney(quote.newCents, business.currency)} a month. Nothing changes for the month '
-          'you\'ve already paid.',
-        ),
+        title: Text(context.l10n.subscriptionChangesTitle),
+        content: Text(context.l10n.subscriptionChangesBody(
+          formatMoney(currentCents, business.currency),
+          formatMoney(quote.newCents, business.currency),
+        )),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Continue')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.l10n.continueButton)),
         ],
       ),
     );
@@ -130,8 +131,8 @@ class ServicesScreen extends ConsumerWidget {
   Future<void> _add(BuildContext context, WidgetRef ref, {required bool isFirst}) async {
     final values = await _showServiceDialog(
       context,
-      title: isFirst ? 'Your basic cut' : 'Add service',
-      helper: isFirst ? 'Your standard haircut, with its price and duration.' : null,
+      title: isFirst ? context.l10n.yourBasicCut : context.l10n.addService,
+      helper: isFirst ? context.l10n.basicCutHelper : null,
     );
     if (values == null || !context.mounted) return;
     if (isFirst && !await _confirmPriceChange(context, ref, values.priceCents)) return;
@@ -146,7 +147,7 @@ class ServicesScreen extends ConsumerWidget {
   Future<void> _edit(BuildContext context, WidgetRef ref, Service service) async {
     final values = await _showServiceDialog(
       context,
-      title: service.isBasicCut ? 'Edit your basic cut' : 'Edit service',
+      title: service.isBasicCut ? context.l10n.editBasicCut : context.l10n.editService,
       existing: service,
     );
     if (values == null || !context.mounted) return;
@@ -177,12 +178,9 @@ class ServicesScreen extends ConsumerWidget {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Your shop needs a basic cut'),
-          content: const Text(
-            'To change it, edit it, or add another service and make that your basic cut. Then you can '
-            'remove this one.',
-          ),
-          actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+          title: Text(context.l10n.shopNeedsBasicCut),
+          content: Text(context.l10n.shopNeedsBasicCutBody),
+          actions: [FilledButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.ok))],
         ),
       );
       return;
@@ -190,11 +188,11 @@ class ServicesScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Remove ${service.name}?'),
-        content: const Text('Customers won\'t be able to book it any more. Bookings already made for it are kept.'),
+        title: Text(context.l10n.removeServiceTitle(service.name)),
+        content: Text(context.l10n.removeServiceBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.l10n.remove)),
         ],
       ),
     );
@@ -211,7 +209,7 @@ class ServicesScreen extends ConsumerWidget {
     final isEmpty = services.value?.isEmpty ?? true;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Services')),
+      appBar: AppBar(title: Text(context.l10n.services)),
       bottomNavigationBar: setupFooter,
       // Setup asks for the basic cut only; the rest come after.
       floatingActionButton: setupFooter != null && !isEmpty
@@ -220,17 +218,17 @@ class ServicesScreen extends ConsumerWidget {
               heroTag: null,
               onPressed: () => _add(context, ref, isFirst: isEmpty),
               icon: const Icon(Icons.add),
-              label: Text(isEmpty ? 'Add your basic cut' : 'Add service'),
+              label: Text(isEmpty ? context.l10n.addYourBasicCut : context.l10n.addService),
             ),
       body: services.when(
-        loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        loading: () => const SkeletonList(),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('Start with your basic cut — your standard haircut.', textAlign: TextAlign.center),
+                padding: const EdgeInsets.all(24),
+                child: Text(context.l10n.startWithBasicCut, textAlign: TextAlign.center),
               ),
             );
           }
@@ -251,7 +249,7 @@ class ServicesScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            'Basic cut',
+                            context.l10n.basicCut,
                             style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary),
                           ),
                         ),
@@ -262,16 +260,16 @@ class ServicesScreen extends ConsumerWidget {
                     '$symbol${service.priceInMajorUnits.toStringAsFixed(2)} · ${service.durationMinutes} min',
                   ),
                   trailing: PopupMenuButton<String>(
-                    tooltip: 'Service options',
+                    tooltip: context.l10n.serviceOptions,
                     onSelected: (action) => switch (action) {
                       'edit' => _edit(context, ref, service),
                       'basic' => _makeBasicCut(context, ref, service),
                       _ => _remove(context, ref, service),
                     },
                     itemBuilder: (_) => [
-                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      if (!service.isBasicCut) const PopupMenuItem(value: 'basic', child: Text('Make basic cut')),
-                      const PopupMenuItem(value: 'remove', child: Text('Remove')),
+                      PopupMenuItem(value: 'edit', child: Text(context.l10n.edit)),
+                      if (!service.isBasicCut) PopupMenuItem(value: 'basic', child: Text(context.l10n.makeBasicCut)),
+                      PopupMenuItem(value: 'remove', child: Text(context.l10n.remove)),
                     ],
                   ),
                 ),

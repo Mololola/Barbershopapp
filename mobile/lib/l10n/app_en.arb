@@ -1,0 +1,1494 @@
+{
+  "@@locale": "en",
+  "signInTitle": "Sign in",
+  "emailLabel": "Email",
+  "passwordLabel": "Password",
+  "requiredField": "Required",
+  "invalidEmail": "Enter a valid email",
+  "forgotPasswordLink": "Forgot password?",
+  "resendConfirmationFailed": "Couldn't resend — try again shortly.",
+  "confirmationEmailSent": "Confirmation email sent.",
+  "resendConfirmationEmail": "Resend confirmation email",
+  "noAccountSignUp": "Don't have an account? Sign up",
+  "orDivider": "or",
+  "continueWithGoogle": "Continue with Google",
+  "mustBe14": "You must be at least 14 to create an account.",
+  "dateOfBirthRequired": "Date of birth is required.",
+  "confirmAdultOwner": "Confirm you're 18 or over and authorised to register this business.",
+  "mustAgreeToTerms": "You must agree to the Terms of Service and Privacy Policy.",
+  "finishAccountSetupTitle": "Finish setting up your account",
+  "createBusinessAccountTitle": "Create business account",
+  "createAccountTitle": "Create account",
+  "roleCustomer": "Customer",
+  "roleBusiness": "Business",
+  "businessSignUpStepHint": "Step 1 of 2: your login. After confirming your email you'll set up your business — locations, opening hours, services and staff.",
+  "businessNameLabel": "Business name",
+  "dateOfBirthLabel": "Date of birth",
+  "selectDate": "Select date",
+  "minorAccountNotice": "Under 18 — messaging, posting, and business/worker features aren't available on your account.",
+  "businessHandleLabel": "Business handle",
+  "businessHandleHelper": "Must be unique — your @name on posts",
+  "usernameLabel": "Username",
+  "usernameHelper": "Must be unique — shown on rankings and posts",
+  "atLeast3Characters": "At least 3 characters",
+  "atLeast6Characters": "At least 6 characters",
+  "adultOwnerCheckbox": "I'm 18 or over and authorised to register this business",
+  "agreePrefix": "I agree to the ",
+  "termsOfService": "Terms of Service",
+  "agreeAnd": " and ",
+  "privacyPolicy": "Privacy Policy",
+  "finishButton": "Finish",
+  "signUpButton": "Sign up",
+  "useDifferentAccount": "Use a different account",
+  "haveAccountSignIn": "Already have an account? Sign in",
+  "resetPasswordTitle": "Reset password",
+  "resetLinkSent": "Check your email for a link to reset your password.",
+  "resetPasswordIntro": "Enter the email you signed up with and we'll send you a reset link.",
+  "sendResetLink": "Send reset link",
+  "setNewPasswordTitle": "Set a new password",
+  "newPasswordLabel": "New password",
+  "confirmNewPasswordLabel": "Confirm new password",
+  "passwordsDontMatch": "Passwords don't match",
+  "updatePassword": "Update password",
+  "useTheAppTitle": "Use the app",
+  "websiteIsForShops": "This website is for barbershops.",
+  "useTheAppBody": "Booking, your rewards and the feed are in the Fadra Cut app — sign in there on your phone with this same account.",
+  "signOut": "Sign out",
+  "settingsTitle": "Settings",
+  "yourShopGroup": "Your shop",
+  "shopPage": "Shop page",
+  "shopPageSubtitle": "Logo, cover photo and brand colour",
+  "businessDetails": "Business details",
+  "businessDetailsSubtitle": "Locations and opening hours",
+  "services": "Services",
+  "servicesSubtitle": "What you offer, prices and durations",
+  "subscriptionBilling": "Subscription & billing",
+  "subscriptionBillingSubtitle": "Your plan, free trial, cancel, invoices",
+  "referredBy": "Referred by",
+  "noReferralCodeUsed": "No referral code was used",
+  "yourProfileGroup": "Your profile",
+  "workerProfile": "Worker profile",
+  "workerProfileSubtitle": "Legal name, bio and availability to work at a shop",
+  "yourReferralCode": "Your referral code",
+  "referralCodeCopied": "Referral code copied",
+  "accountGroup": "Account",
+  "language": "Language",
+  "phoneLanguage": "Phone language",
+  "adminEntry": "Admin",
+  "adminEntrySubtitle": "Dashboard, customers, businesses, payouts",
+  "deleteAccount": "Delete account",
+  "deleteAccountSubtitle": "Permanently deletes your account and all its data",
+  "deleteAccountTitle": "Delete your account?",
+  "deleteAccountBody": "This permanently deletes your account and everything tied to it — profile, bookings, reviews, posts, messages. This can't be undone.",
+  "cancel": "Cancel",
+  "unpaidRewardsTitle": "You have rewards not paid out yet",
+  "unpaidRewardsBody": "You have {amounts} that hasn't been paid to you. Cash it out first, or delete your account and give it up — it can't be paid after your account is gone.",
+  "@unpaidRewardsBody": {
+    "placeholders": {
+      "amounts": {
+        "type": "String"
+      }
+    }
+  },
+  "giveItUp": "Give it up",
+  "cashOut": "Cash out",
+  "listAnd": " and ",
+  "changePhoto": "Change photo",
+  "save": "Save",
+  "policyUpdateTitle": "We've updated our Terms and Privacy Policy",
+  "policyUpdateBody": "In effect from {date}. Rewards not yet paid out are given up if you delete your account (you're offered a cash-out first), and records of rewards already paid to you are kept for 6 years for tax purposes. By continuing to use the app you accept the updated versions.",
+  "@policyUpdateBody": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMMd"
+      }
+    }
+  },
+  "termsShort": "Terms",
+  "ok": "OK",
+  "forBusiness": "for Business",
+  "webPanelBookings": "Bookings and staff schedules at a glance",
+  "webPanelFinance": "Costs, break-even and forecasts on a big screen",
+  "webPanelShop": "Your shop page, posts and messages",
+  "webPanelHeadline": "Run your shop\nfrom any screen.",
+  "webPanelSubhead": "Everything in the app, with room to see it.",
+  "webPanelFooter": "Customers book on the Fadra Cut app.",
+  "navHome": "Home",
+  "navBookings": "Bookings",
+  "navStaff": "Staff",
+  "navFinance": "Finance",
+  "navFeed": "Feed",
+  "navMessages": "Messages",
+  "navProfile": "Profile",
+  "navSubscription": "Subscription",
+  "navBrowse": "Browse",
+  "navDesigns": "Designs",
+  "navRewards": "Rewards",
+  "navRankings": "Rankings",
+  "barbershopSubtitle": "Barbershop",
+  "greeting": "Hey, {name}",
+  "greetingNoName": "Hey there",
+  "whatsNext": "Here's what's next.",
+  "quickActions": "Quick actions",
+  "myBookings": "My bookings",
+  "nextUp": "NEXT UP",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "inDays": "In {days} days",
+  "loadingEllipsis": "Loading…",
+  "view": "View",
+  "jobInvitations": "{count, plural, =1{A barbershop wants to hire you — 1 job invitation waiting.} other{A barbershop wants to hire you — {count} job invitations waiting.}}",
+  "noAppointments": "No appointments booked",
+  "noAppointmentsHint": "Find a shop and get in the chair.",
+  "browseBarbershops": "Browse barbershops",
+  "closureWithinADay": "This booking will be cancelled within a day unless the shop renews its subscription.",
+  "closureBy": "This shop hasn't renewed its subscription. If it doesn't by {date}, this booking will be cancelled.",
+  "@greeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@inDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@jobInvitations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@closureBy": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "MMMd"
+      }
+    }
+  },
+  "noBookingsYet": "No bookings yet.",
+  "reviewed": "Reviewed",
+  "leaveAReview": "Leave a review",
+  "bookingConfirmed": "Confirmed",
+  "bookingCancelled": "Cancelled",
+  "bookingCompleted": "Completed",
+  "bookAppointment": "Book appointment",
+  "day": "Day",
+  "calendar": "Calendar",
+  "pickATime": "Pick a time to continue",
+  "withBarber": "with {name}",
+  "@withBarber": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "book": "Book",
+  "findingFreeTimes": "Finding free times…",
+  "couldntLoadTimes": "Couldn't load times",
+  "checkConnection": "Check your connection and try again.",
+  "tryAgain": "Try again",
+  "noFreeTimesOn": "No free times on {day}",
+  "@noFreeTimesOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "shopClosedOrFull": "The shop is closed or fully booked that day.",
+  "tryDay": "Try {day}",
+  "@tryDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "morning": "Morning",
+  "afternoon": "Afternoon",
+  "evening": "Evening",
+  "barber": "Barber",
+  "freeCount": "{count} free",
+  "@freeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "anyBarber": "Any barber",
+  "findAShop": "Find a shop",
+  "noBarbershopsYet": "No barbershops yet",
+  "noBarbershopsHint": "Check back soon — new shops show up here.",
+  "noMatchesFor": "No matches for \"{query}\"",
+  "@noMatchesFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "skipRatingTitle": "Skip this rating?",
+  "skipRatingBody": "Ratings can earn you rewards later on — if you skip this one, you won't get anything for it. Skip anyway?",
+  "skipAnyway": "Skip anyway",
+  "omit": "Omit",
+  "submitReview": "Submit review",
+  "next": "Next",
+  "rateTheShop": "Rate the shop",
+  "rateTheBarber": "Rate the barber",
+  "rateTheHaircut": "Rate the haircut",
+  "haircutTypeLabel": "Haircut type",
+  "commentOptional": "Comment (optional)",
+  "hcBuzzCut": "Buzz Cut",
+  "hcCrewCut": "Crew Cut",
+  "hcFade": "Fade",
+  "hcUndercut": "Undercut",
+  "hcPompadour": "Pompadour",
+  "hcQuiff": "Quiff",
+  "hcSlickBack": "Slick Back",
+  "hcTexturedCrop": "Textured Crop",
+  "hcMullet": "Mullet",
+  "hcAfro": "Afro",
+  "hcBaldShaved": "Bald/Shaved",
+  "hcBeardTrim": "Beard Trim",
+  "hcOther": "Other",
+  "shopHiddenOwner": "Your shop page is hidden from customers until your subscription is active.",
+  "shopUnavailable": "This shop isn't available right now.",
+  "editShopPage": "Edit shop page",
+  "newOnTheApp": "New on the app",
+  "moreLocations": "+{count} more",
+  "@moreLocations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "newPost": "New post",
+  "editPage": "Edit page",
+  "messageTheShop": "Message the shop",
+  "barbers": "Barbers",
+  "openingHours": "Opening hours",
+  "locations": "Locations",
+  "posts": "Posts",
+  "reviews": "Reviews",
+  "closedToday": "Closed today",
+  "openNowUntil": "Open now · until {time}",
+  "@openNowUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "opensAt": "Opens {time}",
+  "@opensAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "closedNow": "Closed now",
+  "closed": "Closed",
+  "noServicesYet": "No services listed yet.",
+  "noBarbersYet": "No barbers listed yet.",
+  "noReviewsYet": "No reviews yet.",
+  "noPostsYet": "No posts yet.",
+  "cancelSubTitle": "Cancel your subscription?",
+  "cancelSubBodyTrial": "Your free trial still runs until {date} and won't be charged again. After that your shop is hidden from customers until you subscribe again.",
+  "@cancelSubBodyTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelSubBodyPaid": "You keep full access until the end of the month you've paid for and won't be charged again. After that your shop is hidden from customers until you subscribe again.",
+  "cancelSubscription": "Cancel subscription",
+  "keepIt": "Keep it",
+  "subscriptionCancelled": "Subscription cancelled",
+  "planWithPrice": "your subscription ({price} / month)",
+  "@planWithPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "planNoPrice": "your subscription",
+  "resubTitle": "Subscribe again?",
+  "resubBodyTrial": "Your free trial continues until {date}. After that, {plan} is charged to the card you already added.",
+  "@resubBodyTrial": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "resubBodyPaid": "We'll keep charging {plan} to the card you already added. Nothing extra is charged today.",
+  "@resubBodyPaid": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "subscribe": "Subscribe",
+  "notNow": "Not now",
+  "subscribedAgain": "You're subscribed again",
+  "cancelFinanceTitle": "Cancel Finance Premium?",
+  "cancelFinanceBody": "You keep Premium insights until the end of the month you've paid for and won't be charged again. The free finance summary stays.",
+  "cancelPremium": "Cancel Premium",
+  "financeCancelled": "Finance Premium cancelled",
+  "resubFinanceTitle": "Subscribe to Finance Premium again?",
+  "resubFinanceBody": "We'll keep charging {what} to the card you already added. Nothing extra is charged today.",
+  "@resubFinanceBody": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "itPronoun": "it",
+  "perMonth": "{price} / month",
+  "@perMonth": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "financeSubscribedAgain": "You're subscribed to Finance Premium again",
+  "subscribeAgain": "Subscribe again",
+  "freeAccess": "Your shop has free access — there's nothing to pay.",
+  "shopSubscription": "Shop subscription",
+  "badgeCancelled": "Cancelled",
+  "badgeFreeTrial": "Free trial",
+  "badgeActive": "Active",
+  "endsOn": "Ends {date}",
+  "@endsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shopCancelledMessage": "Your shop stays visible to customers until then and you won't be charged again. After that it's hidden until you subscribe again, and its data is kept for 60 days.",
+  "freeTrialUntil": "Free trial until {date}",
+  "@freeTrialUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "trialMessage": "Nothing is charged before then. After that it renews every month — cancel any time before the trial ends and you pay nothing.",
+  "renewsMonthly": "Renews every month",
+  "shopActiveMessage": "Cancel any time — you keep access until the end of the month you've paid for.",
+  "shopLoyaltyNote": "Every 2 months you stay, it costs {symbol}5 less, never below {symbol}100 and at most {symbol}100 off in all.",
+  "@shopLoyaltyNote": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "financeCancelledMessage": "Premium insights stay on until then and you won't be charged again. The free finance summary stays after that.",
+  "financeActiveMessage": "Cancel any time — you keep Premium insights until the end of the month you've paid for. Every 2 months you stay, it costs {symbol}1 less, up to {symbol}5 off.",
+  "@financeActiveMessage": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentMethodInvoices": "Payment method & invoices",
+  "subCancelledBanner": "Subscription cancelled — you keep full access until {date} and won't be charged.",
+  "@subCancelledBanner": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "trialBanner": "Free trial until {date}. Cancel any time before then and you won't be charged.",
+  "@trialBanner": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "manage": "Manage",
+  "visibleForDays": "{count, plural, =1{Customers can still find your shop for 1 day.} other{Customers can still find your shop for {count} days.}}",
+  "@visibleForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopHidden": "Your shop is hidden from customers.",
+  "deletionNotice": "{count, plural, =1{1 day left before your shop and all its data are permanently deleted.} other{{count} days left before your shop and all its data are permanently deleted.}}",
+  "@deletionNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "paymentFailed": "Payment failed",
+  "subscriptionEnded": "Subscription ended",
+  "updatePayment": "Update payment",
+  "hiddenUntilSubscribe": "Your shop is hidden from customers until you subscribe.",
+  "payOnWebsite": "Payments are handled on the Fadra Cut business website.",
+  "refresh": "Refresh",
+  "couldntLoadFigures": "Couldn't load your figures: {error}",
+  "@couldntLoadFigures": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "previousMonth": "Previous month",
+  "nextMonth": "Next month",
+  "profit": "Profit",
+  "loss": "Loss",
+  "bookingsCompleted": "Bookings ({count} completed)",
+  "@bookingsCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "otherIncome": "Other income",
+  "costs": "Costs",
+  "addCostsHint": "Add your costs below to see where you stand.",
+  "costsCovered": "Costs covered — everything from here is profit.",
+  "breakEvenProgress": "{percent}% of the way to breaking even",
+  "@breakEvenProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingsToBreakEven": "{count, plural, =1{1 more booking at your average {average} would cover this month's costs.} other{{count} more bookings at your average {average} would cover this month's costs.}}",
+  "@bookingsToBreakEven": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addACost": "Add a cost",
+  "everyMonth": "Every month",
+  "oneOff": "One-off",
+  "monthlyCostHint": "Rent, wages, software… counted from {month} on.",
+  "@monthlyCostHint": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "oneOffCostHint": "Counted in {month} only.",
+  "@oneOffCostHint": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "whatIsIt": "What is it?",
+  "amount": "Amount",
+  "enterAnAmount": "Enter an amount",
+  "add": "Add",
+  "costsIn": "Costs in {month}",
+  "@costsIn": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "noCostsYet": "No costs yet. Add rent, wages and anything else you pay to run the shop.",
+  "everyMonthAutomatic": "Every month · added automatically",
+  "stopAfter": "Stop after {month}",
+  "@stopAfter": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFromEveryMonth": "Delete from every month",
+  "delete": "Delete",
+  "otherIncomeFor": "Other income, {month}",
+  "@otherIncomeFor": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "otherIncomeHint": "Walk-ins, cash, product sales…",
+  "otherIncomeSubtitle": "Walk-ins and cash not booked through the app",
+  "premiumFeatureForecast": "Month-end forecast and the day you'll break even",
+  "premiumFeatureOffers": "Offers worked out for your shop, with what they'll earn you",
+  "premiumFeatureHistory": "12 months of profit history",
+  "premiumFeatureBusy": "When your chairs are busy — and when they sit empty",
+  "premiumFeatureBarbers": "Each barber's bookings, revenue and how full they are",
+  "premiumFeatureRegulars": "Returning customers, and regulars you're losing",
+  "premiumFeatureWhatIf": "What-if: try a price change before you make it",
+  "premiumTagline": "Your numbers, turned into decisions.",
+  "tryFree14Days": "Try it free for 14 days",
+  "getPremium": "Get Premium — {price}/month",
+  "@getPremium": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelFromSettings": "Cancel anytime from Settings › Subscription & billing.",
+  "noCardForTrial": "No card needed for the trial.",
+  "premiumInsights": "Premium insights",
+  "whatToDoNext": "What to do next",
+  "whatToDoNextSub": "Moves worked out from your own bookings, best first.",
+  "suggestionsAppear": "Suggestions appear once you have about 10 completed bookings in the last 90 days.",
+  "profit12Months": "Profit, last 12 months",
+  "tapABar": "Tap a bar for the month's figures.",
+  "chairsBusy": "When your chairs are busy",
+  "chairsBusySub": "Share of chair time booked, last 8 weeks · overall {percent}",
+  "@chairsBusySub": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "last30Days": "Last 30 days",
+  "customersHeading": "Customers",
+  "servicesSub": "Last 90 days, vs the 90 before",
+  "whatIf": "What if…",
+  "whatIfSub": "Try a change on {month}'s figures before making it.",
+  "@whatIfSub": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "thisMonth": "This month",
+  "thisMonthSub": "Where you're heading at this pace",
+  "forecastAppears": "A forecast appears once the month is under way.",
+  "freeTrialDaysLeft": "{count, plural, =1{Free trial · 1 day left} other{Free trial · {count} days left}}",
+  "@freeTrialDaysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "keepPremiumFor": "Keep Premium for {price}/month",
+  "@keepPremiumFor": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "alreadyCoveredCosts": "You've already covered this month's costs.",
+  "breakEvenOn": "At this pace you'll break even on {date}.",
+  "@breakEvenOn": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "MMMd"
+      }
+    }
+  },
+  "wontCoverCosts": "At this pace you won't cover this month's costs — see the suggestions below.",
+  "monthEndForecast": "Month-end forecast",
+  "projectedProfitOn": "Projected profit on {revenue} revenue",
+  "@projectedProfitOn": {
+    "placeholders": {
+      "revenue": {
+        "type": "String"
+      }
+    }
+  },
+  "projectedLossOn": "Projected loss on {revenue} revenue",
+  "@projectedLossOn": {
+    "placeholders": {
+      "revenue": {
+        "type": "String"
+      }
+    }
+  },
+  "alreadyBookedRest": "{amount} already booked for the rest of the month.",
+  "@alreadyBookedRest": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "basedOnPace": "Based on your pace so far this month and bookings already in the diary.",
+  "gainPerMonthShort": "+{amount}/mo",
+  "@gainPerMonthShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "estimate": "Estimate: {text}",
+  "@estimate": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "revenueLine": "Revenue {amount}",
+  "@revenueLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "costsLine": "Costs {amount}",
+  "@costsLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "profitLine": "Profit {amount}",
+  "@profitLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "lossLine": "Loss {amount}",
+  "@lossLine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "setHoursToSee": "Set your opening hours and staff to see this.",
+  "heatClosed": "{day} {hour}:00 · closed",
+  "@heatClosed": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "hour": {
+        "type": "int"
+      }
+    }
+  },
+  "heatBooked": "{day} {hour}:00 · {percent} booked",
+  "@heatBooked": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "hour": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "heatEmpty": "Empty ",
+  "heatFull": " Full",
+  "noStaffYet": "No staff yet.",
+  "barberStats": "{count, plural, =1{1 booking · {percent} of their hours booked} other{{count} bookings · {percent} of their hours booked}}",
+  "@barberStats": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statCustomers": "customers",
+  "statNew": "new",
+  "statReturning": "returning",
+  "statCameBack": "came back*",
+  "cameBackFootnote": "* Of customers who visited 6–12 weeks ago, the share who have been back since.",
+  "regularsLosing": "Regulars you're losing",
+  "regularsLosingSub": "Usually back every few weeks — now well overdue. Worth a message.",
+  "visitsUsually": "{visits} visits · usually every {days} days",
+  "@visitsUsually": {
+    "placeholders": {
+      "visits": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{count} days ago",
+  "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noCompletedBookings90": "No completed bookings in the last 90 days.",
+  "serviceStats": "{count} bookings · {percent} of all · {arrow} from {previous}",
+  "@serviceStats": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "String"
+      },
+      "arrow": {
+        "type": "String"
+      },
+      "previous": {
+        "type": "int"
+      }
+    }
+  },
+  "pricesChange": "Prices {change}",
+  "@pricesChange": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingsChange": "Number of bookings {change}",
+  "@bookingsChange": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "monthActual": "{month} actual: {amount}",
+  "@monthActual": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "wouldBe": "Would be {amount}",
+  "@wouldBe": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "amountAMonth": "{amount} a month",
+  "@amountAMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "addStaffMember": "Add staff member",
+  "name": "Name",
+  "addStaffHint": "For staff without an app account. Someone with an account? Use \"Invite by name\" instead so their profile, schedule, and history stay linked to them.",
+  "inviteByName": "Invite by name",
+  "legalFirstName": "Legal first name",
+  "legalLastName": "Legal last name",
+  "legalSecondLastName": "Legal second last name (optional, disambiguates same-name matches)",
+  "noWorkerWithName": "No worker looking for work with that name.",
+  "multipleWorkersMatch": "Multiple workers match that name — add a second last name to narrow it down.",
+  "sendInvite": "Send invite",
+  "myWorkforce": "My Workforce",
+  "availableWorkers": "Available Workers",
+  "noStaffAddFirst": "No staff yet — add your first team member.",
+  "sentInvitations": "Sent invitations",
+  "noInvitationsSent": "No invitations sent yet.",
+  "unknown": "Unknown",
+  "removeFromStaffTitle": "Remove {name} from your staff?",
+  "@removeFromStaffTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeFromStaffBody": "Customers won't be able to book with them. Their past bookings and history are kept.",
+  "remove": "Remove",
+  "noAppAccount": "No app account",
+  "removeFromStaff": "Remove from staff",
+  "hasAskedToLeave": "Has asked to leave.",
+  "reject": "Reject",
+  "acknowledge": "Acknowledge",
+  "searchByName": "Search by name",
+  "filterRating": "4+ ★ rating",
+  "filterShops": "2+ shops",
+  "filterExperience": "3+ yrs experience",
+  "noOneMatches": "No one matches right now.",
+  "shopsCount": "{count, plural, =1{1 shop} other{{count} shops}}",
+  "@shopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yearsExpShort": "{count} yrs exp",
+  "@yearsExpShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yearsShort": "{count} yrs",
+  "@yearsShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invitationSentTo": "Invitation sent to {name}.",
+  "@invitationSentTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "city": "City",
+  "bio": "Bio",
+  "portfolio": "Portfolio",
+  "noPinnedWork": "No pinned work yet.",
+  "alreadyOnStaff": "Already on your staff",
+  "invitationAwaiting": "Invitation sent — awaiting response",
+  "message": "Message",
+  "fixHighlightedDays": "Fix the highlighted days before saving.",
+  "workerSchedule": "{name}'s schedule",
+  "@workerSchedule": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "daysOffUseShopHours": "Days left off use the shop's own opening hours instead.",
+  "off": "Off",
+  "price": "Price",
+  "enterANumber": "Enter a number",
+  "durationMinutes": "Duration (minutes)",
+  "enterAWholeNumber": "Enter a whole number",
+  "subscriptionChangesTitle": "Your monthly subscription changes",
+  "subscriptionChangesBody": "From your next payment it goes from {from} to {to} a month. Nothing changes for the month you've already paid.",
+  "@subscriptionChangesBody": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "continueButton": "Continue",
+  "yourBasicCut": "Your basic cut",
+  "addService": "Add service",
+  "basicCutHelper": "Your standard haircut, with its price and duration.",
+  "editBasicCut": "Edit your basic cut",
+  "editService": "Edit service",
+  "shopNeedsBasicCut": "Your shop needs a basic cut",
+  "shopNeedsBasicCutBody": "To change it, edit it, or add another service and make that your basic cut. Then you can remove this one.",
+  "removeServiceTitle": "Remove {name}?",
+  "@removeServiceTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeServiceBody": "Customers won't be able to book it any more. Bookings already made for it are kept.",
+  "addYourBasicCut": "Add your basic cut",
+  "startWithBasicCut": "Start with your basic cut — your standard haircut.",
+  "basicCut": "Basic cut",
+  "serviceOptions": "Service options",
+  "edit": "Edit",
+  "makeBasicCut": "Make basic cut",
+  "markAsDone": "Mark as done",
+  "fadraForBusiness": "Fadra Cut for Business",
+  "noBusinessFound": "No business found.",
+  "serviceCountLabel": "{count, plural, =1{service} other{services}}",
+  "@serviceCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "staffCountLabel": "{count, plural, =1{staff member} other{staff}}",
+  "@staffCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openNowBadge": "OPEN NOW",
+  "closedNowBadge": "CLOSED NOW",
+  "inMinutes": "in {count} min",
+  "@inMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inHours": "in {count} h",
+  "@inHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "formerStaff": "Former staff",
+  "bookingsTodayLabel": "{count, plural, =1{booking today} other{bookings today}}",
+  "@bookingsTodayLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextBooking": "Next booking",
+  "nothingBookedYet": "Nothing booked yet",
+  "financeTileSubtitle": "Costs, break-even and how to get there",
+  "step2of3": "Step 2 of 3",
+  "step3of3": "Step 3 of 3",
+  "step1of3": "Step 1 of 3",
+  "setupServicesHint": "Add your basic cut — your standard haircut — with its price and duration. Once setup is complete you can add the rest of your services.",
+  "setupStaffHint": "Add everyone customers can book with — including yourself if you cut hair. Tap + for staff without an app account.",
+  "back": "Back",
+  "checkDayHours": "Check {day}'s opening hours.",
+  "@checkDayHours": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "setUpYourBusiness": "Set up your business",
+  "setupDetailsHint": "Your business details. Next you'll add your services and staff — customers can find and book you once both are in.",
+  "businessPhone": "Business phone",
+  "businessPhoneHelper": "For our records only — never shown to customers",
+  "enterValidPhone": "Enter a valid phone number",
+  "referralCodeOptional": "Referral code (optional)",
+  "currency": "Currency",
+  "saveAndContinue": "Save and continue",
+  "fixHighlightedHours": "Fix the highlighted opening hours before saving.",
+  "businessDetailsSaved": "Business details saved.",
+  "shopHeaderPreviewHint": "This is how your page's header looks to customers.",
+  "logo": "Logo",
+  "coverPhoto": "Cover photo",
+  "coverSizeHint": "Best cover size: 1600 × 640. No logo? Your initials are shown. No cover? Your brand colour is used.",
+  "brandColour": "Brand colour",
+  "brandColourHint": "Used for your header, buttons and highlights.",
+  "start": "Start",
+  "end": "End",
+  "breakLabel": "Break",
+  "removeBreak": "Remove break",
+  "addBreak": "Add break",
+  "hoursRangeError": "Closing must be after opening, with any break inside those hours.",
+  "addAnotherLocation": "Add another location",
+  "country": "Country",
+  "countryUnitedKingdom": "United Kingdom",
+  "countrySpain": "Spain",
+  "streetAddress": "Street address",
+  "postcode": "Postcode",
+  "enterValidPostcode": "Enter a valid postcode",
+  "thisWeek": "This week",
+  "bankAccountTitle": "Bank account for withdrawals",
+  "accountHolderName": "Account holder name",
+  "enterAccountName": "Enter the name on the account",
+  "iban": "IBAN",
+  "ibanHelper": "In your banking app. UK accounts have one too (starts GB).",
+  "enterYourIban": "Enter your IBAN",
+  "bankAccountSaved": "Bank account saved.",
+  "withdrawCurrency": "Withdraw {currency}",
+  "@withdrawCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "enterValidAmount": "Enter a valid amount",
+  "moreThanBalance": "More than your available balance",
+  "payoutTo": "To {holder}, {iban}",
+  "@payoutTo": {
+    "placeholders": {
+      "holder": {
+        "type": "String"
+      },
+      "iban": {
+        "type": "String"
+      }
+    }
+  },
+  "request": "Request",
+  "withdrawalRequested": "Withdrawal requested.",
+  "rewardHistory": "Reward history",
+  "balanceLabel": "Balance: {amount}",
+  "@balanceLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "amountAvailable": "{amount} available",
+  "@amountAvailable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "withdraw": "Withdraw",
+  "noBankAccountYet": "No bank account yet",
+  "withdrawalsSentHere": "Withdrawals are sent here by bank transfer",
+  "change": "Change",
+  "withdrawals": "Withdrawals",
+  "referrals": "Referrals",
+  "referralSummary": "{count, plural, =1{1 business referred — {earned} earned (5% of their subscription payments)} other{{count} businesses referred — {earned} earned (5% of their subscription payments)}}",
+  "@referralSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noRewardsYet": "No rewards yet.",
+  "payoutPending": "Pending review",
+  "payoutApproved": "Approved — payment on its way",
+  "payoutRejected": "Rejected",
+  "payoutPaid": "Paid",
+  "invitationPending": "Pending",
+  "invitationAccepted": "Accepted",
+  "invitationDeclined": "Declined",
+  "profileSaved": "Profile saved.",
+  "askedShopToConfirmLeaving": "Asked {shop} to confirm you're leaving.",
+  "@askedShopToConfirmLeaving": {
+    "placeholders": {
+      "shop": {
+        "type": "String"
+      }
+    }
+  },
+  "theShop": "the shop",
+  "workerMarketplaceUnavailable": "The worker marketplace isn't available on this account.",
+  "availableAsWorker": "Available as worker",
+  "availableAsWorkerSub": "Let barbershops find and invite you as staff",
+  "useRealNameHint": "Use your real name — this is what businesses and customers will see you as once you accept a job.",
+  "legalSecondLastNameOptional": "Legal second last name (optional)",
+  "yearsExperienceOptional": "Years of experience (optional)",
+  "experienceBio": "Experience / bio",
+  "lookingForWork": "Looking for work",
+  "addLegalNameFirst": "Add your legal first and last name first",
+  "currentJob": "Current job",
+  "notCurrentlyWorking": "Not currently working at a business.",
+  "aBusiness": "A business",
+  "leaveRequestSent": "Leave request sent — awaiting confirmation",
+  "requestToLeave": "Request to leave",
+  "invitations": "Invitations",
+  "noPendingInvitations": "No pending invitations.",
+  "wantsToAddYou": "wants to add you as staff",
+  "accept": "Accept",
+  "decline": "Decline",
+  "windowWeek": "This week",
+  "windowMonth": "This month",
+  "windowYear": "This year",
+  "windowAllTime": "All time",
+  "rankShopsVisited": "Most shops visited",
+  "rankMostHaircuts": "Most haircuts",
+  "rankTopReferrers": "Top referrers",
+  "rankPopularHaircuts": "Popular haircuts",
+  "rankTopBarbers": "Top-rated barbers",
+  "unitShops": "{count, plural, =1{shop} other{shops}}",
+  "@unitShops": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unitHaircuts": "{count, plural, =1{haircut} other{haircuts}}",
+  "@unitHaircuts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unitBusinessesReferred": "{count, plural, =1{business referred} other{businesses referred}}",
+  "@unitBusinessesReferred": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unitCuts": "{count, plural, =1{cut} other{cuts}}",
+  "@unitCuts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noReferralsYet": "No referrals yet",
+  "noReferralsHint": "Share your referral code with a shop and you could top this board.",
+  "noRatedBarbers": "No rated barbers yet",
+  "noRatedBarbersHint": "Barbers appear here once customers start reviewing their cuts.",
+  "noHaircutsInWindow": "{window, select, week{No haircuts this week} month{No haircuts this month} year{No haircuts this year} other{No haircuts yet}}",
+  "@noHaircutsInWindow": {
+    "placeholders": {
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "popularStylesHint": "Popular styles show up as soon as cuts are booked and done.",
+  "boardEmpty": "The board is empty",
+  "boardEmptyHint": "{window, select, week{Nobody has a cut this week yet. Book one and take the top spot.} month{Nobody has a cut this month yet. Book one and take the top spot.} year{Nobody has a cut this year yet. Book one and take the top spot.} other{Nobody has a cut yet. Book one and take the top spot.}}",
+  "@boardEmptyHint": {
+    "placeholders": {
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "tallyingBoard": "Tallying the board…",
+  "couldntLoadRankings": "Couldn't load rankings",
+  "you": "You",
+  "nameYou": "{name} (you)",
+  "@nameYou": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoTooLong": "Videos must be 1 minute or shorter (this one is {seconds}s).",
+  "@videoTooLong": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "postingUnavailable": "Posting isn't available on this account.",
+  "whatsGoingOn": "What's going on?",
+  "addAPhoto": "Add a photo",
+  "addAVideo": "Add a video",
+  "changeVideo": "Change video",
+  "post": "Post",
+  "freshCuts": "Fresh Cuts",
+  "leaderboards": "Leaderboards",
+  "fetchingFreshCuts": "Fetching fresh cuts…",
+  "couldntLoadFeed": "Couldn't load the feed",
+  "wallIsEmpty": "The wall is empty",
+  "beFirstToShow": "Be the first to show off a cut.",
+  "shareAPost": "Share a post",
+  "couldntLoadMorePosts": "Couldn't load more posts. Try again",
+  "allCaughtUp": "You're all caught up",
+  "everyPostSoFar": "That's every post so far.",
+  "couldNotUpdateLike": "Could not update like.",
+  "couldNotUpdatePortfolio": "Could not update portfolio.",
+  "deletePostTitle": "Delete this post?",
+  "deletePostBody": "It will be removed from the feed for everyone. This can't be undone.",
+  "inPortfolio": "In portfolio",
+  "postOptions": "Post options",
+  "removeFromPortfolio": "Remove from portfolio",
+  "addToPortfolio": "Add to portfolio",
+  "unlike": "Unlike",
+  "like": "Like",
+  "comments": "Comments",
+  "likeCount": "{count, plural, =1{1 like} other{{count} likes}}",
+  "@likeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewComments": "{count, plural, =1{View 1 comment} other{View all {count} comments}}",
+  "@viewComments": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeNow": "now",
+  "timeMinutes": "{count}m",
+  "@timeMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHours": "{count}h",
+  "@timeHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDays": "{count}d",
+  "@timeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "loadingComments": "Loading comments…",
+  "couldntLoadComments": "Couldn't load comments",
+  "noCommentsYet": "No comments yet",
+  "startConversation": "Start the conversation.",
+  "commentsShowHere": "Comments will show up here.",
+  "writeAComment": "Write a comment",
+  "deleteCommentTitle": "Delete this comment?",
+  "cantBeUndone": "This can't be undone.",
+  "reply": "Reply",
+  "replyingTo": "Replying to {name}",
+  "@replyingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelReply": "Cancel reply",
+  "writeAReply": "Write a reply…",
+  "addAComment": "Add a comment…",
+  "send": "Send",
+  "findPeople": "Find people",
+  "profileNotFound": "Profile not found.",
+  "editProfile": "Edit profile",
+  "postsUpper": "POSTS",
+  "badgeBarber": "Barber",
+  "likes": "Likes",
+  "postSemantics": "Post, {likes} likes, {comments} comments",
+  "@postSemantics": {
+    "placeholders": {
+      "likes": {
+        "type": "int"
+      },
+      "comments": {
+        "type": "int"
+      }
+    }
+  },
+  "noPostsYetTitle": "No posts yet",
+  "showOffLatestCut": "Show off your latest cut. Your posts appear here and in the feed.",
+  "shareFirstPost": "Share your first post",
+  "noUsersFound": "No users found.",
+  "noMessagesYet": "No messages yet — say hello.",
+  "messageTo": "Message {name}",
+  "@messageTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kindBarber": "Barber · ",
+  "kindShop": "Shop · ",
+  "viewProfile": "View profile",
+  "yesterday": "Yesterday",
+  "readMarker": " · Read",
+  "workerAskedToLeave": "This worker has asked to leave. They stay on staff until you confirm.",
+  "confirmLeaving": "Confirm they're leaving",
+  "allCaughtUpShort": "All caught up",
+  "unreadCount": "{count} unread",
+  "@unreadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inboxPersonal": "Personal",
+  "inboxBusiness": "Business",
+  "loadingConversations": "Loading conversations…",
+  "couldntLoadMessages": "Couldn't load messages",
+  "noConversationsYet": "No conversations yet",
+  "noConversationsHint": "Find a barber or a friend and say hello from their profile.",
+  "noWorkMessages": "No work messages",
+  "noWorkMessagesHint": "When a shop and a barber talk about work, it shows up here.",
+  "sayHello": "Say hello 👋",
+  "messagesUnreadTooltip": "Messages, {count} unread",
+  "@messagesUnreadTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesWithCount": "Messages ({count})",
+  "@messagesWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "somethingWentWrong": "Something went wrong — try again.",
+  "emailAlreadyRegistered": "An account with this email already exists — sign in, or use \"Continue with Google\" if that's how you signed up.",
+  "usernameTaken": "That username is already taken.",
+  "referralCodeNotFound": "That referral code doesn't exist.",
+  "alreadyInvited": "You already have a pending invitation out to this worker.",
+  "alreadyOnYourStaff": "They're already on your staff.",
+  "staffHasUpcomingBookings": "This barber has upcoming bookings — cancel or complete them first.",
+  "alreadyStaffElsewhere": "You're already working at another shop — leave that role before accepting a new one.",
+  "authInvalidCredentials": "Wrong email or password.",
+  "authEmailNotConfirmed": "Confirm your email first — check your inbox for the link.",
+  "authWeakPassword": "That password is too weak — use at least 6 characters.",
+  "authSamePassword": "Choose a password different from your current one.",
+  "authRateLimited": "Too many attempts — wait a minute and try again.",
+  "authLinkExpired": "That link has expired — ask for a new one.",
+  "offlineShowingSaved": "No connection — showing what was last saved.",
+  "sending": "Sending…",
+  "savedWillSend": "Saved — it will be sent when you're back online.",
+  "bookingNeedsConnection": "You need a connection to book",
+  "videoUnavailable": "Video unavailable — tap to try again",
+  "upcomingTab": "Upcoming",
+  "pastTab": "Past",
+  "noUpcomingBookings": "No upcoming bookings.",
+  "noPastBookings": "No past bookings yet.",
+  "minutesShort": "{count} min",
+  "@minutesShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noUpcomingBookingsShopHint": "Bookings show up here as soon as customers make them. A complete shop page helps them choose you.",
+  "cancelBooking": "Cancel booking",
+  "cancelBookingTitle": "Cancel this booking?",
+  "cancelBookingBody": "Your {time} appointment at {shop} on {date} will be cancelled, and the time will be free for someone else to book.",
+  "@cancelBookingBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "shop": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "yesCancel": "Yes, cancel",
+  "bookingCancelledToast": "Booking cancelled.",
+  "aboutGroup": "About",
+  "contactUs": "Contact us",
+  "emailAddressCopied": "No email app found. The address is copied.",
+  "searchByNameOrCity": "Search by name or city",
+  "tryNameCityOrNearMe": "Try another name or city, or use Near me.",
+  "nearMe": "Near me",
+  "newShop": "New",
+  "fromPrice": "From {price}",
+  "@fromPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "distanceKm": "{distance} km",
+  "@distanceKm": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "distanceMiles": "{distance} mi",
+  "@distanceMiles": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "locationServiceOff": "Location is turned off on this phone.",
+  "locationDenied": "Without your location, search by city instead.",
+  "locationDeniedForever": "Location is off for Fadra Cut. You can turn it on in Settings.",
+  "locationFailed": "Couldn't find your location. Try again in a moment.",
+  "takePhoto": "Take photo",
+  "choosePhoto": "Choose photo",
+  "removePhoto": "Remove photo",
+  "photoUpdated": "Photo updated.",
+  "photoRemoved": "Photo removed.",
+  "displayNameOptional": "Name (optional)",
+  "shownAboveUsername": "Shown above @{username}",
+  "@shownAboveUsername": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "bioOptional": "Bio (optional)",
+  "lookingForWorkSub": "Shops can find you and invite you to join their staff. Switch off to hide your profile.",
+  "declineInvitationTitle": "Decline {shop}'s invitation?",
+  "@declineInvitationTitle": {
+    "placeholders": {
+      "shop": {
+        "type": "String"
+      }
+    }
+  },
+  "declineInvitationBody": "They'd need to invite you again if you change your mind."
+}

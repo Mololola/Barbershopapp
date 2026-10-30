@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/theme.dart';
 import '../application/business_controller.dart';
+import '../domain/business.dart' show currencySymbol;
 import '../domain/business_subscription.dart';
 import '../domain/finance_overview.dart';
 import 'subscription_banner.dart';
 
-const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/// "26 Oct 2026", in the phone's time zone.
-String formatSubscriptionDate(DateTime date) {
-  final local = date.toLocal();
-  return '${local.day} ${_monthShort[local.month - 1]} ${local.year}';
-}
+/// "Oct 26, 2026" / "26 oct 2026", in the phone's time zone.
+String formatSubscriptionDate(AppLocalizations l10n, DateTime date) =>
+    DateFormat.yMMMd(l10n.localeName).format(date.toLocal());
 
 /// Settings › Subscription & billing: the shop's plan and the Finance
 /// Premium add-on, each with a cancel button that's easy to find —
@@ -29,7 +28,7 @@ class SubscriptionScreen extends ConsumerWidget {
     if (!context.mounted) return;
     final state = ref.read(billingActionControllerProvider);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(state.hasError ? state.error.toString() : doneMessage)),
+      SnackBar(content: Text(state.hasError ? describeError(context.l10n, state.error) : doneMessage)),
     );
   }
 
@@ -63,16 +62,15 @@ class SubscriptionScreen extends ConsumerWidget {
     // A trial isn't cancelled on its own: cancelling ends the subscription
     // when the trial (or paid month) runs out, and the shop is hidden until
     // the owner subscribes again.
-    final until = sub.isInTrial
-        ? 'Your free trial still runs until ${formatSubscriptionDate(sub.trialEndsAt!)}'
-        : 'You keep full access until the end of the month you\'ve paid for';
+    final l10n = context.l10n;
     final confirmed = await _confirm(
       context,
-      title: 'Cancel your subscription?',
-      body: '$until and won\'t be charged again. After that your shop is hidden from customers until you '
-          'subscribe again.',
-      confirmLabel: 'Cancel subscription',
-      backOutLabel: 'Keep it',
+      title: l10n.cancelSubTitle,
+      body: sub.isInTrial
+          ? l10n.cancelSubBodyTrial(formatSubscriptionDate(l10n, sub.trialEndsAt!))
+          : l10n.cancelSubBodyPaid,
+      confirmLabel: l10n.cancelSubscription,
+      backOutLabel: l10n.keepIt,
       destructive: true,
     );
     if (!confirmed || !context.mounted) return;
@@ -80,41 +78,41 @@ class SubscriptionScreen extends ConsumerWidget {
       context,
       ref,
       () => ref.read(billingActionControllerProvider.notifier).cancelSubscription(),
-      'Subscription cancelled',
+      l10n.subscriptionCancelled,
     );
   }
 
   Future<void> _confirmResubscribe(BuildContext context, WidgetRef ref, BusinessSubscription sub, String? price) async {
     // Undoes the scheduled cancellation on the same Stripe subscription, so
     // the card already on file is used — there's nothing to enter in Stripe.
-    final plan = price == null ? 'your subscription' : 'your subscription ($price / month)';
+    final l10n = context.l10n;
+    final plan = price == null ? l10n.planNoPrice : l10n.planWithPrice(price);
     final confirmed = await _confirm(
       context,
-      title: 'Subscribe again?',
+      title: l10n.resubTitle,
       body: sub.isInTrial
-          ? 'Your free trial continues until ${formatSubscriptionDate(sub.trialEndsAt!)}. After that, '
-                '$plan is charged to the card you already added.'
-          : 'We\'ll keep charging $plan to the card you already added. Nothing extra is charged today.',
-      confirmLabel: 'Subscribe',
-      backOutLabel: 'Not now',
+          ? l10n.resubBodyTrial(formatSubscriptionDate(l10n, sub.trialEndsAt!), plan)
+          : l10n.resubBodyPaid(plan),
+      confirmLabel: l10n.subscribe,
+      backOutLabel: l10n.notNow,
     );
     if (!confirmed || !context.mounted) return;
     await _run(
       context,
       ref,
       () => ref.read(billingActionControllerProvider.notifier).resumeSubscription(),
-      'You\'re subscribed again',
+      l10n.subscribedAgain,
     );
   }
 
   Future<void> _confirmCancelFinance(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
     final confirmed = await _confirm(
       context,
-      title: 'Cancel Finance Premium?',
-      body: 'You keep Premium insights until the end of the month you\'ve paid for and won\'t be charged '
-          'again. The free finance summary stays.',
-      confirmLabel: 'Cancel Premium',
-      backOutLabel: 'Keep it',
+      title: l10n.cancelFinanceTitle,
+      body: l10n.cancelFinanceBody,
+      confirmLabel: l10n.cancelPremium,
+      backOutLabel: l10n.keepIt,
       destructive: true,
     );
     if (!confirmed || !context.mounted) return;
@@ -122,35 +120,36 @@ class SubscriptionScreen extends ConsumerWidget {
       context,
       ref,
       () => ref.read(billingActionControllerProvider.notifier).cancelFinancePremium(),
-      'Finance Premium cancelled',
+      l10n.financeCancelled,
     );
   }
 
   Future<void> _confirmResubscribeFinance(BuildContext context, WidgetRef ref, String? price) async {
+    final l10n = context.l10n;
     final confirmed = await _confirm(
       context,
-      title: 'Subscribe to Finance Premium again?',
-      body: 'We\'ll keep charging ${price == null ? 'it' : '$price / month'} to the card you already added. '
-          'Nothing extra is charged today.',
-      confirmLabel: 'Subscribe',
-      backOutLabel: 'Not now',
+      title: l10n.resubFinanceTitle,
+      body: l10n.resubFinanceBody(price == null ? l10n.itPronoun : l10n.perMonth(price)),
+      confirmLabel: l10n.subscribe,
+      backOutLabel: l10n.notNow,
     );
     if (!confirmed || !context.mounted) return;
     await _run(
       context,
       ref,
       () => ref.read(billingActionControllerProvider.notifier).resumeFinancePremium(),
-      'You\'re subscribed to Finance Premium again',
+      l10n.financeSubscribedAgain,
     );
   }
 
   Future<void> _openPortal(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     try {
       final url = await ref.read(billingActionControllerProvider.notifier).openPortal();
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+      messenger.showSnackBar(SnackBar(content: Text(describeError(l10n, error))));
     }
   }
 
@@ -162,18 +161,18 @@ class SubscriptionScreen extends ConsumerWidget {
     VoidCallback resubscribe,
   ) {
     if (cancelAt != null) {
-      return FilledButton(onPressed: busy ? null : resubscribe, child: const Text('Subscribe again'));
+      return FilledButton(onPressed: busy ? null : resubscribe, child: Text(context.l10n.subscribeAgain));
     }
     return OutlinedButton(
       style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
       onPressed: busy ? null : cancel,
-      child: const Text('Cancel subscription'),
+      child: Text(context.l10n.cancelSubscription),
     );
   }
 
   Widget _shopPlan(BuildContext context, WidgetRef ref, BusinessSubscription? sub, String? currency, bool busy) {
     if (sub != null && sub.grandfathered) {
-      return const Text('Your shop has free access — there\'s nothing to pay.');
+      return Text(context.l10n.freeAccess);
     }
     if (sub == null || sub.status != SubscriptionStatus.active) {
       return const SubscriptionBanner();
@@ -186,35 +185,37 @@ class SubscriptionScreen extends ConsumerWidget {
       () => _confirmCancel(context, ref, sub),
       () => _confirmResubscribe(context, ref, sub, price),
     );
+    final l10n = context.l10n;
     if (sub.cancelAt != null) {
       return _PlanCard(
-        name: 'Shop subscription',
-        badge: 'Cancelled',
+        name: l10n.shopSubscription,
+        badge: l10n.badgeCancelled,
         cancelled: true,
         price: price,
-        title: 'Ends ${formatSubscriptionDate(sub.cancelAt!)}',
-        message: 'Your shop stays visible to customers until then and you won\'t be charged again. After '
-            'that it\'s hidden until you subscribe again, and its data is kept for 60 days.',
+        title: l10n.endsOn(formatSubscriptionDate(l10n, sub.cancelAt!)),
+        message: l10n.shopCancelledMessage,
         action: action,
       );
     }
     if (sub.isInTrial) {
       return _PlanCard(
-        name: 'Shop subscription',
-        badge: 'Free trial',
+        name: l10n.shopSubscription,
+        badge: l10n.badgeFreeTrial,
         price: price,
-        title: 'Free trial until ${formatSubscriptionDate(sub.trialEndsAt!)}',
-        message: 'Nothing is charged before then. After that it renews every month — cancel any time '
-            'before the trial ends and you pay nothing.',
+        title: l10n.freeTrialUntil(formatSubscriptionDate(l10n, sub.trialEndsAt!)),
+        message: l10n.trialMessage,
         action: action,
       );
     }
+    final symbol = currencySymbol(currency ?? 'GBP');
     return _PlanCard(
-      name: 'Shop subscription',
-      badge: 'Active',
+      name: l10n.shopSubscription,
+      badge: l10n.badgeActive,
       price: price,
-      title: 'Renews every month',
-      message: 'Cancel any time — you keep access until the end of the month you\'ve paid for.',
+      title: l10n.renewsMonthly,
+      message: sub.monthlyAmountCents > 10000
+          ? '${l10n.shopActiveMessage} ${l10n.shopLoyaltyNote(symbol)}'
+          : l10n.shopActiveMessage,
       action: action,
     );
   }
@@ -226,18 +227,18 @@ class SubscriptionScreen extends ConsumerWidget {
     String? currency,
     bool busy,
   ) {
-    final price = currency == null ? null : formatMoney(FinancePremiumSubscription.monthlyAmountCents, currency);
+    final price = currency == null ? null : formatMoney(premium.monthlyAmountCents, currency);
     final cancelAt = premium.cancelAt;
+    final l10n = context.l10n;
     return _PlanCard(
       name: 'Finance Premium',
-      badge: cancelAt != null ? 'Cancelled' : 'Active',
+      badge: cancelAt != null ? l10n.badgeCancelled : l10n.badgeActive,
       cancelled: cancelAt != null,
       price: price,
-      title: cancelAt != null ? 'Ends ${formatSubscriptionDate(cancelAt)}' : 'Renews every month',
+      title: cancelAt != null ? l10n.endsOn(formatSubscriptionDate(l10n, cancelAt)) : l10n.renewsMonthly,
       message: cancelAt != null
-          ? 'Premium insights stay on until then and you won\'t be charged again. The free finance summary '
-                'stays after that.'
-          : 'Cancel any time — you keep Premium insights until the end of the month you\'ve paid for.',
+          ? l10n.financeCancelledMessage
+          : l10n.financeActiveMessage(currencySymbol(currency ?? 'GBP')),
       action: _cancelOrResubscribe(
         context,
         busy,
@@ -256,10 +257,10 @@ class SubscriptionScreen extends ConsumerWidget {
     final busy = ref.watch(billingActionControllerProvider).isLoading;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Subscription')),
+      appBar: AppBar(title: Text(context.l10n.navSubscription)),
       body: subscription.when(
         loading: () => const LoadingView(),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
         data: (sub) => ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -273,7 +274,7 @@ class SubscriptionScreen extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.credit_card),
-                title: const Text('Payment method & invoices'),
+                title: Text(context.l10n.paymentMethodInvoices),
                 trailing: const Icon(Icons.open_in_new),
                 onTap: () => _openPortal(context, ref),
               ),
@@ -332,7 +333,7 @@ class _PlanCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                if (price != null) Text('$price / month', style: textTheme.bodyMedium),
+                if (price != null) Text(context.l10n.perMonth(price!), style: textTheme.bodyMedium),
               ],
             ),
             const SizedBox(height: 12),

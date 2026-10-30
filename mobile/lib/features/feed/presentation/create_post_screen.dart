@@ -1,3 +1,4 @@
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/picked_media.dart';
 import 'package:flutter/material.dart';
@@ -65,7 +66,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     }
 
     if (duration > _maxVideoDuration) {
-      setState(() => _mediaError = 'Videos must be 1 minute or shorter (this one is ${duration.inSeconds}s).');
+      setState(() => _mediaError = context.l10n.videoTooLong(duration.inSeconds));
       return;
     }
 
@@ -95,20 +96,20 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     // avoids a dead-end composer that would fail on submit.
     if (ref.watch(currentProfileProvider).value?.isMinor == true) {
       return Scaffold(
-        appBar: AppBar(title: const Text('New post')),
-        body: const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Posting isn\'t available on this account.'))),
+        appBar: AppBar(title: Text(context.l10n.newPost)),
+        body: Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(context.l10n.postingUnavailable))),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New post')),
+      appBar: AppBar(title: Text(context.l10n.newPost)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: ListView(
           children: [
             TextField(
               controller: _bodyController,
-              decoration: const InputDecoration(labelText: "What's going on?"),
+              decoration: InputDecoration(labelText: context.l10n.whatsGoingOn),
               maxLines: 4,
               onChanged: (_) => setState(() {}),
             ),
@@ -120,12 +121,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 TextButton.icon(
                   onPressed: _pickImage,
                   icon: const Icon(Icons.image_outlined),
-                  label: Text(_image == null ? 'Add a photo' : 'Change photo'),
+                  label: Text(_image == null ? context.l10n.addAPhoto : context.l10n.changePhoto),
                 ),
                 TextButton.icon(
                   onPressed: _pickVideo,
                   icon: const Icon(Icons.videocam_outlined),
-                  label: Text(_video == null ? 'Add a video' : 'Change video'),
+                  label: Text(_video == null ? context.l10n.addAVideo : context.l10n.changeVideo),
                 ),
               ],
             ),
@@ -139,7 +140,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
-                  actionState.error.toString(),
+                  describeError(context.l10n, actionState.error),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
@@ -147,7 +148,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               onPressed: (_canSubmit && !actionState.isLoading) ? _submit : null,
               child: actionState.isLoading
                   ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Post'),
+                  : Text(context.l10n.post),
             ),
           ],
         ),

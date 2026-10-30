@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../features/auth/application/auth_controller.dart';
+import 'l10n.dart';
 import '../features/auth/domain/profile.dart';
 import '../features/business/application/business_controller.dart';
 import '../features/messaging/application/messaging_controller.dart';
@@ -151,10 +152,10 @@ class _BrandPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    const points = [
-      (Icons.event_outlined, 'Bookings and staff schedules at a glance'),
-      (Icons.payments_outlined, 'Costs, break-even and forecasts on a big screen'),
-      (Icons.storefront_outlined, 'Your shop page, posts and messages'),
+    final points = [
+      (Icons.event_outlined, context.l10n.webPanelBookings),
+      (Icons.payments_outlined, context.l10n.webPanelFinance),
+      (Icons.storefront_outlined, context.l10n.webPanelShop),
     ];
     return ColoredBox(
       color: AppColors.charcoal,
@@ -163,17 +164,17 @@ class _BrandPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _Wordmark(subtitle: 'for Business'),
+            _Wordmark(subtitle: context.l10n.forBusiness),
             const Spacer(),
             Container(width: 48, height: 3, color: AppColors.brass),
             const SizedBox(height: 24),
             Text(
-              'Run your shop\nfrom any screen.',
+              context.l10n.webPanelHeadline,
               style: textTheme.displayMedium?.copyWith(color: AppColors.chalk, height: 1.05),
             ),
             const SizedBox(height: 20),
             Text(
-              'Everything in the app, with room to see it.',
+              context.l10n.webPanelSubhead,
               style: textTheme.titleMedium?.copyWith(color: AppColors.chalk.withValues(alpha: 0.75)),
             ),
             const SizedBox(height: 32),
@@ -190,7 +191,7 @@ class _BrandPanel extends StatelessWidget {
               ),
             const Spacer(),
             Text(
-              'Customers book on the Fadra Cut app.',
+              context.l10n.webPanelFooter,
               style: textTheme.bodySmall?.copyWith(color: AppColors.chalk.withValues(alpha: 0.55)),
             ),
           ],
@@ -269,31 +270,31 @@ class _Sidebar extends ConsumerWidget {
     final List<_Destination> footer;
     if (isBusiness) {
       main = [
-        (icon: Icons.space_dashboard_outlined, label: 'Home', path: '/business', badge: 0),
-        (icon: Icons.event_outlined, label: 'Bookings', path: '/business/bookings', badge: 0),
-        (icon: Icons.groups_outlined, label: 'Staff', path: '/business/staff', badge: 0),
-        (icon: Icons.content_cut, label: 'Services', path: '/business/services', badge: 0),
-        (icon: Icons.payments_outlined, label: 'Finance', path: '/business/finance', badge: 0),
-        (icon: Icons.photo_outlined, label: 'Feed', path: '/business/feed', badge: 0),
-        (icon: Icons.mode_comment_outlined, label: 'Messages', path: '/messages', badge: unread),
-        (icon: Icons.storefront_outlined, label: 'Shop page', path: '/business/shop/edit', badge: 0),
-        (icon: Icons.person_outline, label: 'Profile', path: '/business/profile', badge: 0),
+        (icon: Icons.space_dashboard_outlined, label: context.l10n.navHome, path: '/business', badge: 0),
+        (icon: Icons.event_outlined, label: context.l10n.navBookings, path: '/business/bookings', badge: 0),
+        (icon: Icons.groups_outlined, label: context.l10n.navStaff, path: '/business/staff', badge: 0),
+        (icon: Icons.content_cut, label: context.l10n.services, path: '/business/services', badge: 0),
+        (icon: Icons.payments_outlined, label: context.l10n.navFinance, path: '/business/finance', badge: 0),
+        (icon: Icons.photo_outlined, label: context.l10n.navFeed, path: '/business/feed', badge: 0),
+        (icon: Icons.mode_comment_outlined, label: context.l10n.navMessages, path: '/messages', badge: unread),
+        (icon: Icons.storefront_outlined, label: context.l10n.shopPage, path: '/business/shop/edit', badge: 0),
+        (icon: Icons.person_outline, label: context.l10n.navProfile, path: '/business/profile', badge: 0),
       ];
-      footer = [(icon: Icons.credit_card, label: 'Subscription', path: '/business/subscription', badge: 0)];
+      footer = [(icon: Icons.credit_card, label: context.l10n.navSubscription, path: '/business/subscription', badge: 0)];
     } else if (kIsWeb) {
       // Only admins reach the website with a customer account.
-      main = [(icon: Icons.admin_panel_settings_outlined, label: 'Admin', path: '/admin', badge: 0)];
+      main = [(icon: Icons.admin_panel_settings_outlined, label: context.l10n.adminEntry, path: '/admin', badge: 0)];
       footer = [];
     } else {
       main = [
-        (icon: Icons.home_outlined, label: 'Home', path: '/customer', badge: 0),
-        (icon: Icons.storefront_outlined, label: 'Browse', path: '/customer/businesses', badge: 0),
-        (icon: Icons.photo_outlined, label: 'Feed', path: '/feed', badge: 0),
-        if (designerEnabled) (icon: Icons.content_cut_outlined, label: 'Designs', path: '/designs', badge: 0),
-        if (!profile.isMinor) (icon: Icons.mode_comment_outlined, label: 'Messages', path: '/messages', badge: unread),
-        (icon: Icons.paid_outlined, label: 'Rewards', path: '/rewards', badge: 0),
-        (icon: Icons.leaderboard_outlined, label: 'Rankings', path: '/rankings', badge: 0),
-        (icon: Icons.person_outline, label: 'Profile', path: '/customer/profile', badge: 0),
+        (icon: Icons.home_outlined, label: context.l10n.navHome, path: '/customer', badge: 0),
+        (icon: Icons.storefront_outlined, label: context.l10n.navBrowse, path: '/customer/businesses', badge: 0),
+        (icon: Icons.photo_outlined, label: context.l10n.navFeed, path: '/feed', badge: 0),
+        if (designerEnabled) (icon: Icons.content_cut_outlined, label: context.l10n.navDesigns, path: '/designs', badge: 0),
+        if (!profile.isMinor) (icon: Icons.mode_comment_outlined, label: context.l10n.navMessages, path: '/messages', badge: unread),
+        (icon: Icons.paid_outlined, label: context.l10n.navRewards, path: '/rewards', badge: 0),
+        (icon: Icons.leaderboard_outlined, label: context.l10n.navRankings, path: '/rankings', badge: 0),
+        (icon: Icons.person_outline, label: context.l10n.navProfile, path: '/customer/profile', badge: 0),
       ];
       footer = [];
     }
@@ -313,7 +314,7 @@ class _Sidebar extends ConsumerWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: _Wordmark(subtitle: isBusiness ? 'for Business' : (kIsWeb ? 'Admin' : 'Barbershop')),
+                child: _Wordmark(subtitle: isBusiness ? context.l10n.forBusiness : (kIsWeb ? context.l10n.adminEntry : context.l10n.barbershopSubtitle)),
               ),
               if (shopName != null) ...[
                 const SizedBox(height: 20),
@@ -331,11 +332,11 @@ class _Sidebar extends ConsumerWidget {
               Expanded(child: ListView(children: [for (final d in main) item(d)])),
               const Divider(color: Color(0x33EDEAE3), height: 24),
               for (final d in footer) item(d),
-              item((icon: Icons.settings_outlined, label: 'Settings', path: '/account-settings', badge: 0)),
+              item((icon: Icons.settings_outlined, label: context.l10n.settingsTitle, path: '/account-settings', badge: 0)),
               if (profile.isAdmin && (isBusiness || !kIsWeb))
-                item((icon: Icons.admin_panel_settings_outlined, label: 'Admin', path: '/admin', badge: 0)),
+                item((icon: Icons.admin_panel_settings_outlined, label: context.l10n.adminEntry, path: '/admin', badge: 0)),
               _SidebarItem(
-                destination: (icon: Icons.logout, label: 'Sign out', path: '', badge: 0),
+                destination: (icon: Icons.logout, label: context.l10n.signOut, path: '', badge: 0),
                 selected: false,
                 onTap: () => ref.read(authControllerProvider.notifier).signOut(),
               ),

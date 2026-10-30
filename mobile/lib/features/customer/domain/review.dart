@@ -1,3 +1,5 @@
+import '../../../l10n/app_localizations.dart';
+
 /// Curated list, with a required "Other" fallback for cuts not listed —
 /// this is also what future ranking-by-haircut-type would bucket on.
 const haircutTypes = [
@@ -15,6 +17,24 @@ const haircutTypes = [
   'Beard Trim',
   'Other',
 ];
+
+/// [haircutTypes] are stored in English; this is how one is shown.
+String haircutTypeLabel(AppLocalizations l10n, String type) => switch (type) {
+      'Buzz Cut' => l10n.hcBuzzCut,
+      'Crew Cut' => l10n.hcCrewCut,
+      'Fade' => l10n.hcFade,
+      'Undercut' => l10n.hcUndercut,
+      'Pompadour' => l10n.hcPompadour,
+      'Quiff' => l10n.hcQuiff,
+      'Slick Back' => l10n.hcSlickBack,
+      'Textured Crop' => l10n.hcTexturedCrop,
+      'Mullet' => l10n.hcMullet,
+      'Afro' => l10n.hcAfro,
+      'Bald/Shaved' => l10n.hcBaldShaved,
+      'Beard Trim' => l10n.hcBeardTrim,
+      'Other' => l10n.hcOther,
+      _ => type,
+    };
 
 /// Each rating is independently omittable — see `review_screen.dart`'s
 /// step-by-step flow — so a row can have some fields filled and others
@@ -51,7 +71,7 @@ class Review {
 
   factory Review.fromRow(Map<String, dynamic> row) {
     return Review(
-      id: row['id'] as String,
+      id: row['id'] as String?,
       bookingId: row['booking_id'] as String,
       businessId: row['business_id'] as String,
       workerId: row['worker_id'] as String,
@@ -65,4 +85,19 @@ class Review {
       haircutType: row['haircut_type'] as String?,
     );
   }
+
+  /// The columns written for a new review.
+  Map<String, dynamic> toRow() => {
+        'booking_id': bookingId,
+        'business_id': businessId,
+        'worker_id': workerId,
+        'customer_id': customerId,
+        'shop_rating': shopRating,
+        'shop_comment': shopComment,
+        'worker_rating': workerRating,
+        'worker_comment': workerComment,
+        'haircut_rating': haircutRating,
+        'haircut_comment': haircutComment,
+        'haircut_type': haircutType,
+      };
 }

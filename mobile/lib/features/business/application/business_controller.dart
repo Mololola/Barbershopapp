@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/api_client.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
@@ -19,7 +20,7 @@ import '../domain/finance_overview.dart';
 import '../domain/business_subscription.dart';
 
 final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
-  return BusinessRepository(ref.watch(supabaseClientProvider));
+  return BusinessRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 final billingApiClientProvider = Provider<BillingApiClient>((ref) {
@@ -464,7 +465,7 @@ class WorkerController extends AsyncNotifier<void> {
       // Friendly early answer; the DB trigger enforces it regardless.
       final staff = await ref.read(workersProvider.future);
       if (staff.any((worker) => worker.profileId == workerProfileId)) {
-        throw const StaffChangeBlockedException("They're already on your staff.");
+        throw const StaffChangeBlockedException('BB002', "They're already on your staff.");
       }
       await ref.read(businessRepositoryProvider).createInvitation(
             businessId: business.id,

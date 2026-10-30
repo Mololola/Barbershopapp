@@ -4,12 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../features/auth/application/auth_controller.dart';
+import 'l10n.dart';
 import 'legal.dart';
 
 const _seenKey = 'policies_seen_effective';
 
-const _monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
-  'October', 'November', 'December'];
 
 /// Tells a signed-in user, once, that the Terms and Privacy Policy have
 /// changed — the documents promise this before material changes take
@@ -43,22 +42,18 @@ class _PolicyUpdateNoticeState extends ConsumerState<PolicyUpdateNotice> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('We\'ve updated our Terms and Privacy Policy'),
-        content: Text(
-          'In effect from ${policiesEffective.day} ${_monthNames[policiesEffective.month - 1]} '
-          '${policiesEffective.year}. $policyChangeSummary By continuing to use the app you accept the updated '
-          'versions.',
-        ),
+        title: Text(context.l10n.policyUpdateTitle),
+        content: Text(context.l10n.policyUpdateBody(policiesEffective)),
         actions: [
           TextButton(
             onPressed: () => launchUrl(Uri.parse(termsOfServiceUrl), mode: LaunchMode.externalApplication),
-            child: const Text('Terms'),
+            child: Text(context.l10n.termsShort),
           ),
           TextButton(
             onPressed: () => launchUrl(Uri.parse(privacyPolicyUrl), mode: LaunchMode.externalApplication),
-            child: const Text('Privacy Policy'),
+            child: Text(context.l10n.privacyPolicy),
           ),
-          FilledButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+          FilledButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.ok)),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +42,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
     if (locations == null || hours == null || !_formKey.currentState!.validate()) return;
     if (!hours.every((day) => day.hasValidRange)) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Fix the highlighted opening hours before saving.')));
+          .showSnackBar(SnackBar(content: Text(context.l10n.fixHighlightedHours)));
       return;
     }
     final success = await ref.read(businessEditControllerProvider.notifier).save(
@@ -49,7 +50,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
           hours: hours,
         );
     if (!mounted || !success) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Business details saved.')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.businessDetailsSaved)));
   }
 
   @override
@@ -59,12 +60,12 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
     final editState = ref.watch(businessEditControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Business details')),
+      appBar: AppBar(title: Text(context.l10n.businessDetails)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: locations.when(
           loading: () => const LoadingView(),
-          error: (error, _) => Center(child: Text('Error: $error')),
+          error: (error, _) => Center(child: Text(describeError(context.l10n, error))),
           data: (existingLocations) {
             if (!storedHours.hasValue) return const LoadingView();
             _seedLocationsIfNeeded(existingLocations);
@@ -82,14 +83,14 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
                   children: [
                     LocationFormSection(locations: fields, onChanged: () => setState(() {})),
                     const SizedBox(height: 24),
-                    Text('Opening hours', style: Theme.of(context).textTheme.titleMedium),
+                    Text(context.l10n.openingHours, style: Theme.of(context).textTheme.titleMedium),
                     OpeningHoursEditor(hours: hours, onChanged: (i, day) => setState(() => hours[i] = day)),
                     const SizedBox(height: 16),
                     if (editState.hasError)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Text(
-                          editState.error.toString(),
+                          describeError(context.l10n, editState.error),
                           style: TextStyle(color: Theme.of(context).colorScheme.error),
                         ),
                       ),
@@ -97,7 +98,7 @@ class _BusinessEditScreenState extends ConsumerState<BusinessEditScreen> {
                       onPressed: editState.isLoading ? null : _save,
                       child: editState.isLoading
                           ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Save'),
+                          : Text(context.l10n.save),
                     ),
                   ],
                 ),

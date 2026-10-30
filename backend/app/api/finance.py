@@ -2,12 +2,13 @@ import datetime
 import uuid
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user_id
+from app.core.i18n import is_spanish
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 from app.services import finance_analytics as fa
@@ -263,6 +264,7 @@ def finance_overview(
     db: Session = Depends(get_db),
     _rate_limit: None = Depends(rate_limit("30/minute")),
     user_id: str = Depends(get_current_user_id),
+    accept_language: str | None = Header(default=None),
 ) -> FinanceOverview:
     """The finance tool for one month: the free summary for every business,
     plus the premium analysis only when premium is on — enforced here, not
@@ -346,7 +348,13 @@ def finance_overview(
             suggestions=[
                 SuggestionOut(**s.__dict__)
                 for s in fa.suggestions(
-                    data, now, cells, customers, services, _CURRENCY_SYMBOLS.get(business["currency"], "")
+                    data,
+                    now,
+                    cells,
+                    customers,
+                    services,
+                    _CURRENCY_SYMBOLS.get(business["currency"], ""),
+                    spanish=is_spanish(accept_language),
                 )
             ],
             average_ticket_cents=round(sum(b.price_cents for b in recent) / len(recent)) if recent else ticket,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-import '../../../core/loading.dart';
+import '../../../core/l10n.dart';
 import '../../../core/responsive.dart';
 import '../../../core/quick_action_tile.dart';
+import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../messaging/presentation/messages_button.dart';
@@ -43,7 +45,7 @@ class CustomerHomeScreen extends ConsumerWidget {
           const MessagesButton(),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
+            tooltip: context.l10n.settingsTitle,
             onPressed: () => context.push('/account-settings'),
           ),
         ],
@@ -51,16 +53,13 @@ class CustomerHomeScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         children: [
-          Text('Hey, ${myProfile?.username ?? 'there'}', style: Theme.of(context).textTheme.headlineSmall),
+          Text(myProfile == null ? context.l10n.greetingNoName : context.l10n.greeting(myProfile.username), style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 4),
-          Text("Here's what's next.", style: TextStyle(color: AppColors.steel)),
+          Text(context.l10n.whatsNext, style: TextStyle(color: AppColors.steel)),
           const SizedBox(height: 20),
           bookings.when(
-            loading: () => const SizedBox(
-              height: 132,
-              child: LoadingView(),
-            ),
-            error: (error, _) => Text('Error: $error'),
+            loading: () => const _NextAppointmentSkeleton(),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (list) {
               final upcoming = list
                   .where((b) => b.status == BookingStatus.confirmed && b.startTime.isAfter(DateTime.now()))
@@ -74,7 +73,7 @@ class CustomerHomeScreen extends ConsumerWidget {
             _JobInviteBanner(count: pendingInvitations.length),
           ],
           const SizedBox(height: 28),
-          Text('Quick actions', style: Theme.of(context).textTheme.titleMedium),
+          Text(context.l10n.quickActions, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           Wrap(
             spacing: 12,
@@ -82,26 +81,26 @@ class CustomerHomeScreen extends ConsumerWidget {
             children: [
               QuickActionTile(
                 icon: Icons.event_note_outlined,
-                label: 'My bookings',
+                label: context.l10n.myBookings,
                 onTap: () => context.push('/customer/my-bookings'),
               ),
               // No DMs for a minor account — see the guardian-consent design.
               if (myProfile?.isMinor != true)
                 QuickActionTile(
                   icon: Icons.mode_comment_outlined,
-                  label: 'Messages',
+                  label: context.l10n.navMessages,
                   badgeCount: unreadCount,
                   onTap: () => context.push('/messages'),
                 ),
               QuickActionTile(
                 icon: Icons.emoji_events_outlined,
-                label: 'Rankings',
+                label: context.l10n.navRankings,
                 onTap: () => context.push('/rankings'),
               ),
               if (myProfile?.isAdmin == true)
                 QuickActionTile(
                   icon: Icons.shield_outlined,
-                  label: 'Admin',
+                  label: context.l10n.adminEntry,
                   onTap: () => context.push('/admin'),
                 ),
             ],
@@ -143,8 +142,8 @@ class _NextAppointmentCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'NEXT UP',
-                  style: TextStyle(
+                  context.l10n.nextUp,
+                  style: const TextStyle(
                     color: AppColors.brass,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
@@ -155,7 +154,7 @@ class _NextAppointmentCard extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(color: AppColors.brass, borderRadius: BorderRadius.circular(20)),
                   child: Text(
-                    _relativeLabel(start),
+                    _relativeLabel(context, start),
                     style: const TextStyle(color: AppColors.onBrass, fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                 ),
@@ -163,14 +162,14 @@ class _NextAppointmentCard extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              '${_weekday(start)}, ${_month(start)} ${start.day}',
+              DateFormat.MMMEd(context.l10n.localeName).format(start),
               style: Theme.of(context)
                   .textTheme
                   .headlineSmall
                   ?.copyWith(color: AppColors.chalk, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 2),
-            Text(_formatTime(start), style: const TextStyle(color: AppColors.chalk, fontSize: 15)),
+            Text(TimeOfDay.fromDateTime(start).format(context), style: const TextStyle(color: AppColors.chalk, fontSize: 15)),
             if (cancelledAt != null) ...[
               const SizedBox(height: 12),
               Row(
@@ -180,7 +179,7 @@ class _NextAppointmentCard extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      shopClosureNotice(cancelledAt, DateTime.now()),
+                      shopClosureNotice(context.l10n, cancelledAt, DateTime.now()),
                       style: const TextStyle(color: AppColors.chalk, fontSize: 13),
                     ),
                   ),
@@ -199,7 +198,7 @@ class _NextAppointmentCard extends ConsumerWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    business?.name ?? 'Loading…',
+                    business?.name ?? context.l10n.loadingEllipsis,
                     style: const TextStyle(color: AppColors.chalk, fontWeight: FontWeight.w600),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -207,7 +206,7 @@ class _NextAppointmentCard extends ConsumerWidget {
                 TextButton(
                   style: TextButton.styleFrom(foregroundColor: AppColors.brass, padding: EdgeInsets.zero),
                   onPressed: () => context.push('/customer/my-bookings'),
-                  child: const Text('View'),
+                  child: Text(context.l10n.view),
                 ),
               ],
             ),
@@ -217,40 +216,14 @@ class _NextAppointmentCard extends ConsumerWidget {
     );
   }
 
-  static String _relativeLabel(DateTime start) {
+  static String _relativeLabel(BuildContext context, DateTime start) {
     final now = DateTime.now();
     final days = DateTime(start.year, start.month, start.day)
         .difference(DateTime(now.year, now.month, now.day))
         .inDays;
-    if (days == 0) return 'Today';
-    if (days == 1) return 'Tomorrow';
-    return 'In $days days';
-  }
-
-  static String _weekday(DateTime d) =>
-      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
-
-  static String _month(DateTime d) => const [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ][d.month - 1];
-
-  static String _formatTime(DateTime d) {
-    final time = TimeOfDay.fromDateTime(d);
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$hour:$minute $period';
+    if (days == 0) return context.l10n.today;
+    if (days == 1) return context.l10n.tomorrow;
+    return context.l10n.inDays(days);
   }
 }
 
@@ -300,15 +273,46 @@ class _JobInviteBanner extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  count == 1
-                      ? 'A barbershop wants to hire you — 1 job invitation waiting.'
-                      : 'A barbershop wants to hire you — $count job invitations waiting.',
+                  context.l10n.jobInvitations(count),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
               const Icon(Icons.chevron_right, color: AppColors.brass),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The next-appointment card's shape while bookings load.
+class _NextAppointmentSkeleton extends StatelessWidget {
+  const _NextAppointmentSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final bar = AppColors.chalk.withValues(alpha: 0.14);
+    return SkeletonPulse(
+      child: Container(
+        height: 132,
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+        decoration: BoxDecoration(
+          color: AppColors.charcoal,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.brass.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SkeletonBox(width: 70, height: 10, color: bar),
+            const SizedBox(height: 14),
+            SkeletonBox(width: 170, height: 20, color: bar),
+            const SizedBox(height: 8),
+            SkeletonBox(width: 80, height: 14, color: bar),
+            const Spacer(),
+            SkeletonBox(width: 130, height: 12, color: bar),
+          ],
         ),
       ),
     );
@@ -328,13 +332,13 @@ class _NoAppointmentCard extends StatelessWidget {
           children: [
             const Icon(Icons.content_cut, color: AppColors.brass, size: 28),
             const SizedBox(height: 10),
-            Text('No appointments booked', style: Theme.of(context).textTheme.titleMedium),
+            Text(context.l10n.noAppointments, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
-            const Text('Find a shop and get in the chair.', style: TextStyle(color: AppColors.steel)),
+            Text(context.l10n.noAppointmentsHint, style: const TextStyle(color: AppColors.steel)),
             const SizedBox(height: 14),
             FilledButton(
               onPressed: () => context.go('/customer/businesses'),
-              child: const Text('Browse barbershops'),
+              child: Text(context.l10n.browseBarbershops),
             ),
           ],
         ),

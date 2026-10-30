@@ -1,6 +1,7 @@
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/picked_media.dart';
 import '../domain/post.dart';
 
@@ -8,9 +9,10 @@ import '../domain/post.dart';
 /// so — like reviews — this writes directly to Supabase under RLS rather
 /// than through FastAPI (see docs/architecture.md's client/backend split).
 class FeedRepository {
-  FeedRepository(this._client);
+  FeedRepository(this._client, this._cache);
 
   final SupabaseClient _client;
+  final OfflineCache _cache;
 
   /// Like counts are counted on the server; of the likes themselves only
   /// mine comes back (filtered below), which is all `likedByMe` needs.
@@ -27,23 +29,25 @@ class FeedRepository {
   Future<List<Post>> fetchFeed({required String? myProfileId, DateTime? before, required int limit}) async {
     var query = _posts(myProfileId);
     if (before != null) query = query.lt('created_at', before.toUtc().toIso8601String());
-    final rows = await query.order('created_at', ascending: false).limit(limit);
+    final page = query.order('created_at', ascending: false).limit(limit);
+    // Only the newest page is saved for offline use.
+    final rows = before == null ? await _cache.rows('feed', () => page) : await page;
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
   }
 
   Future<List<Comment>> fetchComments(String postId, {required String? myProfileId}) async {
-    final rows = await _client
+    final rows = await _cache.rows('comments:$postId', () => _client
         .from('comments')
         .select('*, profiles(username, avatar_url), comment_likes(profile_id)')
         .eq('post_id', postId)
-        .order('created_at');
+        .order('created_at'));
     return rows.map((row) => Comment.fromRow(row, myProfileId: myProfileId)).toList();
   }
 
   Future<List<Post>> fetchPostsByAuthor({required String authorId, required String? myProfileId}) async {
-    final rows = await _posts(myProfileId)
+    final rows = await _cache.rows('posts-by:$authorId', () => _posts(myProfileId)
         .eq('author_id', authorId)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false));
     return rows.map((row) => Post.fromRow(row, myProfileId: myProfileId)).toList();
   }
 
@@ -68,7 +72,7 @@ class FeedRepository {
     final path = '$authorId/${post['id']}$extension';
     await _client.storage.from('post-media').uploadBinary(
           path,
-          await mediaFile.readAsBytes(),
+          await uploadBytes(mediaFile),
           fileOptions: FileOptions(contentType: _contentTypeOf(extension)),
         );
     final mediaUrl = _client.storage.from('post-media').getPublicUrl(path);
@@ -126,10 +130,10 @@ class FeedRepository {
   /// Portfolio posts on the marketplace candidate detail view — see
   /// WorkerCandidateDetailScreen.
   Future<List<Post>> fetchPinnedPosts(String authorId) async {
-    final rows = await _posts(authorId)
+    final rows = await _cache.rows('pinned:$authorId', () => _posts(authorId)
         .eq('author_id', authorId)
         .eq('is_pinned', true)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false));
     return rows.map((row) => Post.fromRow(row, myProfileId: authorId)).toList();
   }
 

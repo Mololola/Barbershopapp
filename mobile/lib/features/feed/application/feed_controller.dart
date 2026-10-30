@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/offline_cache.dart';
 import '../../../core/error_reporting.dart';
 import '../../../core/supabase_providers.dart';
 import '../../auth/application/auth_controller.dart';
@@ -8,7 +9,7 @@ import '../data/feed_repository.dart';
 import '../domain/post.dart';
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
-  return FeedRepository(ref.watch(supabaseClientProvider));
+  return FeedRepository(ref.watch(supabaseClientProvider), ref.watch(offlineCacheProvider));
 });
 
 /// A post is about a screen tall, so a page of ten is several screens of

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/app_network_image.dart';
+import '../../../core/l10n.dart';
 import '../../../core/loading.dart';
 import '../../../core/theme.dart';
 import '../../feed/application/feed_controller.dart';
@@ -22,7 +23,7 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
     if (!context.mounted) return;
     if (!ref.read(workerControllerProvider).hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Invitation sent to ${candidate.legalFullName}.')),
+        SnackBar(content: Text(context.l10n.invitationSentTo(candidate.legalFullName))),
       );
     }
   }
@@ -52,32 +53,31 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
               if (candidate.shopsWorkedCount != null)
                 _StatChip(
                   icon: Icons.storefront_outlined,
-                  label:
-                      '${candidate.shopsWorkedCount} shop${candidate.shopsWorkedCount == 1 ? '' : 's'}',
+                  label: context.l10n.shopsCount(candidate.shopsWorkedCount!),
                 ),
               if (candidate.yearsExperience != null)
-                _StatChip(icon: Icons.work_outline, label: '${candidate.yearsExperience} yrs'),
+                _StatChip(icon: Icons.work_outline, label: context.l10n.yearsShort(candidate.yearsExperience!)),
             ],
           ),
           if (candidate.city != null) ...[
             const SizedBox(height: 20),
-            Text('City', style: Theme.of(context).textTheme.titleMedium),
+            Text(context.l10n.city, style: Theme.of(context).textTheme.titleMedium),
             Text(candidate.city!),
           ],
           if (candidate.bio != null) ...[
             const SizedBox(height: 16),
-            Text('Bio', style: Theme.of(context).textTheme.titleMedium),
+            Text(context.l10n.bio, style: Theme.of(context).textTheme.titleMedium),
             Text(candidate.bio!),
           ],
           const SizedBox(height: 24),
-          Text('Portfolio', style: Theme.of(context).textTheme.titleMedium),
+          Text(context.l10n.portfolio, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           pinnedPosts.when(
             loading: () => const LoadingView(),
-            error: (error, _) => Text('Error: $error'),
+            error: (error, _) => Text(describeError(context.l10n, error)),
             data: (posts) {
               if (posts.isEmpty) {
-                return const Text('No pinned work yet.', style: TextStyle(color: AppColors.steel));
+                return Text(context.l10n.noPinnedWork, style: const TextStyle(color: AppColors.steel));
               }
               return GridView.builder(
                 shrinkWrap: true,
@@ -105,7 +105,7 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
-                actionState.error.toString(),
+                describeError(context.l10n, actionState.error),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
@@ -116,15 +116,15 @@ class WorkerCandidateDetailScreen extends ConsumerWidget {
             child: actionState.isLoading
                 ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                 : Text(isOnStaff
-                    ? 'Already on your staff'
+                    ? context.l10n.alreadyOnStaff
                     : pendingInvitation != null
-                        ? 'Invitation sent — awaiting response'
-                        : 'Send invite'),
+                        ? context.l10n.invitationAwaiting
+                        : context.l10n.sendInvite),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             icon: const Icon(Icons.chat_bubble_outline),
-            label: const Text('Message'),
+            label: Text(context.l10n.message),
             onPressed: () async {
               final conversationId = await ref
                   .read(messagingActionControllerProvider.notifier)

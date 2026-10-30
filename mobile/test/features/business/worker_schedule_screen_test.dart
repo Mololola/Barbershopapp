@@ -25,7 +25,7 @@ void main() {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    for (final day in OpeningHours.dayNames) {
+    for (final day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
       expect(find.text(day), findsOneWidget);
     }
     expect(find.text('Save'), findsOneWidget);

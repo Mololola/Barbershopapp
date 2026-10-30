@@ -50,9 +50,10 @@ services:
       - path: /*
         name: Referrer-Policy
         value: strict-origin-when-cross-origin
+      # Location for this site only: "Near me" on Find a shop asks for it.
       - path: /*
         name: Permissions-Policy
-        value: camera=(), microphone=(), geolocation=()
+        value: camera=(), microphone=(), geolocation=(self)
       # Flutter's files keep their names across releases, so the browser must
       # check for a new version each time instead of running a stale one.
       - path: /*

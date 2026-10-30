@@ -58,3 +58,30 @@ class ResponsiveColumns extends StatelessWidget {
 /// [min] and [max] — for tile grids that use the extra width on a desktop.
 int columnsFor(double width, {double minWidth = 200, int min = 2, int max = 4}) =>
     (width / minWidth).floor().clamp(min, max);
+
+/// Equal-width tiles wrapped into as many columns as fit (at least
+/// [minTileWidth] each, up to [maxColumns]) — for card lists on the wide
+/// layout. Tiles in a row keep their own heights, top-aligned.
+class TileGrid extends StatelessWidget {
+  const TileGrid({super.key, required this.children, this.minTileWidth = 320, this.maxColumns = 3, this.spacing = 12});
+
+  final List<Widget> children;
+  final double minTileWidth;
+  final int maxColumns;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = columnsFor(constraints.maxWidth, minWidth: minTileWidth + spacing, min: 1, max: maxColumns);
+        final tileWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [for (final child in children) SizedBox(width: tileWidth, child: child)],
+        );
+      },
+    );
+  }
+}

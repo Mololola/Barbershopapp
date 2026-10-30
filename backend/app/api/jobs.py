@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.jobs.expire_grace_periods import find_and_delete_expired_businesses
 from app.jobs.purge_unconfirmed_signups import purge_unconfirmed_signups
 from app.jobs.sync_subscription_prices import sync_subscription_prices
+from app.services.geocoding import geocode_missing_locations
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ _JOBS = {
     "expire-grace-periods": find_and_delete_expired_businesses,
     "purge-unconfirmed-signups": purge_unconfirmed_signups,
     "sync-subscription-prices": sync_subscription_prices,
+    "geocode-locations": geocode_missing_locations,
 }
 
 

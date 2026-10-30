@@ -28,6 +28,7 @@ MIN_BOOKINGS_FOR_SUGGESTIONS = 10
 
 _DAYS_PER_MONTH = 30.44
 _WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+_WEEKDAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábados", "domingos"]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -457,9 +458,11 @@ def suggestions(
     customers: CustomerStats,
     services: list[ServiceStats],
     currency_symbol: str,
+    spanish: bool = False,
 ) -> list[Suggestion]:
     """Concrete moves with their expected monthly effect, best first. Every
-    estimate states its assumptions — they're honest guesses, not promises."""
+    estimate states its assumptions — they're honest guesses, not promises.
+    Written in English, or Spanish when [spanish]."""
     recent = [b for b in _completed(data) if now - datetime.timedelta(days=SERVICE_WINDOW_DAYS) <= b.start < now]
     if len(recent) < MIN_BOOKINGS_FOR_SUGGESTIONS:
         return []
@@ -487,17 +490,27 @@ def suggestions(
         fill = 0.25 * spare
         gain = 0.75 * ticket * fill - discount_cost
         if util < 0.4 and needed <= spare and gain > 0:
+            window = f"{hour:02d}:00–{hour + 2:02d}:00"
             found.append(
                 Suggestion(
                     kind="quiet_window",
-                    title=f"Fill quiet {_WEEKDAYS[weekday]}s, {hour:02d}:00–{hour + 2:02d}:00",
+                    title=f"Llena los {_WEEKDAYS_ES[weekday]} flojos, {window}"
+                    if spanish
+                    else f"Fill quiet {_WEEKDAYS[weekday]}s, {window}",
                     detail=(
-                        f"Only {round(util * 100)}% booked. Offer 25% off in that window — '2 cuts for the "
+                        f"Solo está reservado el {round(util * 100)}%. Ofrece un 25% de descuento en esa franja: "
+                        f"'2 cortes por el precio de 1,5'. Se paga sola con {needed} "
+                        f"reserva{'s' if needed != 1 else ''} más al mes, y hay hueco para unas {round(spare)}."
+                        if spanish
+                        else f"Only {round(util * 100)}% booked. Offer 25% off in that window — '2 cuts for the "
                         f"price of 1.5'. It pays for itself with {needed} extra booking{'s' if needed != 1 else ''} "
                         f"a month, and there's room for about {round(spare)}."
                     ),
                     monthly_gain_cents=round(gain),
-                    assumptions="Assumes the offer fills a quarter of the empty slots in that window; "
+                    assumptions="Supone que la oferta llena una cuarta parte de los huecos libres de esa franja; "
+                    "las reservas que ya hay también tienen el descuento."
+                    if spanish
+                    else "Assumes the offer fills a quarter of the empty slots in that window; "
                     "existing bookings there also get the discount.",
                 )
             )
@@ -515,14 +528,23 @@ def suggestions(
         found.append(
             Suggestion(
                 kind="second_visit_bundle",
-                title="Sell '2 cuts for the price of 1.5' this month",
+                title="Vende '2 cortes por el precio de 1,5' este mes"
+                if spanish
+                else "Sell '2 cuts for the price of 1.5' this month",
                 detail=(
-                    f"{once} of your {len(visits)} customers came once in the last 30 days. A two-cut bundle "
+                    f"{once} de tus {len(visits)} clientes vinieron una sola vez en los últimos 30 días. Un bono de "
+                    f"dos cortes para usar en el mes convierte una visita de {_money(ticket, currency_symbol)} en "
+                    f"{_money(1.5 * ticket, currency_symbol)}."
+                    if spanish
+                    else f"{once} of your {len(visits)} customers came once in the last 30 days. A two-cut bundle "
                     f"used within the month turns a single {_money(ticket, currency_symbol)} visit into "
                     f"{_money(1.5 * ticket, currency_symbol)}."
                 ),
                 monthly_gain_cents=round(gain),
-                assumptions="Assumes 1 in 5 one-visit customers buys it, and every customer who already "
+                assumptions="Supone que 1 de cada 5 clientes de una sola visita lo compra, y que todos los que "
+                "ya vienen dos veces se pasan al bono, que es más barato."
+                if spanish
+                else "Assumes 1 in 5 one-visit customers buys it, and every customer who already "
                 "comes twice switches to the cheaper bundle.",
             )
         )
@@ -534,19 +556,31 @@ def suggestions(
         if top.bookings >= MIN_BOOKINGS_FOR_SUGGESTIONS and (utilisation >= 0.75 or top.share >= 0.4):
             monthly_revenue = top.revenue_cents * _DAYS_PER_MONTH / SERVICE_WINDOW_DAYS
             gain = monthly_revenue * (1.10 * 0.95 - 1)
-            reason = (
-                f"your chairs are {round(utilisation * 100)}% booked"
-                if utilisation >= 0.75
-                else f"it's {round(top.share * 100)}% of your bookings"
-            )
+            if spanish:
+                reason = (
+                    f"tus sillones están reservados al {round(utilisation * 100)}%"
+                    if utilisation >= 0.75
+                    else f"es el {round(top.share * 100)}% de tus reservas"
+                )
+            else:
+                reason = (
+                    f"your chairs are {round(utilisation * 100)}% booked"
+                    if utilisation >= 0.75
+                    else f"it's {round(top.share * 100)}% of your bookings"
+                )
             found.append(
                 Suggestion(
                     kind="price_rise",
-                    title=f"Raise {top.name} by 10%",
-                    detail=f"Demand is strong — {reason}. A 10% rise on your main service still comes out ahead "
+                    title=f"Sube {top.name} un 10%" if spanish else f"Raise {top.name} by 10%",
+                    detail=f"La demanda es fuerte: {reason}. Subir un 10% tu servicio principal sigue saliendo a "
+                    "cuenta aunque algún cliente se vaya a otro sitio."
+                    if spanish
+                    else f"Demand is strong — {reason}. A 10% rise on your main service still comes out ahead "
                     "even if a few customers go elsewhere.",
                     monthly_gain_cents=round(gain),
-                    assumptions="Assumes 5% fewer bookings of that service after the rise.",
+                    assumptions="Supone un 5% menos de reservas de ese servicio tras la subida."
+                    if spanish
+                    else "Assumes 5% fewer bookings of that service after the rise.",
                 )
             )
 
@@ -557,11 +591,21 @@ def suggestions(
         found.append(
             Suggestion(
                 kind="win_back",
-                title=f"Win back {count} regular{'s' if count != 1 else ''}",
-                detail=f"{count} customer{'s' if count != 1 else ''} who used to come regularly "
-                f"{'are' if count != 1 else 'is'} well overdue. Message them with 15% off their next cut.",
+                title=f"Recupera {count} cliente{'s' if count != 1 else ''} habitual{'es' if count != 1 else ''}"
+                if spanish
+                else f"Win back {count} regular{'s' if count != 1 else ''}",
+                detail=(
+                    f"{count} cliente{'s' if count != 1 else ''} que venía{'n' if count != 1 else ''} con "
+                    f"regularidad lleva{'n' if count != 1 else ''} mucho sin venir. Escríbele"
+                    f"{'s' if count != 1 else ''} con un 15% de descuento en su próximo corte."
+                    if spanish
+                    else f"{count} customer{'s' if count != 1 else ''} who used to come regularly "
+                    f"{'are' if count != 1 else 'is'} well overdue. Message them with 15% off their next cut."
+                ),
                 monthly_gain_cents=round(gain),
-                assumptions="Assumes 3 in 10 come back for one visit.",
+                assumptions="Supone que 3 de cada 10 vuelven una vez."
+                if spanish
+                else "Assumes 3 in 10 come back for one visit.",
             )
         )
 
