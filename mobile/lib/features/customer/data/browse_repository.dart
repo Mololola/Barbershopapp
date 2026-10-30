@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/offline_cache.dart';
 import '../../business/domain/business.dart';
 import '../domain/public_business.dart';
+import '../domain/shop_listing.dart';
 import '../domain/shop_review.dart';
 
 class BrowseRepository {
@@ -14,6 +15,31 @@ class BrowseRepository {
   Future<List<PublicBusiness>> fetchBusinesses() async {
     final rows = await _cache.rows('businesses', () => _client.from('businesses_public').select().eq('is_bookable', true).order('name'));
     return rows.map(PublicBusiness.fromRow).toList();
+  }
+
+  /// Every shop's cities and map positions in one query, for the shop
+  /// list's cards, city search and distances.
+  Future<List<ShopPlace>> fetchShopPlaces() async {
+    final rows = await _cache.rows(
+      'shop-places',
+      () => _client.from('locations').select('business_id, city, country, latitude, longitude'),
+    );
+    return rows.map(ShopPlace.fromRow).toList();
+  }
+
+  /// Each shop's cheapest active service, for "From £12" on the shop list.
+  Future<Map<String, int>> fetchFromPrices() async {
+    final rows = await _cache.rows(
+      'shop-from-prices',
+      () => _client.from('services').select('business_id, price_cents').eq('is_active', true),
+    );
+    final prices = <String, int>{};
+    for (final row in rows) {
+      final businessId = row['business_id'] as String;
+      final price = row['price_cents'] as int;
+      if (price < (prices[businessId] ?? price + 1)) prices[businessId] = price;
+    }
+    return prices;
   }
 
   Future<PublicBusiness?> fetchBusiness(String businessId) async {

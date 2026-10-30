@@ -1034,12 +1034,6 @@ abstract class AppLocalizations {
   /// **'Find a shop'**
   String get findAShop;
 
-  /// No description provided for @searchBarbershops.
-  ///
-  /// In en, this message translates to:
-  /// **'Search barbershops'**
-  String get searchBarbershops;
-
   /// No description provided for @noBarbershopsYet.
   ///
   /// In en, this message translates to:
@@ -1057,12 +1051,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matches for \"{query}\"'**
   String noMatchesFor(String query);
-
-  /// No description provided for @tryDifferentName.
-  ///
-  /// In en, this message translates to:
-  /// **'Try a different name.'**
-  String get tryDifferentName;
 
   /// No description provided for @skipRatingTitle.
   ///
@@ -4087,6 +4075,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No email app found. The address is copied.'**
   String get emailAddressCopied;
+
+  /// No description provided for @searchByNameOrCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or city'**
+  String get searchByNameOrCity;
+
+  /// No description provided for @tryNameCityOrNearMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another name or city, or use Near me.'**
+  String get tryNameCityOrNearMe;
+
+  /// No description provided for @nearMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Near me'**
+  String get nearMe;
+
+  /// No description provided for @newShop.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get newShop;
+
+  /// No description provided for @fromPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'From {price}'**
+  String fromPrice(String price);
+
+  /// No description provided for @distanceKm.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} km'**
+  String distanceKm(String distance);
+
+  /// No description provided for @distanceMiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} mi'**
+  String distanceMiles(String distance);
+
+  /// No description provided for @locationServiceOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is turned off on this phone.'**
+  String get locationServiceOff;
+
+  /// No description provided for @locationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Without your location, search by city instead.'**
+  String get locationDenied;
+
+  /// No description provided for @locationDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is off for Fadra Cut. You can turn it on in Settings.'**
+  String get locationDeniedForever;
+
+  /// No description provided for @locationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t find your location. Try again in a moment.'**
+  String get locationFailed;
 }
 
 class _AppLocalizationsDelegate

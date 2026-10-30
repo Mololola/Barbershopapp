@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Approximate only: "Near me" needs the area, not the street. Asked for
+         when the customer taps Near me, never at start-up. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Fadra Cut"
         android:name="${applicationName}"

@@ -532,9 +532,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get findAShop => 'Buscar barbería';
 
   @override
-  String get searchBarbershops => 'Buscar barberías';
-
-  @override
   String get noBarbershopsYet => 'Aún no hay barberías';
 
   @override
@@ -545,9 +542,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String noMatchesFor(String query) {
     return 'No hay resultados para «$query»';
   }
-
-  @override
-  String get tryDifferentName => 'Prueba con otro nombre.';
 
   @override
   String get skipRatingTitle => '¿Saltar esta valoración?';
@@ -2449,4 +2443,47 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get emailAddressCopied =>
       'No hay ninguna app de correo. Hemos copiado la dirección.';
+
+  @override
+  String get searchByNameOrCity => 'Busca por nombre o ciudad';
+
+  @override
+  String get tryNameCityOrNearMe =>
+      'Prueba con otro nombre o ciudad, o usa Cerca de mí.';
+
+  @override
+  String get nearMe => 'Cerca de mí';
+
+  @override
+  String get newShop => 'Nueva';
+
+  @override
+  String fromPrice(String price) {
+    return 'Desde $price';
+  }
+
+  @override
+  String distanceKm(String distance) {
+    return '$distance km';
+  }
+
+  @override
+  String distanceMiles(String distance) {
+    return '$distance mi';
+  }
+
+  @override
+  String get locationServiceOff =>
+      'La ubicación está desactivada en este móvil.';
+
+  @override
+  String get locationDenied => 'Sin tu ubicación, busca por ciudad.';
+
+  @override
+  String get locationDeniedForever =>
+      'La ubicación está desactivada para Fadra Cut. Puedes activarla en Ajustes.';
+
+  @override
+  String get locationFailed =>
+      'No hemos podido encontrar tu ubicación. Inténtalo de nuevo en un momento.';
 }

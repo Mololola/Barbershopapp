@@ -228,7 +228,6 @@
   },
   "anyBarber": "Any barber",
   "findAShop": "Find a shop",
-  "searchBarbershops": "Search barbershops",
   "noBarbershopsYet": "No barbershops yet",
   "noBarbershopsHint": "Check back soon — new shops show up here.",
   "noMatchesFor": "No matches for \"{query}\"",
@@ -239,7 +238,6 @@
       }
     }
   },
-  "tryDifferentName": "Try a different name.",
   "skipRatingTitle": "Skip this rating?",
   "skipRatingBody": "Ratings can earn you rewards later on — if you skip this one, you won't get anything for it. Skip anyway?",
   "skipAnyway": "Skip anyway",
@@ -1437,5 +1435,37 @@
   "bookingCancelledToast": "Booking cancelled.",
   "aboutGroup": "About",
   "contactUs": "Contact us",
-  "emailAddressCopied": "No email app found. The address is copied."
+  "emailAddressCopied": "No email app found. The address is copied.",
+  "searchByNameOrCity": "Search by name or city",
+  "tryNameCityOrNearMe": "Try another name or city, or use Near me.",
+  "nearMe": "Near me",
+  "newShop": "New",
+  "fromPrice": "From {price}",
+  "@fromPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "distanceKm": "{distance} km",
+  "@distanceKm": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "distanceMiles": "{distance} mi",
+  "@distanceMiles": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "locationServiceOff": "Location is turned off on this phone.",
+  "locationDenied": "Without your location, search by city instead.",
+  "locationDeniedForever": "Location is off for Fadra Cut. You can turn it on in Settings.",
+  "locationFailed": "Couldn't find your location. Try again in a moment."
 }

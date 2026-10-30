@@ -60,5 +60,7 @@
 	<string>Used to choose a photo for your profile, posts, or business logo.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Used to take a photo for your profile, posts, or business logo.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to sort barbershops by how near they are. Your location stays on your phone.</string>
 </dict>
 </plist>

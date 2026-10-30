@@ -524,9 +524,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get findAShop => 'Find a shop';
 
   @override
-  String get searchBarbershops => 'Search barbershops';
-
-  @override
   String get noBarbershopsYet => 'No barbershops yet';
 
   @override
@@ -536,9 +533,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String noMatchesFor(String query) {
     return 'No matches for \"$query\"';
   }
-
-  @override
-  String get tryDifferentName => 'Try a different name.';
 
   @override
   String get skipRatingTitle => 'Skip this rating?';
@@ -2426,4 +2420,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emailAddressCopied => 'No email app found. The address is copied.';
+
+  @override
+  String get searchByNameOrCity => 'Search by name or city';
+
+  @override
+  String get tryNameCityOrNearMe => 'Try another name or city, or use Near me.';
+
+  @override
+  String get nearMe => 'Near me';
+
+  @override
+  String get newShop => 'New';
+
+  @override
+  String fromPrice(String price) {
+    return 'From $price';
+  }
+
+  @override
+  String distanceKm(String distance) {
+    return '$distance km';
+  }
+
+  @override
+  String distanceMiles(String distance) {
+    return '$distance mi';
+  }
+
+  @override
+  String get locationServiceOff => 'Location is turned off on this phone.';
+
+  @override
+  String get locationDenied => 'Without your location, search by city instead.';
+
+  @override
+  String get locationDeniedForever =>
+      'Location is off for Fadra Cut. You can turn it on in Settings.';
+
+  @override
+  String get locationFailed =>
+      'Couldn\'t find your location. Try again in a moment.';
 }

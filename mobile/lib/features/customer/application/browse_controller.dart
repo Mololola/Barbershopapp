@@ -5,6 +5,7 @@ import '../../../core/supabase_providers.dart';
 import '../../business/domain/business.dart';
 import '../data/browse_repository.dart';
 import '../domain/public_business.dart';
+import '../domain/shop_listing.dart';
 import '../domain/shop_review.dart';
 
 final browseRepositoryProvider = Provider<BrowseRepository>((ref) {
@@ -13,6 +14,22 @@ final browseRepositoryProvider = Provider<BrowseRepository>((ref) {
 
 final businessesProvider = FutureProvider<List<PublicBusiness>>((ref) {
   return ref.watch(browseRepositoryProvider).fetchBusinesses();
+});
+
+/// The Find a shop list: each bookable shop with its addresses and cheapest
+/// service. The three reads run at once.
+final shopListingsProvider = FutureProvider<List<ShopListing>>((ref) async {
+  final repository = ref.watch(browseRepositoryProvider);
+  final (businesses, places, prices) =
+      await (ref.watch(businessesProvider.future), repository.fetchShopPlaces(), repository.fetchFromPrices()).wait;
+  return [
+    for (final business in businesses)
+      ShopListing(
+        business: business,
+        places: [for (final place in places) if (place.businessId == business.id) place],
+        fromPriceCents: prices[business.id],
+      ),
+  ];
 });
 
 final businessProvider = FutureProvider.family<PublicBusiness?, String>((ref, businessId) {
