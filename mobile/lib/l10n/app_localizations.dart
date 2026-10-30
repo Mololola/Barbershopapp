@@ -4027,6 +4027,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} min'**
   String minutesShort(int count);
+
+  /// No description provided for @noUpcomingBookingsShopHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings show up here as soon as customers make them. A complete shop page helps them choose you.'**
+  String get noUpcomingBookingsShopHint;
+
+  /// No description provided for @cancelBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel booking'**
+  String get cancelBooking;
+
+  /// No description provided for @cancelBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this booking?'**
+  String get cancelBookingTitle;
+
+  /// No description provided for @cancelBookingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {time} appointment at {shop} on {date} will be cancelled, and the time will be free for someone else to book.'**
+  String cancelBookingBody(String time, String shop, String date);
+
+  /// No description provided for @keepBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it'**
+  String get keepBooking;
+
+  /// No description provided for @yesCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, cancel'**
+  String get yesCancel;
+
+  /// No description provided for @bookingCancelledToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking cancelled.'**
+  String get bookingCancelledToast;
 }
 
 class _AppLocalizationsDelegate

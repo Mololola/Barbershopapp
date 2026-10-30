@@ -654,5 +654,12 @@
   "pastTab": "Pasadas",
   "noUpcomingBookings": "No tienes reservas próximas.",
   "noPastBookings": "Aún no hay reservas pasadas.",
-  "minutesShort": "{count} min"
+  "minutesShort": "{count} min",
+  "noUpcomingBookingsShopHint": "Las reservas aparecen aquí en cuanto los clientes las hacen. Una página de tienda completa les ayuda a elegirte.",
+  "cancelBooking": "Cancelar reserva",
+  "cancelBookingTitle": "¿Cancelar esta reserva?",
+  "cancelBookingBody": "Se cancelará tu cita de las {time} en {shop} el {date}, y esa hora quedará libre para que otra persona la reserve.",
+  "keepBooking": "Mantenerla",
+  "yesCancel": "Sí, cancelar",
+  "bookingCancelledToast": "Reserva cancelada."
 }

@@ -1414,5 +1414,25 @@
         "type": "int"
       }
     }
-  }
+  },
+  "noUpcomingBookingsShopHint": "Bookings show up here as soon as customers make them. A complete shop page helps them choose you.",
+  "cancelBooking": "Cancel booking",
+  "cancelBookingTitle": "Cancel this booking?",
+  "cancelBookingBody": "Your {time} appointment at {shop} on {date} will be cancelled, and the time will be free for someone else to book.",
+  "@cancelBookingBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "shop": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "keepBooking": "Keep it",
+  "yesCancel": "Yes, cancel",
+  "bookingCancelledToast": "Booking cancelled."
 }

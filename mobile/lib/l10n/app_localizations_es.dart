@@ -2415,4 +2415,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String minutesShort(int count) {
     return '$count min';
   }
+
+  @override
+  String get noUpcomingBookingsShopHint =>
+      'Las reservas aparecen aquí en cuanto los clientes las hacen. Una página de tienda completa les ayuda a elegirte.';
+
+  @override
+  String get cancelBooking => 'Cancelar reserva';
+
+  @override
+  String get cancelBookingTitle => '¿Cancelar esta reserva?';
+
+  @override
+  String cancelBookingBody(String time, String shop, String date) {
+    return 'Se cancelará tu cita de las $time en $shop el $date, y esa hora quedará libre para que otra persona la reserve.';
+  }
+
+  @override
+  String get keepBooking => 'Mantenerla';
+
+  @override
+  String get yesCancel => 'Sí, cancelar';
+
+  @override
+  String get bookingCancelledToast => 'Reserva cancelada.';
 }

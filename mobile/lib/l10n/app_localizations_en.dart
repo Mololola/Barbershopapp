@@ -2393,4 +2393,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String minutesShort(int count) {
     return '$count min';
   }
+
+  @override
+  String get noUpcomingBookingsShopHint =>
+      'Bookings show up here as soon as customers make them. A complete shop page helps them choose you.';
+
+  @override
+  String get cancelBooking => 'Cancel booking';
+
+  @override
+  String get cancelBookingTitle => 'Cancel this booking?';
+
+  @override
+  String cancelBookingBody(String time, String shop, String date) {
+    return 'Your $time appointment at $shop on $date will be cancelled, and the time will be free for someone else to book.';
+  }
+
+  @override
+  String get keepBooking => 'Keep it';
+
+  @override
+  String get yesCancel => 'Yes, cancel';
+
+  @override
+  String get bookingCancelledToast => 'Booking cancelled.';
 }

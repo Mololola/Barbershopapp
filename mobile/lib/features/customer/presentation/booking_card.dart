@@ -77,6 +77,38 @@ class BookingCard extends StatelessWidget {
   }
 }
 
+/// An empty bookings tab: what will show here, and the one thing to do
+/// about it. Scrollable so pull-to-refresh still works on it.
+class BookingsEmptyState extends StatelessWidget {
+  const BookingsEmptyState({super.key, required this.text, this.hint, this.actionLabel, this.onAction});
+
+  final String text;
+  final String? hint;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(32, 96, 32, 32),
+      children: [
+        const Icon(Icons.event_available_outlined, color: AppColors.brass, size: 40),
+        const SizedBox(height: 12),
+        Text(text, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+        if (hint != null) ...[
+          const SizedBox(height: 4),
+          Text(hint!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.steel)),
+        ],
+        if (actionLabel != null) ...[
+          const SizedBox(height: 20),
+          Center(child: FilledButton(onPressed: onAction, child: Text(actionLabel!))),
+        ],
+      ],
+    );
+  }
+}
+
 class _StatusLabel extends StatelessWidget {
   const _StatusLabel(this.status);
 

@@ -6,6 +6,7 @@ import 'package:mobile/features/auth/domain/profile.dart';
 import 'package:mobile/features/customer/application/booking_controller.dart';
 import 'package:mobile/features/customer/application/browse_controller.dart';
 import 'package:mobile/features/customer/application/review_controller.dart';
+import 'package:mobile/features/customer/data/booking_api_client.dart';
 import 'package:mobile/features/customer/data/bookings_repository.dart';
 import 'package:mobile/features/customer/data/review_repository.dart';
 import 'package:mobile/features/customer/domain/booking.dart';
@@ -128,6 +129,73 @@ void main() {
     expect(soon.dy, lessThan(later.dy));
   });
 
+  Future<_FakeBookingApi> pumpOneUpcoming(WidgetTester tester) async {
+    final api = _FakeBookingApi();
+    final upcoming = Booking(
+      id: 'up-1',
+      businessId: 'shop-1',
+      workerId: 'w1',
+      serviceId: 's1',
+      customerId: 'me-1',
+      startTime: DateTime.now().add(const Duration(days: 3)),
+      endTime: DateTime.now().add(const Duration(days: 3, minutes: 30)),
+      status: BookingStatus.confirmed,
+    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentProfileProvider.overrideWith((ref) async => me),
+        bookingsRepositoryProvider.overrideWithValue(_CountingBookings([upcoming])),
+        reviewRepositoryProvider.overrideWithValue(_CountingReviews({})),
+        reviewOutboxProvider.overrideWith(_NoOutbox.new),
+        bookingsAtRiskProvider.overrideWith((ref) async => {}),
+        businessProvider.overrideWith((ref, id) async => shop),
+        bookingApiClientProvider.overrideWithValue(api),
+      ],
+      child: const MaterialApp(home: MyBookingsScreen()),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel booking'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('at Fresh Cuts on'), findsOneWidget);
+    return api;
+  }
+
+  testWidgets('cancelling asks first, and keeping it cancels nothing', (tester) async {
+    final api = await pumpOneUpcoming(tester);
+
+    await tester.tap(find.text('Keep it'));
+    await tester.pumpAndSettle();
+
+    expect(api.cancelled, isEmpty);
+  });
+
+  testWidgets('a confirmed cancel goes through and says so', (tester) async {
+    final api = await pumpOneUpcoming(tester);
+
+    await tester.tap(find.text('Yes, cancel'));
+    await tester.pumpAndSettle();
+
+    expect(api.cancelled, ['up-1']);
+    expect(find.text('Booking cancelled.'), findsOneWidget);
+  });
+
+  testWidgets('no upcoming bookings offers to find a shop', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentProfileProvider.overrideWith((ref) async => me),
+        bookingsRepositoryProvider.overrideWithValue(_CountingBookings([])),
+        reviewRepositoryProvider.overrideWithValue(_CountingReviews({})),
+        reviewOutboxProvider.overrideWith(_NoOutbox.new),
+        bookingsAtRiskProvider.overrideWith((ref) async => {}),
+      ],
+      child: const MaterialApp(home: MyBookingsScreen()),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No upcoming bookings.'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Find a shop'), findsOneWidget);
+  });
+
   test('the notice is reworded for the last day', () {
     final now = DateTime.utc(2026, 4, 1, 13);
     final l10n = lookupAppLocalizations(const Locale('en'));
@@ -162,5 +230,24 @@ class _CountingReviews extends Fake implements ReviewRepository {
   Future<Map<String, Review>> fetchReviewsByCustomer(String customerId) async {
     calls++;
     return {for (final bookingId in reviewed) bookingId: _review(bookingId)};
+  }
+}
+
+class _FakeBookingApi extends Fake implements BookingApiClient {
+  final cancelled = <String>[];
+
+  @override
+  Future<Booking> cancelBooking(String bookingId) async {
+    cancelled.add(bookingId);
+    return Booking(
+      id: bookingId,
+      businessId: 'shop-1',
+      workerId: 'w1',
+      serviceId: 's1',
+      customerId: 'me-1',
+      startTime: DateTime.now(),
+      endTime: DateTime.now(),
+      status: BookingStatus.cancelled,
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/l10n.dart';
@@ -46,8 +47,21 @@ class BookingsScreen extends ConsumerWidget {
             final past = list.where((b) => b.startTime.toLocal().isBefore(today)).toList().reversed.toList();
             return TabBarView(
               children: [
-                _DayGroupedList(bookings: upcoming, today: today, emptyText: context.l10n.noUpcomingBookings),
-                _DayGroupedList(bookings: past, today: today, emptyText: context.l10n.noPastBookings),
+                _DayGroupedList(
+                  bookings: upcoming,
+                  today: today,
+                  empty: BookingsEmptyState(
+                    text: context.l10n.noUpcomingBookings,
+                    hint: context.l10n.noUpcomingBookingsShopHint,
+                    actionLabel: context.l10n.editShopPage,
+                    onAction: () => context.push('/business/shop/edit'),
+                  ),
+                ),
+                _DayGroupedList(
+                  bookings: past,
+                  today: today,
+                  empty: BookingsEmptyState(text: context.l10n.noPastBookings),
+                ),
               ],
             );
           },
@@ -58,16 +72,23 @@ class BookingsScreen extends ConsumerWidget {
 }
 
 class _DayGroupedList extends ConsumerWidget {
-  const _DayGroupedList({required this.bookings, required this.today, required this.emptyText});
+  const _DayGroupedList({required this.bookings, required this.today, required this.empty});
 
   /// Already in display order.
   final List<Booking> bookings;
   final DateTime today;
-  final String emptyText;
+  final Widget empty;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (bookings.isEmpty) return Center(child: Text(emptyText));
+    return RefreshIndicator(
+      // New bookings arrive from customers at any time; pull to catch up.
+      onRefresh: () => ref.refresh(businessBookingsProvider.future),
+      child: bookings.isEmpty ? empty : _list(context, ref),
+    );
+  }
+
+  Widget _list(BuildContext context, WidgetRef ref) {
     final actionState = ref.watch(bookingActionControllerProvider);
     final currency = ref.watch(currentBusinessProvider).value?.currency;
     final groups = _groupByDate(bookings);
