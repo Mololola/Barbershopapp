@@ -172,11 +172,18 @@ class _Header extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile.username,
+                      profile.displayName ?? profile.username,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.headlineMedium?.copyWith(color: AppColors.chalk),
                     ),
+                    if (profile.displayName != null)
+                      Text(
+                        '@${profile.username}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: AppColors.chalk.withValues(alpha: 0.7)),
+                      ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -195,6 +202,10 @@ class _Header extends ConsumerWidget {
               ),
             ],
           ),
+          if (profile.bio != null) ...[
+            const SizedBox(height: 12),
+            Text(profile.bio!, style: const TextStyle(color: AppColors.chalk)),
+          ],
           const SizedBox(height: 16),
           Divider(height: 1, color: AppColors.chalk.withValues(alpha: 0.12)),
           const SizedBox(height: 16),

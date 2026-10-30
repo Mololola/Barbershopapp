@@ -90,4 +90,19 @@ class ProfileRepository {
   Future<void> updateAvatarUrl(String profileId, String avatarUrl) async {
     await _client.from('profiles').update({'avatar_url': avatarUrl}).eq('id', profileId);
   }
+
+  /// Avatars are public by URL, so the file is deleted too, not only the
+  /// link to it. The path is whatever follows the bucket name in the URL.
+  Future<void> removeAvatar(String profileId, String avatarUrl) async {
+    await _client.from('profiles').update({'avatar_url': null}).eq('id', profileId);
+    final segments = Uri.parse(avatarUrl).pathSegments;
+    final bucket = segments.indexOf('avatars');
+    if (bucket != -1) await _client.storage.from('avatars').remove([segments.skip(bucket + 1).join('/')]);
+  }
+
+  /// Blank means "not set", stored as null (the columns reject '').
+  Future<void> updateDetails(String profileId, {required String displayName, required String bio}) async {
+    String? orNull(String value) => value.trim().isEmpty ? null : value.trim();
+    await _client.from('profiles').update({'display_name': orNull(displayName), 'bio': orNull(bio)}).eq('id', profileId);
+  }
 }

@@ -500,12 +500,6 @@ abstract class AppLocalizations {
   /// **'Your profile'**
   String get yourProfileGroup;
 
-  /// No description provided for @profilePhoto.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile photo'**
-  String get profilePhoto;
-
   /// No description provided for @workerProfile.
   ///
   /// In en, this message translates to:
@@ -4141,6 +4135,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t find your location. Try again in a moment.'**
   String get locationFailed;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get takePhoto;
+
+  /// No description provided for @choosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo'**
+  String get choosePhoto;
+
+  /// No description provided for @removePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get removePhoto;
+
+  /// No description provided for @photoUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo updated.'**
+  String get photoUpdated;
+
+  /// No description provided for @photoRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo removed.'**
+  String get photoRemoved;
+
+  /// No description provided for @displayNameOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (optional)'**
+  String get displayNameOptional;
+
+  /// No description provided for @shownAboveUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown above @{username}'**
+  String shownAboveUsername(String username);
+
+  /// No description provided for @bioOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio (optional)'**
+  String get bioOptional;
 }
 
 class _AppLocalizationsDelegate

@@ -67,7 +67,6 @@
   "referredBy": "Recomendado por",
   "noReferralCodeUsed": "No se usó ningún código de recomendación",
   "yourProfileGroup": "Tu perfil",
-  "profilePhoto": "Foto de perfil",
   "workerProfile": "Perfil de barbero",
   "workerProfileSubtitle": "Nombre legal, biografía y disponibilidad para trabajar en una barbería",
   "yourReferralCode": "Tu código de recomendación",
@@ -673,5 +672,13 @@
   "locationServiceOff": "La ubicación está desactivada en este móvil.",
   "locationDenied": "Sin tu ubicación, busca por ciudad.",
   "locationDeniedForever": "La ubicación está desactivada para Fadra Cut. Puedes activarla en Ajustes.",
-  "locationFailed": "No hemos podido encontrar tu ubicación. Inténtalo de nuevo en un momento."
+  "locationFailed": "No hemos podido encontrar tu ubicación. Inténtalo de nuevo en un momento.",
+  "takePhoto": "Hacer foto",
+  "choosePhoto": "Elegir foto",
+  "removePhoto": "Quitar foto",
+  "photoUpdated": "Foto actualizada.",
+  "photoRemoved": "Foto eliminada.",
+  "displayNameOptional": "Nombre (opcional)",
+  "shownAboveUsername": "Se muestra encima de @{username}",
+  "bioOptional": "Biografía (opcional)"
 }

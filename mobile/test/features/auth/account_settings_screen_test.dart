@@ -42,7 +42,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    for (final item in ['Your profile', 'Profile photo', 'Worker profile', 'CODE']) {
+    for (final item in ['Your profile', 'Edit profile', 'Worker profile', 'CODE']) {
       expect(find.text(item), findsOneWidget, reason: item);
     }
     expect(find.text('Your shop'), findsNothing);
@@ -56,7 +56,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('Profile photo'), findsOneWidget);
+    expect(find.text('Edit profile'), findsOneWidget);
     expect(find.text('Worker profile'), findsNothing);
   });
 

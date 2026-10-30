@@ -67,7 +67,6 @@
   "referredBy": "Referred by",
   "noReferralCodeUsed": "No referral code was used",
   "yourProfileGroup": "Your profile",
-  "profilePhoto": "Profile photo",
   "workerProfile": "Worker profile",
   "workerProfileSubtitle": "Legal name, bio and availability to work at a shop",
   "yourReferralCode": "Your referral code",
@@ -1467,5 +1466,20 @@
   "locationServiceOff": "Location is turned off on this phone.",
   "locationDenied": "Without your location, search by city instead.",
   "locationDeniedForever": "Location is off for Fadra Cut. You can turn it on in Settings.",
-  "locationFailed": "Couldn't find your location. Try again in a moment."
+  "locationFailed": "Couldn't find your location. Try again in a moment.",
+  "takePhoto": "Take photo",
+  "choosePhoto": "Choose photo",
+  "removePhoto": "Remove photo",
+  "photoUpdated": "Photo updated.",
+  "photoRemoved": "Photo removed.",
+  "displayNameOptional": "Name (optional)",
+  "shownAboveUsername": "Shown above @{username}",
+  "@shownAboveUsername": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "bioOptional": "Bio (optional)"
 }

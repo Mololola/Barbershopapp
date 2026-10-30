@@ -46,6 +46,28 @@ void main() {
     );
   }
 
+  testWidgets('a name and bio show above the @username; without them the username is the title', (tester) async {
+    const named = Profile(
+      id: 'cust-2',
+      role: AccountRole.customer,
+      username: 'alex',
+      referralCode: 'ALEXCODE',
+      displayName: 'Alex García',
+      bio: 'Skin fades every 3 weeks.',
+    );
+    await tester.pumpWidget(buildTestable(named, signedInAs: viewer));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alex García'), findsOneWidget);
+    expect(find.text('@alex'), findsOneWidget);
+    expect(find.text('Skin fades every 3 weeks.'), findsOneWidget);
+
+    await tester.pumpWidget(buildTestable(customerProfile, signedInAs: viewer));
+    await tester.pumpAndSettle();
+    expect(find.text('customer_one'), findsOneWidget);
+    expect(find.text('@customer_one'), findsNothing);
+  });
+
   testWidgets('a customer with a worker profile gets a Barber badge, and nothing more about the job', (tester) async {
     await tester.pumpWidget(
       buildTestable(customerProfile, signedInAs: viewer, workerData: workerProfile),

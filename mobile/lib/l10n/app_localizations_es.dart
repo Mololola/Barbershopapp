@@ -222,9 +222,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get yourProfileGroup => 'Tu perfil';
 
   @override
-  String get profilePhoto => 'Foto de perfil';
-
-  @override
   String get workerProfile => 'Perfil de barbero';
 
   @override
@@ -2486,4 +2483,30 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get locationFailed =>
       'No hemos podido encontrar tu ubicación. Inténtalo de nuevo en un momento.';
+
+  @override
+  String get takePhoto => 'Hacer foto';
+
+  @override
+  String get choosePhoto => 'Elegir foto';
+
+  @override
+  String get removePhoto => 'Quitar foto';
+
+  @override
+  String get photoUpdated => 'Foto actualizada.';
+
+  @override
+  String get photoRemoved => 'Foto eliminada.';
+
+  @override
+  String get displayNameOptional => 'Nombre (opcional)';
+
+  @override
+  String shownAboveUsername(String username) {
+    return 'Se muestra encima de @$username';
+  }
+
+  @override
+  String get bioOptional => 'Biografía (opcional)';
 }

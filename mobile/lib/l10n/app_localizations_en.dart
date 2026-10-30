@@ -220,9 +220,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourProfileGroup => 'Your profile';
 
   @override
-  String get profilePhoto => 'Profile photo';
-
-  @override
   String get workerProfile => 'Worker profile';
 
   @override
@@ -2461,4 +2458,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get locationFailed =>
       'Couldn\'t find your location. Try again in a moment.';
+
+  @override
+  String get takePhoto => 'Take photo';
+
+  @override
+  String get choosePhoto => 'Choose photo';
+
+  @override
+  String get removePhoto => 'Remove photo';
+
+  @override
+  String get photoUpdated => 'Photo updated.';
+
+  @override
+  String get photoRemoved => 'Photo removed.';
+
+  @override
+  String get displayNameOptional => 'Name (optional)';
+
+  @override
+  String shownAboveUsername(String username) {
+    return 'Shown above @$username';
+  }
+
+  @override
+  String get bioOptional => 'Bio (optional)';
 }

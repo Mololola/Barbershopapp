@@ -175,7 +175,7 @@ class AccountSettingsScreen extends ConsumerWidget {
             _GroupHeader(context.l10n.yourProfileGroup),
             ListTile(
               leading: const Icon(Icons.account_circle_outlined),
-              title: Text(context.l10n.profilePhoto),
+              title: Text(context.l10n.editProfile),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/profile/edit'),
             ),

@@ -15,6 +15,8 @@ class Profile {
     required this.username,
     required this.referralCode,
     this.avatarUrl,
+    this.displayName,
+    this.bio,
     this.isAdmin = false,
     this.isQualityReviewer = false,
     this.dateOfBirth,
@@ -31,6 +33,11 @@ class Profile {
   final String referralCode;
 
   final String? avatarUrl;
+
+  /// Optional, set on Edit profile; shown above the @[username], which
+  /// stays the fixed handle.
+  final String? displayName;
+  final String? bio;
 
   /// Only ever set via direct DB access, never through the app — gates the
   /// Admin screen.
@@ -59,6 +66,8 @@ class Profile {
       username: row['username'] as String,
       referralCode: row['referral_code'] as String,
       avatarUrl: row['avatar_url'] as String?,
+      displayName: row['display_name'] as String?,
+      bio: row['bio'] as String?,
       isAdmin: row['is_admin'] as bool? ?? false,
       isQualityReviewer: row['is_quality_reviewer'] as bool? ?? false,
       dateOfBirth: row['date_of_birth'] != null ? DateTime.parse(row['date_of_birth'] as String) : null,
