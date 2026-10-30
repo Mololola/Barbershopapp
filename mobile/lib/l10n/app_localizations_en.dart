@@ -2417,4 +2417,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bookingCancelledToast => 'Booking cancelled.';
+
+  @override
+  String get aboutGroup => 'About';
+
+  @override
+  String get contactUs => 'Contact us';
+
+  @override
+  String get emailAddressCopied => 'No email app found. The address is copied.';
 }

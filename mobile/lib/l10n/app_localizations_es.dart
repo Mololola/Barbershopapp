@@ -2439,4 +2439,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get bookingCancelledToast => 'Reserva cancelada.';
+
+  @override
+  String get aboutGroup => 'Información';
+
+  @override
+  String get contactUs => 'Contacto';
+
+  @override
+  String get emailAddressCopied =>
+      'No hay ninguna app de correo. Hemos copiado la dirección.';
 }

@@ -1434,5 +1434,8 @@
   },
   "keepBooking": "Keep it",
   "yesCancel": "Yes, cancel",
-  "bookingCancelledToast": "Booking cancelled."
+  "bookingCancelledToast": "Booking cancelled.",
+  "aboutGroup": "About",
+  "contactUs": "Contact us",
+  "emailAddressCopied": "No email app found. The address is copied."
 }

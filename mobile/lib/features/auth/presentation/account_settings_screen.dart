@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_language.dart';
 import '../../../core/l10n.dart';
+import '../../../core/legal.dart';
 import '../../business/application/business_controller.dart';
 import '../../business/domain/finance_overview.dart';
 import '../application/auth_controller.dart';
@@ -79,6 +81,16 @@ class AccountSettingsScreen extends ConsumerWidget {
     if (state.hasError) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(context.l10n, state.error))));
     }
+  }
+
+  /// Opens the mail app; with none set up, the address is copied instead.
+  Future<void> _contactUs(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final copiedText = context.l10n.emailAddressCopied;
+    final opened = await launchUrl(Uri(scheme: 'mailto', path: supportEmail, query: 'subject=Fadra%20Cut'));
+    if (opened) return;
+    await Clipboard.setData(const ClipboardData(text: supportEmail));
+    messenger.showSnackBar(SnackBar(content: Text(copiedText)));
   }
 
   /// Language names are written in their own language, so anyone can find
@@ -189,6 +201,25 @@ class AccountSettingsScreen extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.referralCodeCopied)));
               },
             ),
+          _GroupHeader(context.l10n.aboutGroup),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: Text(context.l10n.termsOfService),
+            trailing: const Icon(Icons.open_in_new),
+            onTap: () => launchUrl(Uri.parse(termsOfServiceUrl), mode: LaunchMode.externalApplication),
+          ),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: Text(context.l10n.privacyPolicy),
+            trailing: const Icon(Icons.open_in_new),
+            onTap: () => launchUrl(Uri.parse(privacyPolicyUrl), mode: LaunchMode.externalApplication),
+          ),
+          ListTile(
+            leading: const Icon(Icons.mail_outline),
+            title: Text(context.l10n.contactUs),
+            subtitle: const Text(supportEmail),
+            onTap: () => _contactUs(context),
+          ),
           _GroupHeader(context.l10n.accountGroup),
           ListTile(
             leading: const Icon(Icons.language),

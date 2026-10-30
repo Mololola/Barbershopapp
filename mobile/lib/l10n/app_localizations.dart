@@ -4069,6 +4069,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Booking cancelled.'**
   String get bookingCancelledToast;
+
+  /// No description provided for @aboutGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutGroup;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get contactUs;
+
+  /// No description provided for @emailAddressCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'No email app found. The address is copied.'**
+  String get emailAddressCopied;
 }
 
 class _AppLocalizationsDelegate

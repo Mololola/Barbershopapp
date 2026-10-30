@@ -661,5 +661,8 @@
   "cancelBookingBody": "Se cancelará tu cita de las {time} en {shop} el {date}, y esa hora quedará libre para que otra persona la reserve.",
   "keepBooking": "Mantenerla",
   "yesCancel": "Sí, cancelar",
-  "bookingCancelledToast": "Reserva cancelada."
+  "bookingCancelledToast": "Reserva cancelada.",
+  "aboutGroup": "Información",
+  "contactUs": "Contacto",
+  "emailAddressCopied": "No hay ninguna app de correo. Hemos copiado la dirección."
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/legal.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
 import 'package:mobile/features/auth/domain/profile.dart';
 import 'package:mobile/features/auth/presentation/account_settings_screen.dart';
@@ -41,10 +42,12 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    for (final item in ['Your profile', 'Profile photo', 'Worker profile', 'CODE', 'Sign out', 'Delete account']) {
+    for (final item in ['Your profile', 'Profile photo', 'Worker profile', 'CODE']) {
       expect(find.text(item), findsOneWidget, reason: item);
     }
     expect(find.text('Your shop'), findsNothing);
+    await tester.scrollUntilVisible(find.text('Delete account'), 200);
+    expect(find.text('Sign out'), findsOneWidget);
   });
 
   testWidgets('an under-18 customer is not offered a worker profile', (tester) async {
@@ -55,5 +58,17 @@ void main() {
 
     expect(find.text('Profile photo'), findsOneWidget);
     expect(find.text('Worker profile'), findsNothing);
+  });
+
+  testWidgets('Terms, Privacy and a contact address are reachable after sign-up', (tester) async {
+    await tester.pumpWidget(buildTestable(
+      const Profile(id: 'c', role: AccountRole.customer, username: 'alex', referralCode: 'CODE'),
+    ));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Contact us'), 200);
+
+    for (final item in ['About', 'Terms of Service', 'Privacy Policy', 'Contact us', supportEmail]) {
+      expect(find.text(item), findsOneWidget, reason: item);
+    }
   });
 }
