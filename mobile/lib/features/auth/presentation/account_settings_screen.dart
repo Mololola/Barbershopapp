@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -129,10 +131,14 @@ class AccountSettingsScreen extends ConsumerWidget {
     final profile = ref.watch(currentProfileProvider).value;
     final isBusiness = profile?.role == AccountRole.business;
     final business = isBusiness ? ref.watch(currentBusinessProvider).value : null;
+    // A readable column on the website rather than rows stretched edge to
+    // edge; padding, not a narrower box, so the whole width still scrolls.
+    final sideSpace = math.max(0.0, (MediaQuery.sizeOf(context).width - 640) / 2);
 
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.settingsTitle)),
       body: ListView(
+        padding: EdgeInsets.symmetric(horizontal: sideSpace),
         children: [
           if (isBusiness) ...[
             _GroupHeader(context.l10n.yourShopGroup),

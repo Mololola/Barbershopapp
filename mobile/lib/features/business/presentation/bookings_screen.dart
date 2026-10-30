@@ -92,12 +92,36 @@ class _DayGroupedList extends ConsumerWidget {
     final actionState = ref.watch(bookingActionControllerProvider);
     final currency = ref.watch(currentBusinessProvider).value?.currency;
     final groups = _groupByDate(bookings);
+    // On the website a day's bookings sit side by side, so a busy day fits
+    // on screen at the desk.
+    final wide = isWideLayout(context);
+    final cardMargin = wide ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16, vertical: 4);
+    Widget card(Booking booking) => BookingCard(
+          booking: booking,
+          showDate: false,
+          title: booking.customerName,
+          currency: currency,
+          margin: cardMargin,
+          // Marking done asks the customer for a review, so not before the cut starts.
+          action: booking.status == BookingStatus.confirmed && booking.startTime.isBefore(DateTime.now())
+              ? TextButton(
+                  onPressed: actionState.isLoading
+                      ? null
+                      : () async {
+                          await ref.read(bookingActionControllerProvider.notifier).completeBooking(booking.id);
+                          ref.invalidate(businessBookingsProvider);
+                        },
+                  child: Text(context.l10n.markAsDone),
+                )
+              : null,
+        );
+    final sidePadding = wide ? 24.0 : 16.0;
     return ListView(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: wide ? 24 : 8),
       children: [
         for (final entry in groups.entries) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            padding: EdgeInsets.fromLTRB(sidePadding, 16, sidePadding, wide ? 8 : 4),
             child: Text(
               entry.key == today
                   ? '${context.l10n.today} · ${_formatDateHeader(context, entry.key)}'
@@ -105,25 +129,13 @@ class _DayGroupedList extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
-          for (final booking in entry.value)
-            BookingCard(
-              booking: booking,
-              showDate: false,
-              title: booking.customerName,
-              currency: currency,
-              // Marking done asks the customer for a review, so not before the cut starts.
-              action: booking.status == BookingStatus.confirmed && booking.startTime.isBefore(DateTime.now())
-                  ? TextButton(
-                      onPressed: actionState.isLoading
-                          ? null
-                          : () async {
-                              await ref.read(bookingActionControllerProvider.notifier).completeBooking(booking.id);
-                              ref.invalidate(businessBookingsProvider);
-                            },
-                      child: Text(context.l10n.markAsDone),
-                    )
-                  : null,
-            ),
+          if (wide)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sidePadding),
+              child: TileGrid(children: [for (final booking in entry.value) card(booking)]),
+            )
+          else
+            for (final booking in entry.value) card(booking),
         ],
       ],
     );

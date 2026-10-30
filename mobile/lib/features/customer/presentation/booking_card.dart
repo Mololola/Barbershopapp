@@ -18,6 +18,7 @@ class BookingCard extends StatelessWidget {
     this.currency,
     this.notice,
     this.action,
+    this.margin = const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
   });
 
   final Booking booking;
@@ -26,6 +27,9 @@ class BookingCard extends StatelessWidget {
   final String? currency;
   final Widget? notice;
   final Widget? action;
+
+  /// The phone list's spacing; zero inside a [TileGrid], which spaces tiles itself.
+  final EdgeInsetsGeometry margin;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +47,7 @@ class BookingCard extends StatelessWidget {
     ].join(' · ');
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: margin,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

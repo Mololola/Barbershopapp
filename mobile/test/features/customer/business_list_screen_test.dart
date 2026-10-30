@@ -107,4 +107,13 @@ void main() {
     expect(find.text('Without your location, search by city instead.'), findsOneWidget);
     expect(find.textContaining(' mi'), findsNothing);
   });
+
+  testWidgets('on the website shops are laid out in columns', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester, (position: null, problem: null));
+
+    expect(tester.getTopLeft(find.text('Avenue Barbers')).dy, tester.getTopLeft(find.text('Blade Room')).dy);
+  });
 }

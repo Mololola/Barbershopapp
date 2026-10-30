@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/app_network_image.dart';
 import '../../../core/device_location.dart';
 import '../../../core/l10n.dart';
+import '../../../core/responsive.dart';
 import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../business/domain/finance_overview.dart';
@@ -73,21 +74,24 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: TextField(
-              controller: _queryController,
-              onChanged: (value) => setState(() => _query = value),
-              decoration: InputDecoration(
-                hintText: context.l10n.searchByNameOrCity,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => setState(() {
-                          _queryController.clear();
-                          _query = '';
-                        }),
-                      ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: TextField(
+                controller: _queryController,
+                onChanged: (value) => setState(() => _query = value),
+                decoration: InputDecoration(
+                  hintText: context.l10n.searchByNameOrCity,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => setState(() {
+                            _queryController.clear();
+                            _query = '';
+                          }),
+                        ),
+                ),
               ),
             ),
           ),
@@ -136,6 +140,19 @@ class _BusinessListScreenState extends ConsumerState<BusinessListScreen> {
                         final db = distances[b.business.id]?.km ?? double.infinity;
                         return da.compareTo(db);
                       }));
+                if (isWideLayout(context)) {
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    children: [
+                      TileGrid(
+                        minTileWidth: 340,
+                        children: [
+                          for (final shop in shown) _ShopCard(shop: shop, distance: distances[shop.business.id]),
+                        ],
+                      ),
+                    ],
+                  );
+                }
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                   itemCount: shown.length,

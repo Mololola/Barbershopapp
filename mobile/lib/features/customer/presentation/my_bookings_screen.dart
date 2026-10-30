@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/l10n.dart';
+import '../../../core/responsive.dart';
 import '../../../core/skeleton.dart';
 import '../application/booking_controller.dart';
 import '../application/browse_controller.dart';
@@ -66,18 +67,26 @@ class _BookingList extends ConsumerWidget {
       onRefresh: () => ref.refresh(myBookingsProvider.future),
       child: bookings.isEmpty
           ? empty
-          : ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [for (final booking in bookings) _BookingTile(booking: booking)],
-            ),
+          : isWideLayout(context)
+              ? ListView(
+                  padding: const EdgeInsets.all(24),
+                  children: [
+                    TileGrid(children: [for (final booking in bookings) _BookingTile(booking: booking, margin: EdgeInsets.zero)]),
+                  ],
+                )
+              : ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  children: [for (final booking in bookings) _BookingTile(booking: booking)],
+                ),
     );
   }
 }
 
 class _BookingTile extends ConsumerWidget {
-  const _BookingTile({required this.booking});
+  const _BookingTile({required this.booking, this.margin = const EdgeInsets.symmetric(horizontal: 16, vertical: 4)});
 
   final Booking booking;
+  final EdgeInsetsGeometry margin;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,6 +98,7 @@ class _BookingTile extends ConsumerWidget {
     return BookingCard(
       booking: booking,
       showDate: true,
+      margin: margin,
       title: business?.name,
       currency: business?.currency,
       notice: cancelledAt == null

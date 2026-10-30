@@ -35,4 +35,31 @@ void main() {
     expect(find.text('Mark as done'), findsOneWidget);
     expect(find.text('jordan'), findsNWidgets(2));
   });
+
+  testWidgets("on the website a day's bookings sit side by side; on a phone they stack", (tester) async {
+    final later = DateTime.now().add(const Duration(days: 1));
+    final day = DateTime(later.year, later.month, later.day, 10);
+    Future<void> pumpAt(Size size) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          businessBookingsProvider.overrideWith((ref) async => [
+                booking('a', day),
+                booking('b', day.add(const Duration(hours: 1))),
+              ]),
+        ],
+        child: const MaterialApp(home: BookingsScreen()),
+      ));
+      await tester.pumpAndSettle();
+    }
+    addTearDown(tester.view.reset);
+
+    await pumpAt(const Size(1280, 800));
+    final cards = find.byType(Card);
+    expect(tester.getTopLeft(cards.at(0)).dy, tester.getTopLeft(cards.at(1)).dy);
+
+    await pumpAt(const Size(400, 800));
+    expect(tester.getTopLeft(cards.at(0)).dy, lessThan(tester.getTopLeft(cards.at(1)).dy));
+  });
 }
