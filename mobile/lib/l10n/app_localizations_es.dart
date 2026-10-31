@@ -455,8 +455,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reviewPromptTitle => '¿Qué tal tu corte?';
 
   @override
-  String get reviewPromptReward =>
-      'Deja una reseña en las 6 horas siguientes a tu cita y gana una recompensa.';
+  String get reviewPromptReward => 'Deja una reseña y gana una recompensa.';
 
   @override
   String get reviewPromptPlain =>

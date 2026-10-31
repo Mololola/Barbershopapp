@@ -899,7 +899,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviewPromptReward.
   ///
   /// In en, this message translates to:
-  /// **'Leave a review within 6 hours of your appointment to earn a reward.'**
+  /// **'Leave a review to earn a reward.'**
   String get reviewPromptReward;
 
   /// No description provided for @reviewPromptPlain.
