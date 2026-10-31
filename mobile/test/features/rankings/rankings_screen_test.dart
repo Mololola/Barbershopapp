@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/auth/application/auth_controller.dart';
+import 'package:mobile/features/auth/domain/profile.dart';
 import 'package:mobile/features/rankings/application/rankings_controller.dart';
 import 'package:mobile/features/rankings/domain/ranking_entry.dart';
 import 'package:mobile/features/rankings/presentation/rankings_screen.dart';
@@ -11,7 +12,7 @@ void main() {
   const referralEntry = CustomerRankingEntry(customerId: 'c2', username: 'sam', avatarUrl: null, value: 2);
   const haircutEntry = HaircutTypeRankingEntry(haircutType: 'Fade', value: 12);
 
-  Widget buildTestable() {
+  Widget buildTestable({AccountRole? role}) {
     return ProviderScope(
       overrides: [
         distinctShopsRankingProvider.overrideWith((ref, window) async => [shopEntry]),
@@ -19,7 +20,9 @@ void main() {
         haircutTypesRankingProvider.overrideWith((ref, window) async => [haircutEntry]),
         referralsRankingProvider.overrideWith((ref) async => [referralEntry]),
         topBarbersRankingProvider.overrideWith((ref) async => []),
-        currentProfileProvider.overrideWith((ref) async => null),
+        currentProfileProvider.overrideWith(
+          (ref) async => role == null ? null : Profile(id: 'me', role: role, username: 'me', referralCode: 'REF'),
+        ),
       ],
       child: const MaterialApp(home: RankingsScreen()),
     );
@@ -66,12 +69,23 @@ void main() {
   });
 
   testWidgets('an empty board explains itself', (tester) async {
-    await tester.pumpWidget(buildTestable());
+    await tester.pumpWidget(buildTestable(role: AccountRole.business));
     await tester.pumpAndSettle();
 
     await selectType(tester, 'Top-rated barbers');
     await tester.pumpAndSettle();
 
     expect(find.text('No rated barbers yet'), findsOneWidget);
+  });
+
+  testWidgets('customers are not offered the barber ranking', (tester) async {
+    await tester.pumpWidget(buildTestable(role: AccountRole.customer));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(Scrollable).first, const Offset(-1000, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Top-rated barbers'), findsNothing);
+    expect(find.text('Popular haircuts'), findsOneWidget);
   });
 }

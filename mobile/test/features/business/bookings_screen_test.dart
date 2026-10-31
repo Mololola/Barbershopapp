@@ -18,7 +18,7 @@ void main() {
         customerName: 'jordan',
       );
 
-  testWidgets('only a booking that has started can be marked done', (tester) async {
+  testWidgets('only a booking that has started can be marked done or a no-show', (tester) async {
     final now = DateTime.now();
     await tester.pumpWidget(ProviderScope(
       overrides: [
@@ -33,6 +33,7 @@ void main() {
 
     expect(find.text('Confirmed'), findsNWidgets(2));
     expect(find.text('Mark as done'), findsOneWidget);
+    expect(find.text('No-show'), findsOneWidget);
     expect(find.text('jordan'), findsNWidgets(2));
   });
 

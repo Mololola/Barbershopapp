@@ -124,6 +124,7 @@ class _StatusLabel extends StatelessWidget {
       // Brass text on the light card is too faint to read (about 3.4:1).
       BookingStatus.confirmed => (context.l10n.bookingConfirmed, AppColors.charcoal),
       BookingStatus.completed => (context.l10n.bookingCompleted, AppColors.steel),
+      BookingStatus.noShow => (context.l10n.noShow, AppColors.steel),
       BookingStatus.cancelled => (context.l10n.bookingCancelled, Theme.of(context).colorScheme.error),
     };
     return Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600));

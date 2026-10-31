@@ -84,4 +84,11 @@ class BookingActionController extends AsyncNotifier<void> {
       await ref.read(bookingApiClientProvider).completeBooking(bookingId);
     });
   }
+
+  Future<void> markNoShow(String bookingId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(bookingApiClientProvider).markNoShow(bookingId);
+    });
+  }
 }

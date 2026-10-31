@@ -444,6 +444,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get leaveAReview => 'Leave a review';
 
   @override
+  String get reviewPromptTitle => 'How was your cut?';
+
+  @override
+  String get reviewPromptReward => 'Leave a review to earn a reward.';
+
+  @override
+  String get reviewPromptPlain =>
+      'Leave a review to help others find a good barber. It only takes a minute.';
+
+  @override
   String get bookingConfirmed => 'Confirmed';
 
   @override
@@ -1515,6 +1525,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markAsDone => 'Mark as done';
+
+  @override
+  String get noShow => 'No-show';
+
+  @override
+  String get markDoneReminderTitle => 'Did this booking happen?';
+
+  @override
+  String markDoneReminderBody(String customer, String time) {
+    return '$customer\'s booking at $time has ended. Mark it done or a no-show; otherwise it\'s marked done automatically 2 hours after it ends.';
+  }
+
+  @override
+  String get aCustomer => 'A customer';
 
   @override
   String get fadraForBusiness => 'Fadra Cut for Business';

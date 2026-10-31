@@ -104,14 +104,28 @@ class _DayGroupedList extends ConsumerWidget {
           margin: cardMargin,
           // Marking done asks the customer for a review, so not before the cut starts.
           action: booking.status == BookingStatus.confirmed && booking.startTime.isBefore(DateTime.now())
-              ? TextButton(
-                  onPressed: actionState.isLoading
-                      ? null
-                      : () async {
-                          await ref.read(bookingActionControllerProvider.notifier).completeBooking(booking.id);
-                          ref.invalidate(businessBookingsProvider);
-                        },
-                  child: Text(context.l10n.markAsDone),
+              ? Wrap(
+                  alignment: WrapAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: actionState.isLoading
+                          ? null
+                          : () async {
+                              await ref.read(bookingActionControllerProvider.notifier).markNoShow(booking.id);
+                              ref.invalidate(businessBookingsProvider);
+                            },
+                      child: Text(context.l10n.noShow),
+                    ),
+                    TextButton(
+                      onPressed: actionState.isLoading
+                          ? null
+                          : () async {
+                              await ref.read(bookingActionControllerProvider.notifier).completeBooking(booking.id);
+                              ref.invalidate(businessBookingsProvider);
+                            },
+                      child: Text(context.l10n.markAsDone),
+                    ),
+                  ],
                 )
               : null,
         );

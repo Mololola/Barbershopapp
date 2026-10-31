@@ -176,6 +176,9 @@
   "noBookingsYet": "No bookings yet.",
   "reviewed": "Reviewed",
   "leaveAReview": "Leave a review",
+  "reviewPromptTitle": "How was your cut?",
+  "reviewPromptReward": "Leave a review to earn a reward.",
+  "reviewPromptPlain": "Leave a review to help others find a good barber. It only takes a minute.",
   "bookingConfirmed": "Confirmed",
   "bookingCancelled": "Cancelled",
   "bookingCompleted": "Completed",
@@ -949,6 +952,20 @@
   "edit": "Edit",
   "makeBasicCut": "Make basic cut",
   "markAsDone": "Mark as done",
+  "noShow": "No-show",
+  "markDoneReminderTitle": "Did this booking happen?",
+  "markDoneReminderBody": "{customer}'s booking at {time} has ended. Mark it done or a no-show; otherwise it's marked done automatically 2 hours after it ends.",
+  "@markDoneReminderBody": {
+    "placeholders": {
+      "customer": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aCustomer": "A customer",
   "fadraForBusiness": "Fadra Cut for Business",
   "noBusinessFound": "No business found.",
   "serviceCountLabel": "{count, plural, =1{service} other{services}}",

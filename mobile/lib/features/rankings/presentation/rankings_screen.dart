@@ -6,6 +6,7 @@ import '../../../core/l10n.dart';
 import '../../../core/skeleton.dart';
 import '../../../core/status_message.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/profile.dart';
 import '../../business/domain/brand.dart';
 import '../../customer/domain/review.dart';
 import '../application/rankings_controller.dart';
@@ -199,7 +200,13 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final myId = ref.watch(currentProfileProvider).value?.id;
+    final profile = ref.watch(currentProfileProvider).value;
+    final myId = profile?.id;
+    // The server refuses this ranking to customers; don't offer it them.
+    final types = [
+      for (final type in _RankingType.values)
+        if (type != _RankingType.topBarbers || profile?.role == AccountRole.business) type,
+    ];
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n.navRankings),
@@ -216,10 +223,10 @@ class _RankingsScreenState extends ConsumerState<RankingsScreen> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _RankingType.values.length,
+              itemCount: types.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
-                final type = _RankingType.values[i];
+                final type = types[i];
                 return _TypePill(type: type, selected: type == _type, onTap: () => setState(() => _type = type));
               },
             ),

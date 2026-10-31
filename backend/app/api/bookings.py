@@ -343,6 +343,22 @@ def cancel_booking(
     return booking
 
 
+def _get_started_booking_for_owner(db: Session, booking_id: uuid.UUID, user_id: str) -> Booking:
+    """Done or no-show: only the owning business, only a confirmed booking,
+    and only once it has started."""
+    booking = _get_booking_or_404(db, booking_id)
+
+    if not _is_business_owner(db, booking.business_id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business's booking")
+    if booking.status != "confirmed":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only confirmed bookings can be marked done")
+    # Marking done invites the customer's review, so it can't come before the
+    # cut has even started; nor can a no-show.
+    if booking.start_time > datetime.datetime.now(datetime.UTC):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This booking hasn't started yet")
+    return booking
+
+
 @router.post("/bookings/{booking_id}/complete", response_model=BookingResponse)
 def complete_booking(
     booking_id: uuid.UUID,
@@ -351,21 +367,27 @@ def complete_booking(
 ) -> Booking:
     """Only the business can mark a haircut done — see docs/architecture.md
     on why the spec cares about this being business-confirmed (it's what
-    unlocks the customer's review prompt, and later, reward eligibility)."""
-    booking = _get_booking_or_404(db, booking_id)
-
-    if not _is_business_owner(db, booking.business_id, user_id):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business's booking")
-    if booking.status != "confirmed":
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only confirmed bookings can be marked done")
-    # Marking done triggers the customer's compulsory review, so it can't come
-    # before the cut has even started.
-    now = datetime.datetime.now(datetime.UTC)
-    if booking.start_time > now:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This booking hasn't started yet")
-
+    unlocks the customer's review prompt, and later, reward eligibility).
+    Left unmarked, it's done automatically 2 hours after it ends (the
+    auto_complete_bookings database job)."""
+    booking = _get_started_booking_for_owner(db, booking_id, user_id)
     booking.status = "completed"
-    booking.completed_at = now
+    booking.completed_at = datetime.datetime.now(datetime.UTC)
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
+@router.post("/bookings/{booking_id}/no-show", response_model=BookingResponse)
+def mark_no_show(
+    booking_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> Booking:
+    """The customer never came: no review is asked for, and auto-complete
+    leaves it alone."""
+    booking = _get_started_booking_for_owner(db, booking_id, user_id)
+    booking.status = "no_show"
     db.commit()
     db.refresh(booking)
     return booking

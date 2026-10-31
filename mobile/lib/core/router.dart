@@ -19,6 +19,7 @@ import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/auth/presentation/two_factor_screen.dart';
 import '../features/business/application/business_controller.dart';
 import '../features/business/presentation/edit_shop_page_screen.dart';
+import '../features/business/presentation/mark_done_reminders.dart';
 import '../features/business/presentation/business_edit_screen.dart';
 import '../features/business/presentation/business_home_screen.dart';
 import '../features/business/presentation/business_setup_screen.dart';
@@ -29,7 +30,6 @@ import '../features/business/presentation/subscription_screen.dart';
 import '../features/business/presentation/staff_screen.dart';
 import '../features/business/presentation/worker_candidate_detail_screen.dart';
 import '../features/business/presentation/worker_schedule_screen.dart';
-import '../features/customer/application/review_controller.dart';
 import '../features/customer/presentation/shop_page.dart';
 import '../features/customer/presentation/business_list_screen.dart';
 import '../features/customer/presentation/booking_screen.dart';
@@ -59,10 +59,6 @@ const _businessSetupRoute = '/business-setup';
 const _twoFactorRoute = '/two-factor';
 const _getTheAppRoute = '/get-the-app';
 
-bool _isReviewRoute(String location, String? bookingId) {
-  return bookingId != null && location == '/customer/bookings/$bookingId/review';
-}
-
 const _resetPasswordRoute = '/reset-password';
 
 /// Pure routing decision, unit-testable without a live Supabase client.
@@ -71,7 +67,6 @@ String? resolveRedirect({
   required Profile? profile,
   bool isProfileMissing = false,
   required bool isBusinessSetupComplete,
-  required String? pendingReviewBookingId,
   required String location,
   bool passwordRecovery = false,
   bool needsSecondFactor = false,
@@ -113,15 +108,6 @@ String? resolveRedirect({
     return location == _businessSetupRoute ? null : _businessSetupRoute;
   }
 
-  // Re-checked on every navigation attempt (not just once on open) so the
-  // customer genuinely can't do anything else until they've rated or
-  // omitted every step — see review_screen.dart.
-  if (profile.role == AccountRole.customer &&
-      pendingReviewBookingId != null &&
-      !_isReviewRoute(location, pendingReviewBookingId)) {
-    return '/customer/bookings/$pendingReviewBookingId/review';
-  }
-
   final home = profile.role == AccountRole.business ? '/business' : (isWeb ? '/admin' : '/customer');
   final onboardingRoutes = {..._authRoutes, _businessSetupRoute, _twoFactorRoute, _getTheAppRoute};
   return onboardingRoutes.contains(location) ? home : null;
@@ -160,7 +146,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(authStateChangesProvider, (_, __) => refresh.ping());
   ref.listen(currentProfileProvider, (_, __) => refresh.ping());
   ref.listen(currentBusinessProvider, (_, __) => refresh.ping());
-  ref.listen(pendingReviewProvider, (_, __) => refresh.ping());
   ref.listen(passwordRecoveryProvider, (_, __) => refresh.ping());
   ref.onDispose(refresh.dispose);
 
@@ -171,7 +156,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = ref.read(supabaseClientProvider).auth.currentUser != null;
       final profileState = ref.read(currentProfileProvider);
       final isBusinessSetupComplete = ref.read(currentBusinessProvider).value?.isSetupComplete ?? false;
-      final pendingReviewBookingId = ref.read(pendingReviewProvider).value?.id;
       final auth = ref.read(supabaseClientProvider).auth;
       return resolveRedirect(
         isAuthenticated: isAuthenticated,
@@ -182,7 +166,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             !profileState.hasError &&
             profileState.value == null,
         isBusinessSetupComplete: isBusinessSetupComplete,
-        pendingReviewBookingId: pendingReviewBookingId,
         location: state.matchedLocation,
         passwordRecovery: ref.read(passwordRecoveryProvider),
         needsSecondFactor: profileState.value?.isAdmin == true &&
@@ -259,8 +242,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) =>
-            AppShell(navigationShell: navigationShell, destinations: _businessDestinations(context.l10n)),
+        builder: (context, state, navigationShell) => MarkDoneReminders(
+            child: AppShell(navigationShell: navigationShell, destinations: _businessDestinations(context.l10n))),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/business', builder: (context, state) => const BusinessHomeScreen()),

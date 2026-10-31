@@ -108,11 +108,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           haircutType: _haircutType,
         );
 
-    if (!mounted) return;
-    // Reached via a redirect gate (see core/router.dart), not always a
-    // manual push, so pop() isn't reliable here — go() plus the redirect
-    // re-evaluating is what chains to the next pending review, if any.
-    if (success) context.go('/customer');
+    if (success && mounted) context.pop();
   }
 
   @override

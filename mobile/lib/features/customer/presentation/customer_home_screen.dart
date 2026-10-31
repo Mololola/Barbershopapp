@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/l10n.dart';
+import '../../../core/offline_cache.dart';
 import '../../../core/responsive.dart';
 import '../../../core/quick_action_tile.dart';
 import '../../../core/skeleton.dart';
@@ -15,7 +16,27 @@ import '../../rewards/application/rewards_controller.dart';
 import '../../worker/application/worker_controller.dart';
 import '../application/booking_controller.dart';
 import '../application/browse_controller.dart';
+import '../application/review_controller.dart';
 import '../domain/booking.dart';
+
+/// Shown once per completed cut; the reward is only mentioned while it can
+/// still be earned (see [ReviewPrompt.mentionsReward]).
+Future<void> _showReviewPrompt(BuildContext context, WidgetRef ref, ReviewPrompt prompt) async {
+  await markReviewPromptShown(ref.read(offlineCacheProvider), prompt.booking.id);
+  if (!context.mounted) return;
+  final review = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(context.l10n.reviewPromptTitle),
+      content: Text(prompt.mentionsReward ? context.l10n.reviewPromptReward : context.l10n.reviewPromptPlain),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.notNow)),
+        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.l10n.leaveAReview)),
+      ],
+    ),
+  );
+  if (review == true && context.mounted) context.push('/customer/bookings/${prompt.booking.id}/review');
+}
 
 class CustomerHomeScreen extends ConsumerWidget {
   const CustomerHomeScreen({super.key});
@@ -28,6 +49,13 @@ class CustomerHomeScreen extends ConsumerWidget {
     final conversations = ref.watch(conversationsProvider).value ?? const [];
     final unreadCount = conversations.fold<int>(0, (sum, c) => sum + c.unreadCount);
     final pendingInvitations = ref.watch(receivedInvitationsProvider).value ?? const [];
+    ref.listen(reviewPromptProvider, (previous, next) {
+      final prompt = next.value;
+      // Not over another screen (e.g. the review just being written).
+      if (prompt == null || prompt.booking.id == previous?.value?.booking.id) return;
+      if (ModalRoute.of(context)?.isCurrent == false) return;
+      _showReviewPrompt(context, ref, prompt);
+    });
 
     return Scaffold(
       appBar: AppBar(

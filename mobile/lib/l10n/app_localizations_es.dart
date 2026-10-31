@@ -452,6 +452,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get leaveAReview => 'Dejar una reseña';
 
   @override
+  String get reviewPromptTitle => '¿Qué tal tu corte?';
+
+  @override
+  String get reviewPromptReward => 'Deja una reseña y gana una recompensa.';
+
+  @override
+  String get reviewPromptPlain =>
+      'Deja una reseña para ayudar a otros a encontrar un buen barbero. Solo te llevará un minuto.';
+
+  @override
   String get bookingConfirmed => 'Confirmada';
 
   @override
@@ -1528,6 +1538,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get markAsDone => 'Marcar como hecha';
+
+  @override
+  String get noShow => 'No se presentó';
+
+  @override
+  String get markDoneReminderTitle => '¿Se hizo esta reserva?';
+
+  @override
+  String markDoneReminderBody(String customer, String time) {
+    return 'La reserva de $customer de las $time ha terminado. Márcala como hecha o como no presentada; si no, se marcará como hecha sola 2 horas después de terminar.';
+  }
+
+  @override
+  String get aCustomer => 'un cliente';
 
   @override
   String get fadraForBusiness => 'Fadra Cut para negocios';

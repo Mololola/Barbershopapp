@@ -1,9 +1,9 @@
 import '../../../l10n/app_localizations.dart';
 
-enum BookingStatus { confirmed, cancelled, completed }
+enum BookingStatus { confirmed, cancelled, completed, noShow }
 
 extension BookingStatusX on BookingStatus {
-  String get wireValue => name;
+  String get wireValue => this == BookingStatus.noShow ? 'no_show' : name;
 
   static BookingStatus fromWireValue(String value) {
     return BookingStatus.values.firstWhere((status) => status.wireValue == value);

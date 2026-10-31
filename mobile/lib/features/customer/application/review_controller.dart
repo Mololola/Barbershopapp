@@ -27,16 +27,44 @@ final myReviewsByBookingProvider = FutureProvider<Map<String, Review>>((ref) asy
   };
 });
 
-/// The next completed-but-unreviewed booking to prompt for, if any — see
-/// `customer_home_screen.dart`, which checks this once on open.
-final pendingReviewProvider = FutureProvider<Booking?>((ref) async {
+/// What the one-time review pop-up on Home asks about.
+class ReviewPrompt {
+  const ReviewPrompt({required this.booking, required this.mentionsReward});
+
+  final Booking booking;
+
+  /// Only for the customer's first [_rewardPromptCuts] cuts, and only while
+  /// the backend would still pay the reward (rewards.py's _REWARD_WINDOW).
+  final bool mentionsReward;
+}
+
+const _rewardPromptCuts = 4;
+const _rewardWindow = Duration(hours: 6);
+const _promptsShownKey = 'review-prompts-shown';
+
+/// The newest completed, unreviewed booking whose pop-up hasn't been shown
+/// yet, if any — see `customer_home_screen.dart`.
+final reviewPromptProvider = FutureProvider<ReviewPrompt?>((ref) async {
   final profile = await ref.watch(currentProfileProvider.future);
   if (profile == null) return null;
-  final waiting = await ref.watch(reviewOutboxProvider.future);
-  return ref
-      .watch(bookingsRepositoryProvider)
-      .fetchOldestUnreviewedCompletedBooking(profile.id, except: {for (final review in waiting) review.bookingId});
+  final waiting = {for (final review in await ref.watch(reviewOutboxProvider.future)) review.bookingId};
+  final shown = {for (final row in await ref.read(offlineCacheProvider).readList(_promptsShownKey)) row['id']};
+  final completed = await ref.watch(bookingsRepositoryProvider).fetchCompletedBookings(profile.id);
+  for (var i = completed.length - 1; i >= 0; i--) {
+    final (:booking, :reviewed) = completed[i];
+    if (reviewed || waiting.contains(booking.id) || shown.contains(booking.id)) continue;
+    return ReviewPrompt(
+      booking: booking,
+      mentionsReward: i < _rewardPromptCuts && DateTime.now().isBefore(booking.endTime.add(_rewardWindow)),
+    );
+  }
+  return null;
 });
+
+Future<void> markReviewPromptShown(OfflineCache cache, String bookingId) async {
+  final shown = await cache.readList(_promptsShownKey);
+  await cache.writeList(_promptsShownKey, [...shown, {'id': bookingId}]);
+}
 
 /// Reviews written with no connection, kept on the phone and sent (with
 /// their reward) each time this rebuilds: on start, on signing in, and when
@@ -134,17 +162,11 @@ class ReviewController extends AsyncNotifier<void> {
         // Saved on the phone: sent, and its reward credited, once back online.
         ref.read(connectionProvider.notifier).reportOffline();
         await ref.read(reviewOutboxProvider.notifier).add(review);
-        await ref.read(pendingReviewProvider.future);
         success = true;
         return;
       }
       ref.invalidate(myReviewsByBookingProvider);
-      ref.invalidate(pendingReviewProvider);
-      // Router's redirect gate reads pendingReviewProvider synchronously
-      // right after this returns (see core/router.dart) — without awaiting
-      // the refresh here, that read can still see the pre-invalidation
-      // value and route straight back into reviewing this same booking.
-      await ref.read(pendingReviewProvider.future);
+      ref.invalidate(reviewPromptProvider);
       success = true;
 
       // Best-effort: the review itself already succeeded above, so a
