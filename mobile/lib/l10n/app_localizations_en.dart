@@ -1527,6 +1527,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markAsDone => 'Mark as done';
 
   @override
+  String get noShow => 'No-show';
+
+  @override
+  String get markDoneReminderTitle => 'Did this booking happen?';
+
+  @override
+  String markDoneReminderBody(String customer, String time) {
+    return '$customer\'s booking at $time has ended. Mark it done or a no-show; otherwise it\'s marked done automatically 2 hours after it ends.';
+  }
+
+  @override
+  String get aCustomer => 'A customer';
+
+  @override
   String get fadraForBusiness => 'Fadra Cut for Business';
 
   @override

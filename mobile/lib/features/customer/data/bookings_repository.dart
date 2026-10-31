@@ -30,6 +30,20 @@ class BookingsRepository {
     return rows.map(Booking.fromSupabaseRow).toList();
   }
 
+  /// Confirmed bookings that ended within the last 2 hours: the ones the
+  /// shop is reminded to mark done. Not cached — only worth asking online.
+  Future<List<Booking>> fetchBookingsAwaitingDone(String businessId, DateTime now) async {
+    final rows = await _client
+        .from('bookings')
+        .select('*, services(name), workers(name), profiles(username)')
+        .eq('business_id', businessId)
+        .eq('status', 'confirmed')
+        .lte('end_time', now.toUtc().toIso8601String())
+        .gt('end_time', now.subtract(const Duration(hours: 2)).toUtc().toIso8601String())
+        .order('end_time');
+    return rows.map(Booking.fromSupabaseRow).toList();
+  }
+
   Future<Booking?> fetchBooking(String bookingId) async {
     final row = await _cache.row('booking:$bookingId', () => _client.from('bookings').select().eq('id', bookingId).maybeSingle());
     if (row == null) return null;

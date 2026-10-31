@@ -1540,6 +1540,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get markAsDone => 'Marcar como hecha';
 
   @override
+  String get noShow => 'No se presentó';
+
+  @override
+  String get markDoneReminderTitle => '¿Se hizo esta reserva?';
+
+  @override
+  String markDoneReminderBody(String customer, String time) {
+    return 'La reserva de $customer de las $time ha terminado. Márcala como hecha o como no presentada; si no, se marcará como hecha sola 2 horas después de terminar.';
+  }
+
+  @override
+  String get aCustomer => 'un cliente';
+
+  @override
   String get fadraForBusiness => 'Fadra Cut para negocios';
 
   @override

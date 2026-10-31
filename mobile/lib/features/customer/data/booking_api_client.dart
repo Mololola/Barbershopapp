@@ -53,6 +53,12 @@ class BookingApiClient {
     return Booking.fromApiJson(result as Map<String, dynamic>);
   }
 
+  /// Business-side action, like [completeBooking].
+  Future<Booking> markNoShow(String bookingId) async {
+    final result = await _api.post('/bookings/$bookingId/no-show');
+    return Booking.fromApiJson(result as Map<String, dynamic>);
+  }
+
   /// My upcoming bookings that will be cancelled with their shop if it
   /// doesn't renew, by booking id → when that happens.
   Future<Map<String, DateTime>> fetchBookingsAtRisk() async {

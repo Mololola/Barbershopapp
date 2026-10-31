@@ -19,6 +19,7 @@ import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/auth/presentation/two_factor_screen.dart';
 import '../features/business/application/business_controller.dart';
 import '../features/business/presentation/edit_shop_page_screen.dart';
+import '../features/business/presentation/mark_done_reminders.dart';
 import '../features/business/presentation/business_edit_screen.dart';
 import '../features/business/presentation/business_home_screen.dart';
 import '../features/business/presentation/business_setup_screen.dart';
@@ -241,8 +242,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) =>
-            AppShell(navigationShell: navigationShell, destinations: _businessDestinations(context.l10n)),
+        builder: (context, state, navigationShell) => MarkDoneReminders(
+            child: AppShell(navigationShell: navigationShell, destinations: _businessDestinations(context.l10n))),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/business', builder: (context, state) => const BusinessHomeScreen()),

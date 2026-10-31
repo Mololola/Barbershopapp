@@ -952,6 +952,20 @@
   "edit": "Edit",
   "makeBasicCut": "Make basic cut",
   "markAsDone": "Mark as done",
+  "noShow": "No-show",
+  "markDoneReminderTitle": "Did this booking happen?",
+  "markDoneReminderBody": "{customer}'s booking at {time} has ended. Mark it done or a no-show; otherwise it's marked done automatically 2 hours after it ends.",
+  "@markDoneReminderBody": {
+    "placeholders": {
+      "customer": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aCustomer": "A customer",
   "fadraForBusiness": "Fadra Cut for Business",
   "noBusinessFound": "No business found.",
   "serviceCountLabel": "{count, plural, =1{service} other{services}}",

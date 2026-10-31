@@ -13,6 +13,7 @@ from app.api.bookings import (
     _map_booking_integrity_error,
     _slot_rejection_reason,
     complete_booking,
+    mark_no_show,
     my_bookings_at_risk,
 )
 from app.models.booking import Booking
@@ -169,3 +170,22 @@ def test_a_booking_that_has_started_can_be_marked_done(monkeypatch):
 
     assert booking.status == "completed"
     assert booking.completed_at is not None
+
+
+def test_a_booking_cant_be_a_no_show_before_it_starts(monkeypatch):
+    booking = _owned_booking(monkeypatch, datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1))
+
+    with pytest.raises(HTTPException) as exc:
+        mark_no_show(booking.id, db=_CommitDb(), user_id="owner")
+
+    assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert booking.status == "confirmed"
+
+
+def test_a_started_booking_can_be_marked_a_no_show(monkeypatch):
+    booking = _owned_booking(monkeypatch, datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=5))
+
+    mark_no_show(booking.id, db=_CommitDb(), user_id="owner")
+
+    assert booking.status == "no_show"
+    assert booking.completed_at is None

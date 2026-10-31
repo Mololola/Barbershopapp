@@ -2630,6 +2630,30 @@ abstract class AppLocalizations {
   /// **'Mark as done'**
   String get markAsDone;
 
+  /// No description provided for @noShow.
+  ///
+  /// In en, this message translates to:
+  /// **'No-show'**
+  String get noShow;
+
+  /// No description provided for @markDoneReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Did this booking happen?'**
+  String get markDoneReminderTitle;
+
+  /// No description provided for @markDoneReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{customer}\'s booking at {time} has ended. Mark it done or a no-show; otherwise it\'s marked done automatically 2 hours after it ends.'**
+  String markDoneReminderBody(String customer, String time);
+
+  /// No description provided for @aCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'A customer'**
+  String get aCustomer;
+
   /// No description provided for @fadraForBusiness.
   ///
   /// In en, this message translates to:
