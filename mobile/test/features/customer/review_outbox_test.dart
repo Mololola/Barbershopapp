@@ -32,8 +32,8 @@ class _FakeReviews extends Fake implements ReviewRepository {
 
 class _FakeBookings extends Fake implements BookingsRepository {
   @override
-  Future<Booking?> fetchOldestUnreviewedCompletedBooking(String customerId, {Set<String> except = const {}}) async =>
-      except.contains('b1') ? null : _booking;
+  Future<List<({Booking booking, bool reviewed})>> fetchCompletedBookings(String customerId) async =>
+      [(booking: _booking, reviewed: false)];
 }
 
 class _FakeBookingApi extends Fake implements BookingApiClient {
@@ -76,13 +76,13 @@ void main() {
     );
     addTearDown(container.dispose);
     container.listen(reviewOutboxProvider, (_, _) {});
-    expect((await container.read(pendingReviewProvider.future))?.id, 'b1');
+    expect((await container.read(reviewPromptProvider.future))?.booking.id, 'b1');
 
     final success = await container
         .read(reviewControllerProvider.notifier)
         .submit(bookingId: 'b1', businessId: 'shop', workerId: 'w1', shopRating: 5);
     expect(success, isTrue);
-    expect(await container.read(pendingReviewProvider.future), isNull);
+    expect(await container.read(reviewPromptProvider.future), isNull);
     expect((await container.read(myReviewsByBookingProvider.future)).keys, ['b1']);
 
     reviews.online = true;

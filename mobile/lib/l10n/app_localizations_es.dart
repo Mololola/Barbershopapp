@@ -452,6 +452,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get leaveAReview => 'Dejar una reseña';
 
   @override
+  String get reviewPromptTitle => '¿Qué tal tu corte?';
+
+  @override
+  String get reviewPromptReward =>
+      'Deja una reseña en las 6 horas siguientes a tu cita y gana una recompensa.';
+
+  @override
+  String get reviewPromptPlain =>
+      'Deja una reseña para ayudar a otros a encontrar un buen barbero. Solo te llevará un minuto.';
+
+  @override
   String get bookingConfirmed => 'Confirmada';
 
   @override

@@ -3,7 +3,29 @@ import datetime
 import psycopg
 from sqlalchemy.exc import IntegrityError
 
-from app.api.rewards import _fits_shop_budget, _is_duplicate_reward_error, _month_start, _tier_amount_cents
+from app.api.rewards import (
+    _fits_shop_budget,
+    _is_duplicate_reward_error,
+    _month_start,
+    _tier_amount_cents,
+    _within_reward_window,
+)
+
+_BOOKING_END = datetime.datetime(2026, 11, 2, 23, 0, tzinfo=datetime.UTC)
+
+
+def test_a_review_exactly_6_hours_after_the_booking_ends_earns_the_reward():
+    assert _within_reward_window(_BOOKING_END, _BOOKING_END + datetime.timedelta(hours=6))
+
+
+def test_a_review_a_second_past_6_hours_does_not():
+    assert not _within_reward_window(_BOOKING_END, _BOOKING_END + datetime.timedelta(hours=6, seconds=1))
+
+
+def test_the_window_compares_instants_not_local_clock_times():
+    # The window closes at 05:00 UTC. 05:30 in Madrid is 04:30 UTC: inside, though "05:30" looks past it.
+    madrid = datetime.timezone(datetime.timedelta(hours=1))
+    assert _within_reward_window(_BOOKING_END, datetime.datetime(2026, 11, 3, 5, 30, tzinfo=madrid))
 
 
 def test_automatic_tier_is_one_unit_of_the_shops_currency():

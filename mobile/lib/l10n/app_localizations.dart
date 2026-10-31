@@ -890,6 +890,24 @@ abstract class AppLocalizations {
   /// **'Leave a review'**
   String get leaveAReview;
 
+  /// No description provided for @reviewPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How was your cut?'**
+  String get reviewPromptTitle;
+
+  /// No description provided for @reviewPromptReward.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a review within 6 hours of your appointment to earn a reward.'**
+  String get reviewPromptReward;
+
+  /// No description provided for @reviewPromptPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a review to help others find a good barber. It only takes a minute.'**
+  String get reviewPromptPlain;
+
   /// No description provided for @bookingConfirmed.
   ///
   /// In en, this message translates to:

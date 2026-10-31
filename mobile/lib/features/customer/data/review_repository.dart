@@ -25,9 +25,8 @@ class ReviewRepository {
     } on PostgrestException catch (e) {
       // 23505 on booking_id means this booking was already reviewed — the
       // end state the caller wants (a review row exists) already holds, so
-      // treat it as a no-op rather than surfacing an error. Guards against
-      // the redirect gate re-entering this screen for a booking it already
-      // submitted for (see pendingReviewProvider's post-submit refresh).
+      // treat it as a no-op rather than surfacing an error (e.g. a retry
+      // after a review that did reach the server).
       if (e.code != '23505') rethrow;
     }
   }

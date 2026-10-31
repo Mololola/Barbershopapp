@@ -36,23 +36,18 @@ class BookingsRepository {
     return Booking.fromSupabaseRow(row);
   }
 
-  /// Drives the mandatory-review router gate in `core/router.dart` — the
-  /// oldest completed booking that doesn't have a `reviews` row yet.
+  /// Every completed booking, oldest first, with whether it has a review —
+  /// what the review pop-up on Home needs (see reviewPromptProvider).
   /// `reviews` is unique on `booking_id`, so PostgREST embeds it as a
-  /// nullable object (`null` or a map), not a list — casting it as a List
-  /// throws, which silently degraded this to "never gates" (see the bug
-  /// this fixed: the resulting AsyncError's `.value` just reads as null).
-  /// [except]: bookings already reviewed offline, waiting to be sent.
-  Future<Booking?> fetchOldestUnreviewedCompletedBooking(String customerId, {Set<String> except = const {}}) async {
-    final rows = await _cache.rows('unreviewed:$customerId', () => _client
+  /// nullable object (`null` or a map), not a list; casting it as a List
+  /// throws.
+  Future<List<({Booking booking, bool reviewed})>> fetchCompletedBookings(String customerId) async {
+    final rows = await _cache.rows('completed:$customerId', () => _client
         .from('bookings')
         .select('*, reviews(id)')
         .eq('customer_id', customerId)
         .eq('status', 'completed')
         .order('start_time'));
-    for (final row in rows) {
-      if (row['reviews'] == null && !except.contains(row['id'])) return Booking.fromSupabaseRow(row);
-    }
-    return null;
+    return [for (final row in rows) (booking: Booking.fromSupabaseRow(row), reviewed: row['reviews'] != null)];
   }
 }

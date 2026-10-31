@@ -20,6 +20,9 @@ _MONTHLY_CAP = 3
 # A shop's customers earn at most this share of what the shop pays a month,
 # so a busy shop's rewards can never cost more than its subscription brings in.
 _SHOP_BUDGET_PERCENT = 15
+# Counted from the booking's scheduled end, not from when the shop marks it
+# done, so a late "done" can't stretch or shrink anyone's window.
+_REWARD_WINDOW = datetime.timedelta(hours=6)
 
 
 class RewardCreditResponse(BaseModel):
@@ -40,6 +43,10 @@ def _fits_shop_budget(spent_cents: int, amount_cents: int, shop_monthly_cents: i
     """A shop with no subscription row is hidden from customers, so it has no budget."""
     budget_cents = (shop_monthly_cents or 0) * _SHOP_BUDGET_PERCENT // 100
     return spent_cents + amount_cents <= budget_cents
+
+
+def _within_reward_window(booking_end: datetime.datetime, reviewed_at: datetime.datetime) -> bool:
+    return reviewed_at <= booking_end + _REWARD_WINDOW
 
 
 def _is_duplicate_reward_error(exc: IntegrityError) -> bool:
@@ -74,6 +81,10 @@ def credit_review_reward(
     already_credited = db.query(RewardLedger).filter(RewardLedger.review_id == review.id).first()
     if already_credited is not None:
         return RewardCreditResponse(credited=False, amount_cents=0, reason="already credited")
+
+    booking_end = db.execute(text("select end_time from bookings where id = :id"), {"id": booking_id}).scalar_one()
+    if not _within_reward_window(booking_end, review.created_at):
+        return RewardCreditResponse(credited=False, amount_cents=0, reason="review window closed")
 
     month_start = _month_start(datetime.datetime.now(datetime.UTC))
     credited_this_month = (
