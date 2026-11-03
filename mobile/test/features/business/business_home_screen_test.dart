@@ -38,6 +38,7 @@ void main() {
         servicesProvider.overrideWith((ref) async => [service]),
         workersProvider.overrideWith((ref) async => [worker]),
         businessBookingsProvider.overrideWith((ref) async => [upcoming]),
+        autoCompletedToCheckProvider.overrideWith((ref) async => []),
         conversationsProvider.overrideWith((ref) async => []),
       ],
       child: const MaterialApp(home: BusinessHomeScreen()),

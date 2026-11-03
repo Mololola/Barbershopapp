@@ -2654,6 +2654,24 @@ abstract class AppLocalizations {
   /// **'A customer'**
   String get aCustomer;
 
+  /// No description provided for @autoCompletedCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 booking was marked done automatically} other{{count} bookings were marked done automatically}}'**
+  String autoCompletedCheckTitle(int count);
+
+  /// No description provided for @autoCompletedCheckBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Did they happen? A no-show isn\'t counted in Finance. You can change this for 7 days.'**
+  String get autoCompletedCheckBody;
+
+  /// No description provided for @itHappened.
+  ///
+  /// In en, this message translates to:
+  /// **'It happened'**
+  String get itHappened;
+
   /// No description provided for @fadraForBusiness.
   ///
   /// In en, this message translates to:

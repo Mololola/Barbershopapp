@@ -37,6 +37,7 @@ class BookingResponse(BaseModel):
     end_time: datetime.datetime
     status: str
     completed_at: datetime.datetime | None = None
+    auto_completed: bool = False
 
 
 class BookingAtRisk(BaseModel):
@@ -343,20 +344,36 @@ def cancel_booking(
     return booking
 
 
-def _get_started_booking_for_owner(db: Session, booking_id: uuid.UUID, user_id: str) -> Booking:
-    """Done or no-show: only the owning business, only a confirmed booking,
-    and only once it has started."""
-    booking = _get_booking_or_404(db, booking_id)
+_AUTO_COMPLETED_CORRECTION_WINDOW = datetime.timedelta(days=7)
 
+
+def _get_owned_booking(db: Session, booking_id: uuid.UUID, user_id: str) -> Booking:
+    booking = _get_booking_or_404(db, booking_id)
     if not _is_business_owner(db, booking.business_id, user_id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your business's booking")
+    return booking
+
+
+def _is_correctable(db: Session, booking: Booking, now: datetime.datetime) -> bool:
+    """An automatically completed booking the shop can still check: within
+    the window, and not reviewed — a review means the customer came, and may
+    already have earned its reward."""
+    if booking.status != "completed" or not booking.auto_completed:
+        return False
+    if booking.completed_at < now - _AUTO_COMPLETED_CORRECTION_WINDOW:
+        return False
+    reviewed = db.execute(text("select 1 from reviews where booking_id = :id"), {"id": booking.id}).first()
+    return reviewed is None
+
+
+def _check_started(booking: Booking, now: datetime.datetime) -> None:
+    """Done or no-show from confirmed: only once the booking has started."""
     if booking.status != "confirmed":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only confirmed bookings can be marked done")
     # Marking done invites the customer's review, so it can't come before the
     # cut has even started; nor can a no-show.
-    if booking.start_time > datetime.datetime.now(datetime.UTC):
+    if booking.start_time > now:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "This booking hasn't started yet")
-    return booking
 
 
 @router.post("/bookings/{booking_id}/complete", response_model=BookingResponse)
@@ -369,10 +386,16 @@ def complete_booking(
     on why the spec cares about this being business-confirmed (it's what
     unlocks the customer's review prompt, and later, reward eligibility).
     Left unmarked, it's done automatically 2 hours after it ends (the
-    auto_complete_bookings database job)."""
-    booking = _get_started_booking_for_owner(db, booking_id, user_id)
-    booking.status = "completed"
-    booking.completed_at = datetime.datetime.now(datetime.UTC)
+    auto_complete_bookings database job); calling this on such a booking is
+    the shop confirming it did happen."""
+    booking = _get_owned_booking(db, booking_id, user_id)
+    now = datetime.datetime.now(datetime.UTC)
+    if _is_correctable(db, booking, now):
+        booking.auto_completed = False
+    else:
+        _check_started(booking, now)
+        booking.status = "completed"
+        booking.completed_at = now
     db.commit()
     db.refresh(booking)
     return booking
@@ -384,9 +407,16 @@ def mark_no_show(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> Booking:
-    """The customer never came: no review is asked for, and auto-complete
-    leaves it alone."""
-    booking = _get_started_booking_for_owner(db, booking_id, user_id)
+    """The customer never came: no review is asked for, auto-complete leaves
+    it alone, and Finance doesn't count it. Also turns an automatically
+    completed booking into a no-show, while it's still correctable."""
+    booking = _get_owned_booking(db, booking_id, user_id)
+    now = datetime.datetime.now(datetime.UTC)
+    if _is_correctable(db, booking, now):
+        booking.completed_at = None
+        booking.auto_completed = False
+    else:
+        _check_started(booking, now)
     booking.status = "no_show"
     db.commit()
     db.refresh(booking)
