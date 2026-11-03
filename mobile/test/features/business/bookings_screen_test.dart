@@ -20,10 +20,13 @@ void main() {
 
   testWidgets('only a booking that has started can be marked done or a no-show', (tester) async {
     final now = DateTime.now();
+    // Midnight today: always started, and still on the Upcoming tab (which
+    // starts at today) — "10 minutes ago" was yesterday just after midnight.
+    final startedToday = DateTime(now.year, now.month, now.day);
     await tester.pumpWidget(ProviderScope(
       overrides: [
         businessBookingsProvider.overrideWith((ref) async => [
-              booking('started', now.subtract(const Duration(minutes: 10))),
+              booking('started', startedToday),
               booking('later', now.add(const Duration(hours: 2))),
             ]),
       ],

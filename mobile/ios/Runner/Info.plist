@@ -56,6 +56,11 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>es</string>
+	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used to choose a photo for your profile, posts, or business logo.</string>
 	<key>NSCameraUsageDescription</key>
