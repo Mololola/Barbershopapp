@@ -1,0 +1,4 @@
+/* Spanish permission texts; the English ones are in Info.plist. */
+NSPhotoLibraryUsageDescription = "Para elegir una foto para tu perfil, tus publicaciones o el logo de tu negocio.";
+NSCameraUsageDescription = "Para hacer una foto para tu perfil, tus publicaciones o el logo de tu negocio.";
+NSLocationWhenInUseUsageDescription = "Para ordenar las barberías según lo cerca que están. Tu ubicación no sale de tu teléfono.";

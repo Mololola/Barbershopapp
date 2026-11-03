@@ -31,3 +31,9 @@ def test_error_responses_follow_accept_language():
     assert english.status_code == spanish.status_code == 401
     assert english.json()["detail"] == "Invalid or expired token"
     assert spanish.json()["detail"] == "Tu sesión ha caducado: vuelve a iniciar sesión."
+
+
+def test_a_request_with_no_token_is_refused_in_spanish_too():
+    response = TestClient(app).get("/account/unpaid-rewards", headers={"Accept-Language": "es"})
+
+    assert response.json()["detail"] == "Tienes que iniciar sesión."

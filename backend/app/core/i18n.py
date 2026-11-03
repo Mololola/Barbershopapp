@@ -31,6 +31,8 @@ _SPANISH = {
     "No review for this booking": "Esta reserva no tiene reseña.",
     "Not your review": "Esta reseña no es tuya.",
     "Invalid or expired token": "Tu sesión ha caducado: vuelve a iniciar sesión.",
+    # FastAPI's own, for a request with no token at all.
+    "Not authenticated": "Tienes que iniciar sesión.",
     "Cancel your subscription before deleting your account.": "Cancela tu suscripción antes de eliminar tu cuenta.",
     "Something went wrong. Please try again.": "Algo ha fallado. Inténtalo de nuevo.",
 }
