@@ -1541,6 +1541,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aCustomer => 'A customer';
 
   @override
+  String autoCompletedCheckTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bookings were marked done automatically',
+      one: '1 booking was marked done automatically',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autoCompletedCheckBody =>
+      'Did they happen? A no-show isn\'t counted in Finance. You can change this for 7 days.';
+
+  @override
+  String get itHappened => 'It happened';
+
+  @override
   String get fadraForBusiness => 'Fadra Cut for Business';
 
   @override

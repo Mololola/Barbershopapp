@@ -160,6 +160,13 @@ final businessBookingsProvider = FutureProvider<List<Booking>>((ref) async {
   return ref.watch(bookingsRepositoryProvider).fetchBusinessBookings(business.id);
 });
 
+/// See AutoCompletedCheckCard.
+final autoCompletedToCheckProvider = FutureProvider.autoDispose<List<Booking>>((ref) async {
+  final business = await ref.watch(currentBusinessProvider.future);
+  if (business == null) return [];
+  return ref.watch(bookingsRepositoryProvider).fetchAutoCompletedToCheck(business.id, DateTime.now());
+});
+
 final sentInvitationsProvider = FutureProvider<List<WorkerInvitation>>((ref) async {
   final business = await ref.watch(currentBusinessProvider.future);
   if (business == null) return [];

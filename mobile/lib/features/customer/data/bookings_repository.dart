@@ -44,6 +44,21 @@ class BookingsRepository {
     return rows.map(Booking.fromSupabaseRow).toList();
   }
 
+  /// Bookings completed automatically in the last 7 days and not reviewed:
+  /// the ones the shop can still check and turn into a no-show (the backend
+  /// enforces the same rules — see _is_correctable in bookings.py).
+  Future<List<Booking>> fetchAutoCompletedToCheck(String businessId, DateTime now) async {
+    final rows = await _client
+        .from('bookings')
+        .select('*, services(name), workers(name), profiles(username), reviews(id)')
+        .eq('business_id', businessId)
+        .eq('status', 'completed')
+        .eq('auto_completed', true)
+        .gt('completed_at', now.subtract(const Duration(days: 7)).toUtc().toIso8601String())
+        .order('start_time');
+    return [for (final row in rows) if (row['reviews'] == null) Booking.fromSupabaseRow(row)];
+  }
+
   Future<Booking?> fetchBooking(String bookingId) async {
     final row = await _cache.row('booking:$bookingId', () => _client.from('bookings').select().eq('id', bookingId).maybeSingle());
     if (row == null) return null;

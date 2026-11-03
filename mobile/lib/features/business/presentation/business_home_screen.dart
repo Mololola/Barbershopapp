@@ -12,6 +12,7 @@ import '../../messaging/presentation/messages_button.dart';
 import '../application/business_controller.dart';
 import '../domain/business.dart';
 import '../domain/today_summary.dart';
+import 'auto_completed_check_card.dart';
 import 'subscription_banner.dart';
 
 class BusinessHomeScreen extends ConsumerWidget {
@@ -158,6 +159,7 @@ class BusinessHomeScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
                     children: [
                       const SubscriptionBanner(),
+                      const AutoCompletedCheckCard(),
                       ResponsiveColumns(
                         flex: const [3, 2],
                         children: [
@@ -179,6 +181,7 @@ class BusinessHomeScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(20),
                     children: [
                       const SubscriptionBanner(),
+                      const AutoCompletedCheckCard(),
                       plaque,
                       const SizedBox(height: 16),
                       ?today,

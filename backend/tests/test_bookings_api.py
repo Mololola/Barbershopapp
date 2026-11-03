@@ -189,3 +189,73 @@ def test_a_started_booking_can_be_marked_a_no_show(monkeypatch):
 
     assert booking.status == "no_show"
     assert booking.completed_at is None
+
+
+class _ReviewsDb(_CommitDb):
+    def __init__(self, reviewed=False):
+        self.reviewed = reviewed
+
+    def execute(self, *args):
+        reviewed = self.reviewed
+
+        class _Result:
+            def first(self):
+                return (1,) if reviewed else None
+
+        return _Result()
+
+
+def _auto_completed_booking(monkeypatch, completed_ago):
+    now = datetime.datetime.now(datetime.UTC)
+    booking = _owned_booking(monkeypatch, now - completed_ago - datetime.timedelta(hours=3))
+    booking.status = "completed"
+    booking.auto_completed = True
+    booking.completed_at = now - completed_ago
+    return booking
+
+
+def test_an_auto_completed_booking_can_become_a_no_show_within_7_days(monkeypatch):
+    booking = _auto_completed_booking(monkeypatch, datetime.timedelta(days=6))
+
+    mark_no_show(booking.id, db=_ReviewsDb(), user_id="owner")
+
+    assert booking.status == "no_show"
+    assert booking.completed_at is None
+    assert booking.auto_completed is False
+
+
+def test_not_after_7_days(monkeypatch):
+    booking = _auto_completed_booking(monkeypatch, datetime.timedelta(days=8))
+
+    with pytest.raises(HTTPException):
+        mark_no_show(booking.id, db=_ReviewsDb(), user_id="owner")
+
+    assert booking.status == "completed"
+
+
+def test_not_once_the_customer_has_reviewed_it(monkeypatch):
+    booking = _auto_completed_booking(monkeypatch, datetime.timedelta(days=1))
+
+    with pytest.raises(HTTPException):
+        mark_no_show(booking.id, db=_ReviewsDb(reviewed=True), user_id="owner")
+
+    assert booking.status == "completed"
+
+
+def test_a_booking_the_shop_marked_done_itself_cant_become_a_no_show(monkeypatch):
+    booking = _auto_completed_booking(monkeypatch, datetime.timedelta(days=1))
+    booking.auto_completed = False
+
+    with pytest.raises(HTTPException):
+        mark_no_show(booking.id, db=_ReviewsDb(), user_id="owner")
+
+
+def test_confirming_an_auto_completed_booking_keeps_it_done_and_stops_asking(monkeypatch):
+    booking = _auto_completed_booking(monkeypatch, datetime.timedelta(days=1))
+    completed_at = booking.completed_at
+
+    complete_booking(booking.id, db=_ReviewsDb(), user_id="owner")
+
+    assert booking.status == "completed"
+    assert booking.auto_completed is False
+    assert booking.completed_at == completed_at

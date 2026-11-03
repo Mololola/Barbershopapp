@@ -1554,6 +1554,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aCustomer => 'un cliente';
 
   @override
+  String autoCompletedCheckTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reservas se marcaron como hechas automáticamente',
+      one: '1 reserva se marcó como hecha automáticamente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autoCompletedCheckBody =>
+      '¿Se hicieron? Una reserva no presentada no cuenta en Finanzas. Puedes cambiarlo durante 7 días.';
+
+  @override
+  String get itHappened => 'Sí se hizo';
+
+  @override
   String get fadraForBusiness => 'Fadra Cut para negocios';
 
   @override

@@ -966,6 +966,16 @@
     }
   },
   "aCustomer": "A customer",
+  "autoCompletedCheckTitle": "{count, plural, =1{1 booking was marked done automatically} other{{count} bookings were marked done automatically}}",
+  "@autoCompletedCheckTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autoCompletedCheckBody": "Did they happen? A no-show isn't counted in Finance. You can change this for 7 days.",
+  "itHappened": "It happened",
   "fadraForBusiness": "Fadra Cut for Business",
   "noBusinessFound": "No business found.",
   "serviceCountLabel": "{count, plural, =1{service} other{services}}",
