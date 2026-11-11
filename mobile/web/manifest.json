@@ -1,11 +1,11 @@
 {
-    "name": "Fadra Cut for Business",
+    "name": "Fadra Cut",
     "short_name": "Fadra Cut",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#221D1A",
     "theme_color": "#221D1A",
-    "description": "Run your barbershop from any screen: bookings, staff, finance and your shop page.",
+    "description": "Book your barber, or run your barbershop: bookings, staff, finance and your shop page.",
     "prefer_related_applications": false,
     "icons": [
         {

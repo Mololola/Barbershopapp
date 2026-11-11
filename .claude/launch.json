@@ -15,6 +15,18 @@
       "port": 8000
     },
     {
+      "name": "website",
+      "runtimeExecutable": "backend/.venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8766",
+        "--directory",
+        "mobile/build/web"
+      ],
+      "port": 8766
+    },
+    {
       "name": "designer",
       "runtimeExecutable": "backend/.venv/Scripts/python.exe",
       "runtimeArgs": [

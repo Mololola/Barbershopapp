@@ -398,24 +398,6 @@ abstract class AppLocalizations {
   /// **'Update password'**
   String get updatePassword;
 
-  /// No description provided for @useTheAppTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Use the app'**
-  String get useTheAppTitle;
-
-  /// No description provided for @websiteIsForShops.
-  ///
-  /// In en, this message translates to:
-  /// **'This website is for barbershops.'**
-  String get websiteIsForShops;
-
-  /// No description provided for @useTheAppBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Booking, your rewards and the feed are in the Fadra Cut app — sign in there on your phone with this same account.'**
-  String get useTheAppBody;
-
   /// No description provided for @signOut.
   ///
   /// In en, this message translates to:
@@ -659,13 +641,13 @@ abstract class AppLocalizations {
   /// No description provided for @webPanelBookings.
   ///
   /// In en, this message translates to:
-  /// **'Bookings and staff schedules at a glance'**
+  /// **'Find a barbershop and book in a minute'**
   String get webPanelBookings;
 
   /// No description provided for @webPanelFinance.
   ///
   /// In en, this message translates to:
-  /// **'Costs, break-even and forecasts on a big screen'**
+  /// **'For shops: bookings, staff and finance in one place'**
   String get webPanelFinance;
 
   /// No description provided for @webPanelShop.
@@ -677,20 +659,14 @@ abstract class AppLocalizations {
   /// No description provided for @webPanelHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Run your shop\nfrom any screen.'**
+  /// **'Book your cut.\nRun your shop.'**
   String get webPanelHeadline;
 
   /// No description provided for @webPanelSubhead.
   ///
   /// In en, this message translates to:
-  /// **'Everything in the app, with room to see it.'**
+  /// **'For customers and barbershops, on any screen.'**
   String get webPanelSubhead;
-
-  /// No description provided for @webPanelFooter.
-  ///
-  /// In en, this message translates to:
-  /// **'Customers book on the Fadra Cut app.'**
-  String get webPanelFooter;
 
   /// No description provided for @navHome.
   ///

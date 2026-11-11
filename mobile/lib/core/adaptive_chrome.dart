@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +14,7 @@ import 'responsive.dart';
 import 'router.dart';
 import 'theme.dart';
 
-const _authPaths = {'/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/two-factor', '/get-the-app'};
+const _authPaths = {'/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/two-factor'};
 
 /// The desktop frame around every screen on a wide window — the website,
 /// or a tablet held sideways: a sidebar for navigation, page content kept
@@ -164,7 +163,7 @@ class _BrandPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Wordmark(subtitle: context.l10n.forBusiness),
+            _Wordmark(subtitle: context.l10n.barbershopSubtitle),
             const Spacer(),
             Container(width: 48, height: 3, color: AppColors.brass),
             const SizedBox(height: 24),
@@ -190,10 +189,6 @@ class _BrandPanel extends StatelessWidget {
                 ),
               ),
             const Spacer(),
-            Text(
-              context.l10n.webPanelFooter,
-              style: textTheme.bodySmall?.copyWith(color: AppColors.chalk.withValues(alpha: 0.55)),
-            ),
           ],
         ),
       ),
@@ -281,10 +276,6 @@ class _Sidebar extends ConsumerWidget {
         (icon: Icons.person_outline, label: context.l10n.navProfile, path: '/business/profile', badge: 0),
       ];
       footer = [(icon: Icons.credit_card, label: context.l10n.navSubscription, path: '/business/subscription', badge: 0)];
-    } else if (kIsWeb) {
-      // Only admins reach the website with a customer account.
-      main = [(icon: Icons.admin_panel_settings_outlined, label: context.l10n.adminEntry, path: '/admin', badge: 0)];
-      footer = [];
     } else {
       main = [
         (icon: Icons.home_outlined, label: context.l10n.navHome, path: '/customer', badge: 0),
@@ -314,7 +305,7 @@ class _Sidebar extends ConsumerWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: _Wordmark(subtitle: isBusiness ? context.l10n.forBusiness : (kIsWeb ? context.l10n.adminEntry : context.l10n.barbershopSubtitle)),
+                child: _Wordmark(subtitle: isBusiness ? context.l10n.forBusiness : context.l10n.barbershopSubtitle),
               ),
               if (shopName != null) ...[
                 const SizedBox(height: 20),
@@ -333,7 +324,7 @@ class _Sidebar extends ConsumerWidget {
               const Divider(color: Color(0x33EDEAE3), height: 24),
               for (final d in footer) item(d),
               item((icon: Icons.settings_outlined, label: context.l10n.settingsTitle, path: '/account-settings', badge: 0)),
-              if (profile.isAdmin && (isBusiness || !kIsWeb))
+              if (profile.isAdmin)
                 item((icon: Icons.admin_panel_settings_outlined, label: context.l10n.adminEntry, path: '/admin', badge: 0)),
               _SidebarItem(
                 destination: (icon: Icons.logout, label: context.l10n.signOut, path: '', badge: 0),

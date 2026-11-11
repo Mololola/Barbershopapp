@@ -167,16 +167,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updatePassword => 'Update password';
 
   @override
-  String get useTheAppTitle => 'Use the app';
-
-  @override
-  String get websiteIsForShops => 'This website is for barbershops.';
-
-  @override
-  String get useTheAppBody =>
-      'Booking, your rewards and the feed are in the Fadra Cut app — sign in there on your phone with this same account.';
-
-  @override
   String get signOut => 'Sign out';
 
   @override
@@ -308,23 +298,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forBusiness => 'for Business';
 
   @override
-  String get webPanelBookings => 'Bookings and staff schedules at a glance';
+  String get webPanelBookings => 'Find a barbershop and book in a minute';
 
   @override
   String get webPanelFinance =>
-      'Costs, break-even and forecasts on a big screen';
+      'For shops: bookings, staff and finance in one place';
 
   @override
   String get webPanelShop => 'Your shop page, posts and messages';
 
   @override
-  String get webPanelHeadline => 'Run your shop\nfrom any screen.';
+  String get webPanelHeadline => 'Book your cut.\nRun your shop.';
 
   @override
-  String get webPanelSubhead => 'Everything in the app, with room to see it.';
-
-  @override
-  String get webPanelFooter => 'Customers book on the Fadra Cut app.';
+  String get webPanelSubhead => 'For customers and barbershops, on any screen.';
 
   @override
   String get navHome => 'Home';
