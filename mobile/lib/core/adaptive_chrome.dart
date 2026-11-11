@@ -163,7 +163,7 @@ class _BrandPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Wordmark(subtitle: context.l10n.forBusiness),
+            _Wordmark(subtitle: context.l10n.barbershopSubtitle),
             const Spacer(),
             Container(width: 48, height: 3, color: AppColors.brass),
             const SizedBox(height: 24),
@@ -189,10 +189,6 @@ class _BrandPanel extends StatelessWidget {
                 ),
               ),
             const Spacer(),
-            Text(
-              context.l10n.webPanelFooter,
-              style: textTheme.bodySmall?.copyWith(color: AppColors.chalk.withValues(alpha: 0.55)),
-            ),
           ],
         ),
       ),

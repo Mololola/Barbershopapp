@@ -301,25 +301,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get forBusiness => 'para negocios';
 
   @override
-  String get webPanelBookings => 'Reservas y horarios del equipo de un vistazo';
+  String get webPanelBookings =>
+      'Encuentra una barbería y reserva en un minuto';
 
   @override
   String get webPanelFinance =>
-      'Costes, punto de equilibrio y previsiones en pantalla grande';
+      'Para barberías: reservas, equipo y finanzas en un solo sitio';
 
   @override
   String get webPanelShop =>
       'El perfil de tu barbería, publicaciones y mensajes';
 
   @override
-  String get webPanelHeadline =>
-      'Gestiona tu barbería\ndesde cualquier pantalla.';
+  String get webPanelHeadline => 'Reserva tu corte.\nGestiona tu barbería.';
 
   @override
-  String get webPanelSubhead => 'Todo lo de la app, con espacio para verlo.';
-
-  @override
-  String get webPanelFooter => 'Los clientes reservan en la app de Fadra Cut.';
+  String get webPanelSubhead =>
+      'Para clientes y barberías, en cualquier pantalla.';
 
   @override
   String get navHome => 'Inicio';

@@ -641,13 +641,13 @@ abstract class AppLocalizations {
   /// No description provided for @webPanelBookings.
   ///
   /// In en, this message translates to:
-  /// **'Bookings and staff schedules at a glance'**
+  /// **'Find a barbershop and book in a minute'**
   String get webPanelBookings;
 
   /// No description provided for @webPanelFinance.
   ///
   /// In en, this message translates to:
-  /// **'Costs, break-even and forecasts on a big screen'**
+  /// **'For shops: bookings, staff and finance in one place'**
   String get webPanelFinance;
 
   /// No description provided for @webPanelShop.
@@ -659,20 +659,14 @@ abstract class AppLocalizations {
   /// No description provided for @webPanelHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Run your shop\nfrom any screen.'**
+  /// **'Book your cut.\nRun your shop.'**
   String get webPanelHeadline;
 
   /// No description provided for @webPanelSubhead.
   ///
   /// In en, this message translates to:
-  /// **'Everything in the app, with room to see it.'**
+  /// **'For customers and barbershops, on any screen.'**
   String get webPanelSubhead;
-
-  /// No description provided for @webPanelFooter.
-  ///
-  /// In en, this message translates to:
-  /// **'Customers book on the Fadra Cut app.'**
-  String get webPanelFooter;
 
   /// No description provided for @navHome.
   ///
