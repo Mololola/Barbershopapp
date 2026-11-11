@@ -398,24 +398,6 @@ abstract class AppLocalizations {
   /// **'Update password'**
   String get updatePassword;
 
-  /// No description provided for @useTheAppTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Use the app'**
-  String get useTheAppTitle;
-
-  /// No description provided for @websiteIsForShops.
-  ///
-  /// In en, this message translates to:
-  /// **'This website is for barbershops.'**
-  String get websiteIsForShops;
-
-  /// No description provided for @useTheAppBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Booking, your rewards and the feed are in the Fadra Cut app — sign in there on your phone with this same account.'**
-  String get useTheAppBody;
-
   /// No description provided for @signOut.
   ///
   /// In en, this message translates to:

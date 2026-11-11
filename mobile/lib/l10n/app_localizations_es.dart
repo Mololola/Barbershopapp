@@ -169,16 +169,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get updatePassword => 'Actualizar contraseña';
 
   @override
-  String get useTheAppTitle => 'Usa la app';
-
-  @override
-  String get websiteIsForShops => 'Esta web es para barberías.';
-
-  @override
-  String get useTheAppBody =>
-      'Las reservas, tus recompensas y el feed están en la app de Fadra Cut: inicia sesión en tu móvil con esta misma cuenta.';
-
-  @override
   String get signOut => 'Cerrar sesión';
 
   @override

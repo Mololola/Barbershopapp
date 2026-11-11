@@ -167,16 +167,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updatePassword => 'Update password';
 
   @override
-  String get useTheAppTitle => 'Use the app';
-
-  @override
-  String get websiteIsForShops => 'This website is for barbershops.';
-
-  @override
-  String get useTheAppBody =>
-      'Booking, your rewards and the feed are in the Fadra Cut app — sign in there on your phone with this same account.';
-
-  @override
   String get signOut => 'Sign out';
 
   @override
