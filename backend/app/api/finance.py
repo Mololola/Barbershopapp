@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user_id
+from app.core.config import settings
 from app.core.i18n import is_spanish
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
@@ -30,7 +31,11 @@ class PremiumState(BaseModel):
 
 def finance_premium_state(db: Session, business_id: uuid.UUID) -> PremiumState:
     """Premium is on for: a running free trial, an active (or retrying)
-    monthly subscription, a legacy one-off unlock, or a grandfathered shop."""
+    monthly subscription, a legacy one-off unlock, or a grandfathered shop —
+    and for everyone while it's free (`finance_premium_free`), reported as
+    subscribed so no trial or checkout is offered."""
+    if settings.finance_premium_free:
+        return PremiumState(has_premium=True, trial_ends_at=None, trial_used=False, subscribed=True)
     row = db.execute(
         text(
             "select grandfathered, paid_at, trial_ends_at, subscription_status "

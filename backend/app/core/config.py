@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # Change it here (or in .env) when the domain's own address exists.
     support_email: str = "mololola.enterprises@gmail.com"
     sentry_dsn: str = ""
+    # Finance Premium is free for every shop until the owner decides it has
+    # earned its price; set FINANCE_PREMIUM_FREE=false to start charging.
+    finance_premium_free: bool = True
 
     # Deliberately small — Supabase's free/small-tier max_connections is 60
     # total, shared with its own internal services (Supavisor, PostgREST,
