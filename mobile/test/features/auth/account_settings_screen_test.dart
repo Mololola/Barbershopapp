@@ -60,6 +60,25 @@ void main() {
     expect(find.text('Worker profile'), findsNothing);
   });
 
+  testWidgets('rows keep a readable width inside the wide layout\'s narrowed page', (tester) async {
+    tester.view.physicalSize = const Size(1920, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentProfileProvider.overrideWith(
+          (ref) async => const Profile(id: 'c', role: AccountRole.customer, username: 'alex', referralCode: 'CODE'),
+        ),
+        currentBusinessProvider.overrideWith((ref) async => null),
+      ],
+      // The wide layout's frame gives this screen 760 of the window's 1920.
+      child: const MaterialApp(home: Center(child: SizedBox(width: 760, child: AccountSettingsScreen()))),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(tester.getSize(find.widgetWithText(ListTile, 'Edit profile')).width, 640);
+  });
+
   testWidgets('Terms, Privacy and a contact address are reachable after sign-up', (tester) async {
     await tester.pumpWidget(buildTestable(
       const Profile(id: 'c', role: AccountRole.customer, username: 'alex', referralCode: 'CODE'),
