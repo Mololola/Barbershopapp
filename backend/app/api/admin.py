@@ -228,9 +228,9 @@ def _business_metrics(db: Session) -> BusinessMetrics:
 def _revenue_metrics(db: Session) -> RevenueMetrics:
     finance_paid = db.execute(
         text(
-            "select b.currency, coalesce(sum(f.amount_cents), 0), count(*) "
+            "select b.currency, coalesce(sum(f.monthly_amount_cents), 0), count(*) "
             "from business_finance_access f join businesses b on b.id = f.business_id "
-            "where f.paid_at is not null group by b.currency order by b.currency"
+            "where f.subscription_status in ('active', 'past_due') group by b.currency order by b.currency"
         )
     )
     extra_slots = _scalar(db, "select coalesce(sum(extra_slots), 0) from design_extra_slots")
