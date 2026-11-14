@@ -131,130 +131,133 @@ class AccountSettingsScreen extends ConsumerWidget {
     final profile = ref.watch(currentProfileProvider).value;
     final isBusiness = profile?.role == AccountRole.business;
     final business = isBusiness ? ref.watch(currentBusinessProvider).value : null;
-    // A readable column on the website rather than rows stretched edge to
-    // edge; padding, not a narrower box, so the whole width still scrolls.
-    final sideSpace = math.max(0.0, (MediaQuery.sizeOf(context).width - 640) / 2);
 
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.settingsTitle)),
-      body: ListView(
-        padding: EdgeInsets.symmetric(horizontal: sideSpace),
-        children: [
-          if (isBusiness) ...[
-            _GroupHeader(context.l10n.yourShopGroup),
-            ListTile(
-              leading: const Icon(Icons.brush_outlined),
-              title: Text(context.l10n.shopPage),
-              subtitle: Text(context.l10n.shopPageSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/business/shop/edit'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.storefront_outlined),
-              title: Text(context.l10n.businessDetails),
-              subtitle: Text(context.l10n.businessDetailsSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/business/edit'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.content_cut),
-              title: Text(context.l10n.services),
-              subtitle: Text(context.l10n.servicesSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/business/services'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long_outlined),
-              title: Text(context.l10n.subscriptionBilling),
-              subtitle: Text(context.l10n.subscriptionBillingSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/business/subscription'),
-            ),
-            // Set at signup and never editable: the referrer is paid from it.
-            if (business != null)
+      // A readable column on the website rather than rows stretched edge to
+      // edge; padding, not a narrower box, so the whole width still scrolls.
+      // Measured from the space this screen is given: the wide layout's
+      // frame has already narrowed it.
+      body: LayoutBuilder(
+        builder: (context, constraints) => ListView(
+          padding: EdgeInsets.symmetric(horizontal: math.max(0.0, (constraints.maxWidth - 640) / 2)),
+          children: [
+            if (isBusiness) ...[
+              _GroupHeader(context.l10n.yourShopGroup),
               ListTile(
-                leading: const Icon(Icons.card_giftcard_outlined),
-                title: Text(context.l10n.referredBy),
-                subtitle: Text(business.referredByCode ?? context.l10n.noReferralCodeUsed),
+                leading: const Icon(Icons.brush_outlined),
+                title: Text(context.l10n.shopPage),
+                subtitle: Text(context.l10n.shopPageSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/business/shop/edit'),
               ),
-          ] else if (profile != null) ...[
-            _GroupHeader(context.l10n.yourProfileGroup),
-            ListTile(
-              leading: const Icon(Icons.account_circle_outlined),
-              title: Text(context.l10n.editProfile),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/profile/edit'),
-            ),
-            // Worker features aren't available to under-18 accounts.
-            if (profile.isMinor != true)
+              ListTile(
+                leading: const Icon(Icons.storefront_outlined),
+                title: Text(context.l10n.businessDetails),
+                subtitle: Text(context.l10n.businessDetailsSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/business/edit'),
+              ),
               ListTile(
                 leading: const Icon(Icons.content_cut),
-                title: Text(context.l10n.workerProfile),
-                subtitle: Text(context.l10n.workerProfileSubtitle),
+                title: Text(context.l10n.services),
+                subtitle: Text(context.l10n.servicesSubtitle),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/customer/worker-profile'),
+                onTap: () => context.push('/business/services'),
               ),
-          ],
-          // Only customers refer shops; businesses see who referred them.
-          if (profile != null && !isBusiness)
+              ListTile(
+                leading: const Icon(Icons.receipt_long_outlined),
+                title: Text(context.l10n.subscriptionBilling),
+                subtitle: Text(context.l10n.subscriptionBillingSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/business/subscription'),
+              ),
+              // Set at signup and never editable: the referrer is paid from it.
+              if (business != null)
+                ListTile(
+                  leading: const Icon(Icons.card_giftcard_outlined),
+                  title: Text(context.l10n.referredBy),
+                  subtitle: Text(business.referredByCode ?? context.l10n.noReferralCodeUsed),
+                ),
+            ] else if (profile != null) ...[
+              _GroupHeader(context.l10n.yourProfileGroup),
+              ListTile(
+                leading: const Icon(Icons.account_circle_outlined),
+                title: Text(context.l10n.editProfile),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/profile/edit'),
+              ),
+              // Worker features aren't available to under-18 accounts.
+              if (profile.isMinor != true)
+                ListTile(
+                  leading: const Icon(Icons.content_cut),
+                  title: Text(context.l10n.workerProfile),
+                  subtitle: Text(context.l10n.workerProfileSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/customer/worker-profile'),
+                ),
+            ],
+            // Only customers refer shops; businesses see who referred them.
+            if (profile != null && !isBusiness)
+              ListTile(
+                leading: const Icon(Icons.card_giftcard_outlined),
+                title: Text(context.l10n.yourReferralCode),
+                subtitle: Text(profile.referralCode),
+                trailing: const Icon(Icons.copy),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: profile.referralCode));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.referralCodeCopied)));
+                },
+              ),
+            _GroupHeader(context.l10n.aboutGroup),
             ListTile(
-              leading: const Icon(Icons.card_giftcard_outlined),
-              title: Text(context.l10n.yourReferralCode),
-              subtitle: Text(profile.referralCode),
-              trailing: const Icon(Icons.copy),
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: profile.referralCode));
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.referralCodeCopied)));
-              },
+              leading: const Icon(Icons.description_outlined),
+              title: Text(context.l10n.termsOfService),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => launchUrl(Uri.parse(termsOfServiceUrl), mode: LaunchMode.externalApplication),
             ),
-          _GroupHeader(context.l10n.aboutGroup),
-          ListTile(
-            leading: const Icon(Icons.description_outlined),
-            title: Text(context.l10n.termsOfService),
-            trailing: const Icon(Icons.open_in_new),
-            onTap: () => launchUrl(Uri.parse(termsOfServiceUrl), mode: LaunchMode.externalApplication),
-          ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: Text(context.l10n.privacyPolicy),
-            trailing: const Icon(Icons.open_in_new),
-            onTap: () => launchUrl(Uri.parse(privacyPolicyUrl), mode: LaunchMode.externalApplication),
-          ),
-          ListTile(
-            leading: const Icon(Icons.mail_outline),
-            title: Text(context.l10n.contactUs),
-            subtitle: const Text(supportEmail),
-            onTap: () => _contactUs(context),
-          ),
-          _GroupHeader(context.l10n.accountGroup),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(context.l10n.language),
-            subtitle: Text(_languageName(context, ref.watch(appLanguageProvider))),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _chooseLanguage(context, ref),
-          ),
-          if (profile?.isAdmin == true)
             ListTile(
-              leading: const Icon(Icons.shield_outlined),
-              title: Text(context.l10n.adminEntry),
-              subtitle: Text(context.l10n.adminEntrySubtitle),
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: Text(context.l10n.privacyPolicy),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => launchUrl(Uri.parse(privacyPolicyUrl), mode: LaunchMode.externalApplication),
+            ),
+            ListTile(
+              leading: const Icon(Icons.mail_outline),
+              title: Text(context.l10n.contactUs),
+              subtitle: const Text(supportEmail),
+              onTap: () => _contactUs(context),
+            ),
+            _GroupHeader(context.l10n.accountGroup),
+            ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(context.l10n.language),
+              subtitle: Text(_languageName(context, ref.watch(appLanguageProvider))),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/admin'),
+              onTap: () => _chooseLanguage(context, ref),
             ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: Text(context.l10n.signOut),
-            onTap: authState.isLoading ? null : () => _signOut(context, ref),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: Icon(Icons.delete_forever, color: Theme.of(context).colorScheme.error),
-            title: Text(context.l10n.deleteAccount, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            subtitle: Text(context.l10n.deleteAccountSubtitle),
-            onTap: authState.isLoading ? null : () => _deleteAccount(context, ref),
-          ),
-        ],
+            if (profile?.isAdmin == true)
+              ListTile(
+                leading: const Icon(Icons.shield_outlined),
+                title: Text(context.l10n.adminEntry),
+                subtitle: Text(context.l10n.adminEntrySubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/admin'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: Text(context.l10n.signOut),
+              onTap: authState.isLoading ? null : () => _signOut(context, ref),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.delete_forever, color: Theme.of(context).colorScheme.error),
+              title: Text(context.l10n.deleteAccount, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              subtitle: Text(context.l10n.deleteAccountSubtitle),
+              onTap: authState.isLoading ? null : () => _deleteAccount(context, ref),
+            ),
+          ],
+        ),
       ),
     );
   }
